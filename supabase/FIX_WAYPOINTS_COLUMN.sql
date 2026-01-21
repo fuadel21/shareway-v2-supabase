@@ -1,0 +1,26 @@
+-- ==========================================
+-- CRITICAL FIX: Add waypoints column support
+-- ==========================================
+-- 1. Add waypoints column if not exists
+ALTER TABLE public.rides
+ADD COLUMN IF NOT EXISTS waypoints JSONB DEFAULT '[]'::jsonb;
+-- 2. Update create_ride to include waypoints in INSERT
+-- This is already handled in MASTER_UNIFIED_RIDE_LIFECYCLE.sql parameter list,
+-- but the INSERT statement needs to be updated.
+-- Note: The INSERT in create_ride (lines 111-128) needs manual update to include:
+-- - waypoints in column list (after approval_mode)
+-- - p_waypoints in VALUES list (after p_approval_mode)
+-- Example:
+-- INSERT INTO public.rides (
+--     ...
+--     approval_mode,
+--     waypoints,  -- ADD THIS
+--     status,
+--     ...
+-- ) VALUES (
+--     ...
+--     p_approval_mode,
+--     p_waypoints,  -- ADD THIS
+--     'scheduled',
+--     ...
+-- );

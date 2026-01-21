@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Taxi Compartido</string>
+    <string name="title_activity_main">Taxi Compartido</string>
+    <string name="package_name">com.taxicompartido.app</string>
+    <string name="custom_url_scheme">com.taxicompartido.app</string>
+</resources>

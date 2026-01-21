@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  /* Fuente Premium */
+  --font-sans: 'Outfit', sans-serif;
+
+  /* Colores Cálidos, Alegres y Vibrantes */
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  /* Primario: Naranja Vibrante y Alegre */
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  /* Secundario: Ambar Suave */
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  /* Acento: Coral Brillante */
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  /* Bordes mucho más redondeados y amigables */
+  --radius-lg: 1.5rem;
+  --radius-md: 1rem;
+  --radius-sm: 0.75rem;
+}
+
+@layer base {
+  :root {
+    /* Paleta Cálida y Alegre: "Sunny Morning" */
+    --background: 45 100% 98%; /* Crema muy claro y cálido */
+    --foreground: 24 40% 12%; /* Carbón cálido */
+
+    --card: 45 100% 99%; /* Blanco crema */
+    --card-foreground: 24 40% 12%;
+
+    --popover: 45 100% 99%;
+    --popover-foreground: 24 40% 12%;
+
+    /* Primario: Naranja Alegre */
+    --primary: 24 100% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secundario: Mantequilla / Ambar Suave */
+    --secondary: 45 92% 90%;
+    --secondary-foreground: 24 40% 20%;
+
+    --muted: 45 60% 94%; 
+    --muted-foreground: 24 20% 45%;
+
+    /* Acento: Coral / Melocotón Vibrante */
+    --accent: 12 95% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 40% 90%;
+    --input: 35 40% 90%;
+    --ring: 24 100% 55%;
+
+    --radius: 1.25rem;
+  }
+
+  .dark {
+    /* Paleta Oscura Cálida: "Sunset Embers" */
+    --background: 24 30% 8%; /* Negro con matiz tierra */
+    --foreground: 45 60% 94%;
+
+    --card: 24 30% 12%;
+    --card-foreground: 45 60% 94%;
+
+    --popover: 24 30% 12%;
+    --popover-foreground: 45 60% 94%;
+
+    /* Primario: Naranja Brillante */
+    --primary: 24 100% 60%;
+    --primary-foreground: 24 30% 8%;
+
+    --secondary: 24 25% 20%; 
+    --secondary-foreground: 45 60% 94%;
+
+    --muted: 24 25% 18%;
+    --muted-foreground: 24 15% 65%;
+
+    --accent: 12 85% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 24 25% 22%;
+    --input: 24 25% 22%;
+    --ring: 24 100% 60%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    font-family: 'Outfit', sans-serif;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+
+  /* Botones Modernos, Grandes y Elevados */
+  button {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    font-weight: 600;
+  }
+
+  button:active {
+    transform: scale(0.92);
+  }
+
+  /* Ajuste para inputs redondos */
+  input, select, textarea {
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+  }
+  
+  input:focus, select:focus, textarea:focus {
+    box-shadow: 0 0 0 4px hsla(var(--primary), 0.15);
+  }
+}
+
+/* Glassmorphism Styles Mejorado */
+.glass {
+  background: hsla(45, 100%, 98%, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid hsla(var(--primary), 0.1);
+  box-shadow: 0 8px 32px 0 rgba(135, 31, 23, 0.05);
+}
+
+.dark .glass {
+  background: hsla(24, 30%, 8%, 0.75);
+  border: 1px solid hsla(var(--primary), 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Animaciones de entrada suaves */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}

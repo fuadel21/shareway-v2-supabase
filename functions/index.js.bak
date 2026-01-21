@@ -1,0 +1,75 @@
+require('dotenv').config();
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { onUserCreate } = require("firebase-functions/v2/auth"); // <-- 1. IMPORTACIÓN CORRECTA
+const admin = require("firebase-admin");
+admin.initializeApp();
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { FieldValue } = require("firebase-admin/firestore");
+
+const db = admin.firestore();
+const REGION = "us-central1"; 
+
+// --- MÓDULOS DE FUNCIONES ---
+const bookings = require("./src/bookings");
+const notifications = require("./src/notifications");
+const rideRequests = require("./src/rideRequests");
+
+// === TRIGGERS ===
+
+// --- FUNCIÓN CORREGIDA (SINTAXIS V2) ---
+exports.onusercreate = onUserCreate({ region: REGION }, async (event) => {
+    const user = event.data; // El objeto de usuario está en event.data
+    console.log(`Creando perfil para nuevo usuario: ${user.uid}`);
+    
+    const userRef = db.collection('users').doc(user.uid);
+    const walletRef = db.collection('wallets').doc(user.uid);
+
+    const batch = db.batch();
+
+    // 1. Crear el perfil del usuario
+    batch.set(userRef, {
+        email: user.email,
+        displayName: user.displayName || 'Sin nombre',
+        photoURL: user.photoURL || null,
+        createdAt: FieldValue.serverTimestamp(),
+        role: 'user'
+    });
+
+    // 2. Crear la wallet del usuario
+    batch.set(walletRef, {
+        ownerId: user.uid,
+        balance: 0,
+        heldBalance: 0,
+        createdAt: FieldValue.serverTimestamp()
+    });
+
+    try {
+        await batch.commit();
+        console.log(`Perfil y wallet para ${user.uid} creados con éxito.`);
+        return null;
+    } catch (error) {
+        console.error(`Error al crear perfil y wallet para ${user.uid}:`, error);
+        return null;
+    }
+});
+
+// --- FUNCIONES LLAMABLES (CALLABLES) ---
+
+exports.addFunds = onCall({ region: REGION, cors: true }, async (request) => { /* ... */ });
+exports.requestPayout = onCall({ region: REGION, cors: true }, async (request) => { /* ... */ });
+
+// Funciones de Reservas
+exports.requestSeatAndHoldFunds = bookings.requestSeatAndHoldFunds;
+exports.cancelBookingAndRefund = bookings.cancelBookingAndRefund;
+exports.confirmBookingAndTransferFunds = bookings.confirmBookingAndTransferFunds;
+
+// Funciones de Solicitud de Viaje
+exports.createRideRequest = rideRequests.createRideRequest;
+
+// Se dispara cuando se actualiza un viaje
+exports.onRideUpdated = onDocumentUpdated({ document: "rides/{rideId}", region: REGION }, async (event) => {
+    await notifications.handleRideUpdateNotifications(event.data);
+    // ... más lógica si es necesario ...
+});

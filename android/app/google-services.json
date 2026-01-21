@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "821458894201",
+    "project_id": "taxi-compartido-v2",
+    "storage_bucket": "taxi-compartido-v2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821458894201:android:d6aca7a6e59990c2a503a8",
+        "android_client_info": {
+          "package_name": "com.foad.taxicompartido"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "821458894201-9utpl31dqgq2hvjol1e4ub6sf4jhevte.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.foad.taxicompartido",
+            "certificate_hash": "9792961f88a12014d1fa9c1aa4442d832eb3ff44"
+          }
+        },
+        {
+          "client_id": "821458894201-7pcq9j2eh1ucfpujjduflrm64ba5qc3v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLnj-S_NCUV5EQlPgAMPE9A1-nBPDYYa0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "821458894201-7pcq9j2eh1ucfpujjduflrm64ba5qc3v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "821458894201-t4r4lg9hjn84hgdjo49hmavamjbqu1h9.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.foad.taxicompartido"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

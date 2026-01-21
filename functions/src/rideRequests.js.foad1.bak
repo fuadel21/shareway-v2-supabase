@@ -1,0 +1,48 @@
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
+
+const REGION = "us-central1";
+const db = admin.firestore();
+
+/**
+ * Permite a un usuario crear una nueva solicitud de viaje.
+ */
+exports.createRideRequest = onCall({ region: REGION, cors: true }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Debes estar autenticado para solicitar un viaje.");
+  }
+
+  const { origin, destination, dateTime, seats } = request.data;
+
+  if (!origin || !destination || !dateTime || !seats) {
+    throw new HttpsError("invalid-argument", "Faltan datos para crear la solicitud.");
+  }
+
+  const requesterId = request.auth.uid;
+  const requesterName = request.auth.token.name || 'Usuario sin nombre';
+
+  try {
+    const newRequestRef = db.collection('rideRequests').doc();
+
+    await newRequestRef.set({
+      requesterId: requesterId,
+      requesterInfo: {
+        name: requesterName,
+        photoURL: request.auth.token.picture || null,
+      },
+      origin: origin,
+      destination: destination,
+      dateTime: new Date(dateTime),
+      seats: Number(seats),
+      status: 'pending', // Las solicitudes empiezan como pendientes
+      createdAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true, requestId: newRequestRef.id };
+
+  } catch (error) {
+    console.error("Error al crear la solicitud de viaje:", error);
+    throw new HttpsError("internal", "Ocurrió un error al guardar la solicitud.");
+  }
+});

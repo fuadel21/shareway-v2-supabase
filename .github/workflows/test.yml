@@ -1,0 +1,49 @@
+name: ShareWay CI/CD Suite
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create .env.test
+        run: |
+          echo "VITE_SUPABASE_URL=${{ secrets.TEST_SUPABASE_URL }}" >> .env.test
+          echo "VITE_SUPABASE_ANON_KEY=${{ secrets.TEST_SUPABASE_ANON_KEY }}" >> .env.test
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
+          echo "VITE_SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
+
+      - name: Provision Test Data
+        run: node scripts/seed-test.js
+
+      - name: Run Unit & Integration Tests (Vitest)
+        run: npm run test
+        env:
+          NODE_ENV: test
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Tests (Playwright)
+        run: |
+          npm run dev & # Start dev server in background
+          npx wait-on http://localhost:5173
+          npm run test:e2e
+        env:
+          NODE_ENV: test

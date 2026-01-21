@@ -1,0 +1,90 @@
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
+
+const REGION = "us-central1"; 
+const db = admin.firestore();
+
+// --- FUNCIÓN CORREGIDA ---
+exports.confirmBookingAndTransferFunds = onCall({ region: REGION, cors: true }, async (request) => {
+    if (!request.auth) {
+        throw new HttpsError("unauthenticated", "Debes ser el conductor para confirmar.");
+    }
+
+    const { rideId, passengerId } = request.data;
+    if (!rideId || !passengerId) {
+        throw new HttpsError("invalid-argument", "Faltan datos (rideId, passengerId).");
+    }
+
+    const driverId = request.auth.uid;
+    const rideRef = db.collection('rides').doc(rideId);
+    const passengerWalletRef = db.collection('wallets').doc(passengerId);
+    const driverWalletRef = db.collection('wallets').doc(driverId);
+
+    try {
+        await db.runTransaction(async (t) => {
+            const rideDoc = await t.get(rideRef);
+            const passengerWalletDoc = await t.get(passengerWalletRef);
+            const driverWalletDoc = await t.get(driverWalletRef);
+
+            if (!rideDoc.exists) throw new HttpsError("not-found", "El viaje no existe.");
+            if (!passengerWalletDoc.exists) throw new HttpsError("not-found", `No se encontró la wallet del pasajero.`);
+            if (!driverWalletDoc.exists) throw new HttpsError("not-found", `No se encontró la wallet del conductor.`);
+
+            const rideData = rideDoc.data();
+            const passengerWalletData = passengerWalletDoc.data();
+            const price = rideData.price;
+
+            // 1. Verificar que quien llama es el conductor
+            if (rideData.driverId !== driverId) {
+                throw new HttpsError("permission-denied", "Solo el conductor puede confirmar esta reserva.");
+            }
+            
+            // 2. Verificar que el pasajero tenga saldo
+            if (passengerWalletData.balance < price) {
+                throw new HttpsError("failed-precondition", "El pasajero no tiene saldo suficiente.");
+            }
+
+            // 3. Mover fondos: del balance del pasajero al balance del conductor
+            t.update(passengerWalletRef, { balance: FieldValue.increment(-price) });
+            t.update(driverWalletRef, { balance: FieldValue.increment(price) });
+
+            // 4. Crear registros de la transacción para ambos
+            const passengerTransactionRef = passengerWalletRef.collection('transactions').doc();
+            t.set(passengerTransactionRef, {
+                amount: -price,
+                type: 'payment',
+                description: `Pago por viaje a ${rideData.destination.address}`,
+                rideId: rideId,
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            const driverTransactionRef = driverWalletRef.collection('transactions').doc();
+            t.set(driverTransactionRef, {
+                amount: price,
+                type: 'income',
+                description: `Ingreso por viaje con ${passengerWalletData.ownerName || 'un pasajero'}`,
+                rideId: rideId,
+                fromPassengerId: passengerId,
+                createdAt: FieldValue.serverTimestamp()
+            });
+        });
+
+        return { success: true, message: "Fondos transferidos con éxito." };
+
+    } catch (error) {
+        console.error(`Error en confirmBookingAndTransferFunds:`, error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError("internal", "Ocurrió un error al transferir los fondos.");
+    }
+});
+
+
+// Las otras funciones permanecen sin cambios
+exports.requestSeatAndHoldFunds = onCall({ region: REGION, cors: true }, async (request) => {
+  // ... código existente ...
+});
+
+exports.cancelBookingAndRefund = onCall({ region: REGION, cors: true }, async (request) => {
+  // ... código existente ...
+});

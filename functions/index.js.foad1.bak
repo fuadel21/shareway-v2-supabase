@@ -1,0 +1,65 @@
+require('dotenv').config();
+const functions = require('firebase-functions'); // <-- 1. USAMOS LA IMPORTACIÓN ANTIGUA
+const admin = require("firebase-admin");
+admin.initializeApp();
+
+// Importaciones de la v2 para las funciones que SÍ funcionan
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { FieldValue } = require("firebase-admin/firestore");
+
+const db = admin.firestore();
+const REGION = "us-central1"; 
+
+// --- MÓDULOS DE FUNCIONES ---
+const bookings = require("./src/bookings");
+const notifications = require("./src/notifications");
+const rideRequests = require("./src/rideRequests");
+
+// === TRIGGERS ===
+
+// --- ¡FUNCIÓN REESCRITA CON SINTAXIS V1 COMPATIBLE! ---
+exports.onUserCreate = functions.region(REGION).auth.user().onCreate(async (user) => {
+    console.log(`Creando perfil para nuevo usuario (v1): ${user.uid}`);
+    const userRef = db.collection('users').doc(user.uid);
+    const walletRef = db.collection('wallets').doc(user.uid);
+    const batch = db.batch();
+
+    batch.set(userRef, {
+        email: user.email,
+        displayName: user.displayName || 'Sin nombre',
+        photoURL: user.photoURL || null,
+        createdAt: FieldValue.serverTimestamp(),
+        role: 'user'
+    });
+
+    batch.set(walletRef, {
+        ownerId: user.uid,
+        balance: 0,
+        heldBalance: 0,
+        createdAt: FieldValue.serverTimestamp()
+    });
+
+    try {
+        await batch.commit();
+        console.log(`Perfil y wallet para ${user.uid} creados con éxito.`);
+    } catch (error) {
+        console.error(`Error al crear perfil y wallet para ${user.uid}:`, error);
+    }
+});
+
+
+// --- FUNCIONES LLAMABLES (v2 - estas sí funcionan bien) ---
+exports.addFunds = onCall({ region: REGION, cors: true }, async (request) => { /* ... */ });
+exports.requestPayout = onCall({ region: REGION, cors: true }, async (request) => { /* ... */ });
+exports.requestSeatAndHoldFunds = bookings.requestSeatAndHoldFunds;
+exports.cancelBookingAndRefund = bookings.cancelBookingAndRefund;
+exports.confirmBookingAndTransferFunds = bookings.confirmBookingAndTransferFunds;
+exports.createRideRequest = rideRequests.createRideRequest;
+
+// Trigger v2 que también funciona bien
+exports.onRideUpdated = onDocumentUpdated({ document: "rides/{rideId}", region: REGION }, async (event) => {
+    await notifications.handleRideUpdateNotifications(event.data);
+});
