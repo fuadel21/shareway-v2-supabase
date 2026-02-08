@@ -19,7 +19,7 @@ const ChatItem = ({ chat, onClick }) => {
     const safeDate = (date && isValid(date)) ? format(date, "d MMM", { locale: es }) : "";
 
     return (
-        <div 
+        <div
             onClick={() => onClick(chat.id)}
             className="group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer animate-in fade-in slide-in-from-bottom-2 duration-500"
         >
@@ -35,9 +35,18 @@ const ChatItem = ({ chat, onClick }) => {
 
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate pr-2">
-                        {chat.otherUserName || 'Usuario'}
-                    </h3>
+                    <div className="flex flex-col text-left">
+                        <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate pr-2">
+                            {chat.otherUserName || 'Usuario'}
+                        </h3>
+                        {chat.isRideChat && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <div className="px-1.5 py-0.5 bg-primary/10 rounded-md text-[7px] font-black text-primary uppercase tracking-widest border border-primary/20">
+                                    VIAJE
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
                         {safeDate}
                     </span>
@@ -104,10 +113,17 @@ const ChatList = () => {
             <main className="max-w-xl mx-auto px-4 py-8 space-y-4">
                 {chats.length > 0 ? (
                     chats.map(chat => (
-                        <ChatItem 
-                            key={chat.id} 
-                            chat={chat} 
-                            onClick={(id) => navigate(`/chat/${id}`)} 
+                        <ChatItem
+                            key={chat.id}
+                            chat={chat}
+                            onClick={(id) => {
+                                // 🛡️ Blindaje de Redirección: Si el chat tiene ride_id, es un chat grupal
+                                if (chat.ride_id) {
+                                    navigate(`/ride-chat/${chat.ride_id}`);
+                                } else {
+                                    navigate(`/chat/${id}`);
+                                }
+                            }}
                         />
                     ))
                 ) : (

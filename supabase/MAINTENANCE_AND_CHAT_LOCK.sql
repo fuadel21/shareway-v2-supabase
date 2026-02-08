@@ -1,4 +1,4 @@
-mj -- ==========================================
+-- ==========================================
 -- SCRIPT: MANTENIMIENTO MANUAL Y BLOQUEO DE CHAT
 -- ==========================================
 -- 1. FUNCIÓN PARA VERIFICAR SI UN CHAT ESTÁ BLOQUEADO
@@ -87,8 +87,7 @@ RETURN json_build_object(
     'timestamp',
     NOW()
 );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+END $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 4. DAR PERMISOS PARA EJECUTAR EL RPC
 GRANT EXECUTE ON FUNCTION public.run_manual_maintenance_tasks() TO authenticated;
 -- RESUMEN

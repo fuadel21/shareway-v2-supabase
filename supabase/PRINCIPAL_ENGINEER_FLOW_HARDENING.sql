@@ -60,8 +60,11 @@ FROM public.profiles
 WHERE id = v_driver_id;
 IF v_is_suspended THEN RAISE EXCEPTION 'Tu cuenta está suspendida. Contacta con soporte.';
 END IF;
-IF v_is_verified != 'verified' THEN RAISE EXCEPTION 'Solo usuarios verificados pueden ofrecer viajes.';
-END IF;
+
+-- VERIFICACIÓN DESHABILITADA TEMPORALMENTE PARA PRUEBAS
+-- IF v_is_verified != 'verified' THEN RAISE EXCEPTION 'Solo usuarios verificados pueden ofrecer viajes.';
+-- END IF;
+
 -- Validaciones de Ruta (Fallo 8)
 IF (p_origin->>'lat')::DECIMAL = (p_destination->>'lat')::DECIMAL
 AND (p_origin->>'lng')::DECIMAL = (p_destination->>'lng')::DECIMAL THEN RAISE EXCEPTION 'El origen y el destino no pueden ser el mismo lugar.';

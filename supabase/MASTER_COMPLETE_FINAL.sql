@@ -102,6 +102,8 @@ v_driver_name TEXT;
 v_driver_photo TEXT;
 v_driver_gender TEXT;
 v_ride_id UUID;
+v_origin_point GEOGRAPHY;
+v_destination_point GEOGRAPHY;
 BEGIN IF v_driver_id IS NULL THEN RAISE EXCEPTION 'No autenticado';
 END IF;
 SELECT display_name,
@@ -134,12 +136,28 @@ AND (
     OR LOWER(v_driver_gender) != 'female'
 ) THEN RAISE EXCEPTION 'Solo las conductoras pueden ofrecer viajes exclusivos para mujeres.';
 END IF;
+v_origin_point := ST_SetSRID(
+    ST_MakePoint(
+        (p_origin->>'lng')::FLOAT,
+        (p_origin->>'lat')::FLOAT
+    ),
+    4326
+)::GEOGRAPHY;
+v_destination_point := ST_SetSRID(
+    ST_MakePoint(
+        (p_destination->>'lng')::FLOAT,
+        (p_destination->>'lat')::FLOAT
+    ),
+    4326
+)::GEOGRAPHY;
 INSERT INTO public.rides (
         driver_id,
         driver_display_name,
         driver_photo_url,
         origin,
         destination,
+        origin_location,
+        destination_location,
         departure_time,
         seats_total,
         seats_available,
@@ -160,6 +178,8 @@ VALUES (
         v_driver_photo,
         p_origin,
         p_destination,
+        v_origin_point,
+        v_destination_point,
         p_departure_time,
         p_seats,
         p_seats,
@@ -853,9 +873,9 @@ v_searcher_gender TEXT;
 v_origin_geog GEOGRAPHY;
 v_dest_geog GEOGRAPHY;
 BEGIN IF v_searcher_id IS NOT NULL THEN
-SELECT gender INTO v_searcher_gender
-FROM public.profiles
-WHERE id = v_searcher_id;
+SELECT p.gender INTO v_searcher_gender
+FROM public.profiles p
+WHERE p.id = v_searcher_id;
 END IF;
 v_origin_geog := ST_SetSRID(
     ST_MakePoint(

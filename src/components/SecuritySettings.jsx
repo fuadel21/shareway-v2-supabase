@@ -27,9 +27,11 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import SubPageHeader from './SubPageHeader';
+import { useTranslation } from 'react-i18next';
 
 // --- Sub-componente para Contactos de Emergencia (Versión Premium) ---
 const EmergencyContactsManager = () => {
+    const { t } = useTranslation();
     const { profile } = useOutletContext();
     const [contacts, setContacts] = useState([]);
     const [newName, setNewName] = useState('');
@@ -53,7 +55,7 @@ const EmergencyContactsManager = () => {
 
     const handleAddContact = async () => {
         if (!newName.trim() || !newPhone.trim()) {
-            toast.error('Nombre y teléfono requeridos.');
+            toast.error(t('common.error'));
             return;
         }
         if (contacts.length >= 5) {
@@ -69,10 +71,10 @@ const EmergencyContactsManager = () => {
             if (error) throw error;
             setNewName('');
             setNewPhone('');
-            toast.success('¡Protección activada!', { description: `${newName} ahora es tu contacto de confianza.` });
+            toast.success(t('security.protection_activated'), { description: t('security.contact_is_guardian', { name: newName }) });
             fetchContacts();
         } catch (error) {
-            toast.error('Error al asegurar el contacto.');
+            toast.error(error.message || t('common.error'));
         } finally {
             setIsLoading(false);
         }
@@ -86,10 +88,10 @@ const EmergencyContactsManager = () => {
                 .eq('id', contactId);
 
             if (error) throw error;
-            toast.success('Contacto retirado.');
+            toast.success(t('security.contact_removed'));
             fetchContacts();
         } catch (error) {
-            toast.error('No se pudo eliminar.');
+            toast.error(t('common.error'));
         }
     };
 
@@ -106,7 +108,7 @@ const EmergencyContactsManager = () => {
                             <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black">
                                 {contact.name.charAt(0).toUpperCase()}
                             </div>
-                            <div>
+                            <div className="text-left">
                                 <p className="font-black text-slate-900 tracking-tight">{contact.name}</p>
                                 <p className="text-xs text-slate-400 font-bold tracking-widest uppercase">{contact.phone}</p>
                             </div>
@@ -125,15 +127,15 @@ const EmergencyContactsManager = () => {
                 {contacts.length === 0 && (
                     <div className="text-center py-10 px-6 bg-slate-100/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
                         <UserPlus className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                        <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">Añade hasta 5 guardianes</p>
+                        <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">{t('security.add_guardians_placeholder')}</p>
                     </div>
                 )}
             </div>
 
-            <div className="pt-6 border-t border-slate-100">
+            <div className="pt-6 border-t border-slate-100 text-left">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Alias / Nombre</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('security.alias_label')}</label>
                         <Input
                             placeholder="Ej. Mi Padre"
                             value={newName}
@@ -142,7 +144,7 @@ const EmergencyContactsManager = () => {
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('security.phone_label')}</label>
                         <Input
                             placeholder="+34 ..."
                             type="tel"
@@ -155,12 +157,12 @@ const EmergencyContactsManager = () => {
                 <Button
                     onClick={handleAddContact}
                     disabled={isLoading || contacts.length >= 5}
-                    className="w-full rounded-2xl h-16 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
+                    className="w-full rounded-2xl h-14 md:h-16 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
                 >
-                    {isLoading ? <Loader2 className="animate-spin" /> : <><Plus className="mr-2 h-5 w-5" /> Vincular Guardián</>}
+                    {isLoading ? <Loader2 className="animate-spin" /> : <><Plus className="mr-2 h-5 w-5" /> {t('security.link_guardian')}</>}
                 </Button>
-                <p className="text-[9px] text-center mt-4 text-slate-400 font-bold uppercase tracking-widest">
-                    {contacts.length}/5 contactos de confianza añadidos
+                <p className="text-[9px] text-center mt-3 md:mt-4 text-slate-400 font-bold uppercase tracking-widest">
+                    {contacts.length}/5 {t('security.guardians_title')}
                 </p>
             </div>
         </div>
@@ -169,6 +171,7 @@ const EmergencyContactsManager = () => {
 
 // --- Sub-componente Toggle Premium ---
 const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorClass }) => {
+    const { t } = useTranslation();
     const { profile, refreshProfile } = useOutletContext();
     const isEnabled = profile?.security_settings?.[settingKey] || false;
 
@@ -181,17 +184,17 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
                 .eq('id', profile.id);
 
             if (error) throw error;
-            toast.success(value ? "Función activada" : "Función desactivada", {
+            toast.success(value ? t('common.success') : t('common.success'), {
                 description: `${title} se ha ${value ? 'habilitado' : 'deshabilitado'}.`
             });
             refreshProfile();
         } catch {
-            toast.error('Error al sincronizar seguridad.');
+            toast.error(t('common.error'));
         }
     }
 
     return (
-        <div className="p-8 bg-white/50 space-y-6">
+        <div className="p-8 bg-white/50 space-y-6 text-left">
             <div className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <Icon className={cn("h-5 w-5 mt-0.5", colorClass)} />
                 <p className="text-xs font-medium text-slate-600 leading-relaxed italic">
@@ -200,9 +203,9 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
             </div>
             <div className="flex items-center justify-between p-6 bg-white rounded-3xl border shadow-sm">
                 <div>
-                    <p className="font-black text-slate-900 tracking-tight">Estado del Servicio</p>
+                    <p className="font-black text-slate-900 tracking-tight">{t('security.service_status')}</p>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {isEnabled ? 'Operativo y Protegiendo' : 'Inactivo / No configurado'}
+                        {isEnabled ? t('security.status_active') : t('security.status_inactive')}
                     </p>
                 </div>
                 <Switch checked={isEnabled} onCheckedChange={handleToggle} className="data-[state=checked]:bg-primary" />
@@ -213,26 +216,26 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
 
 const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick, colorClass }) => (
     <div className={cn(
-        "rounded-[2.5rem] border-none transition-all duration-500 overflow-hidden",
+        "rounded-[2rem] md:rounded-[2.5rem] border-none transition-all duration-500 overflow-hidden",
         isOpen ? "bg-white shadow-[0_30px_60px_rgba(0,0,0,0.1)] ring-2 ring-primary/5" : "bg-white/60 hover:bg-white hover:shadow-xl shadow-sm"
     )}>
         <button
             onClick={onClick}
-            className="w-full text-left p-8 flex items-center justify-between group active:scale-[0.98] transition-transform"
+            className="w-full text-left p-6 md:p-8 flex items-center justify-between group active:scale-[0.98] transition-transform"
         >
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 md:gap-6">
                 <div className={cn(
-                    "p-4 rounded-[1.5rem] transition-all duration-500",
+                    "p-3 md:p-4 rounded-2xl md:rounded-[1.5rem] transition-all duration-500",
                     isOpen ? "bg-primary text-white scale-110 shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
                 )}>
-                    <Icon className="h-7 w-7" />
+                    <Icon className="size-6 md:size-7" />
                 </div>
-                <div>
+                <div className="text-left">
                     <h3 className={cn(
-                        "font-black text-xl tracking-tighter transition-colors",
+                        "font-black text-lg md:text-xl tracking-tighter transition-colors",
                         isOpen ? "text-primary" : "text-slate-800"
                     )}>{title}</h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{description}</p>
+                    <p className="text-[8px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">{description}</p>
                 </div>
             </div>
             <div className={cn(
@@ -251,6 +254,7 @@ const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick
 );
 
 function SecuritySettings() {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { profile } = useOutletContext();
     const [openItem, setOpenItem] = useState('emergencyContacts');
@@ -263,40 +267,40 @@ function SecuritySettings() {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-40">
-            <SubPageHeader title="Centro de Seguridad" />
+            <SubPageHeader title={t('security.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10 text-left">
 
                 {/* HERO: Safety Status */}
-                <div className="bg-navy rounded-[3.5rem] p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
+                <div className="bg-navy rounded-[2.5rem] md:rounded-[3.5rem] p-8 md:p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
                     <div className="absolute top-0 right-0 p-10 opacity-10 blur-xl group-hover:blur-md transition-all">
-                        <ShieldCheck className="h-32 w-32 text-white" />
+                        <ShieldCheck className="h-24 w-24 md:h-32 md:w-32 text-white" />
                     </div>
                     <div className="relative z-10 space-y-6">
                         <div className="flex items-center gap-3">
                             <div className={cn(
-                                "h-3 w-3 rounded-full animate-pulse",
+                                "h-2.5 w-2.5 md:h-3 md:w-3 rounded-full animate-pulse",
                                 isFullSafe ? "bg-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.5)]" : "bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.5)]"
                             )} />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Estado de Protección</span>
+                            <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{t('security.protection_status')}</span>
                         </div>
 
                         <div className="space-y-1">
-                            <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase leading-none">
-                                {isFullSafe ? "Nivel de Máxima Confianza" : "Seguridad Intermedia"}
+                            <h2 className="text-2xl md:text-4xl font-black text-white tracking-tighter italic uppercase leading-none">
+                                {isFullSafe ? t('security.max_trust_level') : t('security.mid_trust_level')}
                             </h2>
-                            <p className="text-white/40 font-bold text-xs uppercase tracking-widest">
-                                {isFullSafe ? "Tu perfil está blindado para este viaje." : "Añade guardianes para mayor tranquilidad."}
+                            <p className="text-white/40 font-bold text-[10px] md:text-xs uppercase tracking-widest">
+                                {isFullSafe ? t('security.max_trust_desc') : t('security.mid_trust_desc')}
                             </p>
                         </div>
 
-                        <div className="p-5 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 flex items-center justify-between">
+                        <div className="p-4 md:p-5 bg-white/5 backdrop-blur-md rounded-[1.5rem] md:rounded-3xl border border-white/10 flex items-center justify-between">
                             <div className="flex gap-2">
                                 <Shield className="h-4 w-4 text-primary" />
-                                <span className="text-[10px] font-black text-white/60 uppercase">Blindaje Activo</span>
+                                <span className="text-[9px] md:text-[10px] font-black text-white/60 uppercase">{t('security.active_shield')}</span>
                             </div>
-                            <Button variant="ghost" className="h-8 px-4 text-[10px] font-black bg-white/10 text-white rounded-full hover:bg-white/20">
-                                AUDITORÍA
+                            <Button variant="ghost" className="h-7 md:h-8 px-3 md:px-4 text-[8px] md:text-[10px] font-black bg-white/10 text-white rounded-full hover:bg-white/20 whitespace-nowrap">
+                                {t('security.audit_button')}
                             </Button>
                         </div>
                     </div>
@@ -307,8 +311,8 @@ function SecuritySettings() {
                     <FeatureCard
                         id="emergencyContacts"
                         icon={HeartHandshake}
-                        title="Tus Guardianes"
-                        description="Contactos de emergencia 24/7"
+                        title={t('security.guardians_title')}
+                        description={t('security.guardians_desc')}
                         isOpen={openItem === 'emergencyContacts'}
                         onClick={() => handleItemClick('emergencyContacts')}
                     >
@@ -318,16 +322,16 @@ function SecuritySettings() {
                     <FeatureCard
                         id="shareTrip"
                         icon={Navigation}
-                        title="Seguimiento GPS"
-                        description="Location sharing en tiempo real"
+                        title={t('security.gps_tracking_title')}
+                        description={t('security.gps_tracking_desc')}
                         isOpen={openItem === 'shareTrip'}
                         onClick={() => handleItemClick('shareTrip')}
                         colorClass="text-blue-500"
                     >
                         <SecurityToggleItem
                             settingKey="share_trip_enabled"
-                            title="Seguimiento GPS"
-                            description="Al activar esta función, tus guardianes recibirán un enlace seguro con tu ubicación GPS exacta durante cada viaje que realices."
+                            title={t('security.gps_tracking_title')}
+                            description={t('security.gps_tracking_info')}
                             icon={BellRing}
                             colorClass="text-blue-500"
                         />
@@ -336,16 +340,16 @@ function SecuritySettings() {
                     <FeatureCard
                         id="audioRecording"
                         icon={Mic}
-                        title="Caja Negra Audio"
-                        description="Pruebas digitales de seguridad"
+                        title={t('security.audio_blackbox_title')}
+                        description={t('security.audio_blackbox_desc')}
                         isOpen={openItem === 'audioRecording'}
                         onClick={() => handleItemClick('audioRecording')}
                         colorClass="text-purple-500"
                     >
                         <SecurityToggleItem
                             settingKey="audio_recording_enabled"
-                            title="Caja Negra Audio"
-                            description="Habilita el permiso para grabar fragmentos de audio encriptados que solo se enviarán al equipo de soporte en caso de emergencia reportada."
+                            title={t('security.audio_blackbox_title')}
+                            description={t('security.audio_blackbox_info')}
                             icon={Lock}
                             colorClass="text-purple-500"
                         />
@@ -354,30 +358,30 @@ function SecuritySettings() {
                     <FeatureCard
                         id="pinVerification"
                         icon={Key}
-                        title="Verificación PIN"
-                        description="Seguridad absoluta al abordar"
+                        title={t('security.pin_verification_title')}
+                        description={t('security.pin_verification_desc')}
                         isOpen={openItem === 'pinVerification'}
                         onClick={() => handleItemClick('pinVerification')}
                         colorClass="text-emerald-500"
                     >
                         <SecurityToggleItem
                             settingKey="pin_verification_enabled"
-                            title="Verificación PIN"
-                            description="Tanto conductores como pasajeros deberán confirmar un código único antes de que el viaje comience formalmente en la plataforma."
+                            title={t('security.pin_verification_title')}
+                            description={t('security.pin_verification_info')}
                             icon={ShieldCheck}
                             colorClass="text-emerald-500"
                         />
                     </FeatureCard>
                 </div>
 
-                <div className="p-8 bg-blue-50/50 rounded-[3rem] border border-blue-100 flex items-start gap-5">
+                <div className="p-8 bg-blue-50/50 rounded-[3rem] border border-blue-100 flex items-start gap-5 text-left">
                     <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
                         <AlertTriangle className="h-6 w-6" />
                     </div>
                     <div className="space-y-2">
-                        <h4 className="font-black text-slate-800 tracking-tight">Botón de Pánico</h4>
+                        <h4 className="font-black text-slate-800 tracking-tight">{t('security.panic_button_title')}</h4>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                            Durante un viaje activo, verás un icono de escudo en el mapa. Al pulsarlo 3 veces, ShareWay llamará automáticamente al 112 y notificará a tus guardianes.
+                            {t('security.panic_button_info')}
                         </p>
                     </div>
                 </div>

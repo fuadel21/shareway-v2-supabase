@@ -4,16 +4,24 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Label } from '@/components/ui/label.jsx';
-import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck, Languages } from 'lucide-react';
 import '../App.css';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from 'react-i18next';
 
 function Register() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'es' ? 'en' : 'es';
+    i18n.changeLanguage(newLang);
+    toast.success(newLang === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
+  };
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -21,12 +29,12 @@ function Register() {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) { setError('Las contraseñas no coinciden'); return; }
-    if (formData.password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return; }
+    if (formData.password !== formData.confirmPassword) { setError(t('register.errors.mismatch')); return; }
+    if (formData.password.length < 6) { setError(t('register.errors.too_short')); return; }
 
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
@@ -37,22 +45,22 @@ function Register() {
         }
       });
 
-      if (error) throw error;
+      if (signUpError) throw signUpError;
 
       if (data.user && !data.session) {
-        toast.success('¡Cuenta creada!', {
-          description: 'Te hemos enviado un correo para verificar tu cuenta.',
+        toast.success(t('register.success_title'), {
+          description: t('register.success_desc'),
           onDismiss: () => navigate('/login'),
           duration: 5000
         });
       } else {
-        toast.success('¡Cuenta creada con éxito!');
+        toast.success(t('register.success_title'));
         navigate('/');
       }
 
     } catch (err) {
       console.error("[REGISTER] Error:", err);
-      setError(err.message || 'Error al registrar usuario.');
+      setError(err.message || t('register.errors.generic'));
     } finally {
       setIsSubmitting(false);
     }
@@ -60,13 +68,26 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4 py-20">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-accent/20 rounded-full blur-[120px] animate-pulse delay-700" />
+      
+      {/* Botón Flotante de Idioma */}
+      <div className="absolute top-6 right-6 z-50">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={toggleLanguage}
+          className="rounded-full h-12 w-12 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all"
+        >
+          <Languages size={20} />
+        </Button>
       </div>
 
-      <Card className="w-full max-w-lg bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/20 rounded-full blur-[120px] animate-pulse delay-700" />
+      </div>
+
+      <Card className="w-full max-w-lg bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700 text-left">
         <CardHeader className="space-y-6 text-center pb-10">
           <div className="flex justify-center">
             <div className="bg-primary h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/30 relative group overflow-hidden">
@@ -75,11 +96,11 @@ function Register() {
             </div>
           </div>
           <div className="space-y-2">
-            <CardTitle className="text-4xl font-black text-slate-900 tracking-tighter uppercase">
-              Únete a ShareWay
+            <CardTitle className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+              {t('register.title')}
             </CardTitle>
             <CardDescription className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[10px]">
-              Empieza a compartir y ahorrar hoy mismo.
+              {t('register.subtitle')}
             </CardDescription>
           </div>
         </CardHeader>
@@ -94,15 +115,15 @@ function Register() {
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Nombre Completo</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.name_label')}</Label>
                 <div className="relative group">
                   <User className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                  <Input name="name" value={formData.name} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="Ej: Juan Pérez" />
+                  <Input name="name" value={formData.name} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="Juan Pérez" />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Correo Electrónico</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.email_label')}</Label>
                 <div className="relative group">
                   <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                   <Input name="email" type="email" value={formData.email} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="hola@ejemplo.com" />
@@ -110,7 +131,7 @@ function Register() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Teléfono Movil</Label>
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.phone_label')}</Label>
                 <div className="relative group">
                   <Phone className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                   <Input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="+34 600 000 000" />
@@ -119,14 +140,14 @@ function Register() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Contraseña</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.password_label')}</Label>
                   <div className="relative group">
                     <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                     <Input name="password" type="password" value={formData.password} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Repetir</Label>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.confirm_password_label')}</Label>
                   <div className="relative group">
                     <ShieldCheck className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
                     <Input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
@@ -143,14 +164,14 @@ function Register() {
               className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : (
-                <>Crear Mi Cuenta <ArrowRight className="ml-3 h-4 w-4" /></>
+                <>{t('register.register_button')} <ArrowRight className="ml-3 h-4 w-4" /></>
               )}
             </Button>
 
             <div className="text-[11px] font-bold text-center text-slate-400">
-              ¿Ya tienes cuenta?{' '}
+              {t('register.already_have_account')}{' '}
               <Link to="/login" className="text-primary hover:underline transition-all ml-1">
-                Entrar ahora
+                {t('register.login_link')}
               </Link>
             </div>
           </CardFooter>

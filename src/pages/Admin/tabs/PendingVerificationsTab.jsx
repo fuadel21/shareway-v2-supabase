@@ -18,8 +18,8 @@ const PendingVerificationsTab = () => {
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')
-                .eq('verification->>status', 'pending')
-                .order('created_at', { ascending: false });
+                .filter('verification->>status', 'eq', 'pending')
+                .order('id', { ascending: false }); // Usar ID como fallback de orden mientras se crea created_at
 
             if (error) throw error;
             setPendingUsers(data || []);

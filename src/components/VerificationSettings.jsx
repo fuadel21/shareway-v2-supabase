@@ -25,13 +25,15 @@ import { toast } from 'sonner';
 import PhoneVerificationDialog from './PhoneVerificationDialog';
 import SubPageHeader from './SubPageHeader';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const VerificationStep = ({ icon: Icon, title, description, status, actionText, onClick, isLoading, isCompleted, isDisabled, index }) => {
+    const { t } = useTranslation();
     const isPending = status === 'pending' || status === 'processing';
 
     let statusText = actionText;
-    if (isCompleted) statusText = 'Completado';
-    else if (isPending) statusText = 'En Revisión';
+    if (isCompleted) statusText = t('verification.status_completed');
+    else if (isPending) statusText = t('verification.status_pending');
 
     return (
         <div
@@ -48,7 +50,7 @@ const VerificationStep = ({ icon: Icon, title, description, status, actionText, 
                 {isCompleted ? <BadgeCheck className="h-8 w-8" /> : <Icon className="h-8 w-8" />}
             </div>
 
-            <div className="flex-1 space-y-1">
+            <div className="flex-1 space-y-1 text-left">
                 <div className="flex items-center gap-2">
                     <p className="text-xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">{title}</p>
                     {isCompleted && <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />}
@@ -68,10 +70,9 @@ const VerificationStep = ({ icon: Icon, title, description, status, actionText, 
             >
                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {isCompleted ? <CheckCircle2 className="h-4 w-4 mr-2" /> : null}
-                {isCompleted ? 'LISTO' : statusText}
+                {isCompleted ? t('verification.action_ready') : statusText}
             </Button>
 
-            {/* Indicador visual de progreso lateral */}
             <div className={cn(
                 "absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1/2 rounded-full transition-all duration-700",
                 isCompleted ? "bg-emerald-500 opacity-100" : "bg-slate-100 opacity-0"
@@ -81,6 +82,7 @@ const VerificationStep = ({ icon: Icon, title, description, status, actionText, 
 };
 
 function VerificationSettings() {
+    const { t } = useTranslation();
     const { profile, user: currentUser, refreshProfile } = useOutletContext();
     const navigate = useNavigate();
     const [isProcessing, setIsProcessing] = useState(null);
@@ -88,9 +90,9 @@ function VerificationSettings() {
 
     const handlePhoneVerification = async () => {
         if (!profile?.phone) {
-            return toast.warning("Falta teléfono", {
-                description: "Necesitas añadir tu número en 'Editar Perfil'.",
-                action: { label: "Ir", onClick: () => navigate('/edit-profile') },
+            return toast.warning(t('verification.phone_missing'), {
+                description: t('verification.phone_missing_desc'),
+                action: { label: t('common.save'), onClick: () => navigate('/edit-profile') },
             });
         }
 
@@ -101,9 +103,9 @@ function VerificationSettings() {
             });
             if (error) throw error;
             setShowPhoneDialog(true);
-            toast.info("Código enviado", { description: "Revisa tus mensajes SMS." });
+            toast.info(t('verification.code_sent'), { description: t('verification.code_sent_desc') });
         } catch (error) {
-            toast.error("Error SMS", { description: error.message });
+            toast.error(t('common.error'), { description: error.message });
         } finally {
             setIsProcessing(null);
         }
@@ -115,9 +117,9 @@ function VerificationSettings() {
         try {
             const { error } = await supabase.auth.resend({ type: 'signup', email: currentUser.email });
             if (error) throw error;
-            toast.success("Email enviado", { description: "Confirma tu cuenta en el buzón." });
+            toast.success(t('verification.email_sent'), { description: t('verification.email_sent_desc') });
         } catch (error) {
-            toast.error("Error email", { description: error.message });
+            toast.error(t('common.error'), { description: error.message });
         } finally {
             setIsProcessing(null);
         }
@@ -127,45 +129,47 @@ function VerificationSettings() {
         {
             key: 'email',
             icon: Mail,
-            title: "Verificación Email",
-            description: "Asegura el canal oficial de comunicación.",
+            title: t('verification.email_title'),
+            description: t('verification.email_desc'),
             isCompleted: !!currentUser?.email_confirmed_at,
             action: handleResendEmail
         },
         {
             key: 'phone',
             icon: Phone,
-            title: "Vinculación Móvil",
-            description: "Imprescindible para recibir avisos urgentes.",
+            title: t('verification.phone_title'),
+            description: t('verification.phone_desc'),
             isCompleted: !!profile?.is_phone_verified,
             action: handlePhoneVerification
         },
         {
             key: 'identity',
             icon: Fingerprint,
-            title: "Identidad Real",
-            description: "Certifica tu perfil con documento oficial.",
-            isCompleted: ['verified','approved'].includes(profile?.verification?.status),
+            title: t('verification.identity_title'),
+            description: t('verification.identity_desc'),
+            isCompleted: ['verified', 'approved'].includes(profile?.verification?.status),
             status: profile?.verification?.status,
             action: () => navigate('/verification-center')
         }
-    ], [currentUser, profile]);
+    ], [currentUser, profile, t]);
 
     const completedSteps = steps.filter(s => s.isCompleted).length;
     const progress = (completedSteps / steps.length) * 100;
 
     return (
         <div className="min-h-screen bg-slate-50 pb-40">
-            <SubPageHeader title="Confianza y Verificación" />
+            <SubPageHeader title={t('verification.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12 text-left">
 
                 {/* GAMIFIED PROGRESS CARD */}
                 <Card className="rounded-[4rem] border-none shadow-2xl bg-white overflow-hidden p-10 space-y-8">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Nivel de Confianza</h2>
-                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">{completedSteps === 3 ? "PERFIL DE ÉLITE" : `Nivel ${completedSteps + 1} de 4`}</p>
+                            <h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('verification.trust_level')}</h2>
+                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
+                                {completedSteps === 3 ? t('verification.elite_profile') : t('verification.level_of', { current: completedSteps + 1 })}
+                            </p>
                         </div>
                         <div className="h-16 w-16 bg-navy rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3">
                             <Trophy className="h-8 w-8 text-primary" />
@@ -174,7 +178,7 @@ function VerificationSettings() {
 
                     <div className="space-y-4">
                         <div className="flex items-center justify-between px-2">
-                            <div className="flex gap-4">
+                            <div className="flex gap-4 text-left">
                                 <div className="flex -space-x-2">
                                     {[1, 2, 3].map((s) => (
                                         <div key={s} className={cn(
@@ -183,7 +187,7 @@ function VerificationSettings() {
                                         )} />
                                     ))}
                                 </div>
-                                <span className="text-[10px] font-black uppercase text-slate-400">Objetivo: 100% Verificado</span>
+                                <span className="text-[10px] font-black uppercase text-slate-400">{t('verification.goal')}</span>
                             </div>
                             <span className="text-xl font-black text-slate-900 italic uppercase">{Math.round(progress)}%</span>
                         </div>
@@ -198,7 +202,7 @@ function VerificationSettings() {
                     <div className="p-6 bg-primary/5 rounded-3xl border border-primary/10 flex items-center gap-4">
                         <Zap className="h-6 w-6 text-primary flex-shrink-0" />
                         <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
-                            Los usuarios verificados completan sus viajes un <span className="text-primary">40% más rápido</span> y generan mayor confianza en la comunidad.
+                            {t('verification.benefit_info')}
                         </p>
                     </div>
                 </Card>
@@ -214,7 +218,7 @@ function VerificationSettings() {
                             description={step.description}
                             isCompleted={step.isCompleted}
                             status={step.status}
-                            actionText={step.key === 'identity' ? 'SUBIR ID' : step.key === 'phone' ? 'SMS' : 'ENVIAR'}
+                            actionText={step.key === 'identity' ? t('verification.action_upload') : step.key === 'phone' ? t('verification.action_sms') : t('verification.action_send')}
                             onClick={step.action}
                             isLoading={isProcessing === step.key}
                         />
@@ -222,7 +226,7 @@ function VerificationSettings() {
                 </div>
 
                 {/* PREMIUM CTA / INFO */}
-                <div className="bg-navy p-12 rounded-[4rem] relative overflow-hidden group">
+                <div className="bg-navy p-12 rounded-[4rem] relative overflow-hidden group text-left">
                     <div className="absolute -bottom-10 -right-10 opacity-5 grayscale group-hover:grayscale-0 transition-all duration-1000 group-hover:rotate-12">
                         <ShieldCheck className="size-64 text-primary" />
                     </div>
@@ -233,14 +237,14 @@ function VerificationSettings() {
                         </div>
 
                         <div className="space-y-4">
-                            <h4 className="text-3xl font-black text-white tracking-tighter italic uppercase leading-tight">Privilegios de Élite</h4>
+                            <h4 className="text-3xl font-black text-white tracking-tighter italic uppercase leading-tight">{t('verification.privileges_title')}</h4>
                             <p className="text-xs font-medium text-white/50 leading-relaxed">
-                                Al alcanzar el 100%, desbloquearás el badge de <span className="text-white">"Viajero de Confianza"</span>, comisiones reducidas en tus cobros y prioridad en el soporte técnico 24/7.
+                                {t('verification.privileges_desc')}
                             </p>
                         </div>
 
                         <Button variant="outline" className="h-16 px-10 rounded-2xl bg-white/5 border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10">
-                            Más información
+                            {t('verification.more_info')}
                         </Button>
                     </div>
                 </div>

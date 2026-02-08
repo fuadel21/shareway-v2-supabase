@@ -9,6 +9,7 @@ import * as rpc from '@/lib/supabaseRPC';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button.jsx';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, ShieldCheck, AlertCircle, Lock, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +43,7 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
             
             if (paymentIntent?.status === 'succeeded') {
                 const { success } = await rpc.safeCall(
-                    supabase.rpc('credit_wallet_on_success', { 
+                    () => supabase.rpc('credit_wallet_on_success', { 
                         p_payment_intent_id: paymentIntent.id,
                         p_amount: amount 
                     }),
@@ -63,8 +64,10 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in">
-            <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-inner min-h-[280px]">
-                <PaymentElement options={{ layout: 'accordion' }} />
+            <div className="p-1 bg-slate-50 rounded-3xl border border-slate-100 shadow-inner overflow-hidden">
+                <ScrollArea className="h-[320px] px-4 py-2">
+                    <PaymentElement options={{ layout: 'accordion' }} />
+                </ScrollArea>
             </div>
             {errorMessage && (
                 <div className="p-4 bg-red-50 text-red-600 text-[11px] font-bold rounded-2xl border border-red-100 flex items-start gap-2">
@@ -115,7 +118,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
-            <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white outline-none">
+            <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white outline-none max-h-[90vh]">
                 <DialogHeader className="space-y-2">
                     <div className="flex items-center gap-3">
                         <div className="size-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
@@ -149,7 +152,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                         </Button>
                     </div>
                 ) : (
-                    <div className="pt-4 min-h-[350px]">
+                    <div className="pt-4 overflow-hidden">
                         {clientSecret && (
                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
                                 <CheckoutForm amount={Number(amount)} onSuccessfulPayment={() => { onSuccess(); resetAndClose(); }} onClose={resetAndClose} />

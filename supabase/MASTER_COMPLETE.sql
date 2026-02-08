@@ -198,7 +198,7 @@ SELECT price,
     v_participant_ids
 FROM public.rides
 WHERE id = p_ride_id
-    AND status = 'scheduled' FOR
+    AND status IN ('scheduled', 'active', 'in_progress') FOR
 UPDATE;
 IF v_ride_price IS NULL THEN RAISE EXCEPTION 'Viaje no disponible';
 END IF;
@@ -684,7 +684,7 @@ SELECT driver_id,
 FROM public.rides
 WHERE id = p_ride_id FOR
 UPDATE;
-IF v_ride_status != 'scheduled' THEN RAISE EXCEPTION 'El viaje ya ha iniciado o finalizado.';
+IF v_ride_status NOT IN ('scheduled', 'active', 'in_progress') THEN RAISE EXCEPTION 'El viaje ha finalizado o ha sido cancelado.';
 END IF;
 SELECT (p->>'booked_price')::NUMERIC,
     (p->>'booked_at')::TIMESTAMPTZ INTO v_booked_price,

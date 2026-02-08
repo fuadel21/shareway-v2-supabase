@@ -113,6 +113,8 @@ INSERT INTO public.rides (
         is_women_only,
         participant_ids,
         approval_mode,
+        waypoints,
+        preferences,
         status
     )
 VALUES (
@@ -131,6 +133,8 @@ VALUES (
         p_is_women_only,
         ARRAY [v_driver_id],
         p_approval_mode,
+        p_waypoints,
+        p_preferences,
         'scheduled'
     )
 RETURNING id INTO v_ride_id;

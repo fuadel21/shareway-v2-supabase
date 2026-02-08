@@ -12,7 +12,7 @@ export const useNotifications = (user) => {
         try {
             const messaging = getMessaging(app);
             const unsubscribe = onMessage(messaging, (payload) => {
-                console.log('Notificación recibida en primer plano:', payload);
+
                 toast.info(payload.notification.title, {
                     description: payload.notification.body,
                     duration: 8000

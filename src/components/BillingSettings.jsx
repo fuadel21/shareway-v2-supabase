@@ -16,7 +16,7 @@ import { Loader2 } from 'lucide-react';
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 const creditPackages = [
-    { credits: 5, price: 5.00, id: 'price_1PFl0SRxcm33Sg25w6a9aUtq' }, 
+    { credits: 5, price: 5.00, id: 'price_1PFl0SRxcm33Sg25w6a9aUtq' },
     { credits: 10, price: 10.00, id: 'price_1PFl0jRxcm33Sg255VzD22M0' },
     { credits: 25, price: 25.00, id: 'price_1PFl0wRxcm33Sg25bX1yVfKx' },
     { credits: 50, price: 50.00, id: 'price_1PFl1ERxcm33Sg258Jc8E9E2' },
@@ -99,8 +99,8 @@ const BillingSettings = () => {
     };
 
     const handleSuccessfulPayment = () => {
-        toast.success("¡Compra completada!", { 
-            description: `Se han añadido ${selectedPackage?.credits} créditos a tu cuenta.` 
+        toast.success("¡Compra completada!", {
+            description: `Se han añadido ${selectedPackage?.credits} créditos a tu cuenta.`
         });
         setPaymentClientSecret(null);
         setSelectedPackage(null);
@@ -112,28 +112,28 @@ const BillingSettings = () => {
         <>
             <div className="max-w-4xl mx-auto p-4">
                 <SubPageHeader title="Facturación y Cartera" />
-                
+
                 <Card className="mt-6">
                     <CardHeader>
                         <CardTitle>Configuración de Pagos</CardTitle>
                         <CardDescription>Gestiona tu cuenta de Stripe para recibir pagos de tus pasajeros.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <Button onClick={handleCreateStripeAccountLink} disabled={isCreatingLink}>
+                        <Button onClick={handleCreateStripeAccountLink} disabled={isCreatingLink}>
                             {isCreatingLink ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {profile?.stripe_customer_id ? 'Gestionar cuenta de Stripe' : 'Configurar cuenta de Stripe'}
+                            {profile?.stripe_account_id ? 'Gestionar cuenta de Stripe' : 'Configurar cuenta de Stripe'}
                         </Button>
                     </CardContent>
                 </Card>
 
-                {profile?.stripe_customer_id && (
+                {profile?.stripe_account_id && (
                     <Card className="mt-6">
                         <CardHeader>
                             <CardTitle>Solicitar Pago</CardTitle>
                             <CardDescription>Retira tu saldo disponible a tu cuenta bancaria.</CardDescription>
                         </CardHeader>
                         <CardContent className="flex items-center gap-4">
-                            <Input type="number" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} placeholder="Cantidad en EUR" className="max-w-xs"/>
+                            <Input type="number" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} placeholder="Cantidad en EUR" className="max-w-xs" />
                             <Button onClick={handleRequestPayout} disabled={isRequestingPayout || !payoutAmount}>
                                 {isRequestingPayout ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 Solicitar
@@ -150,14 +150,14 @@ const BillingSettings = () => {
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {creditPackages.map(pkg => (
-                                <Button 
+                                <Button
                                     key={pkg.credits}
                                     variant="outline"
                                     className="h-auto p-4 flex flex-col items-center justify-center gap-2 relative"
                                     onClick={() => handlePackageSelect(pkg)}
                                     disabled={isProcessing}
                                 >
-                                    {isProcessing && selectedPackage?.id === pkg.id && <Loader2 className="absolute h-6 w-6 animate-spin"/>}
+                                    {isProcessing && selectedPackage?.id === pkg.id && <Loader2 className="absolute h-6 w-6 animate-spin" />}
                                     <span className={`text-xl font-bold ${isProcessing && selectedPackage?.id === pkg.id ? 'opacity-20' : ''}`}>{pkg.credits} Créditos</span>
                                     <span className={`text-lg ${isProcessing && selectedPackage?.id === pkg.id ? 'opacity-20' : ''}`}>{pkg.price.toFixed(2)}€</span>
                                 </Button>
@@ -168,17 +168,17 @@ const BillingSettings = () => {
             </div>
 
             <Dialog open={!!paymentClientSecret} onOpenChange={() => setPaymentClientSecret(null)}>
-                 <DialogContent>
-                     <DialogHeader>
-                         <DialogTitle>Comprar {selectedPackage?.credits} Créditos</DialogTitle>
-                         <DialogDescription>Total a pagar: {selectedPackage?.price.toFixed(2)}€</DialogDescription>
-                     </DialogHeader>
-                     {paymentClientSecret && (
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Comprar {selectedPackage?.credits} Créditos</DialogTitle>
+                        <DialogDescription>Total a pagar: {selectedPackage?.price.toFixed(2)}€</DialogDescription>
+                    </DialogHeader>
+                    {paymentClientSecret && (
                         <Elements stripe={stripePromise} options={stripeOptions}>
                             <CheckoutForm onSuccessfulPayment={handleSuccessfulPayment} />
                         </Elements>
-                     )}
-                 </DialogContent>
+                    )}
+                </DialogContent>
             </Dialog>
         </>
     );

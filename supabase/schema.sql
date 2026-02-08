@@ -87,6 +87,8 @@ CREATE TABLE IF NOT EXISTS public.rides (
     is_exclusive_community BOOLEAN DEFAULT FALSE,
     allowed_communities TEXT [] DEFAULT '{}',
     approval_mode TEXT DEFAULT 'automatic' CHECK (approval_mode IN ('automatic', 'manual')),
+    waypoints JSONB DEFAULT '[]'::jsonb,
+    preferences JSONB DEFAULT '{}'::jsonb,
     participant_ids UUID [] DEFAULT '{}',
     initial_price NUMERIC(10, 2) DEFAULT 0.00,
     modification_window_start TIMESTAMPTZ DEFAULT NOW(),

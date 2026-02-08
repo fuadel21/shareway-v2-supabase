@@ -29,8 +29,16 @@ const getInitials = (name) => {
     return name.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase();
 };
 
+const QUICK_MESSAGES = [
+    "¡Estoy llegando!",
+    "Te espero allí",
+    "Voy de camino",
+    "Hola, ¿cómo vas?",
+    "Aparcado, te espero"
+];
+
 function RideChat() {
-    const { rideId } = useParams();
+    const { rideId, chatId } = useParams();
     const navigate = useNavigate();
     const { profile: currentUserProfile, user: currentUser } = useOutletContext();
     const [messages, setMessages] = useState([]);
@@ -51,19 +59,33 @@ function RideChat() {
 
         const initChat = async () => {
             try {
+                let activeChatId = chatId;
+
+                // Si no hay chatId en la URL, crear o recuperar el chat grupal
+                if (!chatId) {
+                    const { data: chatInit, error: initError } = await supabase.rpc('get_or_create_ride_chat', { p_ride_id: rideId });
+
+                    if (initError || !chatInit?.chatId) {
+                        throw new Error(initError?.message || "No se pudo inicializar el chat del viaje.");
+                    }
+                    activeChatId = chatInit.chatId;
+                }
+
+                // Cargar datos del viaje básicos para el header
                 const { data: rideData, error: rideError } = await supabase
                     .from('rides')
-                    .select('*, chat:chats!inner(id)')
+                    .select('*')
                     .eq('id', rideId)
                     .single();
 
-                if (rideError || !rideData?.chat) throw rideError || new Error("Chat no disponible.");
-                if (isMounted.current) setRide(rideData);
+                if (rideError) throw rideError;
+                if (isMounted.current) setRide({ ...rideData, chat: { id: activeChatId } });
 
+                // Cargar mensajes
                 const { data: msgs, error: msgsError } = await supabase
                     .from('messages')
                     .select('*, sender:profiles!sender_id(display_name, photo_url)')
-                    .eq('chat_id', rideData.chat.id)
+                    .eq('chat_id', activeChatId)
                     .order('created_at', { ascending: true });
 
                 if (msgsError) throw msgsError;
@@ -81,25 +103,48 @@ function RideChat() {
 
         initChat();
 
-        const channelId = `ride_chat_${rideId}_${Date.now()}`;
+        const channelId = `ride_chat_${rideId}`;
         const channel = supabase.channel(channelId)
             .on('postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages' },
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: ride?.chat?.id ? `chat_id=eq.${ride.chat.id}` : undefined
+                },
                 async (payload) => {
-                    if (isMounted.current && ride?.chat && payload.new.chat_id === ride.chat.id) {
-                        try {
-                            const { data: sender } = await supabase.from('profiles').select('display_name, photo_url').eq('id', payload.new.sender_id).single();
-                            if (isMounted.current) {
-                                setMessages(prev => {
-                                    if (prev.some(m => m.id === payload.new.id)) return prev;
-                                    return [...prev, { ...payload.new, sender }];
-                                });
-                            }
-                        } catch (e) { console.error(e); }
+                    if (!isMounted.current) return;
+
+                    try {
+                        // Evitar duplicados locales
+                        setMessages(prev => {
+                            if (prev.some(m => m.id === payload.new.id)) return prev;
+
+                            // Cargar perfil del remitente si no viene en el payload (en insert simple no viene)
+                            const fetchSender = async () => {
+                                const { data: sender } = await supabase.from('profiles')
+                                    .select('display_name, photo_url')
+                                    .eq('id', payload.new.sender_id)
+                                    .single();
+
+                                setMessages(current => current.map(msg =>
+                                    msg.id === payload.new.id ? { ...msg, sender } : msg
+                                ));
+                            };
+                            fetchSender();
+
+                            return [...prev, payload.new];
+                        });
+                    } catch (e) {
+                        console.error("🛡️ Real-time processing error:", e);
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+
+                }
+            });
 
         return () => {
             supabase.removeChannel(channel);
@@ -124,11 +169,13 @@ function RideChat() {
         }
 
         try {
-            await sendMessage(chat_id, currentUser.id, textToSend);
+            const result = await sendMessage(chat_id, currentUser.id, textToSend);
+            if (!result) throw new Error("No se recibió respuesta del servidor");
         } catch (error) {
             console.error("🛡️ stability: RideChat send failed:", error);
             if (isMounted.current) {
-                toast.error("Error de envío");
+                const errorMsg = error.message || "Error desconocido";
+                toast.error(`Error de envío: ${errorMsg}`);
                 setNewMessage(textToSend);
             }
         } finally {
@@ -163,8 +210,8 @@ function RideChat() {
     }
 
     return (
-        <div className="h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
-            <header className="bg-white/70 backdrop-blur-3xl border-b border-slate-100 p-4 sticky top-0 z-50 flex items-center gap-4">
+        <div className="h-full flex flex-col bg-[#F8FAFC] overflow-hidden">
+            <header className="bg-white border-b border-slate-100 p-4 shrink-0 flex items-center gap-4">
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-12 w-12 rounded-2xl bg-white shadow-sm border border-slate-100 hover:scale-105">
                     <ChevronLeft className="size-6 text-slate-900" />
                 </Button>
@@ -205,10 +252,13 @@ function RideChat() {
                 </div>
 
                 <div className="flex flex-col gap-6">
-                    {(messages || []).map((msg, idx) => {
-                        const isMe = msg.sender_id === currentUser.id;
+                    {messages.map((msg, idx) => {
+                        const messageSenderId = String(msg.sender_id);
+                        const currentUserId = String(currentUser?.id);
+                        const isMe = messageSenderId === currentUserId;
+
                         const prevMsg = messages[idx - 1];
-                        const showAvatar = !prevMsg || prevMsg.sender_id !== msg.sender_id;
+                        const showAvatar = !prevMsg || String(prevMsg.sender_id) !== messageSenderId;
                         const msgDate = new Date(msg.created_at);
                         const safeTime = isValid(msgDate) ? format(msgDate, "HH:mm") : "--:--";
 
@@ -218,7 +268,7 @@ function RideChat() {
                                 isMe ? "flex-row-reverse" : "flex-row"
                             )}>
                                 {!isMe && (
-                                    <div className="w-8 shrink-0">
+                                    <div className="w-8 shrink-0 mb-6">
                                         {showAvatar ? (
                                             <Avatar className="h-8 w-8 border-2 border-white shadow-md">
                                                 <AvatarImage src={msg.sender?.photo_url} />
@@ -258,8 +308,25 @@ function RideChat() {
                 </div>
             </main>
 
-            <footer className="bg-white/80 backdrop-blur-2xl p-6 border-t border-slate-100 pb-10">
-                <form onSubmit={handleSendMessage} className="flex items-center gap-4 max-w-xl mx-auto">
+            <footer className="bg-white border-t border-slate-100 relative z-[100] pb-24 lg:pb-32">
+                {/* ⚡ Quick Messages */}
+                <div className="px-6 py-3 border-b border-slate-50 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-white">
+                    {QUICK_MESSAGES.map((msg, i) => (
+                        <button
+                            key={i}
+                            onClick={() => {
+                                setNewMessage(msg);
+                                // Trigger send slightly after to allow state update or just send directly
+                                setTimeout(() => document.getElementById('chat-form-submit')?.click(), 50);
+                            }}
+                            className="shrink-0 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500 hover:bg-primary/5 hover:border-primary/20 hover:text-primary transition-all whitespace-nowrap uppercase tracking-widest active:scale-95"
+                        >
+                            {msg}
+                        </button>
+                    ))}
+                </div>
+
+                <form onSubmit={handleSendMessage} className="flex items-center gap-4 max-w-xl mx-auto p-4 px-6">
                     <div className="flex-1 relative group">
                         <textarea
                             value={newMessage}
@@ -275,7 +342,7 @@ function RideChat() {
                             rows={1}
                         />
                     </div>
-                    <Button type="submit" disabled={!newMessage.trim() || isSending} className="h-16 w-16 rounded-[2rem] bg-navy hover:bg-navy-600 text-white shadow-2xl shadow-slate-900/40 hover:scale-110 active:scale-90 transition-all group shrink-0">
+                    <Button id="chat-form-submit" type="submit" disabled={!newMessage.trim() || isSending} className="h-16 w-16 rounded-[2rem] bg-navy hover:bg-navy-600 text-white shadow-2xl shadow-slate-900/40 hover:scale-110 active:scale-90 transition-all group shrink-0">
                         {isSending ? <Loader2 className="size-6 animate-spin" /> : <Send className="size-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                     </Button>
                 </form>

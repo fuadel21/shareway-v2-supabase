@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -25,6 +24,7 @@ import { createSingleRequest } from '../services/requestService.js';
 
 const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
   const { profile } = useOutletContext();
+  const navigate = useNavigate();
   const [requestType, setRequestType] = useState('now');
   const [destination, setDestination] = useState(null);
   const [scheduledDate, setScheduledDate] = useState(new Date());
@@ -70,6 +70,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
   }, [updateDerived]);
 
   const handleRequestSubmit = async () => {
+    if (isSubmitting) return;
     if (!profile || !userLocation || !destination) {
       toast.error('Error', { description: 'Por favor, selecciona un destino.' });
       return;
@@ -86,10 +87,15 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
       departureTime.setHours(hours, minutes, 0, 0);
     }
 
+    if (departureTime.getTime() <= Date.now() + 5 * 60 * 1000) {
+      toast.error('Error', { description: 'La hora del viaje debe ser al menos 5 minutos a futuro.' });
+      return;
+    }
+
     const suggestedPrice = price ? parseFloat(price) : 0;
     if (suggestedPrice < 0) {
-        toast.error('Error', { description: 'El precio no puede ser negativo.' });
-        return;
+      toast.error('Error', { description: 'El precio no puede ser negativo.' });
+      return;
     }
 
     setIsSubmitting(true);
@@ -102,7 +108,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
         },
         destination: destination,
         dateTime: departureTime,
-        seats: seats,
+        seats: Math.max(1, Math.min(4, seats)),
         suggestedPrice: suggestedPrice,
         details: notes.trim(),
       };
@@ -110,6 +116,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
       await createSingleRequest(requestData);
       toast.success('¡Solicitud enviada!');
       onOpenChange(false);
+      navigate('/my-requests');
     } catch (error) {
       console.error("Error al publicar la solicitud:", error);
       toast.error('Error al publicar', { description: error.message });
@@ -134,8 +141,8 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
           <div className="space-y-2">
             <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Destino</Label>
             <AddressAutocomplete
-              placeholder="Ej: Aeropuerto, Plaza Mayor..."
-              onPlaceSelect={setDestination}
+              label="Ej: Aeropuerto, Plaza Mayor..."
+              onSelect={setDestination}
             />
           </div>
 
@@ -188,9 +195,9 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
               <div className="flex items-center gap-2 h-12 rounded-xl border-2 px-2 bg-white/50">
                 <Users className="h-5 w-5 text-muted-foreground ml-1" />
                 <div className="flex-1 flex items-center justify-between">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-8 w-8 rounded-full hover:bg-slate-100"
                     onClick={() => setSeats(Math.max(1, seats - 1))}
                     disabled={seats <= 1}
@@ -198,12 +205,12 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
                     -
                   </Button>
                   <span className="font-black text-lg text-primary">{seats}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="h-8 w-8 rounded-full hover:bg-slate-100"
-                    onClick={() => setSeats(Math.min(8, seats + 1))}
-                    disabled={seats >= 8}
+                    onClick={() => setSeats(Math.min(4, seats + 1))}
+                    disabled={seats >= 4}
                   >
                     +
                   </Button>
@@ -215,11 +222,11 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
               <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Tu Oferta (€)</Label>
               <div className="relative">
                 <Euro className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
-                <Input 
-                  type="number" 
-                  value={price} 
-                  onChange={(e) => setPrice(e.target.value)} 
-                  placeholder="Ej: 5.00" 
+                <Input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="Ej: 5.00"
                   className="pl-10 h-12 rounded-xl border-2 font-bold bg-white/50"
                   min="0"
                   step="0.5"
@@ -242,9 +249,9 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
               className="h-12 rounded-xl border-2 font-semibold"
             />
           </div>
-          
+
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
-            Límite de asientos: 8 • Evita ofertas abusivas
+            Límite de asientos: 4 • Evita ofertas abusivas
           </p>
         </div>
 

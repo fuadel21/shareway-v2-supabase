@@ -123,7 +123,7 @@ const MyRequests = () => {
     try {
       const { data, error } = await supabase
         .from('ride_requests')
-        .select('*, ride:rides(*)')
+        .select('*')
         .eq('requester_id', profile.id)
         .order('departure_time', { ascending: false });
       if (error) throw error;

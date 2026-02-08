@@ -1,148 +1,166 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import {
+  Car, History, Map as MapIcon, Shield, Fingerprint,
+  Key, ChevronRight, LogOut, User, Bell, Palette,
+  CreditCard, ChevronLeft, ShieldCheck, Sparkles,
+  Landmark, Wallet as WalletIcon, Share2, Radio,
+  Smartphone, Eye
+} from 'lucide-react';
+import { Button } from '@/components/ui/button.jsx';
+import { Card, CardContent } from '@/components/ui/card.jsx';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
-// --- UI Components ---
-import { Button } from '@/components/ui/button.jsx';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-// --- Icons (Renombrado extremo para evitar colisiones) ---
-import {
-    ChevronLeft, ChevronRight, User, Wallet, Route, Shield, Bell,
-    Palette, LogOut, Award, ShieldCheck, Fingerprint,
-    Smartphone, HelpCircle, FileText, Share2, Sparkles,
-    BadgeCheck, CreditCard, Lock, Eye, Car, Zap,
-    Languages, Trash2, Heart, Star, Mail, Map, UserX, ShieldAlert,
-    Loader2, History as LucideHistory, Banknote, Users
-} from 'lucide-react';
-import SubPageHeader from './SubPageHeader';
-
-const MiniSettingTile = ({ icon: Icon, title, to, action, color, badge }) => {
-    const navigate = useNavigate();
-    return (
-        <button
-            type="button"
-            onClick={() => {
-                if (action) action();
-                else if (to) navigate(to);
-            }}
-            className="group relative flex flex-col items-center justify-center p-4 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 active:scale-90 transition-all aspect-square animate-in zoom-in duration-500"
-        >
-            <div className={cn(
-                "size-12 rounded-2xl flex items-center justify-center mb-2 transition-transform group-hover:scale-110 shadow-lg shadow-slate-100",
-                color
-            )}>
-                <Icon className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-900 leading-none text-center">
-                {title}
-            </span>
-            {badge && (
-                <span className="absolute top-4 right-4 size-2.5 bg-primary rounded-full ring-4 ring-white" />
-            )}
-        </button>
-    );
-};
-
-const SettingsSection = ({ title, children }) => (
-    <div className="space-y-4">
-        <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 ml-6 italic">{title}</h3>
-        <div className="grid grid-cols-3 gap-4">
-            {children}
-        </div>
+const SettingItem = ({ icon: Icon, label, onClick, color, sublabel, badge }) => (
+  <button
+    onClick={onClick}
+    className="w-full flex items-center justify-between p-4 md:p-6 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group"
+  >
+    <div className="flex items-center gap-4 md:gap-6 text-left">
+      <div className={cn("h-12 w-12 md:h-16 md:w-16 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6 duration-500 relative", color)}>
+        <Icon className="size-5 md:size-6 text-white" />
+        {badge && <div className="absolute -top-1 -right-1 size-3 md:size-4 bg-primary rounded-full border-2 border-white animate-pulse" />}
+      </div>
+      <div>
+        <p className="text-xs md:text-sm font-black text-slate-900 uppercase tracking-tighter italic">{label}</p>
+        {sublabel && <p className="text-[8px] md:text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{sublabel}</p>}
+      </div>
     </div>
+    <ChevronRight className="size-4 md:size-5 text-slate-300 group-hover:translate-x-1 transition-transform" />
+  </button>
 );
 
+const SectionHeader = ({ title, icon: Icon, color }) => {
+  return (
+    <div className="px-4 flex justify-between items-center mb-6">
+      <div className="flex items-center gap-3">
+        {Icon && <Icon size={14} className={color} />}
+        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">{title}</h3>
+      </div>
+      <div className="h-px flex-1 bg-slate-100 ml-4 opacity-50" />
+    </div>
+  );
+};
+
 const Settings = () => {
-    const { profile: contextProfile, handleSignOut, user } = useOutletContext();
-    const navigate = useNavigate();
-    const [fullProfile, setFullProfile] = useState(contextProfile);
-    const [loading, setLoading] = useState(!contextProfile);
+  const navigate = useNavigate();
+  const { profile, handleSignOut } = useOutletContext();
+  const { t } = useTranslation();
 
-    useEffect(() => {
-        const fetchProfile = async () => {
-            if (!user?.id) return;
-            try {
-                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-                if (data) setFullProfile(data);
-            } catch (e) { console.error(e); } finally { setLoading(false); }
-        };
-        fetchProfile();
-    }, [user?.id]);
-
-    const handleShareApp = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({ title: 'ShareWay', text: '¡Únete a la movilidad inteligente!', url: window.location.origin });
-            } catch (e) { console.error(e); }
-        } else {
-            navigator.clipboard.writeText(window.location.origin);
-            toast.success("Enlace copiado.");
-        }
-    };
-
-    const isVerified = ['verified', 'approved'].includes(fullProfile?.verification?.status);
-
-    if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>;
-
-    return (
-        <div className="bg-slate-50 min-h-screen pb-40 font-sans">
-            <SubPageHeader title="Ajustes" />
-
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12">
-                <div onClick={() => navigate(`/profile/${user?.id}`)} className="bg-slate-900 p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden active:scale-[0.98] transition-all cursor-pointer border border-white/5 group">
-                    <div className="absolute -right-4 -top-4 opacity-10 rotate-12 group-hover:scale-110 transition-transform"><Zap size={140} className="text-white" /></div>
-                    <div className="flex items-center gap-5 relative z-10">
-                        <Avatar className="h-16 w-16 border-2 border-white/20 shadow-xl">
-                            <AvatarImage src={fullProfile?.photo_url || fullProfile?.avatar_url} />
-                            <AvatarFallback className="bg-primary text-white font-black italic">{fullProfile?.display_name?.[0]}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                            <h2 className="text-xl font-black tracking-tighter uppercase italic truncate">{fullProfile?.display_name || 'Usuario'}</h2>
-                            <div className="flex items-center gap-2 mt-1">
-                                <span className={cn("px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border", isVerified ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30")}>{isVerified ? 'Verificado' : 'Sin Verificar'}</span>
-                                <span className="bg-white/10 px-2 py-0.5 rounded-md text-[8px] font-black text-white/60 uppercase">Elite Member</span>
-                            </div>
-                        </div>
-                        <ChevronRight className="size-5 text-white/40" />
-                    </div>
-                </div>
-
-                <SettingsSection title="Conducción & Vehículo">
-                    <MiniSettingTile icon={Car} title="Mi Coche" to="/edit-profile?section=vehicle" color="bg-slate-900" />
-                    <MiniSettingTile icon={Route} title="Historial" to="/my-rides" color="bg-indigo-600" />
-                    <MiniSettingTile icon={Map} title="Rutas" to="/settings" color="bg-emerald-600" />
-                </SettingsSection>
-
-                <SettingsSection title="Seguridad & Trust">
-                    <MiniSettingTile icon={ShieldCheck} title="Seguridad" to="/settings/security" color="bg-primary" />
-                    <MiniSettingTile icon={Fingerprint} title="Identidad" to="/settings/verification" color="bg-blue-600" />
-                    <MiniSettingTile icon={Lock} title="PIN SOS" to="/settings/security" color="bg-slate-700" />
-                </SettingsSection>
-
-                <SettingsSection title="Economía & Cartera">
-                    <MiniSettingTile icon={Wallet} title="Cartera" to="/wallet" color="bg-amber-500" />
-                    <MiniSettingTile icon={Banknote} title="Cobros" to="/settings/payouts" color="bg-violet-600" />
-                    <MiniSettingTile icon={LucideHistory} title="Pagos" to="/wallet" color="bg-slate-500" />
-                </SettingsSection>
-
-                <SettingsSection title="Comunidad & App">
-                    <MiniSettingTile icon={Heart} title="Invitar" action={handleShareApp} color="bg-rose-500" />
-                    <MiniSettingTile icon={Users} title="Grupos" to="/help" color="bg-indigo-400" />
-                    <MiniSettingTile icon={Palette} title="Diseño" to="/settings/appearance" color="bg-cyan-500" />
-                </SettingsSection>
-
-                <div className="pt-6">
-                    <button type="button" onClick={handleSignOut} className="w-full flex flex-col items-center justify-center gap-2 p-8 bg-red-500/5 border border-red-500/10 rounded-[2.5rem] active:scale-95 transition-all group shadow-sm">
-                        <div className="size-14 rounded-full bg-white flex items-center justify-center shadow-lg shadow-red-100 group-hover:scale-110 transition-transform"><LogOut className="size-6 text-red-500" /></div>
-                        <span className="font-black text-[10px] uppercase tracking-[0.4em] text-red-600 italic">Terminar Sesión</span>
-                    </button>
-                </div>
-            </main>
+  return (
+    <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
+      <header className="bg-white px-4 md:px-6 py-6 md:py-8 border-b border-slate-100 sticky top-0 z-20">
+        <div className="max-w-xl mx-auto flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="rounded-2xl bg-slate-50 size-10 md:size-12">
+            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6 text-slate-900" />
+          </Button>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('settings.title')}</h1>
+            <p className="text-[9px] md:text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1 italic">{t('settings.subtitle')}</p>
+          </div>
         </div>
-    );
+      </header>
+
+      <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12 text-left">
+        {/* CUENTA Y PERFIL */}
+        <section>
+          <SectionHeader title={t('settings.account_section')} icon={User} color="text-slate-900" />
+          <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={User}
+              label={profile?.display_name || 'Mi Perfil'}
+              sublabel={t('settings.edit_profile')}
+              color="bg-slate-900"
+              onClick={() => navigate('/profile/edit')}
+            />
+          </div>
+        </section>
+
+        {/* FINANZAS Y PAGOS */}
+        <section>
+          <SectionHeader title={t('wallet.title')} icon={WalletIcon} color="text-amber-500" />
+          <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={Landmark}
+              label={t('settings.driver_payouts')}
+              sublabel={t('settings.payouts_sub')}
+              color="bg-emerald-600"
+              badge={!profile?.stripe_onboarding_complete}
+              onClick={() => navigate('/settings/payout')}
+            />
+          </div>
+        </section>
+
+        {/* PREFERENCIAS DE VIAJE (Aquí movimos rutas) */}
+        <section>
+          <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
+          <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={MapIcon}
+              label={t('settings.routes')}
+              sublabel={t('settings.routes_sub')}
+              color="bg-blue-600"
+              onClick={() => navigate('/settings/routes')}
+            />
+          </div>
+        </section>
+
+        {/* SEGURIDAD Y TRUST */}
+        <section>
+          <SectionHeader title={t('settings.security_trust')} icon={Shield} color="text-orange-500" />
+          <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={Shield}
+              label={t('settings.security')}
+              sublabel={t('settings.security_sub')}
+              color="bg-orange-500"
+              onClick={() => navigate('/settings/security')}
+            />
+            <SettingItem
+              icon={Fingerprint}
+              label={t('settings.identity')}
+              sublabel={t('settings.identity_sub')}
+              color="bg-slate-800"
+              onClick={() => navigate('/settings/verification')}
+            />
+          </div>
+        </section>
+
+        {/* CONFIGURACIÓN DE APP */}
+        <section>
+          <SectionHeader title={t('settings.app_prefs')} icon={Smartphone} color="text-indigo-500" />
+          <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={Palette}
+              label={t('settings.design_style')}
+              sublabel={t('settings.design_sub')}
+              color="bg-indigo-500"
+              onClick={() => navigate('/settings/appearance')}
+            />
+            <SettingItem
+              icon={Bell}
+              label={t('settings.notifications')}
+              sublabel={t('settings.notifications_sub')}
+              color="bg-violet-600"
+              onClick={() => navigate('/settings/notifications')}
+            />
+          </div>
+        </section>
+
+        <div className="pt-6 md:pt-10">
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2.5rem] bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-black text-base md:text-lg tracking-tighter shadow-sm border-none uppercase italic"
+          >
+            <LogOut className="mr-3 size-5 md:size-6" /> {t('nav.logout')}
+          </Button>
+        </div>
+      </main>
+    </div>
+  );
 };
 
 export default Settings;

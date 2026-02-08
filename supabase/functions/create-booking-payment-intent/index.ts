@@ -70,7 +70,7 @@ serve(async (req) => {
             amount: amountInCents,
             currency: 'eur',
             automatic_payment_methods: { enabled: true },
-            metadata: { rideId, passengerId: user.id, type: 'ride_booking' }
+            metadata: { rideId, user_id: user.id, type: 'ride_booking' }
         })
 
         // 5. Generar PIN de 4 dígitos

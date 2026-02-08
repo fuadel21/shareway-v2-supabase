@@ -5,8 +5,10 @@ import { Moon, Sun, Palette, Monitor, Zap, Sparkles, CheckCircle2 } from 'lucide
 import { Button } from '@/components/ui/button.jsx';
 import SubPageHeader from './SubPageHeader';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 function AppearanceSettings() {
+    const { t } = useTranslation();
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
     const navigate = useNavigate();
 
@@ -18,15 +20,15 @@ function AppearanceSettings() {
     }, [theme]);
 
     const themes = [
-        { id: 'light', name: 'Original Light', icon: Sun, color: 'text-amber-500', bg: 'bg-white', border: 'border-slate-200' },
-        { id: 'dark', name: 'Deep Space', icon: Moon, color: 'text-indigo-400', bg: 'bg-slate-900', border: 'border-slate-800' },
+        { id: 'light', name: t('appearance.original_light'), icon: Sun, color: 'text-amber-500', bg: 'bg-white', border: 'border-slate-200' },
+        { id: 'dark', name: t('appearance.deep_space'), icon: Moon, color: 'text-indigo-400', bg: 'bg-slate-900', border: 'border-slate-800' },
     ];
 
     return (
         <div className="min-h-screen bg-slate-50 pb-40 font-sans">
-            <SubPageHeader title="Diseño & Apariencia" />
+            <SubPageHeader title={t('appearance.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10 text-left">
 
                 {/* HERO CARD */}
                 <div className="bg-slate-900 rounded-[3.5rem] p-10 relative overflow-hidden group shadow-2xl shadow-slate-200">
@@ -41,22 +43,22 @@ function AppearanceSettings() {
                         </div>
 
                         <div className="space-y-1">
-                            <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase leading-none">Personalización</h2>
-                            <p className="text-white/40 font-bold text-xs uppercase tracking-widest">Adapta la interfaz a tu estilo de viaje.</p>
+                            <h2 className="text-4xl font-black text-white tracking-tighter italic uppercase leading-none">{t('appearance.customization')}</h2>
+                            <p className="text-white/40 font-bold text-xs uppercase tracking-widest">{t('appearance.customization_desc')}</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 italic">Elige tu modo</p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 italic">{t('appearance.choose_mode')}</p>
 
                     <div className="grid grid-cols-2 gap-4">
-                        {themes.map((t) => {
-                            const isSelected = theme === t.id;
+                        {themes.map((t_item) => {
+                            const isSelected = theme === t_item.id;
                             return (
                                 <button
-                                    key={t.id}
-                                    onClick={() => setTheme(t.id)}
+                                    key={t_item.id}
+                                    onClick={() => setTheme(t_item.id)}
                                     className={cn(
                                         "relative flex flex-col items-center justify-center p-8 rounded-[3rem] transition-all duration-500 group",
                                         isSelected
@@ -68,12 +70,12 @@ function AppearanceSettings() {
                                         "size-16 rounded-[1.8rem] flex items-center justify-center mb-4 transition-all group-hover:rotate-6",
                                         isSelected ? "bg-primary text-white shadow-lg" : "bg-slate-100 text-slate-400"
                                     )}>
-                                        <t.icon size={28} />
+                                        <t_item.icon size={28} />
                                     </div>
                                     <span className={cn(
                                         "font-black text-[10px] uppercase tracking-widest",
                                         isSelected ? "text-slate-900" : "text-slate-400"
-                                    )}>{t.name}</span>
+                                    )}>{t_item.name}</span>
 
                                     {isSelected && (
                                         <div className="absolute top-4 right-4 text-primary animate-in zoom-in">
@@ -92,24 +94,24 @@ function AppearanceSettings() {
                             <Monitor size={24} />
                         </div>
                         <div>
-                            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter">Modo Automático</h4>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Sincronizar con sistema</p>
+                            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('appearance.auto_mode')}</h4>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">{t('appearance.sync_system')}</p>
                         </div>
                         <div className="flex-1 text-right">
-                            <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-3 py-1.5 rounded-full uppercase tracking-widest">PRÓXIMAMENTE</span>
+                            <span className="text-[9px] font-black bg-slate-100 text-slate-400 px-3 py-1.5 rounded-full uppercase tracking-widest">{t('appearance.coming_soon')}</span>
                         </div>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed italic border-t border-slate-50 pt-4">
-                        Estamos trabajando en la detección automática del brillo ambiental para cambiar entre modos según la luz solar.
+                        {t('appearance.auto_mode_desc')}
                     </p>
                 </div>
 
                 <div className="p-8 bg-primary/5 rounded-[3rem] border border-primary/10 flex items-start gap-4">
                     <Sparkles className="size-6 text-primary shrink-0" />
                     <div>
-                        <h4 className="font-black text-slate-900 tracking-tight text-sm uppercase italic">High Performance UI</h4>
+                        <h4 className="font-black text-slate-900 tracking-tight text-sm uppercase italic">{t('appearance.high_performance')}</h4>
                         <p className="text-xs text-slate-500 font-medium leading-relaxed mt-1 italic">
-                            ShareWay utiliza aceleración por hardware para que las animaciones de la interfaz funcionen a 60fps constantes.
+                            {t('appearance.performance_desc')}
                         </p>
                     </div>
                 </div>

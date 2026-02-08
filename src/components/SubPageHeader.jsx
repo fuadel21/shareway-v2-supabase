@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ChevronLeft, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const SubPageHeader = ({ title, actions }) => {
+const SubPageHeader = ({ title, actions, backTo }) => {
   const navigate = useNavigate();
 
   return (
@@ -14,7 +14,7 @@ const SubPageHeader = ({ title, actions }) => {
       <div className="max-w-xl md:max-w-5xl mx-auto flex items-center justify-between relative px-2">
         {/* Botón de Volver Premium */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => backTo ? navigate(backTo) : navigate(-1)}
           className="group h-14 w-14 rounded-3xl bg-white shadow-2xl shadow-slate-200/50 flex items-center justify-center border border-white hover:scale-110 active:scale-90 transition-all duration-300 z-10"
           aria-label="Volver"
         >

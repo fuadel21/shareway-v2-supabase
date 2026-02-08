@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { 
-    ShieldAlert, 
-    MessageSquare, 
-    Phone, 
-    Loader2, 
-    Send, 
+import {
+    ShieldAlert,
+    MessageSquare,
+    Phone,
+    Loader2,
+    Send,
     ChevronLeft,
     AlertCircle,
     MapPin,
@@ -54,9 +54,9 @@ const EmergencyChat = () => {
 
         // Suscripción Realtime para respuestas del equipo de seguridad
         const channel = supabase.channel(`emergency:${user.id}`)
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
                 table: 'messages',
                 filter: `chat_id=eq.${EMERGENCY_CHAT_ID}`
             }, (payload) => {
@@ -113,9 +113,9 @@ const EmergencyChat = () => {
         <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
             {/* CABECERA DE ALERTA MÁXIMA */}
             <header className="bg-red-600 p-6 text-white flex items-center gap-4 shadow-2xl z-20">
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => navigate(-1)}
                     className="text-white hover:bg-white/10 rounded-2xl"
                 >
@@ -149,8 +149,8 @@ const EmergencyChat = () => {
                     const isMe = msg.sender_id === user.id;
 
                     return (
-                        <div 
-                            key={msg.id} 
+                        <div
+                            key={msg.id}
                             className={cn(
                                 "flex flex-col max-w-[85%] animate-in fade-in slide-in-from-bottom-2",
                                 isMe ? "self-end items-end" : "self-start items-start"
@@ -158,8 +158,8 @@ const EmergencyChat = () => {
                         >
                             <div className={cn(
                                 "px-6 py-4 rounded-[2rem] shadow-sm text-sm font-medium leading-relaxed",
-                                isSystem ? "bg-white border-2 border-red-100 text-red-900 italic" : 
-                                isMe ? "bg-slate-900 text-white rounded-tr-md" : "bg-white text-slate-800 rounded-tl-md border border-slate-100"
+                                isSystem ? "bg-white border-2 border-red-100 text-red-900 italic" :
+                                    isMe ? "bg-slate-900 text-white rounded-tr-md" : "bg-white text-slate-800 rounded-tl-md border border-slate-100"
                             )}>
                                 {msg.content}
                             </div>
@@ -184,8 +184,8 @@ const EmergencyChat = () => {
                             rows={1}
                         />
                     </div>
-                    <Button 
-                        type="submit" 
+                    <Button
+                        type="submit"
                         disabled={isSending || !newMessage.trim()}
                         className="h-16 w-16 rounded-[2rem] bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-200 active:scale-90 transition-all group shrink-0"
                     >
@@ -196,7 +196,7 @@ const EmergencyChat = () => {
                     <a href="tel:112" className="flex items-center gap-2 text-red-600 font-black text-[10px] uppercase tracking-widest hover:underline">
                         <Phone size={14} /> Llamar al 112
                     </a>
-                    <button onClick={() => navigate('/emergency-contacts')} className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:underline">
+                    <button onClick={() => navigate('/settings/emergency')} className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:underline">
                         <Users size={14} /> Mis Contactos
                     </button>
                 </div>

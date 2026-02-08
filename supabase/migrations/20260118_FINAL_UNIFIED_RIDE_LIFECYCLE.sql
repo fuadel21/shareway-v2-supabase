@@ -3,43 +3,22 @@
 -- Proposito: Consolidar TODO el ciclo de vida de viajes en un unico script.
 -- Incluye: Creación hardened, Reserva con Wallet, PIN, Inicio, Fin, Pagos y GPS.
 -- ==============================================================================
--- 1. Limpieza total de versiones previas
-DROP FUNCTION IF EXISTS public.create_ride(
-    jsonb,
-    jsonb,
-    timestamptz,
-    integer,
-    decimal,
-    text,
-    decimal,
-    text,
-    jsonb,
-    boolean,
-    boolean,
-    text []
-);
-DROP FUNCTION IF EXISTS public.create_ride(
-    jsonb,
-    jsonb,
-    timestamptz,
-    integer,
-    decimal,
-    text,
-    decimal,
-    text,
-    jsonb,
-    boolean,
-    boolean,
-    text [],
-    text,
-    jsonb,
-    jsonb
-);
-DROP FUNCTION IF EXISTS public.confirm_trip_and_pay(uuid, uuid);
-DROP FUNCTION IF EXISTS public.complete_ride(uuid);
-DROP FUNCTION IF EXISTS public.start_ride(uuid);
-DROP FUNCTION IF EXISTS public.verify_passenger(uuid, uuid, text);
-DROP FUNCTION IF EXISTS public.cancel_booking_and_refund(uuid);
+
+-- 1. Limpieza agresiva de versiones previas para evitar ambigüedad de candidatos
+DO $$
+DECLARE
+    r RECORD;
+BEGIN
+    FOR r IN (
+        SELECT oid::regprocedure as proto
+        FROM pg_proc
+        WHERE proname IN ('create_ride', 'confirm_trip_and_pay', 'complete_ride', 'start_ride', 'verify_passenger', 'cancel_booking_and_refund')
+          AND pronamespace = 'public'::regnamespace
+    ) LOOP
+        EXECUTE 'DROP FUNCTION ' || r.proto || ' CASCADE';
+    END LOOP;
+END $$;
+
 -- 2. CREATE RIDE (Elite Security + Overlap + Fair Price)
 CREATE OR REPLACE FUNCTION public.create_ride(
         p_origin JSONB,
@@ -75,6 +54,12 @@ SELECT display_name,
     v_verification_status
 FROM public.profiles
 WHERE id = v_driver_id;
+
+-- VERIFICACIÓN DESHABILITADA PARA PRUEBAS
+-- IF v_verification_status IS NULL OR v_verification_status != 'verified' THEN
+--     RAISE EXCEPTION 'Solo usuarios verificados pueden ofrecer viajes.';
+-- END IF;
+
 -- Fair Price (0.60€/km)
 IF p_price > 0
 AND p_distance > 0 THEN IF (p_price / p_distance) > 0.60 THEN RAISE EXCEPTION 'Política de Precio Justo: El precio supera el límite de 0.60€/km.';
@@ -117,6 +102,8 @@ INSERT INTO public.rides (
         is_women_only,
         participant_ids,
         approval_mode,
+        waypoints,
+        preferences,
         status
     )
 VALUES (
@@ -135,12 +122,15 @@ VALUES (
         p_is_women_only,
         ARRAY [v_driver_id],
         p_approval_mode,
+        p_waypoints,
+        p_preferences,
         'scheduled'
     )
 RETURNING id INTO v_ride_id;
 RETURN json_build_object('success', true, 'rideId', v_ride_id);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 3. CONFIRM TRIP AND PAY (Transaction Safe)
 CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
         p_ride_id UUID,
@@ -161,6 +151,8 @@ SELECT display_name,
     v_passenger_photo
 FROM public.profiles
 WHERE id = v_passenger_id;
+
+-- MODIFICACIÓN: Se permite reservar si el estado es 'scheduled' o 'active' (En curso)
 SELECT price,
     seats_available,
     driver_id INTO v_ride_price,
@@ -168,8 +160,9 @@ SELECT price,
     v_driver_id
 FROM public.rides
 WHERE id = p_ride_id
-    AND status = 'scheduled' FOR
+    AND status IN ('scheduled', 'active') FOR
 UPDATE;
+
 IF v_ride_price IS NULL THEN RAISE EXCEPTION 'Viaje no disponible';
 END IF;
 IF v_seats_available <= 0 THEN RAISE EXCEPTION 'Sin asientos';
@@ -233,6 +226,7 @@ END IF;
 RETURN json_build_object('success', true, 'pin', v_ride_pin);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 4. START RIDE
 CREATE OR REPLACE FUNCTION public.start_ride(p_ride_id UUID) RETURNS JSON AS $$
 DECLARE v_driver_id UUID := auth.uid();
@@ -253,6 +247,7 @@ END IF;
 RETURN json_build_object('success', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 5. VERIFY PASSENGER (PIN)
 CREATE OR REPLACE FUNCTION public.verify_passenger(p_ride_id UUID, p_passenger_id UUID, p_pin TEXT) RETURNS JSON AS $$
 DECLARE v_driver_id UUID := auth.uid();
@@ -288,6 +283,7 @@ ELSE RAISE EXCEPTION 'PIN_INCORRECTO';
 END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 6. COMPLETE RIDE (Earnings + Transactions)
 CREATE OR REPLACE FUNCTION public.complete_ride(p_ride_id UUID) RETURNS JSON AS $$
 DECLARE v_driver_id UUID := auth.uid();

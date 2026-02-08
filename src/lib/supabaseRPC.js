@@ -1,97 +1,98 @@
-import { createClient } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
 /**
- * Safe RPC Wrapper
+ * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout
  */
-export const safeCall = async (rpcPromise, functionName) => {
-    const TIMEOUT_MS = 15000; // Incrementado ligeramente para evitar falsos positivos
-    try {
-        const result = await Promise.race([
-            rpcPromise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout en ${functionName}`)), TIMEOUT_MS))
-        ]);
+export const safeCall = async (rpcCall, functionName, retries = 2) => {
+    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride'];
+    const TIMEOUT_MS = CRITICAL_FUNCTIONS.includes(functionName) ? 25000 : 15000;
 
-        if (result.error) {
-            console.error(`🛡️ RPC Error [${functionName}]:`, result.error);
-            return { data: null, error: result.error.message, success: false };
+    const executeCall = async (attempt) => {
+        try {
+            const promise = typeof rpcCall === 'function' ? rpcCall() : rpcCall;
+            const result = await Promise.race([
+                promise,
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error(`Timeout: La operación ${functionName} tarda demasiado.`)), TIMEOUT_MS)
+                )
+            ]);
+
+            if (result.error) {
+                const cleanError = result.error.message?.replace(/eyJ[a-zA-Z0-9._-]+/g, '[TOKEN_HIDDEN]');
+                console.error(`🛡️ RPC Error [${functionName}]:`, cleanError);
+                return { data: null, error: cleanError, success: false };
+            }
+
+            return { data: result.data, error: null, success: true };
+        } catch (err) {
+            if (attempt < retries && (err.message.includes('Timeout') || err.message.includes('fetch'))) {
+                console.warn(`⚠️ Retrying ${functionName} (${attempt + 1}/${retries})...`);
+                return executeCall(attempt + 1);
+            }
+            return { data: null, error: err.message || "Error de conexión", success: false };
         }
+    };
 
-        return { data: result.data, error: null, success: true };
-    } catch (err) {
-        console.error(`🛡️ Critical RPC Failure [${functionName}]:`, err);
-        return { data: null, error: err.message || "Error de conexión", success: false };
-    }
+    return executeCall(0);
 };
 
 // --- USER-FACING RPCs ---
-export const acceptRequest = (requestId, rideId) =>
-    safeCall(supabase.rpc('accept_request', { p_request_id: requestId, p_ride_id: rideId }), 'accept_request');
-
-export const createRide = (rideData) =>
-    safeCall(supabase.rpc('create_ride', {
-        p_origin: rideData.origin,
-        p_destination: rideData.destination,
-        p_departure_time: rideData.dateTime,
-        p_seats: rideData.seats,
-        p_price: rideData.price,
-        p_distance: rideData.distance,
-        p_overview_polyline: rideData.overview_polyline,
-        p_details: rideData.details,
-        p_is_women_only: rideData.isWomenOnly || false,
-        p_approval_mode: rideData.approvalMode || 'automatic',
-        p_waypoints: rideData.waypoints || [],
-        p_preferences: rideData.preferences || {}
-    }), 'create_ride');
-
-export const fulfillRideRequest = (rideData) =>
-    safeCall(supabase.rpc('fulfill_ride_request', {
-        p_request_id: rideData.requestId,
-        p_origin: rideData.origin,
-        p_destination: rideData.destination,
-        p_departure_time: rideData.dateTime,
-        p_seats: rideData.seats,
-        p_price: rideData.price,
-        p_distance: rideData.distance,
-        p_overview_polyline: rideData.overview_polyline,
-        p_details: rideData.details,
-        p_waypoints: rideData.waypoints || []
-    }), 'fulfill_ride_request');
-
-/**
- * Confirmación de viaje y pago.
- * @param {string} rideId 
- * @param {string|null} requestId - Opcional, necesario si viene de una solicitud previa.
- */
-export const confirmTripAndPay = (rideId, requestId = null) =>
-    safeCall(supabase.rpc('confirm_trip_and_pay', { p_ride_id: rideId, p_request_id: requestId }), 'confirm_trip_and_pay');
-
-export const cancelBookingAndRefund = (rideId) =>
-    safeCall(supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
-
 export const startRide = (rideId) =>
-    safeCall(supabase.rpc('start_ride', { p_ride_id: rideId }), 'start_ride');
+    safeCall(() => supabase.rpc('start_ride', { p_ride_id: rideId }), 'start_ride');
+
+export const updateRideLocation = (rideId, lat, lng) =>
+    safeCall(() => supabase.rpc('update_ride_location', {
+        p_ride_id: rideId,
+        p_lat: parseFloat(lat),
+        p_lng: parseFloat(lng)
+    }), 'update_ride_location');
 
 export const completeRide = (rideId) =>
-    safeCall(supabase.rpc('complete_ride', { p_ride_id: rideId }), 'complete_ride');
+    safeCall(() => supabase.rpc('complete_ride', { p_ride_id: rideId }), 'complete_ride');
 
 export const cancelRide = (rideId) =>
-    safeCall(supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
-
-export const getUserRides = () =>
-    safeCall(supabase.rpc('get_user_rides'), 'get_user_rides');
+    safeCall(() => supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
 
 export const verifyPassenger = (rideId, passengerId, pin) =>
-    safeCall(supabase.rpc('verify_passenger', { p_ride_id: rideId, p_passenger_id: passengerId, p_pin: pin }), 'verify_passenger');
+    safeCall(() => supabase.rpc('verify_passenger_boarding', { p_ride_id: rideId, p_pin: pin }), 'verify_passenger_boarding');
 
 export const getRideDetailsSecure = (rideId) =>
-    safeCall(supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
+    safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
 
 export const getMyRidePin = (rideId) =>
-    safeCall(supabase.rpc('get_my_ride_pin', { p_ride_id: rideId }), 'get_my_ride_pin');
+    safeCall(() => supabase.rpc('get_my_ride_pin', { p_ride_id: rideId }), 'get_my_ride_pin');
 
-export const searchRides = (origin, destination, date, seats = 1, maxPrice = 999.99, radius = 15000) =>
-    safeCall(supabase.rpc('search_rides_secure', {
+export const removePassenger = (rideId, passengerId) =>
+    safeCall(() => supabase.rpc('remove_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'remove_passenger');
+
+
+export const getUserRides = (userId) =>
+    safeCall(() => supabase.rpc('get_user_rides', { p_user_id: userId, p_role: 'all' }), 'get_user_rides');
+
+export const createRide = (rideData) =>
+    safeCall(() => supabase.rpc('create_ride', {
+        p_origin: rideData.origin,
+        p_destination: rideData.destination,
+        p_departure_time: rideData.dateTime.toISOString(),
+        p_seats: rideData.seats,
+        p_price: rideData.price,
+        p_details: rideData.details || '',
+        p_distance: rideData.distance || 0,
+        p_overview_polyline: rideData.overview_polyline || '',
+        p_waypoints: rideData.waypoints || []
+    }), 'create_ride');
+
+export const confirmTripAndPay = (rideId, requestId = null) =>
+    safeCall(() => supabase.rpc('confirm_trip_and_pay', { p_ride_id: rideId, p_request_id: requestId }), 'confirm_trip_and_pay');
+
+export const cancelBookingAndRefund = (rideId) =>
+    safeCall(() => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
+
+export const confirmPassengerArrival = (rideId) =>
+    safeCall(() => supabase.rpc('confirm_passenger_arrival', { p_ride_id: rideId }), 'confirm_passenger_arrival');
+
+export const searchRides = (origin, destination, date = null, seats = 1, maxPrice = 999.99, radius = 15000) =>
+    safeCall(() => supabase.rpc('search_rides_secure', {
         p_origin: origin,
         p_destination: destination,
         p_date: date,
@@ -100,49 +101,76 @@ export const searchRides = (origin, destination, date, seats = 1, maxPrice = 999
         p_max_dist_meters: radius
     }), 'search_rides_secure');
 
-export const confirmPassengerArrival = (rideId) =>
-    safeCall(supabase.rpc('confirm_passenger_arrival', { p_ride_id: rideId }), 'confirm_passenger_arrival');
+export const searchRideRequests = (origin, destination, date = null, seats = 1, maxDist = 15000) =>
+    safeCall(() => supabase.rpc('search_ride_requests_secure', {
+        p_origin: origin,
+        p_destination: destination,
+        p_date: date,
+        p_seats_min: seats,
+        p_max_dist_meters: maxDist
+    }), 'search_ride_requests_secure');
 
-// Wallet operations
-export const addFunds = (amount, paymentMethodId) =>
-    safeCall(supabase.rpc('add_funds', { p_amount: amount, p_payment_method_id: paymentMethodId }), 'add_funds');
+export const fulfillRideRequest = (rideData) =>
+    safeCall(() => supabase.rpc('fulfill_ride_request', {
+        p_request_id: rideData.requestId,
+        p_origin: rideData.origin,
+        p_destination: rideData.destination,
+        p_departure_time: rideData.dateTime.toISOString(),
+        p_seats: rideData.seats,
+        p_price: rideData.price,
+        p_details: rideData.details || '',
+        p_distance: rideData.distance || 0,
+        p_overview_polyline: rideData.overview_polyline || '',
+        p_waypoints: rideData.waypoints || []
+    }), 'fulfill_ride_request');
 
-export const requestPayout = (amount) =>
-    safeCall(supabase.rpc('request_payout', { p_amount: amount }), 'request_payout');
+// --- ADMIN & MANAGEMENT RPCs ---
+export const adminUpdateUserStatus = (userId, status) =>
+    safeCall(() => supabase.rpc('admin_update_user_status', { p_user_id: userId, p_status: status }), 'admin_update_user_status');
 
-// Ride passenger management
-export const removePassenger = (rideId, passengerId) =>
-    safeCall(supabase.rpc('remove_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'remove_passenger');
+export const adminToggleUserSuspension = (userId, suspend) =>
+    safeCall(() => supabase.rpc('admin_toggle_user_suspension', { p_user_id: userId, p_suspend: suspend }), 'admin_toggle_user_suspension');
 
-// --- FUNCIONES RESTAURADAS PARA ADMIN & FEATURES ---
-// Estas funciones utilizan RPC con SECURITY DEFINER que verifican internamente
-// los permisos (is_admin o propietario), por lo que son seguras de llamar desde el cliente.
-
-export const searchUsers = (searchTerm) =>
-    safeCall(supabase.rpc('search_users', { p_search_term: searchTerm }), 'search_users');
+export const getAdminHealthDashboard = () =>
+    safeCall(() => supabase.rpc('get_admin_health_dashboard'), 'get_admin_health_dashboard');
 
 export const getPlatformStats = () =>
-    safeCall(supabase.rpc('get_platform_stats'), 'get_platform_stats');
+    safeCall(() => supabase.rpc('get_platform_stats'), 'get_platform_stats');
 
 export const runManualMaintenanceTasks = () =>
-    safeCall(supabase.rpc('run_manual_maintenance_tasks'), 'run_manual_maintenance_tasks');
+    safeCall(() => supabase.rpc('run_manual_maintenance_tasks'), 'run_manual_maintenance_tasks');
+
+export const getPlatformSettings = () =>
+    safeCall(() => supabase.rpc('get_platform_settings'), 'get_platform_settings');
+
+export const updatePlatformSetting = (key, value) =>
+    safeCall(() => supabase.rpc('update_platform_setting', { p_key: key, p_value: value }), 'update_platform_setting');
+
+export const getPlatformAuditLogs = (limit = 50) =>
+    safeCall(() => supabase.rpc('get_platform_audit_logs', { p_limit: limit }), 'get_platform_audit_logs');
+
+export const requestPlatformPayout = () =>
+    safeCall(() => supabase.rpc('request_platform_payout'), 'request_platform_payout');
+
+export const addFunds = (amount, paymentMethodId) =>
+    safeCall(() => supabase.rpc('add_funds', { p_amount: amount, p_payment_method_id: paymentMethodId }), 'add_funds');
+
+export const requestPayout = (amount) =>
+    safeCall(() => supabase.rpc('request_payout', { p_amount: amount }), 'request_payout');
+
+export const createPayoutRequest = requestPayout;
+
+export const searchUsers = (searchTerm) =>
+    safeCall(() => supabase.rpc('search_users', { p_search_term: searchTerm }), 'search_users');
 
 export const cancelRideRequest = (requestId) =>
-    safeCall(supabase.rpc('cancel_ride_request', { p_request_id: requestId }), 'cancel_ride_request');
+    safeCall(() => supabase.rpc('cancel_ride_request', { p_request_id: requestId }), 'cancel_ride_request');
 
-export const createStripeConnectOnboarding = (returnUrl) =>
-    safeCall(supabase.rpc('create_stripe_connect_onboarding', { p_return_url: returnUrl }), 'create_stripe_connect_onboarding');
-
-export const createPayoutRequest = (amount) =>
-    safeCall(supabase.rpc('create_payout_request', { p_amount: amount }), 'create_payout_request');
-
-// Mocks para funciones aún no implementadas en backend
-export const requestPlatformPayout = () => {
-    console.warn('requestPlatformPayout no implementado aún');
-    return Promise.resolve({ success: false, message: 'Función no disponible temporalmente.' });
-};
-
-export const getAdminHealthDashboard = () => {
-    console.warn('getAdminHealthDashboard no implementado aún');
-    return Promise.resolve({ success: false, message: 'Función no disponible temporalmente.' });
+// --- EXTERNAL INTEGRATIONS ---
+export const createStripeConnectOnboarding = async () => {
+    try {
+        const { data, error } = await supabase.functions.invoke('create-stripe-account-link');
+        if (error) throw error;
+        return { success: true, data };
+    } catch (e) { return { success: false, error: e.message }; }
 };

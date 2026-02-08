@@ -2,9 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sparkles, ArrowLeft, Construction, Timer, Rocket, ShieldCheck, Zap } from 'lucide-react';
 import SubPageHeader from './SubPageHeader';
+import { useTranslation } from 'react-i18next';
 
 function ComingSoon() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     return (
         <div className="bg-slate-50 min-h-screen pb-40 relative overflow-hidden">
@@ -14,7 +16,7 @@ function ComingSoon() {
                 <div className="absolute bottom-1/4 left-[10%] size-96 bg-indigo-500/10 rounded-full blur-[120px] animate-pulse delay-700" />
             </div>
 
-            <SubPageHeader title="ShareWay Lab" />
+            <SubPageHeader title={t('coming_soon.lab_title')} />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 flex flex-col items-center text-center">
 
@@ -31,10 +33,10 @@ function ComingSoon() {
 
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
                     <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                        Fase de <span className="text-primary">Auditoría</span>
+                        {t('coming_soon.main_title')} <span className="text-primary">{t('coming_soon.audit_span')}</span>
                     </h1>
                     <p className="text-sm font-bold text-slate-400 max-w-sm mx-auto uppercase tracking-[0.2em] leading-relaxed">
-                        Nuestra ingeniería está puliendo esta función para garantizar el estándar de seguridad ShareWay.
+                        {t('coming_soon.description')}
                     </p>
                 </div>
 
@@ -45,8 +47,8 @@ function ComingSoon() {
                             <ShieldCheck className="size-7 text-emerald-500" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Estado</p>
-                            <p className="font-black text-slate-800 uppercase italic">Protocolos Validados</p>
+                            <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">{t('coming_soon.status_label')}</p>
+                            <p className="font-black text-slate-800 uppercase italic">{t('coming_soon.status_value')}</p>
                         </div>
                     </div>
 
@@ -55,8 +57,8 @@ function ComingSoon() {
                             <Rocket className="size-7 text-indigo-500" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Lanzamiento</p>
-                            <p className="font-black text-slate-800 uppercase italic">Próximo Cuatrimestre</p>
+                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t('coming_soon.launch_label')}</p>
+                            <p className="font-black text-slate-800 uppercase italic">{t('coming_soon.launch_value')}</p>
                         </div>
                     </div>
                 </div>
@@ -65,7 +67,7 @@ function ComingSoon() {
                     onClick={() => navigate(-1)}
                     className="mt-16 h-16 px-12 rounded-[2rem] bg-navy text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-navy-600 transition-all hover:scale-105 active:scale-95"
                 >
-                    <ArrowLeft className="mr-3 size-4" /> Volver al Centro de Mando
+                    <ArrowLeft className="mr-3 size-4" /> {t('coming_soon.back_button')}
                 </Button>
 
             </main>

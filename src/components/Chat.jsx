@@ -16,12 +16,39 @@ import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-const QUICK_MESSAGES = [
-    "¡Ya estoy en el punto! 📍",
-    "Te veo en 2 min ⌚",
-    "He llegado al destino ✅",
-    "¿Por dónde vas? 🤔",
-    "¡Gracias! 👋"
+const QUICK_MESSAGES_CATEGORIES = [
+    {
+        label: "Estado",
+        items: [
+            "¡Ya estoy en el punto! 📍",
+            "Te veo en 2 min ⌚",
+            "¿Por dónde vas? 🤔",
+            "He llegado al punto de encuentro 👋",
+            "Ya estoy en el coche 🚗",
+            "Salgo ahora mismo 🏃‍♂️",
+            "Estoy bajando 🛗"
+        ]
+    },
+    {
+        label: "Retrasos",
+        items: [
+            "Llego 5 min tarde, perdón 🙏",
+            "Hay un poco de tráfico 🚦",
+            "Me he perdido un poco, ahora llego 🧭",
+            "Espérame un minuto por favor, llego ya 🙇‍♂️"
+        ]
+    },
+    {
+        label: "Cortesía",
+        items: [
+            "¡Muchas gracias! ✨",
+            "¡Buen viaje! 👋",
+            "Ok, perfecto 👍",
+            "Entendido ✅",
+            "¡Genial! 🌟",
+            "Sin problema 👌"
+        ]
+    }
 ];
 
 const getInitials = (name) => {
@@ -42,6 +69,8 @@ const Chat = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [isChatActive, setIsChatActive] = useState(true);
+    const [expirationMessage, setExpirationMessage] = useState('');
 
     const messagesEndRef = useRef(null);
     const isMounted = useRef(true);
@@ -61,14 +90,33 @@ const Chat = () => {
 
         const fetchChatData = async () => {
             try {
-                // Obtener datos del chat
+                // Obtener datos del chat y del ride asociado
                 const { data: chatData, error: chatError } = await supabase
                     .from('chats')
-                    .select('*')
+                    .select(`
+                        *,
+                        ride:rides(status, completed_at, cancelled_at)
+                    `)
                     .eq('id', chatId)
                     .single();
 
                 if (chatError) throw chatError;
+
+                // REGLA DE 24 HORAS
+                if (chatData.ride) {
+                    const ride = chatData.ride;
+                    const finishedAt = ride.completed_at || ride.cancelled_at;
+
+                    if (finishedAt && (ride.status === 'completed' || ride.status === 'cancelled')) {
+                        const expiryDate = new Date(finishedAt);
+                        expiryDate.setHours(expiryDate.getHours() + 24);
+
+                        if (new Date() > expiryDate) {
+                            setIsChatActive(false);
+                            setExpirationMessage("Este chat se ha cerrado automáticamente 24h después del viaje.");
+                        }
+                    }
+                }
 
                 // Identificar al otro usuario
                 const otherId = chatData?.participants?.find(p => p !== user.id);
@@ -129,6 +177,10 @@ const Chat = () => {
     }, [messages, scrollToBottom]);
 
     const handleSendMessage = async (text) => {
+        if (!isChatActive) {
+            toast.error("Este chat ha expirado.");
+            return;
+        }
         const messageContent = typeof text === 'string' ? text : newMessage.trim();
         if (!messageContent || isSending || !chatId) return;
 
@@ -195,7 +247,7 @@ const Chat = () => {
 
                 <div className="flex flex-col gap-6">
                     {messages.map((msg) => {
-                        const isMe = msg.sender_id === user?.id;
+                        const isMe = String(msg.sender_id) === String(user?.id);
                         const dateObj = new Date(msg.created_at);
                         const safeTime = isValid(dateObj) ? format(dateObj, "HH:mm", { locale: es }) : '--:--';
 
@@ -206,8 +258,8 @@ const Chat = () => {
                             )}>
                                 <div className={cn(
                                     "px-6 py-4 shadow-xl relative group transition-all",
-                                    isMe 
-                                        ? "bg-slate-900 text-white rounded-[2rem] rounded-tr-[0.5rem]" 
+                                    isMe
+                                        ? "bg-slate-900 text-white rounded-[2rem] rounded-tr-[0.5rem]"
                                         : "bg-white text-slate-700 rounded-[2rem] rounded-tl-[0.5rem] border border-slate-100"
                                 )}>
                                     <p className="text-sm font-bold tracking-tight leading-relaxed">{msg.content}</p>
@@ -223,45 +275,71 @@ const Chat = () => {
                 </div>
             </main>
 
-            <div className="bg-white/50 backdrop-blur-md px-4 py-3 border-t border-slate-100 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth">
-                {QUICK_MESSAGES.map((msg, i) => (
-                    <button
-                        key={i}
-                        onClick={() => handleSendMessage(msg)}
-                        disabled={isSending}
-                        className="whitespace-nowrap px-4 py-2 bg-white rounded-full border border-slate-100 shadow-sm text-[9px] font-black uppercase tracking-tight text-slate-500 hover:text-primary transition-all active:scale-95 flex items-center gap-2"
-                    >
-                        <Zap size={10} className="text-amber-400 fill-current" /> {msg}
-                    </button>
-                ))}
-            </div>
-
-            <footer className="p-6 pb-10 bg-white border-t border-slate-100">
-                <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="max-w-2xl mx-auto flex items-end gap-3">
-                    <div className="flex-1 bg-slate-50 rounded-[2rem] px-6 py-4 shadow-inner">
-                        <textarea
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendMessage();
-                                }
-                            }}
-                            placeholder="Escribe un mensaje..."
-                            className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 resize-none max-h-32 min-h-[24px]"
-                            rows={1}
-                        />
+            {isChatActive ? (
+                <>
+                    <div className="bg-white/80 backdrop-blur-xl px-4 py-4 border-t border-slate-100 flex flex-col gap-3 overflow-hidden">
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                            {QUICK_MESSAGES_CATEGORIES.map((cat, idx) => (
+                                <div key={idx} className="flex gap-2 items-center">
+                                    <span className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-100 px-2 py-1 rounded-md mb-0.5 whitespace-nowrap">
+                                        {cat.label}
+                                    </span>
+                                    {cat.items.map((msg, i) => (
+                                        <button
+                                            key={`${idx}-${i}`}
+                                            onClick={() => handleSendMessage(msg)}
+                                            disabled={isSending}
+                                            className="whitespace-nowrap px-4 py-2 bg-white rounded-2xl border border-slate-100 shadow-sm text-[10px] font-bold tracking-tight text-slate-600 hover:text-primary hover:border-primary/30 transition-all active:scale-95 flex items-center gap-2 group shrink-0"
+                                        >
+                                            <Zap size={10} className="text-amber-400 group-hover:scale-125 transition-transform" /> {msg}
+                                        </button>
+                                    ))}
+                                    {idx < QUICK_MESSAGES_CATEGORIES.length - 1 && <div className="w-px h-6 bg-slate-100 mx-2" />}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <Button
-                        type="submit"
-                        disabled={isSending || !newMessage.trim()}
-                        className="size-14 rounded-[1.5rem] bg-slate-900 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
-                    >
-                        {isSending ? <Loader2 className="animate-spin size-5" /> : <Send size={20} />}
-                    </Button>
-                </form>
-            </footer>
+
+                    <footer className="p-6 pb-10 bg-white border-t border-slate-100">
+                        <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="max-w-2xl mx-auto flex items-end gap-3">
+                            <div className="flex-1 bg-slate-50 rounded-[2rem] px-6 py-4 shadow-inner">
+                                <textarea
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendMessage();
+                                        }
+                                    }}
+                                    placeholder="Escribe un mensaje..."
+                                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 resize-none max-h-32 min-h-[24px]"
+                                    rows={1}
+                                />
+                            </div>
+                            <Button
+                                type="submit"
+                                disabled={isSending || !newMessage.trim()}
+                                className="size-14 rounded-[1.5rem] bg-slate-900 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                            >
+                                {isSending ? <Loader2 className="animate-spin size-5" /> : <Send size={20} />}
+                            </Button>
+                        </form>
+                    </footer>
+                </>
+            ) : (
+                <div className="p-10 mb-10 text-center animate-in fade-in slide-in-from-bottom-5">
+                    <div className="max-w-xs mx-auto bg-slate-100/80 backdrop-blur-md p-6 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <div className="size-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
+                            <Lock className="text-slate-400 size-6" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2 leading-tight">Canal Cerrado</p>
+                        <p className="text-[11px] font-medium text-slate-400 italic">
+                            {expirationMessage || "Este chat ha sido desactivado automáticamente tras el periodo de gracia de 24h."}
+                        </p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

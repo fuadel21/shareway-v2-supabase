@@ -66,10 +66,7 @@ const createLiveIcon = (photoUrl) => new L.DivIcon({
                 position: relative;
                 z-index: 10;
                 overflow: hidden;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            ">
+                display: flex; align-items: center; justify-content: center;">
                 <img src="${photoUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=driver'}" 
                     style="width: 100%; height: 100%; object-fit: cover;" 
                     onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=fallback'"
@@ -105,7 +102,7 @@ function MapUpdater({ center, zoom, follow }) {
     const map = useMap();
     useEffect(() => {
         const container = map.getContainer();
-        if (!container) return; // BLINDAJE: Evitar llamadas sobre mapas desmontados
+        if (!container) return; 
 
         if (center && typeof center.lat === 'number' && typeof center.lng === 'number') {
             const options = follow ? { duration: 1.5, animate: true } : { duration: 2, easeLinearity: 0.25 };
@@ -129,7 +126,7 @@ function MapEvents({ onClick }) {
     return null;
 }
 
-const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, selectedItemId, followLocation }) => {
+const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, selectedItemId, followLocation, pickupLocation }) => {
     const defaultCenter = useMemo(() => ({ lat: 40.416775, lng: -3.703790 }), []); // Madrid
 
     const staticIcons = useMemo(() => ({
@@ -138,6 +135,7 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
         active: createCustomIcon('#10b981'),
         request: createCustomIcon('#f59e0b'),
         selected: createCustomIcon('#ef4444', true),
+        pickup: createCustomIcon('#ef4444', true),
     }), []);
 
     const toLatLng = (obj) => {
@@ -173,6 +171,10 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
 
                 {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={staticIcons.user} />
+                )}
+
+                {pickupLocation && (
+                    <Marker position={[pickupLocation.lat, pickupLocation.lng]} icon={staticIcons.pickup} />
                 )}
 
                 {(itemsToDisplay || []).map((item) => {

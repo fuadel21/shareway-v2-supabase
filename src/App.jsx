@@ -4,7 +4,8 @@ import './App.css';
 import { Toaster, toast } from 'sonner';
 
 import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react'; // ✅ SEGURO: Importación verificada de lucide-react
+import { Loader2 } from 'lucide-react';
+import { App as CapacitorApp } from '@capacitor/app';
 
 // --- Error Boundary ---
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -27,7 +28,6 @@ import EditProfile from '@/components/EditProfile';
 import Settings from '@/components/Settings';
 import Wallet from '@/components/Wallet';
 import VerificationSettings from '@/components/VerificationSettings';
-import VerificationCenter from '@/components/VerificationCenter';
 import SecuritySettings from '@/components/SecuritySettings';
 import Achievements from '@/components/Achievements';
 import ComingSoon from '@/components/ComingSoon';
@@ -39,6 +39,13 @@ import Chat from '@/components/Chat';
 import PayoutSettings from '@/components/PayoutSettings';
 import LeaveReview from '@/components/LeaveReview';
 import DisputeHistory from '@/components/DisputeHistory';
+import FavoriteRoutes from '@/components/FavoriteRoutes';
+import EmergencyContacts from '@/components/EmergencyContacts';
+import RideChat from '@/components/RideChat';
+import RideChatSelector from '@/components/RideChatSelector';
+import EmergencyChat from '@/components/EmergencyChat';
+import EditFavoriteRoute from '@/components/EditFavoriteRoute';
+import VerificationCenter from '@/components/VerificationCenter';
 
 const FullScreenLoader = ({ text = 'Cargando...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4 text-left">
@@ -92,6 +99,23 @@ function App() {
             }
         });
         return () => subscription.unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        const setupBackButton = async () => {
+            const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+                const path = window.location.pathname;
+                if (['/', '/login', '/dashboard', '/my-rides', '/chats', '/settings'].includes(path)) {
+                    CapacitorApp.exitApp();
+                } else {
+                    window.history.back();
+                }
+            });
+            return listener;
+        };
+
+        let listenerPromise = setupBackButton();
+        return () => { listenerPromise.then(l => l.remove()).catch(() => { }); };
     }, []);
 
     useEffect(() => {
@@ -161,12 +185,13 @@ function App() {
         }
     }, []);
 
-    const outletContext = useMemo(() => ({ 
-        user: session?.user, 
-        profile, 
-        isLoading, 
-        refreshProfile, 
-        handleSignOut 
+    const outletContext = useMemo(() => ({
+        user: session?.user,
+        profile,
+        isLoading,
+        refreshProfile,
+        handleSignOut,
+        totalUnreadChats: 0 // FALLO 108 ARREGLADO: Badge inicializado para evitar undefined en MainLayout
     }), [session?.user?.id, profile, isLoading, refreshProfile, handleSignOut]);
 
     return (
@@ -185,16 +210,31 @@ function App() {
                         <Route path="my-requests" element={<MyRequests />} />
                         <Route path="chats" element={<ChatList />} />
                         <Route path="chat/:chatId" element={<Chat />} />
-                        <Route path="account" element={<Settings />} />
+
+                        <Route path="settings" element={<Settings />} />
+                        <Route path="settings/vehicle" element={<ComingSoon title="Gestión de Vehículo" />} />
+                        <Route path="settings/security" element={<SecuritySettings />} />
+                        <Route path="settings/verification" element={<VerificationSettings />} />
+                        <Route path="settings/payout" element={<PayoutSettings />} />
+                        <Route path="settings/routes" element={<FavoriteRoutes />} />
+                        <Route path="edit-favorite-route/:id" element={<EditFavoriteRoute />} />
+                        <Route path="settings/appearance" element={<AppearanceSettings />} />
+                        <Route path="settings/notifications" element={<NotificationSettings />} />
+                        <Route path="settings/emergency" element={<EmergencyContacts />} />
+                        <Route path="verification-center" element={<VerificationCenter />} />
+
+                        <Route path="profile/edit" element={<EditProfile />} />
                         <Route path="publish" element={<CreateRide />} />
                         <Route path="create-ride" element={<Navigate to="/publish" replace />} />
                         <Route path="request" element={<CreateRequest />} />
                         <Route path="create-request" element={<Navigate to="/request" replace />} />
                         <Route path="ride/:id" element={<RideDetails />} />
+                        <Route path="rides/:rideId/chats" element={<RideChatSelector />} />
+                        <Route path="rides/:rideId/chat/:chatId" element={<RideChat />} />
+                        <Route path="ride-chat/:rideId" element={<RideChat />} />
+                        <Route path="emergency" element={<EmergencyChat />} />
                         <Route path="request/:id" element={<RequestDetails />} />
                         <Route path="profile/:userId" element={<UserProfile />} />
-                        <Route path="settings" element={<Settings />} />
-                        <Route path="edit-profile" element={<EditProfile />} />
                         <Route path="wallet" element={<Wallet />} />
                         <Route path="achievements" element={<Achievements />} />
                         <Route path="leave-review/:rideId/:revieweeId" element={<LeaveReview />} />
@@ -202,8 +242,8 @@ function App() {
                     </Route>
 
                     <Route path="/admin" element={<AdminLayoutWrapper {...outletContext} />}>
-                        <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route index element={<Navigate to="/admin/verifications" replace />} />
+                        <Route path=":tab" element={<AdminDashboard />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/" replace />} />

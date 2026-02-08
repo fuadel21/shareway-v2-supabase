@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button.jsx';
-import { Loader2, Lock, CreditCard, ShieldCheck, AlertCircle } from 'lucide-react'; // FASE 8: AlertCircle importado
-import * as rpc from '@/lib/supabaseRPC';
+import { Loader2, Lock, CreditCard, ShieldCheck, AlertCircle } from 'lucide-react';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -17,6 +16,48 @@ const CheckoutForm = ({ amount, onSuccess, onClose, clientSecret }) => {
     const { user } = useOutletContext();
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
+    const [paymentRequest, setPaymentRequest] = useState(null);
+
+    useEffect(() => {
+        if (stripe) {
+            const pr = stripe.paymentRequest({
+                country: 'ES',
+                currency: 'eur',
+                total: { label: 'Reserva ShareWay', amount: Math.round(amount * 100) },
+                requestPayerName: true,
+                requestPayerEmail: true,
+            });
+
+            pr.canMakePayment().then(result => {
+                if (result) setPaymentRequest(pr);
+            });
+
+            pr.on('paymentmethod', async (ev) => {
+                const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+                    clientSecret,
+                    { payment_method: ev.paymentMethod.id },
+                    { handleActions: false }
+                );
+
+                if (confirmError) {
+                    ev.complete('fail');
+                    setErrorMessage(confirmError.message);
+                } else {
+                    ev.complete('success');
+                    if (paymentIntent.status === "succeeded") {
+                        await handlePostPayment();
+                    }
+                }
+            });
+        }
+    }, [stripe, amount, clientSecret]);
+
+    const handlePostPayment = async () => {
+        toast.success("¡Pago confirmado!", {
+            description: "Estamos procesando tu reserva. Aparecerá en tus viajes en unos segundos."
+        });
+        if (onSuccess) await onSuccess();
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -26,40 +67,19 @@ const CheckoutForm = ({ amount, onSuccess, onClose, clientSecret }) => {
         setErrorMessage(null);
 
         try {
-            // 1. Confirmar Pago (clientSecret ya inyectado en el Provider)
             const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
                 elements,
-                confirmParams: { 
-                    return_url: `${window.location.origin}/wallet`,
-                },
+                confirmParams: { return_url: window.location.href },
                 redirect: 'if_required',
             });
 
             if (confirmError) {
                 setErrorMessage(confirmError.message);
             } else if (paymentIntent.status === 'succeeded') {
-                // 2. BLINDAJE CRÍTICO: Acreditar en Wallet (Backend) 
-                const { success, error: creditError } = await rpc.safeCall(
-                    supabase.rpc('credit_wallet_on_success', { 
-                        p_payment_intent_id: paymentIntent.id,
-                        p_amount: amount 
-                    }),
-                    'credit_wallet_on_success'
-                );
-                
-                if (!success) {
-                    console.error("🛡️ stability: Direct payment wallet sync failure:", creditError);
-                    toast.error('Pago recibido pero hubo un error en la sincronización.', { 
-                        description: 'No cierres la app. Tu saldo se actualizará automáticamente.' 
-                    });
-                } else {
-                    toast.success("¡Capital Validado!", { description: "Confirmando tu plaza en el viaje..." });
-                    if (onSuccess) await onSuccess(); 
-                }
+                await handlePostPayment();
             }
         } catch (err) {
-            console.error("🛡️ Checkout Error:", err);
-            setErrorMessage(err.message || "Error inesperado en el proceso de pago.");
+            setErrorMessage(err.message || "Error inesperado.");
         } finally {
             setIsLoading(false);
         }
@@ -67,42 +87,41 @@ const CheckoutForm = ({ amount, onSuccess, onClose, clientSecret }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-2xl mb-4">
+            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-2xl mb-4 text-left">
                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                     <ShieldCheck size={80} />
                 </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Diferencia a cubrir</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Costo de Reserva</p>
                 <p className="text-4xl font-black italic tracking-tighter">
                     {amount.toFixed(2)}<span className="text-xl ml-1">€</span>
                 </p>
             </div>
 
-            <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-inner min-h-[250px]">
-                <PaymentElement options={{ layout: 'tabs' }} />
+            {paymentRequest && (
+                <div className="mb-4">
+                    <div className="mb-2"><PaymentRequestButtonElement options={{ paymentRequest }} /></div>
+                    <div className="relative flex items-center gap-4 my-6">
+                        <div className="h-px bg-slate-100 flex-1" />
+                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">o con tarjeta</span>
+                        <div className="h-px bg-slate-100 flex-1" />
+                    </div>
+                </div>
+            )}
+
+            <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-inner">
+                <PaymentElement options={{ layout: 'accordion' }} />
             </div>
-            
+
             {errorMessage && (
-                <div className="text-red-600 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-2 animate-in shake-in">
+                <div className="text-red-600 text-xs font-bold bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-2 text-left">
                     <AlertCircle className="size-4 shrink-0 mt-0.5" />
                     <span>{errorMessage}</span>
                 </div>
             )}
-            
+
             <div className="flex gap-3">
-                <Button 
-                    type="button" 
-                    variant="ghost" 
-                    onClick={onClose} 
-                    disabled={isLoading}
-                    className="flex-1 h-14 rounded-2xl font-bold text-slate-400"
-                >
-                    Cancelar
-                </Button>
-                <Button 
-                    type="submit" 
-                    disabled={!stripe || isLoading} 
-                    className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all"
-                >
+                <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading} className="flex-1 h-14 rounded-2xl font-bold text-slate-400">Cancelar</Button>
+                <Button type="submit" disabled={!stripe || isLoading} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                         <span className="flex items-center gap-2">
                             <Lock className="h-4 w-4" /> Pagar y Reservar
@@ -114,23 +133,24 @@ const CheckoutForm = ({ amount, onSuccess, onClose, clientSecret }) => {
     );
 };
 
-const BookingPaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
+const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, onSuccess }) => {
     const { user } = useOutletContext();
     const [clientSecret, setClientSecret] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
 
     useEffect(() => {
         const preparePayment = async () => {
-            if (isOpen && amount > 0 && user) {
+            if (isOpen && rideId && user) {
                 setIsPreparing(true);
+                setClientSecret(null);
                 try {
-                    const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-                        body: { amount, user_id: user.id },
+                    const { data, error } = await supabase.functions.invoke('create-booking-payment-intent', {
+                        body: { rideId },
                     });
-                    if (error || !data?.clientSecret) throw new Error("Motor de pagos no disponible");
+                    if (error || !data?.clientSecret) throw new Error(data?.error?.message || "Motor de reservas no disponible");
                     setClientSecret(data.clientSecret);
                 } catch (e) {
-                    toast.error("Error financiero", { description: e.message });
+                    toast.error("Error de reserva", { description: e.message });
                     onClose();
                 } finally {
                     setIsPreparing(false);
@@ -138,7 +158,7 @@ const BookingPaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
             }
         };
         preparePayment();
-    }, [isOpen, amount, user]);
+    }, [isOpen, rideId, user]);
 
     const handleClose = () => {
         if (!isPreparing) {
@@ -161,20 +181,20 @@ const BookingPaymentModal = ({ isOpen, onClose, amount, onSuccess }) => {
                         Protocolo de Pago Blindado ShareWay
                     </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="mt-4">
                     {isPreparing ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enlazando con Stripe...</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Iniciando protocolo de reserva...</p>
                         </div>
                     ) : clientSecret ? (
                         <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
-                            <CheckoutForm 
-                                amount={amount} 
+                            <CheckoutForm
+                                amount={amount}
                                 clientSecret={clientSecret}
-                                onSuccess={onSuccess} 
-                                onClose={handleClose} 
+                                onSuccess={onSuccess}
+                                onClose={handleClose}
                             />
                         </Elements>
                     ) : null}

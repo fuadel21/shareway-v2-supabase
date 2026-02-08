@@ -90,7 +90,8 @@ const ExplorePage = () => {
         const fetchRides = async () => {
             setIsLoadingLocal(true);
             try {
-                const data = await getAvailableRides();
+                // ARREGLADO: Pasamos profile.id para filtrar viajes propios en el mapa
+                const data = await getAvailableRides(profile?.id);
                 // Normalización de coordenadas para el Mapa
                 const items = (data || []).map(ride => ({
                     ...ride,
@@ -105,8 +106,8 @@ const ExplorePage = () => {
                 setIsLoadingLocal(false);
             }
         };
-        fetchRides();
-    }, []);
+        if (profile?.id) fetchRides();
+    }, [profile?.id]);
 
     const defaultTab = useMemo(() => {
         const params = new URLSearchParams(location.search);
@@ -114,8 +115,9 @@ const ExplorePage = () => {
     }, [location.search]);
 
     const filteredItems = useMemo(() => {
-        const allRides = contextRides || [];
-        const allRequests = contextRequests || [];
+        // ARREGLADO: También filtramos los datos que vienen del contexto global
+        const allRides = (contextRides || []).filter(r => r.driver_id !== profile?.id);
+        const allRequests = (contextRequests || []).filter(r => r.requester_id !== profile?.id);
         
         let filteredRides = allRides;
         if (showWomenOnly) {
@@ -128,7 +130,7 @@ const ExplorePage = () => {
             requests: allRequests.filter(r => r.status === 'pending'),
             all: [...filteredRides, ...allRequests]
         };
-    }, [contextRides, contextRequests, showWomenOnly]);
+    }, [contextRides, contextRequests, showWomenOnly, profile?.id]);
 
     if (loadingData || isLoadingLocal) {
         return (

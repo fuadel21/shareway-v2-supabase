@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, Users, ShieldCheck, LogOut, Building2 } from 'lucide-react'; // <-- Building2 importado
+import { Home, Users, ShieldCheck, LogOut, Building2, Car, DollarSign, AlertCircle, RefreshCw, Leaf } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const NavItem = ({ to, icon: Icon, children }) => {
@@ -26,10 +26,14 @@ const AdminLayout = ({ handleSignOut, profile }) => {
                     <p className="text-sm text-gray-600">Taxi Compartido</p>
                 </div>
                 <nav className="flex-grow space-y-2">
-                    <NavItem to="/admin/dashboard" icon={Home}>Dashboard</NavItem>
                     <NavItem to="/admin/verifications" icon={ShieldCheck}>Verificaciones</NavItem>
                     <NavItem to="/admin/users" icon={Users}>Usuarios</NavItem>
-                    <NavItem to="/admin/communities" icon={Building2}>Comunidades</NavItem> {/* <-- Enlace añadido */}
+                    <NavItem to="/admin/communities" icon={Building2}>Comunidades</NavItem>
+                    <NavItem to="/admin/rides" icon={Car}>Viajes</NavItem>
+                    <NavItem to="/admin/finance" icon={DollarSign}>Finanzas</NavItem>
+                    <NavItem to="/admin/disputes" icon={AlertCircle}>Disputas</NavItem>
+                    <NavItem to="/admin/maintenance" icon={RefreshCw}>Mantenimiento</NavItem>
+                    <NavItem to="/admin/climate" icon={Leaf}>Auditoría</NavItem>
                 </nav>
                 <div className="mt-auto">
                     <div className="mb-4 p-2 bg-gray-200 rounded-lg text-center">

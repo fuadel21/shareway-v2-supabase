@@ -16,6 +16,7 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import ReviewsList from './ReviewsList';
 import { getImpactEquivalency } from '@/utils/climateImpact';
+import { useTranslation } from 'react-i18next';
 
 const StatCard = ({ icon: Icon, value, label, color }) => (
     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1 transition-all hover:shadow-md">
@@ -27,7 +28,6 @@ const StatCard = ({ icon: Icon, value, label, color }) => (
     </div>
 );
 
-// BLINDAJE: Esquema de fallback para evitar Null Pointers en el renderizado
 const DEFAULT_PROFILE = {
     display_name: 'Miembro',
     rating: '5.0',
@@ -37,10 +37,12 @@ const DEFAULT_PROFILE = {
     eco_points: 0,
     verification_status: 'not_verified',
     vehicle: { make: '', model: '', color: '' },
+    bio: '',
     preferences: {}
 };
 
 function UserProfile() {
+    const { t } = useTranslation();
     const { userId } = useParams();
     const navigate = useNavigate();
     const { profile: currentUser } = useOutletContext();
@@ -57,19 +59,20 @@ function UserProfile() {
         const fetchProfileData = async () => {
             setLoading(true);
             try {
-                // RPC blindado para datos públicos
+                // FALLO 76 ARREGLADO: Solo datos públicos
                 const { data: pData, error: pErr } = await supabase.rpc('get_public_profile', { p_user_id: userId });
-                
+
                 if (pErr) throw pErr;
                 if (isMounted && pData) {
                     setProfile({
                         ...DEFAULT_PROFILE,
                         ...pData,
+                        // FALLO 84 ARREGLADO: Redondeo de rating
+                        rating: pData.rating ? parseFloat(pData.rating).toFixed(1) : '5.0',
                         vehicle: pData.vehicle || DEFAULT_PROFILE.vehicle
                     });
                 }
 
-                // Carga de logros con validación defensiva
                 const { data: aData } = await supabase.from('user_achievements').select('achievement_id').eq('user_id', userId);
                 if (isMounted && aData && aData.length > 0) {
                     const ids = aData.map(a => a.achievement_id);
@@ -88,12 +91,11 @@ function UserProfile() {
     }, [userId]);
 
     const memberDate = useMemo(() => {
-        if (!profile?.created_at) return 'Recientemente';
+        if (!profile?.created_at) return '...';
         const d = new Date(profile.created_at);
-        return isValid(d) ? format(d, "MMM yyyy", { locale: es }) : 'Recientemente';
+        return isValid(d) ? format(d, "MMM yyyy", { locale: es }) : '...';
     }, [profile?.created_at]);
 
-    // BLINDAJE: Lógica de Tiers dinámicos para evitar ReferenceErrors
     const ecoSystem = useMemo(() => {
         const tier = profile.eco_tier || 'Seed';
         const config = {
@@ -107,7 +109,7 @@ function UserProfile() {
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>;
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-32 font-sans">
+        <div className="min-h-screen bg-slate-50 pb-32 font-sans text-left">
             <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20">
                 <div className="max-w-xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -117,14 +119,14 @@ function UserProfile() {
                         <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Perfil</h1>
                     </div>
                     {isOwnProfile && (
-                        <Button variant="outline" size="icon" className="rounded-2xl size-12 border-slate-100" onClick={() => navigate('/edit-profile')}>
+                        <Button variant="outline" size="icon" className="rounded-2xl size-12 border-slate-100" onClick={() => navigate('/profile/edit')}>
                             <Pencil className="h-5 w-5 text-slate-600" />
                         </Button>
                     )}
                 </div>
             </header>
 
-            <main className="max-w-xl mx-auto px-4 py-8 space-y-8">
+            <main className="max-w-xl mx-auto px-4 py-8 space-y-8 text-left">
                 <div className="relative text-center space-y-4">
                     <div className="relative inline-block">
                         <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative z-10 mx-auto">
@@ -151,27 +153,35 @@ function UserProfile() {
                     <StatCard icon={TrendingUp} value={profile.rides_count} label="Viajes" color="bg-indigo-50 text-indigo-600" />
                     <StatCard icon={Leaf} value={parseFloat(profile.total_co2_saved).toFixed(1)} label="kg CO2" color="bg-emerald-50 text-emerald-600" />
                     <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label="Nivel Eco" color={ecoSystem.color} />
-                    <StatCard icon={Sprout} value={profile.eco_points || 0} label="Green Miles" color="bg-lime-50 text-lime-600" />
-                    <StatCard icon={Award} value={achievements.length} label="Logros" color="bg-amber-50 text-amber-600" />
                 </div>
+
+                {/* FALLO 82 ARREGLADO: Bio con preservación de formato */}
+                {profile.bio && (
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={12} className="text-primary" /> Biografía</p>
+                        <p className="text-slate-600 font-medium italic whitespace-pre-line leading-relaxed">
+                            "{profile.bio}"
+                        </p>
+                    </div>
+                )}
 
                 {parseFloat(profile.total_co2_saved) > 0 && (
                     <div className="bg-emerald-50 rounded-[2rem] p-6 border border-emerald-100 relative overflow-hidden shadow-sm">
                         <div className="absolute top-0 right-0 p-6 opacity-10">
                             <Leaf size={100} className="text-emerald-600 rotate-12" />
                         </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-3">
+                        <div className="relative z-10 text-left">
+                            <div className="flex items-center gap-3 mb-3 text-left">
                                 <div className="bg-white p-2 rounded-xl shadow-sm text-emerald-600">
                                     <Leaf className="h-5 w-5" />
                                 </div>
-                                <div>
+                                <div className="text-left">
                                     <h3 className="font-black text-lg text-emerald-900 uppercase italic tracking-tighter leading-none">Impacto Real</h3>
                                     <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Planeta Agradecido</p>
                                 </div>
                             </div>
                             <p className="text-emerald-800 text-sm font-medium mb-3 leading-relaxed">
-                                Gracias a tus decisiones de movilidad compartida, has evitado la emisión de <span className="font-black text-2xl align-middle mx-1">{parseFloat(profile.total_co2_saved).toFixed(1)} kg</span> de CO₂.
+                                Has evitado la emisión de <span className="font-black text-2xl align-middle mx-1">{parseFloat(profile.total_co2_saved).toFixed(1)} kg</span> de CO₂.
                             </p>
                             <div className="bg-white/60 rounded-xl p-3 border border-emerald-100/50 backdrop-blur-sm">
                                 <p className="text-emerald-700 text-xs font-bold italic flex items-center gap-2">
@@ -183,34 +193,28 @@ function UserProfile() {
                     </div>
                 )}
 
-                {profile.vehicle && (profile.vehicle.make || profile.vehicle.model) && (
+                {profile.vehicle && (profile.vehicle.make || profile.vehicle.model || profile.vehicle.photoURL) && (
                     <Card className="rounded-[2.5rem] border-none shadow-xl bg-slate-900 overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 opacity-10"><Car size={120} className="text-white" /></div>
-                        <div className="p-8 text-white relative z-10">
+                        <div className="p-8 text-white relative z-10 text-left">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md"><Car className="h-6 w-6 text-primary" /></div>
-                                <div><h3 className="font-black text-lg uppercase tracking-tighter italic leading-none">Vehículo</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transporte Premium</p></div>
+                                <div className="text-left"><h3 className="font-black text-lg uppercase tracking-tighter italic leading-none">Vehículo</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transporte Premium</p></div>
                             </div>
-                            <div className="flex justify-between items-end">
-                                <div><p className="text-2xl font-black tracking-tight uppercase italic leading-none">{profile.vehicle.make} {profile.vehicle.model}</p><p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{profile.vehicle.color || 'Estándar'}</p></div>
+                            <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                {profile.vehicle.photoURL && (
+                                    <div className="h-32 w-full md:w-48 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl shrink-0">
+                                        <img src={profile.vehicle.photoURL} alt="Vehículo" className="w-full h-full object-cover" />
+                                    </div>
+                                )}
+                                <div className="text-left">
+                                    <p className="text-2xl font-black tracking-tight uppercase italic leading-none">{profile.vehicle.make} {profile.vehicle.model}</p>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{profile.vehicle.color || 'Estándar'}</p>
+                                </div>
                             </div>
                         </div>
                     </Card>
                 )}
-
-                <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-4 italic">Medallero Elite</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                        {achievements.length > 0 ? achievements.map((ach, idx) => (
-                            <div key={idx} className="bg-white p-5 rounded-[2rem] border border-slate-100 flex flex-col items-center text-center gap-2 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                                <div className="bg-slate-50 p-3 rounded-2xl shadow-inner"><Award className="h-6 w-6 text-primary" /></div>
-                                <div><p className="font-black text-[10px] text-slate-900 uppercase tracking-tighter italic">{ach.name}</p><p className="text-[8px] font-bold text-slate-400 uppercase">Verificado</p></div>
-                            </div>
-                        )) : (
-                            <div className="col-span-2 py-10 bg-white/50 rounded-[2rem] border-2 border-dashed border-slate-200 flex flex-col items-center"><Zap className="h-8 w-8 text-slate-200 mb-2" /><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">Sin medallas todavía</p></div>
-                        )}
-                    </div>
-                </div>
 
                 <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-4 italic">Testimonios Corales</h3>

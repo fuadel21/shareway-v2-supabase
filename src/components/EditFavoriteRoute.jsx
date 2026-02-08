@@ -33,6 +33,7 @@ const EditFavoriteRoute = () => {
         setIsSaving(true);
         try {
             const routeData = {
+                user_id: profile.id,
                 name,
                 origin: {
                     address: origin.address,
@@ -42,10 +43,10 @@ const EditFavoriteRoute = () => {
                     address: destination.address,
                     coordinates: destination.coordinates
                 },
-                active_days: days
+                days: days
             };
 
-            await saveFavoriteRoute(routeData, profile.id);
+            await saveFavoriteRoute(routeData);
             toast.success("¡Ruta guardada con éxito!");
             navigate('/favorite-routes');
         } catch (error) {
@@ -83,11 +84,11 @@ const EditFavoriteRoute = () => {
                         <div className="space-y-4">
                             <div className="relative">
                                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Origen</Label>
-                                <AddressAutocomplete placeholder="Punto de partida" onPlaceSelect={setOrigin} />
+                                <AddressAutocomplete placeholder="Punto de partida" onSelect={setOrigin} />
                             </div>
                             <div className="relative">
                                 <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 mb-2 block">Destino</Label>
-                                <AddressAutocomplete placeholder="Punto de llegada" onPlaceSelect={setDestination} />
+                                <AddressAutocomplete placeholder="Punto de llegada" onSelect={setDestination} />
                             </div>
                         </div>
 

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Car, UserCheck, Users, Hourglass, DollarSign, BarChart, Banknote, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { Car, UserCheck, Users, Hourglass, DollarSign, BarChart, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton.jsx';
 import { toast } from 'sonner';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getPlatformStats, requestPlatformPayout } from '@/lib/supabaseRPC';
 
 import PendingVerificationsTab from './tabs/PendingVerificationsTab';
@@ -14,9 +15,11 @@ import RideManagementTab from './tabs/RideManagementTab';
 import FinanceTab from './tabs/FinanceTab';
 import DisputesTab from './tabs/DisputesTab';
 import MaintenanceTab from './tabs/MaintenanceTab';
+import ClimateTab from './tabs/ClimateTab';
+import CommunitiesTab from './tabs/CommunitiesTab';
 
 const StatCard = ({ title, value, icon, description, currency = '', loading = false }) => (
-    <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
+    <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
             <div className="bg-primary/10 p-2 rounded-lg text-primary">{icon}</div>
@@ -33,6 +36,8 @@ const StatCard = ({ title, value, icon, description, currency = '', loading = fa
 );
 
 function AdminDashboard() {
+    const { tab = 'verifications' } = useParams();
+    const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isPayoutLoading, setIsPayoutLoading] = useState(false);
@@ -40,16 +45,19 @@ function AdminDashboard() {
     const fetchPlatformStats = async () => {
         setLoading(true);
         try {
-            const data = await getPlatformStats();
-            if (data?.success) {
-                setStats(data.stats);
+            // FIX QA: safeCall devuelve { data, success, error }
+            // La respuesta de Postgres está en data.data
+            const response = await getPlatformStats();
+            
+            if (response?.success && response.data?.success) {
+                setStats(response.data.stats);
             } else {
-                throw new Error(data?.message || "La respuesta del servidor no fue exitosa.");
+                throw new Error(response?.error || response.data?.message || "Error al obtener estadísticas");
             }
         } catch (error) {
-            console.error("Error stats:", error);
-            toast.error("Error al cargar las estadísticas.", { description: error.message });
-            setStats({}); // Set to empty object on error to avoid render issues
+            console.error("🛡️ [AdminDashboard] Fetch Stats Failed:", error);
+            toast.error("Error al cargar las estadísticas", { description: error.message });
+            setStats({});
         } finally {
             setLoading(false);
         }
@@ -65,7 +73,7 @@ function AdminDashboard() {
             const result = await requestPlatformPayout();
             if (result?.success) {
                 toast.success("Retiro solicitado", { description: result.message });
-                await fetchPlatformStats(); // Recargar las estadísticas
+                await fetchPlatformStats();
             } else {
                 throw new Error(result?.message || "Error al solicitar el pago");
             }
@@ -79,14 +87,14 @@ function AdminDashboard() {
     const totalFees = stats?.totalUncollectedFees || 0;
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 text-left">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Panel de Administración</h1>
-                <p className="text-muted-foreground">Resumen global y gestión de la plataforma.</p>
+                <p className="text-muted-foreground italic">Resumen global y gestión de la plataforma ShareWay Elite.</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
+                <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left">
                     <CardHeader className="flex flex-row items-center justify-between pb-2 text-muted-foreground">
                         <CardTitle className="text-sm font-medium">Comisiones Acumuladas</CardTitle>
                         <div className="bg-primary/10 p-2 rounded-lg text-primary"><DollarSign className="h-4 w-4" /></div>
@@ -148,52 +156,61 @@ function AdminDashboard() {
 
             <Card className="rounded-3xl border-none shadow-sm overflow-hidden min-h-[500px]">
                 <CardContent className="p-6">
-                    <Tabs defaultValue="verifications" className="w-full">
-                        <TabsList className="grid w-full grid-cols-6 mb-8 bg-gray-100/50 p-1 rounded-2xl">
-                            <TabsTrigger value="verifications" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><UserCheck className="mr-2 h-4 w-4" />Verificaciones</TabsTrigger>
-                            <TabsTrigger value="users" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><Users className="mr-2 h-4 w-4" />Usuarios</TabsTrigger>
-                            <TabsTrigger value="rides" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><Car className="mr-2 h-4 w-4" />Viajes</TabsTrigger>
-                            <TabsTrigger value="finance" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><DollarSign className="mr-2 h-4 w-4" />Finanzas</TabsTrigger>
-                            <TabsTrigger value="disputes" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><AlertCircle className="mr-2 h-4 w-4" />Disputas</TabsTrigger>
-                            <TabsTrigger value="maintenance" className="rounded-xl data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all"><RefreshCw className="mr-2 h-4 w-4" />Mantenimiento</TabsTrigger>
+                    <Tabs value={tab} onValueChange={(v) => navigate(`/admin/${v}`)} className="w-full">
+                        <TabsList className="flex w-full overflow-x-auto mb-8 bg-gray-100/50 p-1 rounded-2xl gap-1 no-scrollbar justify-start md:justify-between min-h-14">
+                            <TabsTrigger value="verifications" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><UserCheck className="mr-2 h-4 w-4" />Verificaciones</TabsTrigger>
+                            <TabsTrigger value="users" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Users className="mr-2 h-4 w-4" />Usuarios</TabsTrigger>
+                            <TabsTrigger value="communities" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Building2 className="mr-2 h-4 w-4" />Comunidades</TabsTrigger>
+                            <TabsTrigger value="rides" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Car className="mr-2 h-4 w-4" />Viajes</TabsTrigger>
+                            <TabsTrigger value="finance" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><DollarSign className="mr-2 h-4 w-4" />Finanzas</TabsTrigger>
+                            <TabsTrigger value="disputes" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><AlertCircle className="mr-2 h-4 w-4" />Disputas</TabsTrigger>
+                            <TabsTrigger value="maintenance" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><RefreshCw className="mr-2 h-4 w-4" />Mantenimiento</TabsTrigger>
+                            <TabsTrigger value="climate" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Leaf className="mr-2 h-4 w-4" />Auditoría</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="verifications" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Solicitudes de verificación pendientes de revisión.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Solicitudes de verificación pendientes de revisión manual.</p>
                                 <PendingVerificationsTab />
                             </div>
                         </TabsContent>
 
                         <TabsContent value="users" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Gestión y búsqueda de usuarios en la plataforma.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión y búsqueda de usuarios en la plataforma.</p>
                                 <UserManagementTab />
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="communities" className="mt-0 focus-visible:outline-none">
+                            <div className="bg-white rounded-2xl">
+                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión de círculos de confianza por dominio de correo.</p>
+                                <CommunitiesTab />
                             </div>
                         </TabsContent>
 
                         <TabsContent value="rides" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Historial y estado actual de los viajes publicados.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Historial y estado actual de los viajes publicados.</p>
                                 <RideManagementTab />
                             </div>
                         </TabsContent>
                         <TabsContent value="finance" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Gestión financiera y solicitudes de retiro.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión financiera y solicitudes de retiro.</p>
                                 <FinanceTab stats={stats} loading={loading} />
                             </div>
                         </TabsContent>
                         <TabsContent value="disputes" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Solicitudes de reembolso por fuerza mayor.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Solicitudes de reembolso por fuerza mayor.</p>
                                 <DisputesTab />
                             </div>
                         </TabsContent>
 
                         <TabsContent value="maintenance" className="mt-0 focus-visible:outline-none">
                             <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4">Mantenimiento global y limpieza de datos.</p>
+                                <p className="text-sm text-muted-foreground mb-4 italic">Mantenimiento global y limpieza de datos.</p>
                                 <MaintenanceTab />
                             </div>
                         </TabsContent>

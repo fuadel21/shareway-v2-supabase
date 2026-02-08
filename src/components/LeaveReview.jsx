@@ -74,7 +74,7 @@ const LeaveReview = () => {
 
         setSubmitting(true);
         const toastId = toast.loading("Guardando valoración y otorgando EcoPoints...");
-        
+
         try {
             await submitReview({
                 rideId,
@@ -91,7 +91,7 @@ const LeaveReview = () => {
 
             // FASE 27: Refrescar perfil para ver nuevos puntos y rating inmediatamente
             if (refreshProfile) await refreshProfile();
-            
+
             navigate('/my-rides');
         } catch (error) {
             console.error("🛡️ stability: submitReview failed:", error);
@@ -111,8 +111,8 @@ const LeaveReview = () => {
     if (!reviewee) return null;
 
     return (
-        <div className="min-h-screen bg-slate-50 pb-32 font-sans">
-            <SubPageHeader title="Valorar Miembro" />
+        <div className="min-h-screen bg-slate-50 pb-32 font-sans text-left">
+            <SubPageHeader title="Valorar Conductor" />
 
             <main className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <Card className="rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white">
@@ -120,7 +120,7 @@ const LeaveReview = () => {
                         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none overflow-hidden">
                             <Sparkles className="size-64 -translate-x-20 -translate-y-20 text-white" />
                         </div>
-                        
+
                         <div className="relative mb-6 z-10">
                             <Avatar className="h-32 w-32 border-4 border-white shadow-2xl">
                                 <AvatarImage src={reviewee.photo_url || reviewee.avatar_url} />

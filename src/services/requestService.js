@@ -1,8 +1,7 @@
 /**
  * Servicio de Solicitudes - Migrado a Supabase
  */
-import { createRideRequest as createRideRequestRPC } from '@/lib/supabaseRPC.js';
-import { toast } from 'sonner';
+import { createRideRequest } from '@/services/rideService';
 
 /**
  * Error personalizado
@@ -26,37 +25,20 @@ export const createSingleRequest = async (requestData) => {
     }
 
     try {
-        // Preparar datos para RPC
-        const originData = {
-            name: requestData.origin.name,
-            address: requestData.origin.address,
-            lat: requestData.origin.coordinates.lat,
-            lng: requestData.origin.coordinates.lng
-        };
-
-        const destinationData = {
-            name: requestData.destination.name,
-            address: requestData.destination.address,
-            lat: requestData.destination.coordinates.lat,
-            lng: requestData.destination.coordinates.lng
-        };
-
-        const result = await createRideRequestRPC({
-            origin: originData,
-            destination: destinationData,
-            departureTime: requestData.dateTime.toISOString(),
-            seatsNeeded: requestData.seats,
-            suggestedPrice: requestData.suggestedPrice || null,
-            details: requestData.details || '',
-            isWomenOnly: requestData.isWomenOnly || false
+        const result = await createRideRequest({
+            origin: requestData.origin,
+            destination: requestData.destination,
+            dateTime: requestData.dateTime,
+            seats: requestData.seats,
+            price: requestData.suggestedPrice || 0,
+            note: requestData.details || '',
+            isWomenOnly: requestData.isWomenOnly || false,
+            distance: requestData.distance || 0,
+            overview_polyline: requestData.overview_polyline || ''
         });
 
-        if (result?.success) {
-            return result.requestId;
-        } else {
-            const errorMessage = result?.message || 'La función no pudo completar la operación.';
-            throw new AppError('function/execution-failed', errorMessage);
-        }
+        if (result?.success) return result.requestId;
+        throw new AppError('function/execution-failed', result?.message || 'La función no pudo completar la operación.');
 
     } catch (error) {
         console.error("Error al llamar a la función create_ride_request:", error);

@@ -38,16 +38,26 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
     const handleProcessPayout = async (payoutId, status) => {
         setProcessingId(payoutId);
         try {
-            const { data, error } = await supabase.rpc('process_payout', {
-                p_payout_id: payoutId,
-                p_status: status,
-                p_stripe_transfer_id: status === 'completed' ? `tr_sim_${Math.random().toString(36).substr(2, 9)}` : null,
-                p_error_message: status === 'rejected' ? 'Rechazado por el administrador' : null
-            });
+            if (status === 'completed') {
+                // LLAMADA AL MOTOR DE PAGOS REAL (EDGE FUNCTION)
+                const { data, error } = await supabase.functions.invoke('process-stripe-payout', {
+                    body: { payoutId }
+                });
 
-            if (error) throw error;
+                if (error || data?.error) throw new Error(data?.error || error?.message || "Error en el motor de transferencias");
 
-            toast.success(status === 'completed' ? "Retiro aprobado" : "Retiro rechazado");
+                toast.success("Pago transferido con éxito vía Stripe");
+            } else {
+                // RECHAZO (Sigue siendo un RPC administrativo)
+                const { error } = await supabase.rpc('process_payout', {
+                    p_payout_id: payoutId,
+                    p_status: 'rejected',
+                    p_error_message: 'Rechazado por el administrador'
+                });
+                if (error) throw error;
+                toast.success("Retiro rechazado");
+            }
+
             fetchPayouts();
         } catch (error) {
             toast.error("Error al procesar", { description: error.message });

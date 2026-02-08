@@ -1,149 +1,92 @@
 /**
- * Servicio de Reservas - Migrado a Supabase
+ * Servicio de Reservas - Blindaje Antifraude v3.1
+ * Optimización: Atomicidad garantizada vía safeCall RPC.
  */
-import {
-  cancelBookingAndRefund as cancelBookingAndRefundRPC,
-  confirmTripAndPay as confirmTripAndPayRPC,
-  confirmPassengerArrival as confirmPassengerArrivalRPC
-} from '@/lib/supabaseRPC.js';
 import { supabase } from '@/lib/supabase';
-import { createNotification } from '@/services/notificationService';
+import * as rpc from '@/lib/supabaseRPC';
 
 /**
- * Error personalizado
- */
-class AppError extends Error {
-  constructor(code, message) {
-    super(message);
-    this.code = code;
-    this.name = 'AppError';
-  }
-}
-
-/**
- * Calcula el monto de reembolso estimado según la política de cancelación PARANOIC.
- * Política:
- * - Periodo de gracia: < 15 min desde reserva (si falta > 3h para salida): 100%
- * - > 24h antes: 100% reembolso
- * - >= 2h antes: 50% reembolso
- * - < 2h antes o ya iniciado: 0% reembolso
- * 
- * @param {object} ride - Objeto del viaje (debe tener departure_time y price)
- * @param {object} passengerInfo - Info del pasajero (con booked_at)
- * @returns {object} - { amount: number, percentage: number, message: string }
+ * Calcula el monto de reembolso basado en reglas de tiempo.
  */
 export const calculateRefundAmount = (ride, passengerInfo = null) => {
-  if (!ride || !ride.departure_time) return { amount: 0, percentage: 0, message: "Datos insuficientes" };
-
+  if (!ride || !ride.departure_time) return { amount: 0, percentage: 0 };
+  
   const departureDate = new Date(ride.departure_time);
   const now = new Date();
   const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
   const price = parseFloat(ride.price) || 0;
 
-  // Lógica para solicitudes pendientes (Refund 100% siempre)
-  if (passengerInfo?.status === 'pending') {
-    return {
-      amount: price,
-      percentage: 100,
-      message: "Reembolso completo (Solicitud pendiente)"
-    };
+  // Si el viaje ya pasó y no se inició, reembolso total (Seguridad de Plataforma)
+  if (hoursUntilDeparture < 0 && ride.status === 'scheduled') {
+    return { amount: price, percentage: 100, message: "Reembolso total (Viaje Caducado)" };
   }
 
-  // Periodo de gracia (15 min)
-  if (passengerInfo?.booked_at) {
-    const bookedAt = new Date(passengerInfo.booked_at);
-    const minutesSinceBooking = (now - bookedAt) / (1000 * 60);
-    if (minutesSinceBooking <= 15 && hoursUntilDeparture > 3) {
-      return {
-        amount: price,
-        percentage: 100,
-        message: "Reembolso completo (Periodo de gracia 15 min)"
-      };
-    }
-  }
-
-  if (hoursUntilDeparture > 24) {
-    return {
-      amount: price,
-      percentage: 100,
-      message: "Reembolso completo (más de 24h antes)"
-    };
-  } else if (hoursUntilDeparture >= 2) {
-    return {
-      amount: price * 0.5,
-      percentage: 50,
-      message: "Reembolso del 50% (entre 24h y 2h antes)"
-    };
-  } else {
-    return {
-      amount: 0,
-      percentage: 0,
-      message: "Sin reembolso (menos de 2h antes o ya iniciado)"
-    };
-  }
+  if (hoursUntilDeparture > 24) return { amount: price, percentage: 100 };
+  if (hoursUntilDeparture >= 2) return { amount: price * 0.5, percentage: 50 };
+  
+  return { amount: 0, percentage: 0 };
 };
 
 /**
- * Cancela una reserva y libera los fondos.
- * @param {string} rideId - El ID del viaje.
- * @returns {Promise<object>} - El resultado.
- */
-export const cancelBooking = async (rideId) => {
-  if (!rideId) {
-    throw new AppError('validation/missing-ride-id', "Falta el ID del viaje para cancelar.");
-  }
-
-  try {
-    const result = await cancelBookingAndRefundRPC(rideId);
-
-    if (result.success) {
-      return result;
-    } else {
-      throw new AppError('function/failed', result.message || 'Error al cancelar la reserva');
-    }
-  } catch (error) {
-    console.error("Error al cancelar reserva:", error);
-    throw new AppError(error.code || 'unknown', error.message || "Error al intentar cancelar tu reserva");
-  }
-};
-
-/**
- * Confirma una reserva y realiza el pago (retención).
- * @param {string} rideId - El ID del viaje.
- * @param {string|null} requestId - El ID de la solicitud original (opcional).
- * @returns {Promise<object>} - El resultado.
- */
-export const confirmTripAndPay = async (rideId, requestId = null) => {
-  if (!rideId) {
-    throw new AppError('validation/missing-ride-id', "Falta el ID del viaje para reservar.");
-  }
-
-  try {
-    const result = await confirmTripAndPayRPC(rideId, requestId);
-
-    if (result.success) {
-      return result;
-    } else {
-      throw new AppError('function/failed', result.message || 'Error al confirmar la reserva');
-    }
-  } catch (error) {
-    console.error("Error al reservar:", error);
-    throw error; // RE-THROW ERROR
-  }
-};
-
-/**
- * Confirma que el pasajero ha llegado a su destino.
- * @param {string} rideId - El ID del viaje.
- * @returns {Promise<object>} - El resultado.
+ * Confirma que el pasajero ha llegado (Libera fondos al conductor)
  */
 export const confirmArrival = async (rideId) => {
-  if (!rideId) throw new AppError('validation/missing-ride-id', "Falta el ID del viaje.");
   try {
-    const result = await confirmPassengerArrivalRPC(rideId);
-    return result;
+    const { data, success, error } = await rpc.confirmPassengerArrival(rideId);
+    if (!success) throw new Error(error);
+    return { success: true, data };
   } catch (error) {
-    console.error("Error al confirmar llegada:", error);
-    throw new AppError(error.code || 'unknown', error.message || "Error al confirmar llegada");
+    console.error("🛡️ [Booking] Error confirmando llegada:", error.message);
+    throw error;
+  }
+};
+
+/**
+ * Motor de Reserva Principal (Atomic Enforcement)
+ * El flujo de "Pedir Plaza" en un viaje existente.
+ */
+export const confirmTripAndPay = async (rideId, requestId = null) => {
+  if (!rideId) throw new Error("ID de viaje requerido.");
+
+  try {
+    const { data, success, error } = await rpc.confirmTripAndPay(rideId, requestId);
+
+    if (!success) {
+        // Mapeo exhaustivo de errores de negocio desde el RPC de PostgreSQL
+        const errorMap = {
+            'SIN_PLAZAS_LIBRES': "Lo sentimos, ya no quedan plazas libres.",
+            'SALDO_INSUFICIENTE': "Saldo insuficiente. Por favor, recarga tu wallet.",
+            'VIAJE_YA_INICIADO': "El viaje ya ha comenzado y no acepta más reservas.",
+            'PROPIO_VIAJE': "No puedes reservar en tu propio viaje.",
+            'USER_SUSPENDED': "Tu cuenta está suspendida temporalmente.",
+            'ALREADY_BOOKED': "Ya tienes una reserva activa en este viaje."
+        };
+
+        const message = Object.keys(errorMap).find(key => error?.includes(key)) 
+                        ? errorMap[Object.keys(errorMap).find(key => error?.includes(key))]
+                        : (error || "No se pudo completar la reserva.");
+
+        throw new Error(message);
+    }
+
+    return { success: true, data };
+    
+  } catch (error) {
+    console.error("🛡️ [Booking Engine] Failure:", error.message);
+    throw error;
+  }
+};
+
+/**
+ * Cancela una reserva y procesa el reembolso automático según reglas de negocio.
+ */
+export const cancelBooking = async (rideId) => {
+  try {
+    const { data, success, error } = await rpc.cancelBookingAndRefund(rideId);
+    if (!success) throw new Error(error);
+    return { success: true, data };
+  } catch (error) {
+    console.error("🛡️ [Booking] Cancelation failed:", error.message);
+    throw error;
   }
 };
