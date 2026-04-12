@@ -215,7 +215,8 @@ function Dashboard() {
     };
 
     if (!profile) return null;
-
+    
+    return (
         <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
             {/* BADGE DE IMPACTO (Premium Look - Lateral Izquierdo Inferior) */}
             <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2">
