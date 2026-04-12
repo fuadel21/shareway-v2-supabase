@@ -29,17 +29,15 @@ const ImpactBadge = ({ profile }) => {
     const savedKg = parseFloat(profile.total_co2_saved) || 0;
 
     return (
-        <div className="absolute bottom-60 right-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2">
-            <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 animate-elite-in">
-                <div className="size-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                    <Leaf size={16} className="text-white" />
-                </div>
-                <div className="text-left leading-tight">
-                    <p className="text-xs font-black italic text-white tracking-widest uppercase">
-                        {savedKg.toFixed(1)} <span className="text-emerald-400">KG CO₂</span>
-                    </p>
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Impacto Positivo</p>
-                </div>
+        <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 animate-elite-in pointer-events-none">
+            <div className="size-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <Leaf size={16} className="text-white" />
+            </div>
+            <div className="text-left leading-tight">
+                <p className="text-xs font-black italic text-white tracking-widest uppercase">
+                    {savedKg.toFixed(1)} <span className="text-emerald-400">KG CO₂</span>
+                </p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">Impacto Positivo</p>
             </div>
         </div>
     );
@@ -219,7 +217,7 @@ function Dashboard() {
     return (
         <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
             {/* BADGE DE IMPACTO (Premium Look - Lateral Izquierdo Inferior) */}
-            <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2">
+            <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2 animate-in fade-in zoom-in duration-1000">
                 <ImpactBadge profile={profile} />
             </div>
 

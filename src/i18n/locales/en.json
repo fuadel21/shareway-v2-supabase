@@ -265,21 +265,42 @@
         "error_toast": "Sync error"
     },
     "login": {
+        "title": "Welcome Back",
+        "subtitle": "Elite HUB Login",
         "tagline": "Your ride, shared.",
-        "email_label": "Email Address",
-        "password_label": "Password",
+        "email_label": "Your Email Address",
+        "password_label": "Your Secret Password",
         "forgot_password": "Forgot your password?",
-        "login_button": "Log In",
+        "login_button": "LOG IN",
         "or_separator": "Or sign in with",
-        "google_button": "Google",
+        "google_button": "Google Identity",
         "no_account": "Don't have an account?",
-        "register_link": "Register now",
+        "register_link": "REGISTER NOW",
         "errors": {
             "fields_required": "Please fill in all fields",
             "invalid_credentials": "Email or password are incorrect.",
             "email_not_confirmed": "Please verify your email before logging in.",
             "generic": "An error occurred while logging in.",
             "google_error": "An error occurred while signing in with Google."
+        }
+    },
+    "register": {
+        "title": "Join the Elite",
+        "subtitle": "Create your ShareWay DNA",
+        "name_label": "Full Name",
+        "email_label": "Email Address",
+        "phone_label": "Phone (WhatsApp)",
+        "password_label": "Password",
+        "confirm_password_label": "Confirm Password",
+        "register_button": "CLAIM MY ACCESS",
+        "already_have_account": "Already part of the network?",
+        "login_link": "Login here",
+        "success_title": "Welcome Aboard!",
+        "success_desc": "We have sent you a confirmation email. Please verify it.",
+        "errors": {
+            "mismatch": "Passwords do not match.",
+            "too_short": "Password must be at least 6 characters.",
+            "generic": "Error creating account. Please try again."
         }
     },
     "settings": {

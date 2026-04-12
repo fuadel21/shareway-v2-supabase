@@ -267,21 +267,42 @@
         "error_toast": "Error al sincronizar"
     },
     "login": {
+        "title": "Bienvenido",
+        "subtitle": "Acceso Elite HUB",
         "tagline": "Tu viaje, compartido.",
-        "email_label": "Correo Electrónico",
-        "password_label": "Contraseña",
+        "email_label": "Tu Correo Electrónico",
+        "password_label": "Tu Contraseña Secreta",
         "forgot_password": "¿Olvidaste tu contraseña?",
-        "login_button": "Iniciar Sesión",
+        "login_button": "INICIAR SESIÓN",
         "or_separator": "O entra con",
-        "google_button": "Google",
+        "google_button": "Google Identity",
         "no_account": "¿No tienes cuenta?",
-        "register_link": "Registrarme ahora",
+        "register_link": "REGISTRARME AHORA",
         "errors": {
             "fields_required": "Por favor, completa todos los campos",
             "invalid_credentials": "El correo o la contraseña son incorrectos.",
             "email_not_confirmed": "Por favor verifica tu correo electrónico antes de iniciar sesión.",
             "generic": "Ocurrió un error al iniciar sesión.",
             "google_error": "Ocurrió un error al iniciar sesión con Google."
+        }
+    },
+    "register": {
+        "title": "Únete a la Élite",
+        "subtitle": "Crea tu Identidad ShareWay",
+        "name_label": "Nombre y Apellidos",
+        "email_label": "Correo Electrónico",
+        "phone_label": "Teléfono (WhatsApp)",
+        "password_label": "Contraseña",
+        "confirm_password_label": "Confirmar Contraseña",
+        "register_button": "RECLAMAR MI ACCESO",
+        "already_have_account": "¿Ya eres parte de la red?",
+        "login_link": "Entrar aquí",
+        "success_title": "¡Bienvenido a Bordo!",
+        "success_desc": "Te hemos enviado un correo de confirmación. Por favor, verifícalo.",
+        "errors": {
+            "mismatch": "Las contraseñas no coinciden.",
+            "too_short": "La contraseña debe tener mínimo 6 caracteres.",
+            "generic": "Error al crear la cuenta. Inténtalo de nuevo."
         }
     },
     "settings": {
