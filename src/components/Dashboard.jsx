@@ -226,7 +226,7 @@ function Dashboard() {
                 {/* BUSCADOR GLASSMORPHISM */}
                 <div className="bg-white/80 backdrop-blur-2xl p-1.5 rounded-[1.5rem] border border-white/40 shadow-2xl ring-1 ring-black/5">
                     <AddressAutocomplete 
-                        label="¿A dónde vas?" 
+                        label={t('dashboard.search_label')} 
                         onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} 
                         icon={<Search className="h-4 w-4 text-primary" />} 
                     />
@@ -260,7 +260,7 @@ function Dashboard() {
                 <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-primary h-10 w-10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20"><Sparkles className="h-5 w-5 text-white" /></div>
-                        <div><h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic leading-none">Explorar</h2><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">ShareWay Global</p></div>
+                        <div><h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic leading-none">{t('nav.explore')}</h2><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-0.5">ShareWay Global</p></div>
                     </div>
                 </div>
 
@@ -270,29 +270,33 @@ function Dashboard() {
                         onClick={() => navigate('/publish')}
                         className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest italic shadow-lg gap-2 border-none active:scale-95 transition-all"
                     >
-                        <Plus size={14} className="text-primary" /> Ofrecer
+                        <Plus size={14} className="text-primary" /> {t('nav.publish')}
                     </Button>
                     <Button
                         onClick={() => navigate('/request')}
                         className="h-12 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest italic shadow-md gap-2 border border-slate-200 active:scale-95 transition-all"
                     >
-                        <Megaphone size={14} className="text-secondary" /> Solicitar
+                        <Megaphone size={14} className="text-secondary" /> {t('nav.request')}
                     </Button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
-                    <div className="relative z-[100]"><AddressAutocomplete label="¿A dónde vas hoy?" onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} icon={<Search className="h-4 w-4 text-slate-400" />} /></div>
+                    <div className="relative z-[100]"><AddressAutocomplete label={t('dashboard.search_label')} onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} icon={<Search className="h-4 w-4 text-slate-400" />} /></div>
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
-                        {['Todos', 'Viajes', 'Solicitudes'].map((f) => (
-                            <button key={f} onClick={() => setActiveFilter(f)} className={cn("px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap", activeFilter === f ? "bg-slate-900 text-white border-slate-900 shadow-md" : "bg-white text-slate-500 border-slate-100")}>{f}</button>
+                        {[
+                            { id: 'Todos', label: t('dashboard.filter_all') },
+                            { id: 'Viajes', label: t('dashboard.filter_rides') },
+                            { id: 'Solicitudes', label: t('dashboard.filter_requests') }
+                        ].map((f) => (
+                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn("px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap", activeFilter === f.id ? "bg-slate-900 text-white border-slate-900 shadow-md" : "bg-white text-slate-500 border-slate-100")}>{f.label}</button>
                         ))}
                     </div>
 
                     <div className="space-y-3">
                         {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div> : itemsToDisplay.length > 0 ? itemsToDisplay.map((item) => (
                             <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={handleSelection} />
-                        )) : <div className="text-center py-16 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><Car className="mx-auto h-10 w-10 text-slate-200 mb-2 opacity-30" /><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Sin resultados</p></div>}
+                        )) : <div className="text-center py-16 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><Car className="mx-auto h-10 w-10 text-slate-200 mb-2 opacity-30" /><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('dashboard.no_results')}</p></div>}
                     </div>
                 </div>
             </div>
