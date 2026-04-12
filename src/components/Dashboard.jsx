@@ -186,7 +186,11 @@ function Dashboard() {
             navigator.geolocation.getCurrentPosition((pos) => {
                 setMapCenter([pos.coords.latitude, pos.coords.longitude]);
                 setZoom(14);
-                toast.success("Ubicación actualizada");
+                // Escaneo inteligente de proximidad
+                fetchData();
+                toast.success(t('dashboard.view_details').includes('Details') ? "Nearby rides scanned" : "Viajes cercanos escaneados", {
+                    icon: <Sparkles className="h-4 w-4 text-primary" />
+                });
             }, () => toast.error("No se pudo obtener ubicación"));
         }
     };
