@@ -234,18 +234,22 @@ function Dashboard() {
 
                 {/* FILTROS RÁPIDOS (COMO CHIPS SOBRE EL MAPA) */}
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
-                    {['Todos', 'Viajes', 'Solicitudes'].map((f) => (
+                    {[
+                        { id: 'Todos', label: t('dashboard.filter_all') },
+                        { id: 'Viajes', label: t('dashboard.filter_rides') },
+                        { id: 'Solicitudes', label: t('dashboard.filter_requests') }
+                    ].map((f) => (
                         <button 
-                            key={f} 
-                            onClick={() => setActiveFilter(f)} 
+                            key={f.id} 
+                            onClick={() => setActiveFilter(f.id)} 
                             className={cn(
                                 "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border",
-                                activeFilter === f 
+                                activeFilter === f.id 
                                     ? "bg-slate-900 text-white border-slate-900" 
                                     : "bg-white/90 text-slate-600 border-white/50"
                             )}
                         >
-                            {f}
+                            {f.label}
                         </button>
                     ))}
                 </div>
@@ -307,7 +311,7 @@ function Dashboard() {
                             size="icon"
                         >
                             <Plus className="h-6 w-6 text-primary" />
-                            <span className="text-[7px] font-black uppercase tracking-tighter">Ofrecer</span>
+                            <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.publish')}</span>
                         </Button>
                         <Button
                             onClick={() => navigate('/request')}
@@ -315,7 +319,7 @@ function Dashboard() {
                             size="icon"
                         >
                             <Megaphone className="h-6 w-6 text-amber-500" />
-                            <span className="text-[7px] font-black uppercase tracking-tighter">Pedir</span>
+                            <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.request')}</span>
                         </Button>
                     </div>
                 )}
