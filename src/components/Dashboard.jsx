@@ -29,8 +29,8 @@ const ImpactBadge = ({ profile }) => {
     const savedKg = parseFloat(profile.total_co2_saved) || 0;
 
     return (
-        <div className="absolute top-36 left-1/2 -translate-x-1/2 z-[40] pointer-events-none lg:top-24">
-            <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 animate-elite-in">
+        <div className="absolute bottom-60 right-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2">
+            <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 animate-elite-in">
                 <div className="size-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <Leaf size={16} className="text-white" />
                 </div>
@@ -216,10 +216,11 @@ function Dashboard() {
 
     if (!profile) return null;
 
-    return (
         <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
-            {/* BADGE DE IMPACTO (Premium Look) */}
-            <ImpactBadge profile={profile} />
+            {/* BADGE DE IMPACTO (Premium Look - Lateral Izquierdo Inferior) */}
+            <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2">
+                <ImpactBadge profile={profile} />
+            </div>
 
 
 

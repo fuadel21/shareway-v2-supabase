@@ -19,8 +19,8 @@ export function DraggableSheet({ children }) {
 
     if (!mounted) return null;
 
-    // Alturas basadas en el estado snap
-    const heights = ['h-[180px]', 'h-[50vh]', 'h-[90vh]'];
+    // Alturas basadas en el estado snap (0: Mínimo/Handle, 1: Medio, 2: Full)
+    const heights = ['h-[70px]', 'h-[50vh]', 'h-[90vh]'];
 
     return (
         <div className={cn(
