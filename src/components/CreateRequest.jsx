@@ -170,8 +170,8 @@ const CreateRequest = () => {
                     <ChevronLeft className="h-6 w-6 text-slate-900" />
                 </Button>
                 <div className="text-left">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Pedir Plaza</h1>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Busca conductores en tu ruta</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('create_request.title')}</h1>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{t('create_request.subtitle')}</p>
                 </div>
             </header>
 
@@ -179,13 +179,13 @@ const CreateRequest = () => {
                 <form onSubmit={handleCreateRequest} className="space-y-6 text-left">
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-6 bg-white space-y-4">
                         <AddressAutocomplete
-                            label={t('favorite_routes.from')}
+                            label={t('create_ride.origin_label')}
                             onSelect={setOrigin}
                             defaultValue={origin?.address}
                             icon={<div className="h-2 w-2 rounded-full bg-slate-300" />}
                         />
                         <AddressAutocomplete
-                            label={t('favorite_routes.to')}
+                            label={t('create_ride.destination_label')}
                             onSelect={setDestination}
                             defaultValue={destination?.address}
                             icon={<div className="h-2 w-2 rounded-full bg-primary" />}
@@ -209,7 +209,7 @@ const CreateRequest = () => {
 
                     <div className="grid grid-cols-2 gap-4">
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cuándo</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_datetime')}</p>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-black text-xs uppercase">
@@ -223,7 +223,7 @@ const CreateRequest = () => {
                             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-14 rounded-2xl border-none bg-slate-50 font-black text-center text-lg" />
                         </Card>
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plazas y Precio</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="flex bg-slate-50 p-1.5 rounded-2xl gap-1">
                                 {[1, 2, 3, 4].map(n => (
                                     <button key={n} 
@@ -246,7 +246,7 @@ const CreateRequest = () => {
 
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
-                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Escudo Activo</h3>
+                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_request.section_shield')}</h3>
                             <button type="button" 
                                     onClick={() => setIsWomenOnly(!isWomenOnly)} 
                                     className={cn(
@@ -255,15 +255,15 @@ const CreateRequest = () => {
                                         "active:scale-95 touch-action-manipulation"
                                     )}>
                                 <Heart size={16} className={isWomenOnly ? "fill-pink-600" : ""} />
-                                <span className="text-xs font-black uppercase tracking-tight leading-none">Solo Mujeres</span>
+                                <span className="text-xs font-black uppercase tracking-tight leading-none">{t('create_ride.women_only')}</span>
                             </button>
                         </div>
-                        <Textarea placeholder="Cuéntanos algún detalle (ej: llevo equipaje)" className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-700" value={note} onChange={(e) => setNote(e.target.value)} />
+                        <Textarea placeholder={t('create_request.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-700" value={note} onChange={(e) => setNote(e.target.value)} />
                     </Card>
 
                     <div className="pt-4">
                         <Button type="submit" disabled={isSubmitting || !origin || !destination || isCalculatingRoute} className="w-full h-20 rounded-[2.2rem] bg-slate-900 hover:bg-slate-800 text-white font-black text-xl tracking-tighter shadow-2xl active:scale-95 transition-all border-none uppercase italic">
-                            {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>PUBLICAR SOLICITUD <ChevronRight size={24} className="ml-2 text-primary" /></>}
+                            {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{t('create_request.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                         </Button>
                     </div>
                 </form>

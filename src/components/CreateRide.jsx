@@ -17,7 +17,7 @@ import {
     Sparkles, ShieldCheck, Clock, ChevronRight, Music, Baby, Dog, ChevronLeft, Heart
 } from 'lucide-react';
 import { format, isBefore, startOfToday, addMinutes } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, enUS } from 'date-fns/locale';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
 import { createSingleRide, RIDE_RULES, calculateRecommendedPrice } from '@/services/rideService';
 import { validateRidePrice } from '@/utils/pricingRules';
@@ -45,7 +45,7 @@ const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
     </button>
 );
 
-const CreateRide = () => {
+    const { t, i18n } = useTranslation();
     const { profile: currentUserProfile, user } = useOutletContext();
     const navigate = useNavigate();
     const location = useLocation();
@@ -64,6 +64,7 @@ const CreateRide = () => {
     const [preferences, setPreferences] = useState({ music: true, pets: false, kids: true });
     const [approvalMode, setApprovalMode] = useState('automatic');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [routeInfo, setRouteInfo] = useState({ path: [], distance: 0, polyline: '' });
 
     const routeDataRef = useRef(null);
     const routeAbortRef = useRef(null);
@@ -219,10 +220,10 @@ const CreateRide = () => {
             }
 
             try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) { }
-            toast.success("¡Viaje publicado!", { id: toastId });
+            toast.success(t('create_ride.confirm_button'), { id: toastId });
             navigate('/dashboard');
         } catch (error) {
-            toast.error("Error al publicar", { id: toastId, description: error.message });
+            toast.error(t('common.error'), { id: toastId, description: error.message });
         } finally {
             setIsSubmitting(false);
             setIsConfirmOpen(false);
@@ -236,8 +237,8 @@ const CreateRide = () => {
                     <ChevronLeft className="h-6 w-6 text-slate-900" />
                 </Button>
                 <div className="text-left">
-                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Ofrecer Plaza</h1>
-                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Gana compartiendo gastos</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('create_ride.title')}</h1>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{t('create_ride.subtitle')}</p>
                 </div>
             </header>
 
@@ -246,32 +247,47 @@ const CreateRide = () => {
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-6 bg-white space-y-6">
                         <div className="flex items-center gap-3">
                             <div className="bg-emerald-50 p-2.5 rounded-xl"><Navigation size={18} className="text-emerald-600" /></div>
-                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Itinerario</h3>
+                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_itinerary')}</h3>
                         </div>
                         <div className="space-y-4">
-                            <AddressAutocomplete label="Punto de origen" onSelect={setOrigin} defaultValue={origin?.address} icon={<div className="h-2 w-2 rounded-full bg-emerald-500" />} />
-                            <AddressAutocomplete label="Punto de llegada" onSelect={setDestination} defaultValue={destination?.address} icon={<div className="h-2 w-2 rounded-full bg-primary" />} />
+                            <AddressAutocomplete label={t('create_ride.origin_label')} onSelect={setOrigin} defaultValue={origin?.address} icon={<div className="h-2 w-2 rounded-full bg-emerald-500" />} />
+                            <AddressAutocomplete label={t('create_ride.destination_label')} onSelect={setDestination} defaultValue={destination?.address} icon={<div className="h-2 w-2 rounded-full bg-primary" />} />
+                            
+                            {(origin && destination) && (
+                                <div className="h-44 w-full rounded-2xl overflow-hidden border mt-2 relative">
+                                    <MapComponent
+                                        center={origin.coordinates}
+                                        zoom={11}
+                                        itemsToDisplay={[{ id: 'preview', type: 'ride', origin, destination, decodedPath: routeInfo.path }]}
+                                    />
+                                    {isCalculatingRoute && (
+                                        <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center z-10">
+                                            <Loader2 className="animate-spin text-primary" />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </Card>
 
                     <div className="grid grid-cols-2 gap-4">
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Fecha y Hora</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_datetime')}</p>
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-black text-xs uppercase tracking-tighter">
-                                        {format(date, "dd MMM", { locale: es })}
+                                        {format(date, "dd MMM", { locale: i18n.language === 'es' ? es : enUS })}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
-                                    <Calendar mode="single" selected={date} onSelect={setDate} fromDate={startOfToday()} locale={es} />
+                                    <Calendar mode="single" selected={date} onSelect={setDate} fromDate={startOfToday()} locale={i18n.language === 'es' ? es : enUS} />
                                 </PopoverContent>
                             </Popover>
                             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-14 rounded-2xl border-none bg-slate-50 font-black text-center text-lg" />
                         </Card>
 
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plazas y Precio</p>
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl">
                                 <button type="button" 
                                         onClick={() => setSeats(Math.max(1, seats - 1))} 
@@ -294,7 +310,7 @@ const CreateRide = () => {
 
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
-                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Preferencia</h3>
+                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_preferences')}</h3>
                             <button type="button" 
                                     onClick={() => setIsWomenOnly(!isWomenOnly)} 
                                     className={cn(
@@ -303,36 +319,36 @@ const CreateRide = () => {
                                         "active:scale-95 touch-action-manipulation"
                                     )}>
                                 <Heart size={16} className={isWomenOnly ? "fill-pink-600" : ""} />
-                                <span className="text-xs font-black uppercase tracking-tight leading-none">Solo Mujeres</span>
+                                <span className="text-xs font-black uppercase tracking-tight leading-none">{t('create_ride.women_only')}</span>
                             </button>
                         </div>
                         <div className="flex gap-3">
-                            <PreferenceToggle icon={Music} label="Música" active={preferences.music} onClick={() => setPreferences(p => ({ ...p, music: !p.music }))} />
-                            <PreferenceToggle icon={Dog} label="Mascotas" active={preferences.pets} onClick={() => setPreferences(p => ({ ...p, pets: !p.pets }))} />
-                            <PreferenceToggle icon={Baby} label="Niños" active={preferences.kids} onClick={() => setPreferences(p => ({ ...p, kids: !p.kids }))} />
+                            <PreferenceToggle icon={Music} label={t('edit_profile.pref_labels.music')} active={preferences.music} onClick={() => setPreferences(p => ({ ...p, music: !p.music }))} />
+                            <PreferenceToggle icon={Dog} label={t('edit_profile.pref_labels.pets')} active={preferences.pets} onClick={() => setPreferences(p => ({ ...p, pets: !p.pets }))} />
+                            <PreferenceToggle icon={Baby} label="Family" active={preferences.kids} onClick={() => setPreferences(p => ({ ...p, kids: !p.kids }))} />
                         </div>
-                        <Textarea placeholder="Ej: Maletero amplio, salgo puntual..." className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
+                        <Textarea placeholder={t('create_ride.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
                     </Card>
 
                     <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-20 rounded-[2.2rem] bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
-                        {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>PUBLICAR OFERTA <ChevronRight size={24} className="ml-2 text-primary" /></>}
+                        {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{t('create_ride.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                     </Button>
                 </form>
 
                 <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                     <AlertDialogContent className="rounded-3xl bg-white max-w-md w-[90vw]">
                         <AlertDialogHeader>
-                            <AlertDialogTitle className="font-black text-2xl uppercase italic tracking-tighter">Confirmar Publicación</AlertDialogTitle>
+                            <AlertDialogTitle className="font-black text-2xl uppercase italic tracking-tighter">{t('create_ride.confirm_title')}</AlertDialogTitle>
                             <AlertDialogDescription asChild>
                                 <div className="text-left space-y-2 pt-4">
-                                    <p className="font-bold text-slate-900">¿Estás listo para publicar este trayecto?</p>
-                                    <p className="text-xs text-slate-500 uppercase font-black tracking-widest">Se publicará en la red inmediatamente y los pasajeros podrán reservar.</p>
+                                    <p className="font-bold text-slate-900">{t('create_ride.confirm_desc')}</p>
+                                    <p className="text-xs text-slate-500 uppercase font-black tracking-widest">{t('create_ride.confirm_notice')}</p>
                                 </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter className="mt-6 gap-2">
-                            <AlertDialogCancel className="rounded-xl h-12">Revisar</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleConfirmPublish} className="h-12 rounded-xl bg-slate-900 text-white font-black">PUBLICAR AHORA</AlertDialogAction>
+                            <AlertDialogCancel className="rounded-xl h-12">{t('create_ride.cancel_button')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConfirmPublish} className="h-12 rounded-xl bg-slate-900 text-white font-black">{t('create_ride.confirm_button')}</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

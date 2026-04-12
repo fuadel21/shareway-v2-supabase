@@ -305,6 +305,32 @@
             "generic": "Error al crear la cuenta. Inténtalo de nuevo."
         }
     },
+    "create_ride": {
+        "title": "Ofrecer Plaza",
+        "subtitle": "Gana compartiendo gastos",
+        "section_itinerary": "Itinerario",
+        "origin_label": "Punto de origen",
+        "destination_label": "Punto de llegada",
+        "section_datetime": "Fecha y Hora",
+        "section_seats_price": "Plazas y Precio",
+        "section_preferences": "Preferencias",
+        "women_only": "Solo Mujeres",
+        "note_placeholder": "Ej: Maletero amplio, salgo puntual...",
+        "publish_button": "PUBLICAR OFERTA",
+        "confirm_title": "Confirmar Publicación",
+        "confirm_desc": "¿Estás listo para publicar este trayecto?",
+        "confirm_notice": "Se publicará en la red inmediatamente.",
+        "confirm_button": "PUBLICAR AHORA",
+        "cancel_button": "Revisar"
+    },
+    "create_request": {
+        "title": "Pedir Plaza",
+        "subtitle": "Busca conductores en tu ruta",
+        "section_shield": "Escudo Activo",
+        "note_placeholder": "Cuéntanos algún detalle (ej: llevo equipaje)",
+        "publish_button": "PUBLICAR SOLICITUD",
+        "success_toast": "Solicitud publicada"
+    },
     "settings": {
         "title": "AJUSTES",
         "subtitle": "CONTROL CENTER",

@@ -303,6 +303,32 @@
             "generic": "Error creating account. Please try again."
         }
     },
+    "create_ride": {
+        "title": "Publish Ride",
+        "subtitle": "Share costs and save",
+        "section_itinerary": "Itinerary",
+        "origin_label": "Starting point",
+        "destination_label": "Destination",
+        "section_datetime": "Date & Time",
+        "section_seats_price": "Seats & Price",
+        "section_preferences": "Preferences",
+        "women_only": "Women Only",
+        "note_placeholder": "E.g.: Large trunk, punctual departure...",
+        "publish_button": "PUBLISH OFFER",
+        "confirm_title": "Confirm Publication",
+        "confirm_desc": "Are you ready to publish this trip?",
+        "confirm_notice": "It will be visible to others immediately.",
+        "confirm_button": "PUBLISH NOW",
+        "cancel_button": "Review"
+    },
+    "create_request": {
+        "title": "Request Ride",
+        "subtitle": "Find drivers on your route",
+        "section_shield": "Active Shield",
+        "note_placeholder": "Any details (e.g.: I have luggage)",
+        "publish_button": "PUBLISH REQUEST",
+        "success_toast": "Request published"
+    },
     "settings": {
         "title": "SETTINGS",
         "subtitle": "CONTROL CENTER",
