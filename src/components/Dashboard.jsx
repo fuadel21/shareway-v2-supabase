@@ -303,8 +303,20 @@ function Dashboard() {
 
             {/* MAP AREA */}
             <div className="flex-1 relative h-full">
-                {/* BOTÓN UBICACIÓN (ARRIBA DERECHA, JUSTO BAJO EL BUSCADOR) */}
-                <Button onClick={handleLocateMe} className="lg:absolute lg:top-6 lg:right-6 lg:z-[1000] absolute top-40 right-4 z-[1000] h-12 w-12 rounded-2xl bg-white text-slate-900 shadow-2xl border-none flex items-center justify-center hover:bg-slate-50 transition-all active:scale-90"><Navigation className="h-5 w-5 text-primary" /></Button>
+                {/* BOTÓN "CERCA DE TI" INTELIGENTE (LATERAL INFERIOR IZQUIERDO PARA EQUILIBRIO) */}
+                <Button 
+                    onClick={handleLocateMe} 
+                    className="absolute bottom-40 left-4 z-[1000] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group"
+                >
+                    <div className="relative">
+                        <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 text-primary bg-primary"></span>
+                        </span>
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-widest pr-1">{t('dashboard.view_details').includes('Details') ? 'NEAR ME' : 'CERCA DE TI'}</span>
+                </Button>
                 
                 {/* BOTONES DE ACCIÓN EN EL MAPA (LATERAL DERECHO INFERIOR PARA ERGONOMÍA) */}
                 {isMobile && (
