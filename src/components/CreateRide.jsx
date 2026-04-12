@@ -23,6 +23,7 @@ import { createSingleRide, RIDE_RULES, calculateRecommendedPrice } from '@/servi
 import { validateRidePrice } from '@/utils/pricingRules';
 import { cn } from '@/lib/utils';
 import { globalPollingManager } from '@/utils/week1Optimizations';
+import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'sw_ride_offer_draft';
 
