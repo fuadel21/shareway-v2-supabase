@@ -217,43 +217,11 @@ function Dashboard() {
     if (!profile) return null;
 
     return (
-        <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative pt-14 lg:pt-16">
+        <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
             {/* BADGE DE IMPACTO (Premium Look) */}
             <ImpactBadge profile={profile} />
 
-            {/* BÚSQUEDA Y FILTROS FLOTANTES (UX INMERSIVA) */}
-            <div className="lg:hidden absolute top-4 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
-                {/* BUSCADOR GLASSMORPHISM */}
-                <div className="bg-white/80 backdrop-blur-2xl p-1.5 rounded-[1.5rem] border border-white/40 shadow-2xl ring-1 ring-black/5">
-                    <AddressAutocomplete 
-                        label={t('dashboard.search_label')} 
-                        onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} 
-                        icon={<Search className="h-4 w-4 text-primary" />} 
-                    />
-                </div>
 
-                {/* FILTROS RÁPIDOS (COMO CHIPS SOBRE EL MAPA) */}
-                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
-                    {[
-                        { id: 'Todos', label: t('dashboard.filter_all') },
-                        { id: 'Viajes', label: t('dashboard.filter_rides') },
-                        { id: 'Solicitudes', label: t('dashboard.filter_requests') }
-                    ].map((f) => (
-                        <button 
-                            key={f.id} 
-                            onClick={() => setActiveFilter(f.id)} 
-                            className={cn(
-                                "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border",
-                                activeFilter === f.id 
-                                    ? "bg-slate-900 text-white border-slate-900" 
-                                    : "bg-white/90 text-slate-600 border-white/50"
-                            )}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
-                </div>
-            </div>
 
             {/* SIDEBAR LIST */}
             <div className="hidden lg:flex w-[380px] bg-white border-r border-slate-100 shadow-2xl flex-col z-50 animate-in slide-in-from-left duration-500">
@@ -303,6 +271,39 @@ function Dashboard() {
 
             {/* MAP AREA */}
             <div className="flex-1 relative h-full">
+                {/* BÚSQUEDA Y FILTROS FLOTANTES (INTEGRACIÓN TOTAL EN EL MAPA) */}
+                <div className="lg:hidden absolute top-6 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
+                    {/* BUSCADOR GLASSMORPHISM */}
+                    <div className="bg-white/80 backdrop-blur-3xl p-1.5 rounded-[1.5rem] border border-white/40 shadow-2xl ring-1 ring-black/5">
+                        <AddressAutocomplete 
+                            label={t('dashboard.search_label')} 
+                            onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} 
+                            icon={<Search className="h-4 w-4 text-primary" />} 
+                        />
+                    </div>
+
+                    {/* FILTROS RÁPIDOS (COMO CHIPS SOBRE EL MAPA) */}
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
+                        {[
+                            { id: 'Todos', label: t('dashboard.filter_all') },
+                            { id: 'Viajes', label: t('dashboard.filter_rides') },
+                            { id: 'Solicitudes', label: t('dashboard.filter_requests') }
+                        ].map((f) => (
+                            <button 
+                                key={f.id} 
+                                onClick={() => setActiveFilter(f.id)} 
+                                className={cn(
+                                    "px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border",
+                                    activeFilter === f.id 
+                                        ? "bg-slate-900 text-white border-slate-900" 
+                                        : "bg-white/90 text-slate-600 border-white/50"
+                                )}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
                 {/* BOTÓN "CERCA DE TI" INTELIGENTE (LATERAL INFERIOR IZQUIERDO PARA EQUILIBRIO) */}
                 <Button 
                     onClick={handleLocateMe} 
