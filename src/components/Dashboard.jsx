@@ -272,7 +272,7 @@ function Dashboard() {
             {/* MAP AREA */}
             <div className="flex-1 relative h-full">
                 {/* BÚSQUEDA Y FILTROS FLOTANTES (INTEGRACIÓN TOTAL EN EL MAPA) */}
-                <div className="lg:hidden absolute top-6 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
+                <div className="lg:hidden absolute top-20 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
                     {/* BUSCADOR GLASSMORPHISM */}
                     <div className="bg-white/80 backdrop-blur-3xl p-1.5 rounded-[1.5rem] border border-white/40 shadow-2xl ring-1 ring-black/5">
                         <AddressAutocomplete 
