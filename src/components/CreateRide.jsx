@@ -45,6 +45,7 @@ const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
     </button>
 );
 
+const CreateRide = () => {
     const { t, i18n } = useTranslation();
     const { profile: currentUserProfile, user } = useOutletContext();
     const navigate = useNavigate();
