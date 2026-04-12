@@ -1,9 +1,10 @@
--- SHAREWAY V2: HYBRID BOOKING ENGINE (WALLET + STRIPE) - V2
--- Permite reservar usando el saldo de la cartera (wallet) moviéndolo a held_balance.
--- MEJORA: Permite unirse a viajes ya iniciados (status = 'active').
+-- SHAREWAY V2: HYBRID BOOKING ENGINE (WALLET + STRIPE) - V2.2
+-- SOLUCIÓN FINAL: Atomicidad, robustocidad y soporte total para recogidas personalizadas.
 CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
         p_ride_id UUID,
-        p_request_id UUID DEFAULT NULL
+        p_request_id UUID DEFAULT NULL,
+        p_pickup_location JSONB DEFAULT NULL,
+        p_pickup_address TEXT DEFAULT NULL
     ) RETURNS JSON AS $$
 DECLARE v_passenger_id UUID := auth.uid();
 v_passenger_name TEXT;
@@ -43,28 +44,34 @@ WHERE id = p_ride_id
         OR status = 'active'
     ) FOR
 UPDATE;
-IF v_ride_status IS NULL THEN RAISE EXCEPTION 'Viaje no encontrado o ya finalizado';
+IF v_ride_status IS NULL THEN RAISE EXCEPTION 'Viaje no encontrado o ya finalizado/cancelado';
 END IF;
-IF v_seats_available < 1 THEN RAISE EXCEPTION 'No hay asientos suficientes';
-END IF;
-IF v_passenger_id = ANY(v_participant_ids) THEN RAISE EXCEPTION 'Ya tienes una reserva en este viaje';
-END IF;
-IF v_passenger_id = v_driver_id THEN RAISE EXCEPTION 'No puedes reservar tu propio viaje';
-END IF;
--- 3. Gestionar asientos y precio
+-- 3. Calcular asientos requeridos
 IF p_request_id IS NOT NULL THEN
 SELECT seats_needed INTO v_seats_to_book
 FROM public.ride_requests
 WHERE id = p_request_id;
 END IF;
 v_seats_to_book := COALESCE(v_seats_to_book, 1);
+IF v_seats_available < v_seats_to_book THEN RAISE EXCEPTION 'No hay asientos suficientes (Quedan: %, Pedidos: %)',
+v_seats_available,
+v_seats_to_book;
+END IF;
+IF v_passenger_id = ANY(v_participant_ids) THEN RAISE EXCEPTION 'Ya tienes una reserva activa en este viaje';
+END IF;
+IF v_passenger_id = v_driver_id THEN RAISE EXCEPTION 'No puedes reservar tu propio viaje';
+END IF;
 v_total_price := v_price_per_seat * v_seats_to_book;
 -- 4. GESTIÓN FINANCIERA (Wallet -> Held)
 SELECT balance INTO v_current_balance
 FROM public.wallets
 WHERE user_id = v_passenger_id FOR
 UPDATE;
-IF v_current_balance < v_total_price THEN RAISE EXCEPTION 'Saldo insuficiente en tu cartera ShareWay.';
+IF v_current_balance IS NULL THEN RAISE EXCEPTION 'Wallet no inicializada. Por favor, contacta con soporte.';
+END IF;
+IF v_current_balance < v_total_price THEN RAISE EXCEPTION 'Saldo insuficiente en tu cartera ShareWay (Disponible: %€, Requerido: %€)',
+v_current_balance,
+v_total_price;
 END IF;
 -- Mover de balance a held_balance
 UPDATE public.wallets
@@ -72,22 +79,25 @@ SET balance = balance - v_total_price,
     held_balance = held_balance + v_total_price,
     updated_at = NOW()
 WHERE user_id = v_passenger_id;
--- Registrar transacción de retención
+-- Registrar transacción (TABLA: transactions - Unificando con MASTER SCHEMA)
 INSERT INTO public.transactions (
         user_id,
         wallet_id,
         amount,
         type,
         description,
-        related_ride_id
+        related_ride_id,
+        balance_after
     )
 VALUES (
         v_passenger_id,
         v_passenger_id,
-        v_total_price,
+        -- wallet_id suele ser user_id en este esquema
+        - v_total_price,
         'hold',
         'Reserva con saldo de cartera',
-        p_ride_id
+        p_ride_id,
+        v_current_balance - v_total_price
     );
 -- 5. LOGÍSTICA DE RESERVA
 v_ride_pin := LPAD(FLOOR(RANDOM() * 9000 + 1000)::TEXT, 4, '0');
@@ -107,7 +117,11 @@ v_new_passenger := json_build_object(
     'seats_booked',
     v_seats_to_book,
     'booked_at',
-    NOW()
+    NOW(),
+    'pickup_location',
+    p_pickup_location,
+    'pickup_address',
+    p_pickup_address
 )::JSONB;
 UPDATE public.rides
 SET passengers = COALESCE(passengers, '[]'::JSONB) || v_new_passenger,

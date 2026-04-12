@@ -144,7 +144,7 @@ BEGIN
         related_ride_id
     )
     SELECT 
-        id, 
+        user_id, -- Corregido: se usaba 'id' que no existe en wallets
         user_id, 
         'hold', 
         -v_ride_price, 

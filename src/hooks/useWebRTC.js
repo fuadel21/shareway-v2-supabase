@@ -43,13 +43,21 @@ export const useWebRTC = (chatId, currentUserId, setCallSession) => {
         channelRef.current = supabase.channel(`webrtc-call-${chatId}`);
 
         pc.current.onicecandidate = (event) => {
-            event.candidate && channelRef.current.send({ type: 'ice-candidate', candidate: event.candidate });
+            event.candidate && channelRef.current.send({ 
+                type: 'broadcast', 
+                event: 'ice-candidate', 
+                payload: { candidate: event.candidate } 
+            });
         };
 
         const offer = await pc.current.createOffer();
         await pc.current.setLocalDescription(offer);
 
-        channelRef.current.send({ type: 'offer', offer, callerId: currentUserId, calleeId: otherUserId });
+        channelRef.current.send({ 
+            type: 'broadcast', 
+            event: 'offer', 
+            payload: { offer, callerId: currentUserId, calleeId: otherUserId } 
+        });
         channelRef.current.subscribe();
         setCallSession({ status: 'dialing' });
     };
@@ -59,14 +67,22 @@ export const useWebRTC = (chatId, currentUserId, setCallSession) => {
         channelRef.current = supabase.channel(`webrtc-call-${chatId}`);
 
         pc.current.onicecandidate = (event) => {
-            event.candidate && channelRef.current.send({ type: 'ice-candidate', candidate: event.candidate });
+            event.candidate && channelRef.current.send({ 
+                type: 'broadcast', 
+                event: 'ice-candidate', 
+                payload: { candidate: event.candidate } 
+            });
         };
 
         await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.current.createAnswer();
         await pc.current.setLocalDescription(answer);
 
-        channelRef.current.send({ type: 'answer', answer });
+        channelRef.current.send({ 
+            type: 'broadcast', 
+            event: 'answer', 
+            payload: { answer } 
+        });
         channelRef.current.subscribe();
         setCallSession({ status: 'active' });
     };

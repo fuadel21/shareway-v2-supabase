@@ -8,7 +8,7 @@ import {
     Loader2, Star, Calendar, Pencil, Music, MessageCircle,
     Car, ShieldCheck, MapPin, Share2, Info, ChevronRight,
     Sparkles, UserCheck, ShieldClose, Leaf, Award, Sprout, Trees, Mountain,
-    ChevronLeft, TrendingUp, Zap, Heart,
+    ChevronLeft, TrendingUp, Zap, Heart, Navigation,
     History as HistoryIcon
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
@@ -33,6 +33,7 @@ const DEFAULT_PROFILE = {
     rating: '5.0',
     rides_count: 0,
     total_co2_saved: 0,
+    total_km_shared: 0,
     eco_tier: 'Seed',
     eco_points: 0,
     verification_status: 'not_verified',
@@ -59,7 +60,6 @@ function UserProfile() {
         const fetchProfileData = async () => {
             setLoading(true);
             try {
-                // FALLO 76 ARREGLADO: Solo datos públicos
                 const { data: pData, error: pErr } = await supabase.rpc('get_public_profile', { p_user_id: userId });
 
                 if (pErr) throw pErr;
@@ -67,7 +67,6 @@ function UserProfile() {
                     setProfile({
                         ...DEFAULT_PROFILE,
                         ...pData,
-                        // FALLO 84 ARREGLADO: Redondeo de rating
                         rating: pData.rating ? parseFloat(pData.rating).toFixed(1) : '5.0',
                         vehicle: pData.vehicle || DEFAULT_PROFILE.vehicle
                     });
@@ -149,13 +148,14 @@ function UserProfile() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-2">
                     <StatCard icon={TrendingUp} value={profile.rides_count} label="Viajes" color="bg-indigo-50 text-indigo-600" />
+                    <StatCard icon={Navigation} value={Math.round(profile.total_km_shared || 0)} label="KM" color="bg-blue-50 text-blue-600" />
                     <StatCard icon={Leaf} value={parseFloat(profile.total_co2_saved).toFixed(1)} label="kg CO2" color="bg-emerald-50 text-emerald-600" />
-                    <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label="Nivel Eco" color={ecoSystem.color} />
+                    <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label="Nivel" color={ecoSystem.color} />
                 </div>
 
-                {/* FALLO 82 ARREGLADO: Bio con preservación de formato */}
+                {/* Bio con preservación de formato */}
                 {profile.bio && (
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={12} className="text-primary" /> Biografía</p>

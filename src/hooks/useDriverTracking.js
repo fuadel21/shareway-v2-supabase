@@ -32,18 +32,10 @@ export function useDriverTracking(rideId) {
                 const { latitude, longitude } = position.coords;
 
                 try {
-                    const { error } = await supabase
-                        .from('rides')
-                        .update({
-                            current_location: {
-                                latitude,
-                                longitude,
-                                timestamp: new Date().toISOString()
-                            }
-                        })
-                        .eq('id', rideId);
+                    const { updateRideLocation } = await import('@/lib/supabaseRPC');
+                    const result = await updateRideLocation(rideId, latitude, longitude);
 
-                    if (error) throw error;
+                    if (!result.success) throw new Error(result.error || "Error al actualizar ubicación");
 
                 } catch (error) {
                     toast.error("No se pudo actualizar tu ubicación en el mapa.");

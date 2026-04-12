@@ -1,5 +1,5 @@
 /**
- * Servicio de Viajes (Rides) - Blindaje de Integridad v12 (Unified Validation)
+ * Servicio de Viajes (Rides) - Blindaje de Integridad v13 (Corridor Matching enabled)
  */
 
 import { supabase } from '../lib/supabase';
@@ -32,16 +32,32 @@ export const calculateRecommendedPrice = (distanceInMeters) => {
 
     for (const tier of RIDE_PRICING_CONFIG.TIERS) {
         if (remainingDistance <= 0) break;
-        
+
         const tierRange = tier.maxKm - previousMaxKm;
         const kmInThisTier = Math.min(remainingDistance, tierRange);
-        
+
         totalPrice += kmInThisTier * tier.rate;
         remainingDistance -= kmInThisTier;
         previousMaxKm = tier.maxKm;
     }
 
     return Math.max(RIDE_RULES.MIN_PRICE, Math.min(RIDE_RULES.MAX_PRICE, parseFloat(totalPrice.toFixed(2))));
+};
+
+/**
+ * Calcula el desvío y precio dinámico usando el Edge Function.
+ */
+export const calculateRideDetour = async (rideId, paxOrigin, paxDestination) => {
+    try {
+        const { data, error } = await supabase.functions.invoke('calculate-ride-detour', {
+            body: { rideId, paxOrigin, paxDestination }
+        });
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error("🛡️ [Detour Engine] calculation failed:", error);
+        throw error;
+    }
 };
 
 /**
@@ -80,23 +96,12 @@ const validateRidePayload = (data) => {
     if (isNaN(price) || price < RIDE_RULES.MIN_PRICE) throw new Error(`El precio debe ser al menos ${RIDE_RULES.MIN_PRICE}€.`);
     if (price > RIDE_RULES.MAX_PRICE) throw new Error(`El precio excede el límite de seguridad (${RIDE_RULES.MAX_PRICE}€).`);
 
-    // Validar precio sugerido máximo (solo si hay distancia disponible en los datos)
-    // CreateRide.jsx pasa 'distance' en km
+    // Validar precio sugerido máximo
     if (data.distance && data.distance > 0) {
-        // Asumimos que data.distance viene en KM si viene del frontend, 
-        // pero calculateRecommendedPrice espera METROS.
-        // Verificamos el orden de magnitud para estar seguros.
-        // Un viaje normal no suele ser de < 1 metro, ni de > 5000km.
-        // Si data.distance es pequeño (ej. 100), son KM. Si es grande (ej. 100000), son metros.
-        // Sin embargo, CreateRide.jsx envía explícitamente KM (ver línea 193 y 123).
-        
-        // Convertimos a metros para usar la función centralizada
         const distanceMeters = data.distance * 1000;
         const recommendedMax = calculateRecommendedPrice(distanceMeters);
-        
-        // Margen de tolerancia de 0.05€
         if (price > recommendedMax + 0.05) {
-             throw new Error(`El precio no puede superar el recomendado (${recommendedMax}€).`);
+            throw new Error(`El precio no puede superar el recomendado (${recommendedMax}€).`);
         }
     }
 
@@ -137,7 +142,6 @@ export const createRideRequest = async (requestData) => {
     try {
         validateRidePayload({
             ...requestData,
-            // Adaptamos nombres de campos para el validador unificado
             seats: requestData.seats || requestData.seats_needed,
             price: requestData.price || requestData.suggested_price
         });
@@ -203,7 +207,7 @@ export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
 };
 
 /**
- * Obtiene viajes disponibles.
+ * Obtiene viajes disponibles (Legacy radio-based)
  */
 export const getAvailableRides = async () => {
     try {
@@ -216,6 +220,45 @@ export const getAvailableRides = async () => {
     } catch (error) {
         console.error("🛡️ stability: getAvailableRides failed:", error);
         return [];
+    }
+};
+
+/**
+ * Busca viajes usando el MOTOR DE CORREDOR (Inteligente)
+ */
+export const searchRides = async ({ origin, destination, date, maxDetour = 2500 }) => {
+    try {
+        const oCoords = origin.coordinates || origin;
+        const dCoords = destination.coordinates || destination;
+
+        const { data, success, error } = await rpc.safeCall(
+            () => supabase.rpc('search_rides_by_corridor', {
+                p_pax_origin_lat: parseFloat(oCoords.lat),
+                p_pax_origin_lng: parseFloat(oCoords.lng),
+                p_pax_dest_lat: parseFloat(dCoords.lat),
+                p_pax_dest_lng: parseFloat(dCoords.lng),
+                p_date: date || null,
+                p_max_detour_meters: maxDetour
+            }),
+            'search_rides_by_corridor'
+        );
+
+        if (!success) throw new Error(error);
+
+        return (data || []).map(ride => ({
+            ...ride,
+            type: 'ride',
+            driver: {
+                id: ride.driver_id,
+                display_name: ride.driver_name,
+                photo_url: ride.driver_photo,
+                rating: ride.driver_rating,
+                verification: { status: ride.driver_verified ? 'verified' : 'not_verified' }
+            }
+        }));
+    } catch (error) {
+        console.error("🛡️ [Search Flow] searchRides by corridor failed:", error);
+        throw error;
     }
 };
 
@@ -233,19 +276,12 @@ export const fulfillRequest = async (request, customPrice) => {
         waypoints: []
     };
 
-    // Validación previa al fulfill
     validateRidePayload(rideData);
 
     const { data, success, error } = await rpc.fulfillRideRequest(rideData);
     if (!success) {
         if (error?.includes('no está disponible')) {
-            throw new Error('Esta solicitud ya fue aceptada por otro conductor. Intenta con otra.');
-        }
-        if (error?.includes('saldo suficiente')) {
-            throw new Error('El pasajero no tiene saldo suficiente para este viaje.');
-        }
-        if (error?.includes('propia solicitud')) {
-            throw new Error('No puedes aceptar tu propia solicitud.');
+            throw new Error('Esta solicitud ya fue aceptada por otro conductor.');
         }
         throw new Error(error || 'No se pudo aceptar la solicitud.');
     }
@@ -271,16 +307,23 @@ export const cancelRide = async (rideId) => {
 };
 
 export const cancelBooking = async (rideId) => {
-    const { success, error } = await rpc.safeCall(
-        () => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }),
-        'cancel_booking_and_refund'
-    );
-    if (!success) throw new Error(error);
-    return true;
+    try {
+        const { data, error } = await supabase.functions.invoke('cancel-booking-and-refund', {
+            body: { rideId }
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        return true;
+    } catch (error) {
+        console.error("🛡️ [Booking Flow] cancelBooking failed:", error);
+        throw error;
+    }
 };
 
 export const verifyPassenger = async (rideId, passengerId, pin) => {
-    const { success, error } = await rpc.verifyPassenger(rideId, passengerId, pin);
+    // Nota: passengerId ya no es estrictamente necesario en el RPC unificado,
+    // pero lo mantenemos en la firma del servicio para no romper la UI.
+    const { success, error } = await rpc.verifyPassenger(rideId, pin);
     if (!success) throw new Error(error);
     return true;
 };
@@ -304,9 +347,9 @@ export const removePassenger = async (rideId, passengerId) => {
 };
 
 export const markNoShow = async (rideId, passengerId) => {
-    const { data, error } = await supabase.rpc('handle_passenger_no_show', { p_ride_id: rideId, p_passenger_id: passengerId });
-    if (error) throw new Error(error.message);
-    return data;
+    const { success, error } = await rpc.handlePassengerNoShow(rideId, passengerId);
+    if (!success) throw new Error(error);
+    return true;
 };
 
 export const updateRide = async (rideId, rideData) => {
@@ -326,27 +369,6 @@ export const getUserRides = async () => {
     const { data, success, error } = await rpc.getUserRides();
     if (!success) throw new Error(error);
     return data;
-};
-
-/**
- * Busca viajes.
- */
-export const searchRides = async ({ origin, destination, date, seats = 1, maxPrice = 999.99, radius = 15000 }) => {
-    const { data, success, error } = await rpc.searchRides(origin, destination, date, seats, maxPrice, radius);
-    if (!success) throw new Error(error);
-
-    return (data || []).map(ride => ({
-        ...ride,
-        type: 'ride',
-        driver: {
-            id: ride.driver_id,
-            display_name: ride.driver_display_name,
-            photo_url: ride.driver_photo_url,
-            rating: ride.driver_rating,
-            eco_tier: ride.driver_eco_tier,
-            verification: { status: ride.driver_verified }
-        }
-    }));
 };
 
 export const searchRequests = async ({ origin, destination, date, seats = 1, radius = 15000 }) => {

@@ -1305,6 +1305,7 @@ $$ LANGUAGE plpgsql STABLE;
 -- FUNCIÓN: get_user_rides
 -- Obtener viajes de un usuario (como conductor o pasajero)
 -- ==========================================
+DROP FUNCTION IF EXISTS public.get_user_rides(UUID, TEXT);
 CREATE OR REPLACE FUNCTION public.get_user_rides(
         p_user_id UUID DEFAULT NULL,
         p_role TEXT DEFAULT 'all' -- 'driver', 'passenger', 'all'
@@ -1786,33 +1787,320 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 3) search_users: Búsqueda de usuarios (sólo admin)
 DROP FUNCTION IF EXISTS public.search_users(TEXT);
-CREATE OR REPLACE FUNCTION public.search_users(p_search_term TEXT) RETURNS TABLE (
-        id UUID,
-        display_name TEXT,
-        email TEXT,
-        is_admin BOOLEAN,
-        created_at TIMESTAMPTZ
-    ) AS $$
-DECLARE v_requester UUID;
-v_is_admin BOOLEAN;
-BEGIN v_requester := auth.uid();
-IF v_requester IS NULL THEN RAISE EXCEPTION 'No autenticado';
-END IF;
-SELECT is_admin INTO v_is_admin
-FROM public.profiles
-WHERE id = v_requester;
-IF NOT coalesce(v_is_admin, FALSE) THEN RAISE EXCEPTION 'No autorizado: se requieren privilegios de administrador';
-END IF;
-RETURN QUERY
-SELECT p.id,
-    p.display_name,
-    p.email,
-    p.is_admin,
-    p.created_at
-FROM public.profiles p
-WHERE p.display_name ILIKE '%' || coalesce(p_search_term, '') || '%'
-    OR p.email ILIKE '%' || coalesce(p_search_term, '') || '%'
-ORDER BY p.created_at DESC
-LIMIT 100;
+CREATE OR REPLACE FUNCTION public.search_users(p_search_term TEXT) 
+RETURNS TABLE (
+    user_id UUID,
+    user_display_name TEXT,
+    user_email TEXT,
+    user_photo_url TEXT,
+    user_role TEXT,
+    user_is_suspended BOOLEAN,
+    user_verification JSONB,
+    user_is_admin BOOLEAN,
+    user_created_at TIMESTAMPTZ
+) AS $$
+DECLARE 
+    v_requester UUID := auth.uid();
+    v_is_admin_check BOOLEAN;
+BEGIN 
+    IF v_requester IS NULL THEN RAISE EXCEPTION 'No autenticado'; END IF;
+
+    SELECT is_admin INTO v_is_admin_check FROM public.profiles WHERE id = v_requester;
+    IF NOT COALESCE(v_is_admin_check, FALSE) THEN 
+        RAISE EXCEPTION 'No autorizado: se requieren privilegios de administrador'; 
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.display_name,
+        p.email,
+        p.photo_url,
+        p.role,
+        p.is_suspended,
+        p.verification,
+        p.is_admin,
+        p.created_at
+    FROM public.profiles p
+    WHERE p.display_name ILIKE '%' || COALESCE(p_search_term, '') || '%'
+       OR p.email ILIKE '%' || COALESCE(p_search_term, '') || '%'
+    ORDER BY p.created_at DESC
+    LIMIT 100;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================
+-- FUNCIÓN: fetch_my_activity (v1 & v2)
+-- Obtener actividad unificada del usuario (Viajes + Solicitudes)
+-- ==========================================
+CREATE OR REPLACE FUNCTION public.fetch_my_activity_v2(p_user_id UUID)
+RETURNS TABLE (
+    id UUID,
+    status TEXT,
+    departure_time TIMESTAMPTZ,
+    origin JSONB,
+    destination JSONB,
+    price DECIMAL,
+    seats_available INTEGER,
+    role TEXT,
+    passengers JSONB,
+    is_women_only BOOLEAN,
+    driver_id UUID,
+    driver_display_name TEXT,
+    driver_photo_url TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    -- 1. Viajes donde el usuario participa (Conductor o Pasajero)
+    SELECT 
+        r.id,
+        r.status,
+        r.departure_time,
+        r.origin,
+        r.destination,
+        r.price,
+        r.seats_available,
+        CASE 
+            WHEN r.driver_id = p_user_id THEN 'driver'::TEXT
+            ELSE 'passenger'::TEXT
+        END AS role,
+        COALESCE(r.passengers, '[]'::JSONB),
+        r.is_women_only,
+        r.driver_id,
+        r.driver_display_name,
+        r.driver_photo_url
+    FROM public.rides r
+    WHERE p_user_id = ANY(r.participant_ids)
+    
+    UNION ALL
+    
+    -- 2. Solicitudes de viaje creadas por el usuario
+    SELECT 
+        rr.id,
+        rr.status,
+        rr.departure_time,
+        rr.origin,
+        rr.destination,
+        rr.suggested_price,
+        rr.seats_needed,
+        'requester'::TEXT AS role,
+        '[]'::JSONB as passengers,
+        rr.is_women_only,
+        rr.requester_id as driver_id,
+        p.display_name as driver_display_name,
+        p.photo_url as driver_photo_url
+    FROM public.ride_requests rr
+    JOIN public.profiles p ON rr.requester_id = p.id
+    WHERE rr.requester_id = p_user_id
+    ORDER BY departure_time DESC;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Aliases para compatibilidad
+-- ==========================================
+-- 1) remove_passenger: El conductor elimina a un pasajero del viaje
+DROP FUNCTION IF EXISTS public.remove_passenger(UUID, UUID);
+CREATE OR REPLACE FUNCTION public.remove_passenger(p_ride_id UUID, p_passenger_id UUID) RETURNS JSON AS $$
+DECLARE v_actor_id UUID;
+v_driver_id UUID;
+v_seats_total INTEGER;
+v_seats_available INTEGER;
+v_passengers JSONB;
+v_exists BOOLEAN := FALSE;
+BEGIN v_actor_id := auth.uid();
+IF v_actor_id IS NULL THEN RAISE EXCEPTION 'No autenticado';
+END IF;
+-- Bloquear fila y obtener datos del viaje
+SELECT driver_id,
+    seats_total,
+    seats_available,
+    passengers INTO v_driver_id,
+    v_seats_total,
+    v_seats_available,
+    v_passengers
+FROM public.rides
+WHERE id = p_ride_id FOR
+UPDATE;
+IF v_driver_id IS NULL THEN RAISE EXCEPTION 'Viaje no encontrado';
+END IF;
+-- Sólo el conductor puede eliminar pasajeros con esta función
+IF v_actor_id <> v_driver_id THEN RAISE EXCEPTION 'No autorizado: sólo el conductor puede eliminar pasajeros';
+END IF;
+-- Comprobar si el pasajero está en el listado
+SELECT EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(v_passengers) AS p
+        WHERE (p->>'id')::UUID = p_passenger_id
+    ) INTO v_exists;
+IF NOT v_exists THEN RETURN json_build_object(
+    'success',
+    false,
+    'message',
+    'El pasajero no está en este viaje'
+);
+END IF;
+-- Eliminar del array passengers y de los arrays auxiliares
+UPDATE public.rides
+SET passengers = (
+        SELECT jsonb_agg(p)
+        FROM jsonb_array_elements(passengers) AS p
+        WHERE (p->>'id')::UUID <> p_passenger_id
+    ),
+    seats_available = LEAST(v_seats_total, v_seats_available + 1),
+    pending_passenger_ids = array_remove(pending_passenger_ids, p_passenger_id),
+    passenger_ids = array_remove(passenger_ids, p_passenger_id),
+    participant_ids = array_remove(participant_ids, p_passenger_id)
+WHERE id = p_ride_id;
+RETURN json_build_object(
+    'success',
+    true,
+    'message',
+    'Pasajero eliminado correctamente'
+);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 2) create_stripe_connect_onboarding: Devuelve URL de onboarding (stub)
+CREATE OR REPLACE FUNCTION public.create_stripe_connect_onboarding(p_return_url TEXT) RETURNS JSON AS $$
+DECLARE v_user_id UUID;
+v_display_name TEXT;
+v_onboarding_url TEXT;
+BEGIN v_user_id := auth.uid();
+IF v_user_id IS NULL THEN RAISE EXCEPTION 'No autenticado';
+END IF;
+SELECT display_name INTO v_display_name
+FROM public.profiles
+WHERE id = v_user_id;
+-- Stub de URL de onboarding (integración real vía Edge Function / backend)
+v_onboarding_url := 'https://connect.stripe.com/express/onboarding' || '?return_url=' || coalesce(p_return_url, '') || '&client_reference_id=' || v_user_id::TEXT || '&prefill_business_name=' || coalesce(v_display_name, 'Shareway User');
+RETURN json_build_object(
+    'success',
+    true,
+    'onboarding_url',
+    v_onboarding_url
+);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- 3) search_users: Búsqueda de usuarios (sólo admin)
+DROP FUNCTION IF EXISTS public.search_users(TEXT);
+CREATE OR REPLACE FUNCTION public.search_users(p_search_term TEXT) 
+RETURNS TABLE (
+    user_id UUID,
+    user_display_name TEXT,
+    user_email TEXT,
+    user_photo_url TEXT,
+    user_role TEXT,
+    user_is_suspended BOOLEAN,
+    user_verification JSONB,
+    user_is_admin BOOLEAN,
+    user_created_at TIMESTAMPTZ
+) AS $$
+DECLARE 
+    v_requester UUID := auth.uid();
+    v_is_admin_check BOOLEAN;
+BEGIN 
+    IF v_requester IS NULL THEN RAISE EXCEPTION 'No autenticado'; END IF;
+
+    SELECT is_admin INTO v_is_admin_check FROM public.profiles WHERE id = v_requester;
+    IF NOT COALESCE(v_is_admin_check, FALSE) THEN 
+        RAISE EXCEPTION 'No autorizado: se requieren privilegios de administrador'; 
+    END IF;
+
+    RETURN QUERY
+    SELECT 
+        p.id,
+        p.display_name,
+        p.email,
+        p.photo_url,
+        p.role,
+        p.is_suspended,
+        p.verification,
+        p.is_admin,
+        p.created_at
+    FROM public.profiles p
+    WHERE p.display_name ILIKE '%' || COALESCE(p_search_term, '') || '%'
+       OR p.email ILIKE '%' || COALESCE(p_search_term, '') || '%'
+    ORDER BY p.created_at DESC
+    LIMIT 100;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================
+-- FUNCIÓN: fetch_my_activity (v1 & v2)
+-- Obtener actividad unificada del usuario (Viajes + Solicitudes)
+-- ==========================================
+-- Limpiar versiones previas para evitar conflictos de tipo de retorno
+DROP FUNCTION IF EXISTS public.fetch_my_activity_v2(UUID);
+DROP FUNCTION IF EXISTS public.fetch_my_activity_v1(UUID);
+DROP FUNCTION IF EXISTS public.fetch_my_activity(UUID);
+
+CREATE OR REPLACE FUNCTION public.fetch_my_activity_v2(p_user_id UUID)
+RETURNS TABLE (
+    id UUID,
+    status TEXT,
+    departure_time TIMESTAMPTZ,
+    origin JSONB,
+    destination JSONB,
+    price DECIMAL,
+    seats_available INTEGER,
+    role TEXT,
+    passengers JSONB,
+    is_women_only BOOLEAN,
+    driver_id UUID,
+    driver_display_name TEXT,
+    driver_photo_url TEXT
+) AS $$
+BEGIN
+    RETURN QUERY
+    -- 1. Viajes donde el usuario participa (Conductor o Pasajero)
+    SELECT 
+        r.id,
+        r.status,
+        r.departure_time,
+        r.origin,
+        r.destination,
+        r.price,
+        r.seats_available,
+        CASE 
+            WHEN r.driver_id = p_user_id THEN 'driver'::TEXT
+            ELSE 'passenger'::TEXT
+        END AS role,
+        COALESCE(r.passengers, '[]'::JSONB),
+        r.is_women_only,
+        r.driver_id,
+        r.driver_display_name,
+        r.driver_photo_url
+    FROM public.rides r
+    WHERE p_user_id = ANY(r.participant_ids)
+    
+    UNION ALL
+    
+    -- 2. Solicitudes de viaje creadas por el usuario
+    SELECT 
+        rr.id,
+        rr.status,
+        rr.departure_time,
+        rr.origin,
+        rr.destination,
+        rr.suggested_price,
+        rr.seats_needed,
+        'requester'::TEXT AS role,
+        '[]'::JSONB as passengers,
+        rr.is_women_only,
+        rr.requester_id as driver_id,
+        p.display_name as driver_display_name,
+        p.photo_url as driver_photo_url
+    FROM public.ride_requests rr
+    JOIN public.profiles p ON rr.requester_id = p.id
+    WHERE rr.requester_id = p_user_id
+    ORDER BY departure_time DESC;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+-- Aliases para compatibilidad
+CREATE OR REPLACE FUNCTION public.fetch_my_activity_v1(p_user_id UUID)
+RETURNS TABLE (id UUID, status TEXT, departure_time TIMESTAMPTZ, origin JSONB, destination JSONB, price DECIMAL, seats_available INTEGER, role TEXT, passengers JSONB, is_women_only BOOLEAN, driver_id UUID, driver_display_name TEXT, driver_photo_url TEXT) 
+AS $$ BEGIN RETURN QUERY SELECT * FROM public.fetch_my_activity_v2(p_user_id); END; $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.fetch_my_activity(p_user_id UUID)
+RETURNS TABLE (id UUID, status TEXT, departure_time TIMESTAMPTZ, origin JSONB, destination JSONB, price DECIMAL, seats_available INTEGER, role TEXT, passengers JSONB, is_women_only BOOLEAN, driver_id UUID, driver_display_name TEXT, driver_photo_url TEXT) 
+AS $$ BEGIN RETURN QUERY SELECT * FROM public.fetch_my_activity_v2(p_user_id); END; $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;

@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button.jsx';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import NotificationCenter from './NotificationCenter';
+import LanguageSwitcher from './LanguageSwitcher';
+
 
 // FASE 17: Audio Singleton para evitar NS_BINDING_ABORTED
 const AUDIO_ASSETS = {
@@ -25,8 +28,10 @@ const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor }) => {
 
   return (
     <NavLink to={to} className={cn(
-      "flex flex-col items-center justify-center transition-all duration-300 relative group",
-      isDesktop ? "min-w-[70px] lg:min-w-[84px]" : "px-2 sm:px-4",
+      // Área táctil mínima 44×44px (HIG / Material)
+      "flex flex-col items-center justify-center min-w-[48px] min-h-[44px]",
+      "transition-all duration-300 relative group",
+      isDesktop ? "px-3 lg:min-w-[84px]" : "px-2",
       isActive ? activeColor : 'text-slate-400 hover:text-slate-600',
     )}>
       <div className={cn(
@@ -145,10 +150,13 @@ const MainLayout = (props) => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
-          <Button variant="ghost" size="icon" className="rounded-full relative size-8 lg:size-9">
-            <Bell size={16} lg:size={18} className="text-slate-600" />
-            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 size-2 bg-primary rounded-full border-2 border-white animate-pulse" />}
-          </Button>
+          <NotificationCenter user={context?.user}>
+            <Button variant="ghost" size="icon" className="rounded-full relative size-8 lg:size-9">
+              <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600" />
+            </Button>
+          </NotificationCenter>
+          <LanguageSwitcher />
+
           <Avatar className="h-8 w-8 lg:h-9 lg:w-9 border-2 border-white shadow-md cursor-pointer" onClick={() => navigate('/settings')}>
             <AvatarImage src={profile?.photo_url || profile?.avatar_url} />
             <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-xs">{profile?.display_name?.[0]}</AvatarFallback>
@@ -158,16 +166,17 @@ const MainLayout = (props) => {
 
       {/* ÁREA DE CONTENIDO CON SCROLL MEJORADO */}
       <main className={cn(
-        "flex-1 relative pt-14 lg:pt-16 pb-24 lg:pb-32",
-        isDashboard ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden custom-scrollbar"
+        "flex-1 relative",
+        isDashboard ? "overflow-hidden" : "pt-14 lg:pt-16 pb-24 lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
       )}>
-        <div className="max-w-7xl mx-auto h-full">
+        <div className={cn("mx-auto h-full", !isDashboard && "max-w-7xl")}>
           <Outlet context={{ ...context, unreadNotifications: unreadCount }} />
         </div>
       </main>
 
-      {/* NAVEGACIÓN ADAPTATIVA (BOTTOM BAR) */}
-      <nav className="fixed bottom-4 lg:bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-fit px-2">
+      {/* NAVEGACIÓN ADAPTATIVA (BOTTOM BAR) + safe-area de iOS */}
+      <nav className="fixed bottom-4 lg:bottom-6 left-1/2 -translate-x-1/2 z-[1000] w-full max-w-fit px-2"
+           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="bg-white/95 backdrop-blur-3xl px-2 py-2 lg:px-6 lg:py-3 rounded-[1.5rem] lg:rounded-[2.5rem] border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] flex items-center justify-between lg:justify-center gap-1 lg:gap-2 relative min-w-[320px] lg:min-w-fit">
           <div className="absolute inset-x-8 lg:inset-x-12 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-30" />
 

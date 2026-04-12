@@ -29,38 +29,66 @@ serve(async (req) => {
         const { rideId } = await req.json()
         if (!rideId) throw new Error('rideId requerido')
 
-        // 1. Obtener la solicitud del usuario para este viaje
-        const { data: request, error: reqError } = await supabaseClient
-            .from('ride_requests')
+        // 1. Obtener la reserva validada del pasajero
+        const { data: ride, error: rideError } = await supabaseClient
+            .from('rides')
             .select('*')
-            .eq('ride_id', rideId)
-            .eq('passenger_id', user.id)
+            .eq('id', rideId)
             .single()
 
-        if (reqError || !request) throw new Error('No se encontró la reserva')
-        if (request.status === 'cancelled') throw new Error('La reserva ya está cancelada')
+        if (rideError || !ride) throw new Error('Viaje no encontrado')
+        
+        const pax = ride.passengers?.find((p: any) => p.id === user.id && ['confirmed','verified','confirmed_by_pin'].includes(p.status));
+        if (!pax) throw new Error('No tienes una reserva confirmada en este viaje')
 
-        // 2. Procesar reembolso si existe un pago
-        if (request.payment_intent_id) {
-            try {
-                await stripe.refunds.create({
-                    payment_intent: request.payment_intent_id,
-                })
-            } catch (stripeError) {
-                console.error('Error al procesar reembolso en Stripe:', stripeError)
-                // Continuamos aunque falle Stripe (opcional, dependiendo de política)
+        let stripeRefunded = 0;
+
+        // 2. Procesar reembolso en Stripe SI existe pago previo y no se pierde por penalización
+        if (pax.payment_intent_id && pax.payment_intent_id.startsWith('pi_')) {
+            const hoursUntilDeparture = (new Date(ride.departure_time).getTime() - Date.now()) / 3600000;
+            const bookedPrice = parseFloat(pax.booked_price);
+            
+            let refundRatio = 1.0;
+            if (hoursUntilDeparture <= 24 && hoursUntilDeparture >= 2) {
+                const minsSinceBooked = (Date.now() - new Date(pax.booked_at).getTime()) / 60000;
+                if (!(minsSinceBooked <= 15 && hoursUntilDeparture > 3)) {
+                   refundRatio = 0.5;
+                }
+            } else if (hoursUntilDeparture < 2) {
+                refundRatio = 0.0;
+            }
+            
+            const totalRefund = bookedPrice * refundRatio;
+            
+            if (totalRefund > 0) {
+                try {
+                    const pi = await stripe.paymentIntents.retrieve(pax.payment_intent_id);
+                    const stripeCharge = pi.amount / 100;
+                    const amountToRefundStripe = Math.min(totalRefund, stripeCharge);
+                    
+                    if (amountToRefundStripe > 0) {
+                        await stripe.refunds.create({
+                            payment_intent: pax.payment_intent_id,
+                            amount: Math.round(amountToRefundStripe * 100)
+                        });
+                        stripeRefunded = Math.round(amountToRefundStripe * 100) / 100;
+                        console.log(`🤑 Stripe refund exitoso: ${stripeRefunded}€`);
+                    }
+                } catch (stripeError) {
+                    console.error('Error al procesar reembolso en Stripe:', stripeError);
+                }
             }
         }
 
-        // 3. Actualizar estado a cancelado
-        const { error: updateError } = await supabaseClient
-            .from('ride_requests')
-            .update({ status: 'cancelled' })
-            .eq('id', request.id)
+        // 3. Destruir el asiento en base de datos y gestionar saldos de Wallet (Escrow)
+        const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('cancel_booking_and_refund', {
+            p_ride_id: rideId,
+            p_stripe_refunded: stripeRefunded
+        });
 
-        if (updateError) throw updateError
+        if (rpcError) throw rpcError;
 
-        return new Response(JSON.stringify({ success: true, message: 'Reserva cancelada y reembolso procesado' }), {
+        return new Response(JSON.stringify({ success: true, message: 'Cancelación procesada', stripeRefunded, details: rpcResult }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         })

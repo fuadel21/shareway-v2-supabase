@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14?target=deno'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import Stripe from "https://esm.sh/stripe@14?target=deno"
 import { corsHeaders } from '../_shared/cors.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
@@ -55,11 +55,11 @@ serve(async (req) => {
         const stripeAccountId = payout.profiles?.stripe_account_id
         if (!stripeAccountId) throw new Error('El conductor no tiene una cuenta de Stripe vinculada.')
 
-        // 3. Ejecutar la transferencia en Stripe
-        // El monto está en euros, Stripe espera céntimos.
+        // 3. Ejecutar la transferencia en Stripe con LLAVE DE IDEMPOTENCIA
+        // Esto garantiza que aunque se llame varias veces, Stripe solo envíe el dinero UNA VEZ.
         const amountInCents = Math.round(parseFloat(payout.amount) * 100)
 
-        console.log(`💸 Initiating Stripe transfer of ${payout.amount}€ to ${stripeAccountId}`)
+        console.log(`💸 Initiating safe Stripe transfer of ${payout.amount}€ to ${stripeAccountId}`)
 
         const transfer = await stripe.transfers.create({
             amount: amountInCents,
@@ -67,6 +67,8 @@ serve(async (req) => {
             destination: stripeAccountId,
             description: `ShareWay Payout: Request ${payoutId}`,
             metadata: { payoutId: payoutId, user_id: payout.user_id }
+        }, {
+            idempotencyKey: `payout_${payoutId}` // <-- BLINDAJE CRÍTICO
         })
 
         // 4. Actualizar la base de datos a través del RPC existente

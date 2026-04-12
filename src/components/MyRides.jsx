@@ -1,13 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, isValid, subMinutes, isBefore, subDays } from 'date-fns';
+import { format, isValid, subMinutes, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button.jsx';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Car, ArrowUpRight, Loader2, ChevronLeft, Heart, Users, MapPin, RefreshCw, AlertTriangle
+    Car, ArrowUpRight, Loader2, ChevronLeft, Heart, Users, Calendar, XCircle, CheckCircle, Clock, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,12 +24,15 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
         in_progress: { text: 'EN CURSO', bg: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500 animate-pulse' },
         completed: { text: 'COMPLETADO', bg: 'bg-slate-50 text-slate-400 border-slate-100', dot: 'bg-slate-300' },
         cancelled: { text: 'CANCELADO', bg: 'bg-red-50 text-red-500 border-red-100', dot: 'bg-red-500' },
-        expired: { text: 'CADUCADO', bg: 'bg-orange-50 text-orange-400 border-orange-100', dot: 'bg-orange-400' }
+        expired: { text: 'CADUCADO', bg: 'bg-orange-50 text-orange-400 border-orange-100', dot: 'bg-orange-400' },
+        requested: { text: 'SOLICITUD PENDIENTE', bg: 'bg-amber-50 text-amber-600 border-amber-100', dot: 'bg-amber-500 animate-pulse' },
+        rejected: { text: 'RECHAZADO', bg: 'bg-red-50 text-red-500 border-red-100', dot: 'bg-red-500' }
     };
 
     // Si el viaje es antiguo y sigue en scheduled, visualmente es EXPIRED
+    // Pero si es 'requested', mantenemos el estado para que el usuario sepa que está pendiente aunque sea viejo (o expirado)
     const isActuallyExpired = ride.status === 'scheduled' && dateObj && isBefore(dateObj, subMinutes(new Date(), 120));
-    const effectiveStatus = isActuallyExpired ? 'expired' : (ride.status || 'scheduled');
+    const effectiveStatus = (isActuallyExpired && ride.status !== 'requested') ? 'expired' : (ride.status || 'scheduled');
     const currentTheme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES.scheduled;
 
     return (
@@ -54,7 +57,7 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
                             {currentTheme.text}
                         </div>
                         <p className="text-[10px] font-black text-slate-900 uppercase italic">
-                            {isDriver ? 'CONDUCES' : 'PASAJERO'}
+                            {isDriver ? 'CONDUCES' : (ride.role === 'requester' ? 'SOLICITANTE' : 'PASAJERO')}
                         </p>
                     </div>
                 </div>
@@ -86,7 +89,13 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
                         ) : (
                             <div className="flex items-center gap-1.5 text-slate-300">
                                 <Users size={12} />
-                                <span className="text-[9px] font-bold uppercase tracking-widest italic">Sin pasajeros</span>
+                                <span className="text-[9px] font-bold uppercase tracking-widest italic">Wait...</span>
+                            </div>
+                        )}
+                        {/* Indicador de asientos */}
+                        {ride.seats_available > 0 && (
+                            <div className="px-2 py-1 rounded-full bg-slate-100 text-[9px] font-bold text-slate-500 flex items-center ml-2">
+                                {ride.seats_available} LIBRES
                             </div>
                         )}
                     </div>
@@ -103,7 +112,7 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
 
 const MyRides = () => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState('upcoming');
+    const [activeTab, setActiveTab] = useState('active'); // active, requested, history, cancelled
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState(null);
@@ -111,9 +120,18 @@ const MyRides = () => {
     const fetchRidesDirect = async (id) => {
         setLoading(true);
         try {
-            const { data, error } = await supabase.rpc('fetch_my_activity_v1', { p_user_id: id });
-            if (error) throw error;
-            setRides(data || []);
+            // USANDO LA NUEVA RPC V2 QUE INCLUYE SOLICITUDES PENDIENTES
+            const { data, error } = await supabase.rpc('fetch_my_activity_v2', { p_user_id: id });
+
+            if (error) {
+                // Fallback a v1 si v2 no existe aún (durante migración)
+                console.warn("Retrying with v1 due to error:", error);
+                const { data: dataV1, error: errorV1 } = await supabase.rpc('fetch_my_activity_v1', { p_user_id: id });
+                if (errorV1) throw errorV1;
+                setRides(dataV1 || []);
+            } else {
+                setRides(data || []);
+            }
         } catch (err) {
             console.error("❌ Error loading rides:", err);
             toast.error("Error al sincronizar actividad");
@@ -131,38 +149,59 @@ const MyRides = () => {
             }
         };
         init();
-    }, []);
 
-    // LÓGICA DE FILTRADO TÉCNICO (Upcoming vs History)
-    const { upcoming, history } = useMemo(() => {
+        // Polling para actualizaciones (opcional, cada 30s)
+        const interval = setInterval(() => {
+            if (userId) fetchRidesDirect(userId);
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [userId]); // Add userId dependency
+
+    // LÓGICA DE FILTRADO TÉCNICO
+    const filteredRides = useMemo(() => {
         const list = Array.isArray(rides) ? rides : [];
         const now = new Date();
-        const EXPIRATION_LIMIT = subMinutes(now, 120); // 2 horas de tolerancia
+        const EXPIRATION_LIMIT = subMinutes(now, 120);
 
-        const upcomingList = [];
-        const historyList = [];
-
-        list.forEach(r => {
+        return list.filter(r => {
             const departureDate = new Date(r.departure_time);
+            const isActuallyExpired = isBefore(departureDate, EXPIRATION_LIMIT) && r.status === 'scheduled';
 
-            // Un viaje es HISTORIAL si:
-            // 1. Está completado, cancelado o expirado.
-            // 2. Es un viaje "olvidado" (Scheduled pero de hace más de 2 horas).
-            const isActuallyPast = isBefore(departureDate, EXPIRATION_LIMIT) && r.status === 'scheduled';
-            const isHistoricalStatus = ['completed', 'cancelled', 'expired'].includes(r.status);
+            // Normalize status
+            let status = r.status;
+            if (isActuallyExpired && status !== 'requested') status = 'expired';
 
-            if (isHistoricalStatus || isActuallyPast) {
-                historyList.push(r);
+            switch (activeTab) {
+                case 'active':
+                    return ['scheduled', 'active', 'in_progress'].includes(status) && r.role !== 'requester';
+                case 'requested':
+                    return (status === 'requested' || r.role === 'requester') && !['completed', 'expired', 'cancelled', 'rejected'].includes(status);
+                case 'history':
+                    return ['completed', 'expired'].includes(status);
+                case 'cancelled':
+                    return ['cancelled', 'rejected'].includes(status);
+                default:
+                    return false;
+            }
+        }).sort((a, b) => {
+            // Ordenar: Próximos primero para activos/solicitados, Recientes primero para historial/cancelados
+            const dateA = new Date(a.departure_time);
+            const dateB = new Date(b.departure_time);
+            if (['history', 'cancelled'].includes(activeTab)) {
+                return dateB - dateA; // Descendente (más reciente primero)
             } else {
-                upcomingList.push(r);
+                return dateA - dateB; // Ascendente (más próximo primero)
             }
         });
+    }, [rides, activeTab]);
 
-        return {
-            upcoming: upcomingList.sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time)),
-            history: historyList.sort((a, b) => new Date(b.departure_time) - new Date(a.departure_time))
-        };
-    }, [rides]);
+    const tabs = [
+        { id: 'active', label: 'Activos', icon: Clock },
+        { id: 'requested', label: 'Solicitados', icon: Users },
+        { id: 'history', label: 'Historial', icon: CheckCircle },
+        { id: 'cancelled', label: 'Cancelados', icon: XCircle },
+    ];
 
     return (
         <div className="bg-slate-50 min-h-screen pb-40 font-sans">
@@ -173,7 +212,7 @@ const MyRides = () => {
                     </Button>
                     <div>
                         <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Actividad</h1>
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Control de trayectos</p>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Tus Viajes</p>
                     </div>
                 </div>
                 <Button variant="ghost" size="icon" className="rounded-xl size-10 text-slate-300 hover:text-primary" onClick={() => userId && fetchRidesDirect(userId)}>
@@ -182,37 +221,46 @@ const MyRides = () => {
             </header>
 
             <main className="max-w-xl mx-auto px-4 py-6 space-y-8">
-                <div className="flex p-2 bg-white rounded-[2.2rem] shadow-xl border border-slate-100">
-                    <button
-                        onClick={() => setActiveTab('upcoming')}
-                        className={cn(
-                            "flex-1 h-14 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2",
-                            activeTab === 'upcoming' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400"
-                        )}
-                    >
-                        Próximos {upcoming.length > 0 && <span className="bg-primary text-white size-4 rounded-full text-[8px] flex items-center justify-center font-bold shadow-sm">{upcoming.length}</span>}
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={cn(
-                            "flex-1 h-14 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all",
-                            activeTab === 'history' ? "bg-slate-900 text-white shadow-lg" : "text-slate-400"
-                        )}
-                    >
-                        Historial
-                    </button>
+                {/* Scrollable Tabs */}
+                <div className="flex overflow-x-auto pb-4 gap-2 no-scrollbar">
+                    {tabs.map(tab => {
+                        const Icon = tab.icon;
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id)}
+                                className={cn(
+                                    "px-4 py-3 rounded-2xl flex items-center gap-2 whitespace-nowrap transition-all border",
+                                    isActive
+                                        ? "bg-slate-900 text-white border-slate-900 shadow-md transform scale-105"
+                                        : "bg-white text-slate-500 border-slate-100 hover:bg-slate-50"
+                                )}
+                            >
+                                <Icon size={14} className={isActive ? "text-primary" : "text-slate-400"} />
+                                <span className="text-[10px] font-black uppercase tracking-wider">{tab.label}</span>
+                                {isActive && filteredRides.length > 0 && (
+                                    <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full text-[8px]">{filteredRides.length}</span>
+                                )}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div className="space-y-2">
                     {loading && rides.length === 0 ? (
                         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary size-8" /></div>
-                    ) : (activeTab === 'upcoming' ? upcoming : history).length > 0 ? (
-                        (activeTab === 'upcoming' ? upcoming : history).map(ride => <RideCard key={ride.id} ride={ride} navigate={navigate} currentUserId={userId} />)
+                    ) : filteredRides.length > 0 ? (
+                        filteredRides.map(ride => (
+                            <RideCard key={ride.id} ride={ride} navigate={navigate} currentUserId={userId} />
+                        ))
                     ) : (
                         <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 shadow-inner">
                             <Car className="h-12 w-12 text-slate-100 mx-auto mb-6" />
-                            <h3 className="text-sm font-black text-slate-900 uppercase italic mb-1">Bandeja Vacía</h3>
-                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-8">No hay trayectos en esta sección</p>
+                            <h3 className="text-sm font-black text-slate-900 uppercase italic mb-1">Sin Resultados</h3>
+                            <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-8">
+                                No tienes viajes en esta sección
+                            </p>
                         </div>
                     )}
                 </div>

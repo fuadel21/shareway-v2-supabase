@@ -16,6 +16,7 @@
     "dependencies": {
         "@capacitor/app": "^8.0.0",
         "@capacitor/haptics": "^8.0.0",
+        "@mapbox/polyline": "^1.2.1",
         "@radix-ui/react-accordion": "^1.2.3",
         "@radix-ui/react-alert-dialog": "^1.1.15",
         "@radix-ui/react-avatar": "^1.1.11",
@@ -58,6 +59,7 @@
         "react-image-crop": "^11.0.10",
         "react-leaflet": "4.2.1",
         "react-router-dom": "^6.30.2",
+        "react-spring-bottom-sheet": "^3.4.1",
         "recharts": "^3.7.0",
         "sonner": "^1.7.4",
         "tailwind-merge": "^2.6.0",

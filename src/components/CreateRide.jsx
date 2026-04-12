@@ -33,8 +33,15 @@ const getNextHalfHour = () => {
 };
 
 const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
-    <button type="button" onClick={onClick} className={cn("flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 flex-1", active ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 text-slate-400 bg-slate-50/50")}>
-        <Icon className="h-5 w-5" /><span className="text-[8px] font-black uppercase tracking-tighter">{label}</span>
+    <button type="button" 
+            onClick={onClick} 
+            className={cn(
+                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 flex-1 min-h-[80px]", 
+                active ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 text-slate-400 bg-slate-50/50",
+                "active:scale-95 touch-action-manipulation"
+            )}>
+        <Icon className="h-6 w-6" />
+        <span className="text-[10px] font-black uppercase tracking-tight">{label}</span>
     </button>
 );
 
@@ -265,10 +272,18 @@ const CreateRide = () => {
 
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plazas y Precio</p>
-                            <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
-                                <button type="button" onClick={() => setSeats(Math.max(1, seats - 1))} className="w-12 py-2 text-lg font-black text-slate-400">-</button>
-                                <div className="flex-1 text-center font-black text-xl text-slate-900">{seats}</div>
-                                <button type="button" onClick={() => setSeats(Math.min(RIDE_RULES.MAX_SEATS, seats + 1))} className="w-12 py-2 text-lg font-black text-slate-400">+</button>
+                            <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl">
+                                <button type="button" 
+                                        onClick={() => setSeats(Math.max(1, seats - 1))} 
+                                        className="w-12 h-12 flex items-center justify-center text-xl font-black text-slate-400 active:text-primary active:scale-90 transition-all">
+                                    -
+                                </button>
+                                <div className="flex-1 text-center font-black text-2xl text-slate-900">{seats}</div>
+                                <button type="button" 
+                                        onClick={() => setSeats(Math.min(RIDE_RULES.MAX_SEATS, seats + 1))} 
+                                        className="w-12 h-12 flex items-center justify-center text-xl font-black text-slate-400 active:text-primary active:scale-90 transition-all">
+                                    +
+                                </button>
                             </div>
                             <div className="relative">
                                 <Euro className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-primary" />
@@ -278,11 +293,17 @@ const CreateRide = () => {
                     </div>
 
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
-                        <div className="flex items-center justify-between">
-                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Preferencia de Viaje</h3>
-                            <button type="button" onClick={() => setIsWomenOnly(!isWomenOnly)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all", isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm shadow-pink-100" : "bg-slate-50 border-transparent text-slate-400")}>
-                                <Heart size={14} className={isWomenOnly ? "fill-pink-600" : ""} />
-                                <span className="text-[9px] font-black uppercase tracking-widest leading-none">Solo Mujeres</span>
+                        <div className="flex items-center justify-between gap-2">
+                            <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Preferencia</h3>
+                            <button type="button" 
+                                    onClick={() => setIsWomenOnly(!isWomenOnly)} 
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center", 
+                                        isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm shadow-pink-100" : "bg-slate-50 border-transparent text-slate-400",
+                                        "active:scale-95 touch-action-manipulation"
+                                    )}>
+                                <Heart size={16} className={isWomenOnly ? "fill-pink-600" : ""} />
+                                <span className="text-xs font-black uppercase tracking-tight leading-none">Solo Mujeres</span>
                             </button>
                         </div>
                         <div className="flex gap-3">

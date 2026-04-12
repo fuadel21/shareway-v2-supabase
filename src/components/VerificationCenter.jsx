@@ -171,12 +171,12 @@ function VerificationCenter() {
 
             // 3. Notificación Feedback (Silenciosa si falla)
             try {
-                await createNotification(
-                    currentUser.id,
-                    'Validación Iniciada',
-                    'Hemos recibido tu documento. Te avisaremos cuando se complete la revisión.',
-                    'info'
-                );
+                await createNotification({
+                    userId: currentUser.id,
+                    title: 'Validación Iniciada',
+                    content: 'Hemos recibido tu documento. Te avisaremos cuando se complete la revisión.',
+                    type: 'info'
+                });
             } catch (e) {
                 console.warn("Notification failed, but upload succeeded.");
             }

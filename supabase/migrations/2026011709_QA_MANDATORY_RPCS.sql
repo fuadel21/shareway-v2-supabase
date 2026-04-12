@@ -207,35 +207,35 @@ v_ride RECORD;
 v_passenger JSONB;
 v_new_passengers JSONB;
 v_found BOOLEAN := FALSE;
-BEGIN
+BEGIN -- 1. Get Ride
 SELECT * INTO v_ride
 FROM public.rides
 WHERE id = p_ride_id
     AND driver_id = v_driver_id;
-IF v_ride IS NULL THEN RAISE EXCEPTION 'Viaje no encontrado.';
+IF v_ride IS NULL THEN RAISE EXCEPTION 'Viaje no encontrado o no eres el conductor.';
 END IF;
--- Buscar y verificar
-SELECT jsonb_agg(
-        CASE
-            WHEN (p->>'id')::UUID = p_passenger_id
-            AND (p->>'pin') = p_pin
-            AND p->>'status' = 'confirmed' THEN (
-                v_found := TRUE,
-                jsonb_set(p, '{status}', '"on_board"')
-            )::RECORD.jsonb_set -- Trick to set flag
-            ELSE p
-        END
-    ) INTO v_new_passengers
-FROM jsonb_array_elements(v_ride.passengers) p;
--- Fix: The boolean assignment inside CASE is tricky in pure SQL. Let's do explicit loop or simple check first.
--- Better Check:
+-- 2. Verify PIN and Passenger Status
 SELECT p INTO v_passenger
 FROM jsonb_array_elements(v_ride.passengers) p
 WHERE (p->>'id')::UUID = p_passenger_id;
-IF v_passenger IS NULL
-OR (v_passenger->>'pin') != p_pin THEN RETURN json_build_object('success', false, 'message', 'PIN Incorrecto');
+IF v_passenger IS NULL THEN RETURN json_build_object(
+    'success',
+    false,
+    'message',
+    'Pasajero no encontrado en este viaje'
+);
 END IF;
--- Update status
+IF (v_passenger->>'pin') != p_pin THEN RETURN json_build_object('success', false, 'message', 'PIN Incorrecto');
+END IF;
+IF (v_passenger->>'status') != 'confirmed'
+AND (v_passenger->>'status') != 'on_board' THEN RETURN json_build_object(
+    'success',
+    false,
+    'message',
+    'El estado del pasajero no permite abordar'
+);
+END IF;
+-- 3. Update Status to 'on_board'
 SELECT jsonb_agg(
         CASE
             WHEN (p->>'id')::UUID = p_passenger_id THEN jsonb_set(p, '{status}', '"on_board"')
@@ -246,7 +246,12 @@ FROM jsonb_array_elements(v_ride.passengers) p;
 UPDATE public.rides
 SET passengers = v_new_passengers
 WHERE id = p_ride_id;
-RETURN json_build_object('success', true);
+RETURN json_build_object(
+    'success',
+    true,
+    'message',
+    'Pasajero verificado exitosamente'
+);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ------------------------------------------------------------------------------

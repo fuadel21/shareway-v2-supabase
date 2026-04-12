@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button.jsx';
 import {
     Loader2, Send, ShieldCheck, MoreVertical,
     Phone, ChevronLeft, Sparkles, CheckCheck,
-    Zap
+    Zap, Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';

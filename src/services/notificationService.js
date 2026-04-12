@@ -1,52 +1,107 @@
 import { supabase } from '../lib/supabase';
 
 /**
- * Servicio de Notificaciones Unificado v4.0
- * Alineado con la función SECURITY DEFINER de la base de datos.
+ * Servicio de Notificaciones Unificado v4.5
+ * Corregido para coincidir con el esquema de la base de datos (read vs is_read, content vs message)
  */
+
 export const createNotification = async ({
     userId,
     title,
-    message,
+    content,
     type = 'info',
-    metadata = {},
-    rideId = null,
-    priority = 0
+    data = {},
 }) => {
     try {
-        const { data, error } = await supabase.rpc('create_notification', {
+        const { data: result, error } = await supabase.rpc('create_notification', {
             p_user_id: userId,
             p_title: title,
-            p_message: message,
+            p_content: content,
             p_type: type,
-            p_metadata: metadata,
-            p_ride_id: rideId,
-            p_priority: priority
+            p_data: data
         });
 
         if (error) throw error;
-        return data;
+        return result;
     } catch (error) {
         console.error('🛡️ [NotificationService] Error:', error.message);
-        // Fallback silencioso para no romper la experiencia del usuario principal
         return null;
     }
 };
 
-export const markAsRead = async (notificationId) => {
-    const { error } = await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
-    if (error) throw error;
+export const getNotifications = async (userId) => {
+    try {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data;
+    } catch (error) {
+        console.error('🛡️ [NotificationService] Get error:', error.message);
+        return [];
+    }
 };
 
-export const getMyNotifications = async () => {
-    const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-    if (error) throw error;
-    return data;
+export const getUnreadCount = async (userId) => {
+    try {
+        const { count, error } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('read', false);
+
+        if (error) throw error;
+        return count;
+    } catch (error) {
+        console.error('🛡️ [NotificationService] Count error:', error.message);
+        return 0;
+    }
 };
+
+export const markAsRead = async (notificationId) => {
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notificationId);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('🛡️ [NotificationService] Mark error:', error.message);
+        throw error;
+    }
+};
+
+export const markAllAsRead = async (userId) => {
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('user_id', userId)
+            .eq('read', false);
+
+        if (error) throw error;
+    } catch (error) {
+        console.error('🛡️ [NotificationService] Mark all error:', error.message);
+        throw error;
+    }
+};
+
+export const subscribeToNotifications = (userId, callback) => {
+    return supabase
+        .channel(`notifications:${userId}`)
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`
+        }, payload => {
+            if (callback) callback(payload.new);
+        })
+        .subscribe();
+};
+
+export const getMyNotifications = getNotifications; // Alias para compatibilidad parcial

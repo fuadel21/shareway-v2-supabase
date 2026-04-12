@@ -62,12 +62,14 @@ const PinVerificationDialog = ({ open, onOpenChange, onConfirm, isLoading, title
                         <Lock className="h-10 w-10 text-primary" />
                     </div>
 
-                    <DialogTitle className="text-3xl font-black tracking-tighter mb-4">
-                        {title || "Verificar PIN"}
-                    </DialogTitle>
-                    <DialogDescription className="font-bold text-white/40 leading-relaxed max-w-[280px] mx-auto text-sm">
-                        Solicita el código de 4 dígitos al pasajero para confirmar el embarque seguro.
-                    </DialogDescription>
+                    <DialogHeader className="space-y-4">
+                        <DialogTitle className="text-3xl font-black tracking-tighter text-white">
+                            {title || "Verificar PIN"}
+                        </DialogTitle>
+                        <DialogDescription className="font-bold text-white/40 leading-relaxed max-w-[280px] mx-auto text-sm">
+                            Solicita el código de 4 dígitos al pasajero para confirmar el embarque seguro.
+                        </DialogDescription>
+                    </DialogHeader>
                 </div>
 
                 <div className="p-12 space-y-12 bg-white">

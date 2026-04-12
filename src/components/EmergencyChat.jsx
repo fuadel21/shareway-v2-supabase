@@ -10,7 +10,8 @@ import {
     ChevronLeft,
     AlertCircle,
     MapPin,
-    Radio
+    Radio,
+    Users
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

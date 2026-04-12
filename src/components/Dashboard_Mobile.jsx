@@ -13,12 +13,12 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Search, Users, Car, Info, Loader2, Calendar, Star, Leaf, Sparkles, Navigation, Map as MapIcon, List as ListIcon, MapPin, Megaphone, ChevronRight, Euro, Filter, UserCheck, ShieldCheck, Sprout, Trees, Mountain, Languages } from 'lucide-react';
 import { searchRides, getAvailableRides, fulfillRequest } from '@/services/rideService';
 import { calculateImpact, getImpactEquivalency, formatImpactDisplay } from '@/utils/climateImpact';
 import AddressAutocomplete from './AddressAutocomplete';
 import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from './LanguageSwitcher';
 
 // Componente para centrar el mapa suavemente
 function ChangeView({ center, zoom }) {
@@ -64,7 +64,7 @@ const AISuggestionCard = ({ count }) => {
                     <Sparkles className="h-3 w-3 text-amber-300" />
                 </div>
                 <div className="flex-1">
-                    <h4 className="text-[8px] font-black tracking-wider mb-0.5 italic uppercase">Inteligencia Compartida</h4>
+                    <h4 className="text-[8px] font-black tracking-wider mb-0.5 italic uppercase">{t('coming_soon.lab_title')}</h4>
                     <p className="text-[10px] text-indigo-50 font-medium leading-snug">
                         {message}
                     </p>
@@ -78,7 +78,7 @@ const RideCard = ({ item, isSelected, onClick, onAcceptRequest }) => {
     const { t } = useTranslation();
     const isRequest = item.type === 'request';
     const profile = isRequest ? item.requester : item.driver;
-    const name = profile?.display_name || profile?.full_name || 'Usuario';
+    const name = profile?.display_name || profile?.full_name || t('edit_profile.fields.display_name');
     const photo = profile?.avatar_url || profile?.photo_url;
     const isVerified = profile?.verification?.status === 'verified';
 
@@ -123,7 +123,7 @@ const RideCard = ({ item, isSelected, onClick, onAcceptRequest }) => {
                             "text-[7px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded inline-block",
                             isRequest ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
                         )}>
-                            {isRequest ? 'BUSCA' : 'OFRECE'}
+                            {isRequest ? t('dashboard.seek_seats').toUpperCase() : t('dashboard.offer_seats').toUpperCase()}
                         </span>
                     </div>
                 </div>
@@ -141,8 +141,8 @@ const RideCard = ({ item, isSelected, onClick, onAcceptRequest }) => {
                         <div className="h-1.5 w-1.5 rounded-full bg-primary" />
                     </div>
                     <div className="flex-1 min-w-0 space-y-1.5">
-                        <p className="text-[9px] font-bold text-slate-500 truncate uppercase">{item.origin?.address || item.origin?.name || 'Origen'}</p>
-                        <p className="text-[9px] font-black text-slate-900 truncate uppercase">{item.destination?.address || item.destination?.name || 'Destino'}</p>
+                        <p className="text-[9px] font-bold text-slate-500 truncate uppercase">{item.origin?.address || item.origin?.name || t('my_rides.no_upcoming').split(' ')[4]}</p>
+                        <p className="text-[9px] font-black text-slate-900 truncate uppercase">{item.destination?.address || item.destination?.name || t('my_rides.no_upcoming').split(' ')[4]}</p>
                     </div>
                     {impactData && (
                         <div className="ml-2 px-2 py-1 bg-emerald-50 rounded-lg border border-emerald-100 flex flex-col items-center justify-center min-w-[50px] flex-shrink-0">
@@ -155,20 +155,20 @@ const RideCard = ({ item, isSelected, onClick, onAcceptRequest }) => {
             </div>
 
             {isSelected && (
-                <div className="animate-in fade-in zoom-in duration-200">
+                <div className="animate-in fade-in zoom-in duration-200 mt-1">
                     {!isRequest ? (
                         <Button
-                            className="w-full h-8 rounded-xl bg-slate-900 text-white font-black text-[8px] tracking-widest uppercase shadow-lg"
+                            className="w-full h-11 rounded-xl bg-slate-900 text-white font-black text-xs tracking-widest uppercase shadow-lg"
                             onClick={(e) => { e.stopPropagation(); onClick(item, true); }}
                         >
-                            VER DETALLES
+                            {t('dashboard.view_details')}
                         </Button>
                     ) : (
                         <Button
-                            className="w-full h-8 rounded-xl bg-primary text-white font-black text-[8px] uppercase tracking-widest shadow-xl"
+                            className="w-full h-11 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest shadow-xl"
                             onClick={(e) => { e.stopPropagation(); onAcceptRequest(item); }}
                         >
-                            ACEPTAR
+                            {t('dashboard.accept_request')}
                         </Button>
                     )}
                 </div>
@@ -191,11 +191,6 @@ function Dashboard() {
     const [isPanelVisible, setIsPanelVisible] = useState(false);
     const [destinationSearch, setDestinationSearch] = useState(null);
 
-    const toggleLanguage = () => {
-        const newLang = i18n.language === 'es' ? 'en' : 'es';
-        i18n.changeLanguage(newLang);
-        toast.success(newLang === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
-    };
 
     const fetchData = useCallback(async () => {
         if (!user) return;
@@ -335,35 +330,36 @@ function Dashboard() {
                                 </div>
                                 <div>
                                     <h2 className="text-lg font-black text-slate-900 tracking-tighter uppercase italic leading-none">ShareWay</h2>
-                                    <p className="text-[7px] font-black text-slate-400 tracking-widest uppercase mt-0.5">Elite Mobility</p>
+                                    <p className="text-[7px] font-black text-slate-400 tracking-widest uppercase mt-0.5">{t('dashboard.explore_community')}</p>
                                 </div>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={toggleLanguage} className="rounded-xl h-8 w-8 bg-slate-50 border border-slate-100">
-                                <Languages size={14} />
-                            </Button>
+                            <LanguageSwitcher />
                         </div>
 
                         <div className="relative z-[100]">
                             <AddressAutocomplete
-                                label="Buscar destino"
+                                label={t('dashboard.search_label')}
                                 onSelect={handleSearchSelect}
                                 icon={<Search className="h-4 w-4 text-slate-400" />}
                             />
                         </div>
 
                         <div className="flex gap-2 overflow-x-auto no-scrollbar">
-                            {['Todos', 'Viajes', 'Solicitudes'].map((f) => (
-                                <button
-                                    key={f}
-                                    onClick={() => setActiveFilter(f)}
-                                    className={cn(
-                                        "px-3.5 py-1.5 rounded-full text-[7px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
-                                        activeFilter === f ? "bg-primary text-white border-primary shadow-md" : "bg-white text-slate-500 border-slate-200"
-                                    )}
-                                >
-                                    {f}
-                                </button>
-                            ))}
+                            {['Todos', 'Viajes', 'Solicitudes'].map((f) => {
+                                const filterKey = f === 'Todos' ? 'filter_all' : f === 'Viajes' ? 'filter_rides' : 'filter_requests';
+                                return (
+                                    <button
+                                        key={f}
+                                        onClick={() => setActiveFilter(f)}
+                                        className={cn(
+                                            "px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all border whitespace-nowrap min-h-[36px]",
+                                            activeFilter === f ? "bg-primary text-white border-primary shadow-md" : "bg-white text-slate-500 border-slate-200"
+                                        )}
+                                    >
+                                        {t(`dashboard.${filterKey}`)}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -386,28 +382,33 @@ function Dashboard() {
                         ) : (
                             <div className="text-center py-12 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-100">
                                 <Car className="mx-auto h-8 w-8 text-slate-200 mb-2 opacity-30" />
-                                <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">Sin resultados</p>
+                                <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">{t('dashboard.no_results')}</p>
                             </div>
                         )}
                     </div>
                 </div>
             </div>
 
-            {/* FLOATING ACTION BUTTONS */}
-            <div className="absolute bottom-24 right-4 z-[70] flex flex-col gap-2.5">
+            {/* CONTROLES DEL MAPA (DENTRO DEL MAPA) */}
+            <div className="absolute top-20 right-4 z-[1000] flex flex-col gap-3">
                 <Button
                     onClick={() => navigate('/publish')}
-                    className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-transform"
+                    className="h-12 w-12 rounded-xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
                     size="icon"
+                    title={t('nav.publish_ride')}
                 >
-                    <Plus className="h-6 w-6 text-primary" />
+                    <Plus className="h-5 w-5 text-primary" />
+                    <span className="text-[6px] font-black uppercase tracking-tighter">Ofrecer</span>
                 </Button>
+                
                 <Button
                     onClick={() => navigate('/request')}
-                    className="h-14 w-14 rounded-2xl bg-white text-slate-900 border-2 border-slate-200 shadow-xl active:scale-90 transition-transform"
+                    className="h-12 w-12 rounded-xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
                     size="icon"
+                    title={t('nav.request_ride')}
                 >
-                    <Megaphone className="h-6 w-6 text-amber-500" />
+                    <Megaphone className="h-5 w-5 text-amber-500" />
+                    <span className="text-[6px] font-black uppercase tracking-tighter">Pedir</span>
                 </Button>
             </div>
 

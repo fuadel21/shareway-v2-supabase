@@ -47,15 +47,20 @@ import EmergencyChat from '@/components/EmergencyChat';
 import EditFavoriteRoute from '@/components/EditFavoriteRoute';
 import VerificationCenter from '@/components/VerificationCenter';
 
-const FullScreenLoader = ({ text = 'Cargando...' }) => (
-    <div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4 text-left">
+const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
+    <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
         <div className="relative">
-            <Loader2 className="h-16 w-16 animate-spin text-primary opacity-20" />
-            <div className="absolute inset-0 flex items-center justify-center">
-                <div className="size-2 bg-primary rounded-full animate-pulse" />
+            <div className="size-20 rounded-[2rem] border-2 border-slate-100 flex items-center justify-center shadow-elite animate-pulse-elite">
+                <Loader2 className="h-8 w-8 animate-spin text-primary opacity-40" />
+            </div>
+            <div className="absolute -top-1 -right-1 size-4 bg-primary rounded-full border-2 border-white shadow-lg animate-bounce" />
+        </div>
+        <div className="space-y-1 text-center">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-900 italic">{text}</p>
+            <div className="h-0.5 w-12 bg-slate-100 mx-auto rounded-full overflow-hidden">
+                <div className="h-full bg-primary w-1/2 animate-[progress_2s_infinite_ease-in-out]" />
             </div>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400 italic animate-pulse">{text}</p>
     </div>
 );
 

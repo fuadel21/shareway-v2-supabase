@@ -75,7 +75,7 @@ function Register() {
           variant="outline" 
           size="icon" 
           onClick={toggleLanguage}
-          className="rounded-full h-12 w-12 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all"
+          className="rounded-full h-11 w-11 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all active:scale-90 touch-action-manipulation"
         >
           <Languages size={20} />
         </Button>
@@ -161,7 +161,7 @@ function Register() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all border-none"
+              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : (
                 <>{t('register.register_button')} <ArrowRight className="ml-3 h-4 w-4" /></>

@@ -167,8 +167,9 @@ const Wallet = () => {
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-2">
                                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t('wallet.available_balance')}</p>
-                                    <button onClick={togglePrivacy} className="text-slate-500 hover:text-white transition-colors">
-                                        {showBalance ? <Eye size={14} /> : <EyeOff size={14} />}
+                                    <button onClick={togglePrivacy} 
+                                            className="text-slate-500 hover:text-white transition-colors h-10 w-10 flex items-center justify-center rounded-full active:bg-white/10 active:scale-90 touch-action-manipulation">
+                                        {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
                                     </button>
                                 </div>
                                 <h2 className="text-5xl font-black tracking-tighter italic min-h-[60px]">
@@ -188,8 +189,15 @@ const Wallet = () => {
                             </div>
                         </div>
                         <div className="flex gap-4">
-                            <Button onClick={() => setIsModalOpen(true)} className="flex-1 h-16 rounded-[1.5rem] bg-white text-slate-900 hover:bg-slate-100 font-black text-[10px] uppercase tracking-widest shadow-xl">{t('wallet.add_funds')}</Button>
-                            <Button variant="outline" className="h-16 w-16 rounded-[1.5rem] bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center" onClick={() => navigate('/settings')}><CreditCard className="h-6 w-6" /></Button>
+                            <Button onClick={() => setIsModalOpen(true)} 
+                                    className="flex-1 h-16 rounded-[1.5rem] bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                                {t('wallet.add_funds')}
+                            </Button>
+                            <Button variant="outline" 
+                                    className="h-16 w-16 rounded-[1.5rem] bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all" 
+                                    onClick={() => navigate('/settings')}>
+                                <CreditCard className="h-6 w-6" />
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>

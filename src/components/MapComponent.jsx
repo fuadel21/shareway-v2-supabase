@@ -3,45 +3,70 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap, useMapEvents, ZoomCo
 import * as L from 'leaflet';
 import { cn } from '@/lib/utils';
 import 'leaflet/dist/leaflet.css';
+import polyline from '@mapbox/polyline';
 
-// --- Iconos Personalizados Premium memorizados para evitar re-instanciación masiva ---
-const createCustomIcon = (color, isSelected = false) => new L.DivIcon({
-    html: `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-            <div style="
-                position: absolute;
-                width: ${isSelected ? '32px' : '20px'};
-                height: ${isSelected ? '32px' : '20px'};
-                background-color: ${color};
-                border-radius: 50%;
-                opacity: 0.3;
-                filter: blur(8px);
-                animation: pulse 2s infinite;
-            "></div>
-            <div style="
-                width: ${isSelected ? '16px' : '10px'};
-                height: ${isSelected ? '16px' : '10px'};
-                background-color: ${color};
-                border: 2px solid white;
-                border-radius: 50%;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                position: relative;
-                z-index: 10;
-                transition: all 0.3s ease;
-            "></div>
-        </div>
-        <style>
-            @keyframes pulse {
-                0% { transform: scale(1); opacity: 0.3; }
-                50% { transform: scale(1.8); opacity: 0.1; }
-                100% { transform: scale(1); opacity: 0.3; }
-            }
-        </style>
-    `,
-    className: 'custom-leaflet-icon',
-    iconSize: [isSelected ? 32 : 20, isSelected ? 32 : 20],
-    iconAnchor: [isSelected ? 16 : 10, isSelected ? 16 : 10],
-});
+// --- Iconos de Coche Personalizados (SVG) ---
+const createCarIcon = (color, isSelected = false) => {
+    const size = isSelected ? 48 : 36;
+    return new L.DivIcon({
+        html: `
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: ${size}px; height: ${size}px;">
+                <!-- Efecto de Sombra/Pulso -->
+                <div style="
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    background-color: ${color};
+                    border-radius: 50%;
+                    opacity: 0.2;
+                    filter: blur(8px);
+                    animation: car-pulse 2s infinite;
+                "></div>
+                <!-- SVG del Coche -->
+                <div style="
+                    position: relative;
+                    z-index: 10;
+                    width: ${size - 10}px;
+                    height: ${size - 10}px;
+                    background-color: white;
+                    border: 2.5px solid ${color};
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                ">
+                    <svg width="70%" height="70%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 17h1a1 1 0 0 0 1-1v-3.5a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1V16a1 1 0 0 0 1 1h1m14 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm-3-6 1.34-3.348A2 2 0 0 1 7.191 6.5H16.81a2 2 0 0 1 1.85 1.152L20 11H4z" 
+                              stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <!-- Indicador de Dirección (Triángulo pequeño abajo) -->
+                <div style="
+                    position: absolute;
+                    bottom: -4px;
+                    width: 0;
+                    height: 0;
+                    border-left: 6px solid transparent;
+                    border-right: 6px solid transparent;
+                    border-top: 6px solid ${color};
+                    z-index: 5;
+                "></div>
+            </div>
+            <style>
+                @keyframes car-pulse {
+                    0% { transform: scale(0.9); opacity: 0.3; }
+                    50% { transform: scale(1.3); opacity: 0.1; }
+                    100% { transform: scale(0.9); opacity: 0.3; }
+                }
+            </style>
+        `,
+        className: 'custom-car-icon',
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size / 2],
+    });
+};
 
 const createLiveIcon = (photoUrl) => new L.DivIcon({
     html: `
@@ -97,13 +122,27 @@ const createLiveIcon = (photoUrl) => new L.DivIcon({
     iconAnchor: [22, 22],
 });
 
-// Componente para manejar cambios de centro y zoom de forma suave y segura
 function MapUpdater({ center, zoom, follow }) {
     const map = useMap();
+
+    useEffect(() => {
+        // --- Solución Crítica: Invalidad tamaño para forzar renderizado ---
+        const timer = setTimeout(() => {
+            map.invalidateSize();
+        }, 100);
+
+        const handleResize = () => map.invalidateSize();
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [map]);
+
     useEffect(() => {
         const container = map.getContainer();
         if (!container) return; 
-
         if (center && typeof center.lat === 'number' && typeof center.lng === 'number') {
             const options = follow ? { duration: 1.5, animate: true } : { duration: 2, easeLinearity: 0.25 };
             try {
@@ -116,7 +155,6 @@ function MapUpdater({ center, zoom, follow }) {
     return null;
 }
 
-// Capturar clicks en el mapa con validación de existencia
 function MapEvents({ onClick }) {
     useMapEvents({
         click: (e) => {
@@ -126,16 +164,20 @@ function MapEvents({ onClick }) {
     return null;
 }
 
-const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, selectedItemId, followLocation, pickupLocation }) => {
+const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, onItemSelected, selectedItemId, followLocation, pickupLocation }) => {
     const defaultCenter = useMemo(() => ({ lat: 40.416775, lng: -3.703790 }), []); // Madrid
 
-    const staticIcons = useMemo(() => ({
-        user: createCustomIcon('#6366f1'),
-        scheduled: createCustomIcon('#818cf8'),
-        active: createCustomIcon('#10b981'),
-        request: createCustomIcon('#f59e0b'),
-        selected: createCustomIcon('#ef4444', true),
-        pickup: createCustomIcon('#ef4444', true),
+    const carIcons = useMemo(() => ({
+        ride: createCarIcon('#10b981'),      // Verde para Viajes (Ofertados)
+        request: createCarIcon('#f59e0b'),   // Amarillo para Solicitudes (Pedidas)
+        selected: createCarIcon('#ef4444', true), // Rojo para Seleccionado
+    }), []);
+
+    const userIcon = useMemo(() => new L.DivIcon({
+        html: `<div style="width: 12px; height: 12px; background: #6366f1; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(99,102,241,0.5);"></div>`,
+        className: 'user-location-icon',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
     }), []);
 
     const toLatLng = (obj) => {
@@ -150,6 +192,31 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
         const coords = toLatLng(center);
         return coords ? { lat: coords[0], lng: coords[1] } : defaultCenter;
     }, [center, defaultCenter]);
+
+    // Lógica para decodificar polylines y renderizar rutas
+    const renderRoutes = useMemo(() => {
+        return (itemsToDisplay || []).filter(i => i.overview_polyline).map(item => {
+            try {
+                const points = polyline.decode(item.overview_polyline);
+                const isSelected = item.id === selectedItemId;
+                return (
+                    <Polyline
+                        key={`route-${item.id}`}
+                        positions={points}
+                        pathOptions={{
+                            color: item.type === 'request' ? '#f59e0b' : '#10b981',
+                            weight: isSelected ? 6 : 3,
+                            opacity: isSelected ? 0.8 : 0.3,
+                            lineJoin: 'round',
+                            dashArray: item.type === 'request' ? '10, 10' : null // Línea discontinua para peticiones
+                        }}
+                    />
+                );
+            } catch (e) {
+                return null;
+            }
+        });
+    }, [itemsToDisplay, selectedItemId]);
 
     return (
         <div className="w-full h-full relative overflow-hidden bg-slate-100 rounded-inherit">
@@ -170,12 +237,14 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
                 <ZoomControl position="bottomright" />
 
                 {userLocation && (
-                    <Marker position={[userLocation.lat, userLocation.lng]} icon={staticIcons.user} />
+                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />
                 )}
 
                 {pickupLocation && (
-                    <Marker position={[pickupLocation.lat, pickupLocation.lng]} icon={staticIcons.pickup} />
+                    <Marker position={[pickupLocation.lat, pickupLocation.lng]} icon={carIcons.selected} />
                 )}
+
+                {renderRoutes}
 
                 {(itemsToDisplay || []).map((item) => {
                     const isSelected = item.id === selectedItemId;
@@ -194,15 +263,21 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
                     }
 
                     const originCoords = toLatLng(item.origin);
-                    const isRideActive = item.status === 'active' || item.status === 'in_progress';
-                    
                     if (!originCoords) return null;
+
+                    // Determinar icono: Coche Verde (Viaje) o Amarillo (Solicitud)
+                    const icon = isSelected ? carIcons.selected : (item.type === 'request' ? carIcons.request : carIcons.ride);
 
                     return (
                         <Marker
                             key={`marker-${item.id}`}
                             position={originCoords}
-                            icon={isSelected ? staticIcons.selected : (item.type === 'ride' ? (isRideActive ? staticIcons.active : staticIcons.scheduled) : staticIcons.request)}
+                            icon={icon}
+                            eventHandlers={{
+                                click: () => {
+                                    if (onItemSelected) onItemSelected(item);
+                                }
+                            }}
                         />
                     );
                 })}

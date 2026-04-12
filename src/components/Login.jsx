@@ -79,7 +79,7 @@ function Login() {
           variant="outline" 
           size="icon" 
           onClick={toggleLanguage}
-          className="rounded-full h-12 w-12 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all"
+          className="rounded-full h-11 w-11 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all active:scale-90 touch-action-manipulation"
         >
           <Languages size={20} />
         </Button>
@@ -128,6 +128,7 @@ function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    autoComplete="email"
                     className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
                   />
                 </div>
@@ -143,6 +144,7 @@ function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    autoComplete="current-password"
                     className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
                   />
                 </div>
@@ -162,7 +164,7 @@ function Login() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all border-none"
+              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : (
                 <>{t('login.login_button')} <ArrowRight className="ml-3 h-4 w-4" /></>
@@ -185,7 +187,7 @@ function Login() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isSubmitting}
-              className="w-full h-16 rounded-2xl border-2 border-slate-50 font-black text-xs uppercase tracking-[0.1em] hover:bg-slate-50 transition-all flex items-center justify-center gap-3"
+              className="w-full h-16 rounded-2xl border-2 border-slate-50 font-black text-sm uppercase tracking-tight hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-95 touch-action-manipulation"
             >
               <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale transition-all group-hover:grayscale-0" alt="Google" />
               {t('login.google_button')}

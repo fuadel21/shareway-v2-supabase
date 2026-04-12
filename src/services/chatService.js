@@ -19,7 +19,7 @@ export const getUserChats = async (userId) => {
         if (error) throw error;
 
         // Extraer IDs de otros participantes de forma masiva
-        const otherUserIds = [...new Set(data.flatMap(chat => 
+        const otherUserIds = [...new Set(data.flatMap(chat =>
             chat.participants.filter(p => p !== userId)
         ))];
 
@@ -31,13 +31,14 @@ export const getUserChats = async (userId) => {
             .select('id, display_name, photo_url, is_verified')
             .in('id', otherUserIds);
 
-        if (pError) throw pError;
-        const profilesMap = new Map(profiles.map(p => [p.id, p]));
+        // Fallback en caso de que is_verified falte en la DB (aunque el SQL lo añade)
+        const safeProfiles = profiles || [];
+        const profilesMap = new Map(safeProfiles.map(p => [p.id, p]));
 
         return data.map(chat => {
             const otherId = chat.participants.find(p => p !== userId);
             const profile = profilesMap.get(otherId);
-            
+
             // Lógica de Previsualización: El mensaje más reciente
             const messages = chat.messages || [];
             const lastMessage = messages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
@@ -106,7 +107,7 @@ export const sendMessage = async (chatId, senderId, content) => {
         supabase.from('chats')
             .update({ updated_at: new Date().toISOString() })
             .eq('id', chatId)
-            .then(({error}) => { if(error) console.warn("Timestamp update failed"); });
+            .then(({ error }) => { if (error) console.warn("Timestamp update failed"); });
 
         return data;
     } catch (error) {

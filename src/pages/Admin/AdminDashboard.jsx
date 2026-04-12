@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, UserCheck, Users, Hourglass, DollarSign, BarChart, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2 } from 'lucide-react';
+import { Car, UserCheck, Users, Hourglass, DollarSign, BarChart, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Navigation } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
@@ -45,10 +45,7 @@ function AdminDashboard() {
     const fetchPlatformStats = async () => {
         setLoading(true);
         try {
-            // FIX QA: safeCall devuelve { data, success, error }
-            // La respuesta de Postgres está en data.data
             const response = await getPlatformStats();
-            
             if (response?.success && response.data?.success) {
                 setStats(response.data.stats);
             } else {
@@ -84,46 +81,55 @@ function AdminDashboard() {
         }
     };
 
-    const totalFees = stats?.totalUncollectedFees || 0;
-
     return (
-        <div className="space-y-8 text-left">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Panel de Administración</h1>
-                <p className="text-muted-foreground italic">Resumen global y gestión de la plataforma ShareWay Elite.</p>
+        <div className="space-y-8 text-left p-6">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-3xl font-black tracking-tighter uppercase italic leading-none text-slate-900">Panel de Control</h1>
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mt-2">ShareWay Global Management</p>
+                </div>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={fetchPlatformStats}
+                    disabled={loading}
+                    className="rounded-xl border-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2"
+                >
+                    <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Sincronizar
+                </Button>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2 text-muted-foreground">
-                        <CardTitle className="text-sm font-medium">Comisiones Acumuladas</CardTitle>
-                        <div className="bg-primary/10 p-2 rounded-lg text-primary"><DollarSign className="h-4 w-4" /></div>
+                <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left bg-slate-900 text-white">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2 text-slate-400">
+                        <CardTitle className="text-xs font-black uppercase tracking-widest">Tesorería</CardTitle>
+                        <div className="bg-primary p-2 rounded-lg text-white shadow-lg shadow-primary/20"><DollarSign className="h-4 w-4" /></div>
                     </CardHeader>
                     <CardContent>
                         {loading ? (
-                            <Skeleton className="h-8 w-3/4" />
+                            <Skeleton className="h-8 w-3/4 bg-slate-800" />
                         ) : (
-                            <div className="text-2xl font-bold">{totalFees.toFixed(2)}€</div>
+                            <div className="text-3xl font-black italic tracking-tighter">{(stats?.totalUncollectedFees || 0).toFixed(2)}€</div>
                         )}
-                        <p className="text-xs text-muted-foreground mt-1">Total de comisiones pendientes.</p>
+                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Comisiones acumuladas</p>
                     </CardContent>
                     <CardFooter className="pt-0">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button size="sm" className="w-full rounded-xl" disabled={totalFees <= 0 || isPayoutLoading || loading}>
-                                    {isPayoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} Retirar Comisiones
+                                <Button size="sm" className="w-full rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-[10px] uppercase tracking-widest h-10" disabled={(stats?.totalUncollectedFees || 0) <= 0 || isPayoutLoading || loading}>
+                                    {isPayoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} Cobrar Tesorería
                                 </Button>
                             </AlertDialogTrigger>
-                            <AlertDialogContent className="rounded-3xl">
+                            <AlertDialogContent className="rounded-[2rem] border-none">
                                 <AlertDialogHeader>
-                                    <AlertDialogTitle>Confirmar Retiro</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Se iniciará una transferencia de {totalFees.toFixed(2)}€ a tu cuenta bancaria asociada en Stripe. Esta acción puede tardar varios días en completarse.
+                                    <AlertDialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Liquidar Comisiones</AlertDialogTitle>
+                                    <AlertDialogDescription className="text-slate-500 font-medium pt-2">
+                                        Se transferirán {(stats?.totalUncollectedFees || 0).toFixed(2)}€ a la cuenta principal de Stripe de la plataforma.
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handlePayout} className="rounded-xl">Confirmar Retiro</AlertDialogAction>
+                                <AlertDialogFooter className="gap-2">
+                                    <AlertDialogCancel className="rounded-xl font-bold uppercase text-[10px] tracking-widest border-none bg-slate-100">Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handlePayout} className="rounded-xl font-bold uppercase text-[10px] tracking-widest bg-slate-900 text-white">Confirmar Liquidación</AlertDialogAction>
                                 </AlertDialogFooter>
                             </AlertDialogContent>
                         </AlertDialog>
@@ -131,95 +137,83 @@ function AdminDashboard() {
                 </Card>
 
                 <StatCard
-                    title="Volumen Total (GTV)"
-                    value={(stats?.grossTotalVolume || 0).toFixed(2)}
-                    currency="€"
-                    icon={<BarChart className="h-4 w-4" />}
-                    description="Flujo total de dinero."
+                    title="Ahorro CO2 Global"
+                    value={parseFloat(stats?.totalCo2Saved || 0).toFixed(1)}
+                    currency=" kg"
+                    icon={<Leaf className="h-4 w-4" />}
+                    description="Impacto ecológico total."
                     loading={loading}
                 />
                 <StatCard
-                    title="Usuarios Totales"
+                    title="KM Compartidos"
+                    value={Math.round(stats?.totalKmShared || 0)}
+                    currency=" km"
+                    icon={<Navigation className="h-4 w-4" />}
+                    description="Distancia total recorrida."
+                    loading={loading}
+                />
+                <StatCard
+                    title="Usuarios Activos"
                     value={stats?.totalUsers || 0}
                     icon={<Users className="h-4 w-4" />}
-                    description="Crecimiento de la comunidad."
-                    loading={loading}
-                />
-                <StatCard
-                    title="Viajes Realizados"
-                    value={stats?.totalCompletedRides || 0}
-                    icon={<Car className="h-4 w-4" />}
-                    description="Viajes finalizados con éxito."
+                    description="Crecimiento de comunidad."
                     loading={loading}
                 />
             </div>
 
-            <Card className="rounded-3xl border-none shadow-sm overflow-hidden min-h-[500px]">
-                <CardContent className="p-6">
+            <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden min-h-[600px] bg-white">
+                <CardContent className="p-8">
                     <Tabs value={tab} onValueChange={(v) => navigate(`/admin/${v}`)} className="w-full">
-                        <TabsList className="flex w-full overflow-x-auto mb-8 bg-gray-100/50 p-1 rounded-2xl gap-1 no-scrollbar justify-start md:justify-between min-h-14">
-                            <TabsTrigger value="verifications" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><UserCheck className="mr-2 h-4 w-4" />Verificaciones</TabsTrigger>
-                            <TabsTrigger value="users" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Users className="mr-2 h-4 w-4" />Usuarios</TabsTrigger>
-                            <TabsTrigger value="communities" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Building2 className="mr-2 h-4 w-4" />Comunidades</TabsTrigger>
-                            <TabsTrigger value="rides" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Car className="mr-2 h-4 w-4" />Viajes</TabsTrigger>
-                            <TabsTrigger value="finance" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><DollarSign className="mr-2 h-4 w-4" />Finanzas</TabsTrigger>
-                            <TabsTrigger value="disputes" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><AlertCircle className="mr-2 h-4 w-4" />Disputas</TabsTrigger>
-                            <TabsTrigger value="maintenance" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><RefreshCw className="mr-2 h-4 w-4" />Mantenimiento</TabsTrigger>
-                            <TabsTrigger value="climate" className="rounded-xl px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm transition-all whitespace-nowrap flex-shrink-0 text-xs font-bold"><Leaf className="mr-2 h-4 w-4" />Auditoría</TabsTrigger>
+                        <TabsList className="flex w-full overflow-x-auto mb-10 bg-slate-50 p-1.5 rounded-2xl gap-1 no-scrollbar justify-start">
+                            {[
+                                { val: 'verifications', label: 'Verificaciones', icon: UserCheck },
+                                { val: 'users', label: 'Usuarios', icon: Users },
+                                { val: 'rides', label: 'Viajes', icon: Car },
+                                { val: 'finance', label: 'Finanzas', icon: DollarSign },
+                                { val: 'disputes', label: 'Disputas', icon: AlertCircle },
+                                { val: 'communities', label: 'Comunidades', icon: Building2 },
+                                { val: 'climate', label: 'Impacto', icon: Leaf },
+                                { val: 'maintenance', label: 'Sistema', icon: RefreshCw }
+                            ].map((t) => (
+                                <TabsTrigger key={t.val} value={t.val} className="rounded-xl px-5 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all whitespace-nowrap flex-shrink-0 text-[10px] font-black uppercase tracking-widest gap-2 border border-transparent data-[state=active]:border-slate-100">
+                                    <t.icon className="h-3.5 w-3.5" /> {t.label}
+                                </TabsTrigger>
+                            ))}
                         </TabsList>
 
-                        <TabsContent value="verifications" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Solicitudes de verificación pendientes de revisión manual.</p>
+                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <TabsContent value="verifications" className="mt-0 focus-visible:outline-none">
                                 <PendingVerificationsTab />
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
 
-                        <TabsContent value="users" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión y búsqueda de usuarios en la plataforma.</p>
+                            <TabsContent value="users" className="mt-0 focus-visible:outline-none">
                                 <UserManagementTab />
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
 
-                        <TabsContent value="communities" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión de círculos de confianza por dominio de correo.</p>
-                                <CommunitiesTab />
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="rides" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Historial y estado actual de los viajes publicados.</p>
+                            <TabsContent value="rides" className="mt-0 focus-visible:outline-none">
                                 <RideManagementTab />
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="finance" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Gestión financiera y solicitudes de retiro.</p>
+                            </TabsContent>
+
+                            <TabsContent value="finance" className="mt-0 focus-visible:outline-none">
                                 <FinanceTab stats={stats} loading={loading} />
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="disputes" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Solicitudes de reembolso por fuerza mayor.</p>
+                            </TabsContent>
+
+                            <TabsContent value="disputes" className="mt-0 focus-visible:outline-none">
                                 <DisputesTab />
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
 
-                        <TabsContent value="maintenance" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl">
-                                <p className="text-sm text-muted-foreground mb-4 italic">Mantenimiento global y limpieza de datos.</p>
-                                <MaintenanceTab />
-                            </div>
-                        </TabsContent>
+                            <TabsContent value="communities" className="mt-0 focus-visible:outline-none">
+                                <CommunitiesTab />
+                            </TabsContent>
 
-                        <TabsContent value="climate" className="mt-0 focus-visible:outline-none">
-                            <div className="bg-white rounded-2xl p-6">
+                            <TabsContent value="climate" className="mt-0 focus-visible:outline-none">
                                 <ClimateTab />
-                            </div>
-                        </TabsContent>
+                            </TabsContent>
+
+                            <TabsContent value="maintenance" className="mt-0 focus-visible:outline-none">
+                                <MaintenanceTab />
+                            </TabsContent>
+                        </div>
                     </Tabs>
                 </CardContent>
             </Card>

@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { 
-    AlertCircle, 
-    Clock, 
-    CheckCircle2, 
-    XCircle, 
+import {
+    AlertCircle,
+    Clock,
+    CheckCircle2,
+    XCircle,
     ChevronLeft,
     Loader2,
     FileText,
     MessageSquare,
-    ExternalLink
+    ExternalLink,
+    History as LucideHistory
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -51,25 +52,25 @@ const DisputeHistory = () => {
     const getStatusTheme = (status) => {
         switch (status) {
             case 'approved':
-                return { 
-                    label: 'APROBADA', 
-                    icon: CheckCircle2, 
-                    color: 'text-emerald-600', 
-                    bg: 'bg-emerald-50 border-emerald-100' 
+                return {
+                    label: 'APROBADA',
+                    icon: CheckCircle2,
+                    color: 'text-emerald-600',
+                    bg: 'bg-emerald-50 border-emerald-100'
                 };
             case 'rejected':
-                return { 
-                    label: 'RECHAZADA', 
-                    icon: XCircle, 
-                    color: 'text-red-600', 
-                    bg: 'bg-red-50 border-red-100' 
+                return {
+                    label: 'RECHAZADA',
+                    icon: XCircle,
+                    color: 'text-red-600',
+                    bg: 'bg-red-50 border-red-100'
                 };
             default:
-                return { 
-                    label: 'EN REVISIÓN', 
-                    icon: Clock, 
-                    color: 'text-amber-600', 
-                    bg: 'bg-amber-50 border-amber-100' 
+                return {
+                    label: 'EN REVISIÓN',
+                    icon: Clock,
+                    color: 'text-amber-600',
+                    bg: 'bg-amber-50 border-amber-100'
                 };
         }
     };
@@ -103,7 +104,7 @@ const DisputeHistory = () => {
                         disputes.map((dispute) => {
                             const theme = getStatusTheme(dispute.status);
                             const StatusIcon = theme.icon;
-                            
+
                             return (
                                 <Card key={dispute.id} className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden group">
                                     <CardContent className="p-6 space-y-4">
@@ -148,7 +149,7 @@ const DisputeHistory = () => {
                                                     <span className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">Fecha de solicitud</span>
                                                 </div>
                                             </div>
-                                            
+
                                             {dispute.evidence_urls && dispute.evidence_urls.length > 0 && (
                                                 <div className="flex gap-1">
                                                     {dispute.evidence_urls.map((url, i) => (

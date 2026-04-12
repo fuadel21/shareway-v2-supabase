@@ -10,14 +10,10 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 const endpointSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') ?? ''
 
 serve(async (req) => {
-    if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders })
-    }
+    if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
     const signature = req.headers.get('stripe-signature')
-    if (!signature) {
-        return new Response('Missing signature', { status: 400 })
-    }
+    if (!signature) return new Response('No signature', { status: 400 })
 
     try {
         const body = await req.text()
@@ -28,74 +24,65 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         )
 
-        console.log(`🔔 Webhook received: ${event.type} [${event.id}]`)
+        console.log(`🔔 Evento Stripe: ${event.type} [${event.id}]`)
 
-        if (event.type === 'payment_intent.succeeded') {
-            const paymentIntent = event.data.object
-            // Sincronizamos metadatos: user_id o passengerId (fallback)
-            const user_id = paymentIntent.metadata.user_id || paymentIntent.metadata.passengerId
-            const { type, amount, ride_id } = paymentIntent.metadata
+        const paymentIntent = event.data.object as any;
+        const stripeId = paymentIntent.id;
 
-            if (type === 'wallet_topup' || (!type && user_id)) {
-                console.log(`💰 Processing Wallet Topup for user: ${user_id}`)
-                const { data, error } = await supabaseAdmin.rpc('credit_wallet_on_success', {
-                    p_user_id: user_id,
-                    p_payment_intent_id: paymentIntent.id,
-                    p_amount: parseFloat(amount) || (paymentIntent.amount / 100)
-                })
-
-                if (error) throw error
-                console.log(`✅ Wallet credited successfully:`, data)
-            }
-
-            if (type === 'ride_booking' && ride_id && user_id) {
-                console.log(`🚗 Fulfilling booking for Ride: ${ride_id} by User: ${user_id}`)
-
-                // 1. Ejecutar cumplimiento atómico (Finanzas + Pasajero en Ride + Status Request)
-                const bookingAmount = parseFloat(amount) || (paymentIntent.amount / 100)
-                const { error: rpcError } = await supabaseAdmin.rpc('fulfill_booking_after_payment', {
-                    p_user_id: user_id,
-                    p_ride_id: ride_id,
-                    p_amount: bookingAmount,
-                    p_payment_intent_id: paymentIntent.id
-                })
-
-                if (rpcError) {
-                    console.error(`🚨 Fulfillment Error for Ride ${ride_id}:`, rpcError)
-                    throw rpcError
+        switch (event.type) {
+            case 'payment_intent.succeeded':
+                // Transición a CAPTURED
+                await supabaseAdmin.rpc('transition_financial_status', {
+                    p_stripe_id: stripeId,
+                    p_new_status: 'captured',
+                    p_metadata: { stripe_event_id: event.id }
+                });
+                
+                if (paymentIntent.metadata.type === 'ride_booking') {
+                    const walletDeduction = parseFloat(paymentIntent.metadata.wallet_deduction || "0");
+                    await supabaseAdmin.rpc('fulfill_booking_after_payment', {
+                        p_user_id: paymentIntent.metadata.user_id,
+                        p_ride_id: paymentIntent.metadata.ride_id,
+                        p_amount: paymentIntent.amount / 100, // Lo cobrado en tarjeta
+                        p_payment_intent_id: stripeId,
+                        p_wallet_deduction: walletDeduction // Lo del monedero
+                    });
                 }
+                break;
 
-                console.log(`✅ Webhook Fulfillment Success for Ride: ${ride_id}`)
-            }
-        }
+            case 'payment_intent.payment_failed':
+                await supabaseAdmin.rpc('transition_financial_status', {
+                    p_stripe_id: stripeId,
+                    p_new_status: 'failed',
+                    p_metadata: { error: paymentIntent.last_payment_error?.message }
+                });
+                break;
 
-        if (event.type === 'account.updated') {
-            const account = event.data.object
-            console.log(`👤 Stripe Account Updated: ${account.id}`)
-
-            const isVerified = account.payouts_enabled && account.charges_enabled
-
-            // Actualizar perfil basado en stripe_account_id
-            const { error } = await supabaseAdmin
-                .from('profiles')
-                .update({
-                    stripe_account_verified: isVerified,
-                    verification: { stripe_enabled: isVerified }
-                })
-                .eq('stripe_account_id', account.id)
-
-            if (error) console.error(`🚨 Error updating profile for account ${account.id}:`, error)
+            case 'charge.refunded':
+                await supabaseAdmin.rpc('transition_financial_status', {
+                    p_stripe_id: paymentIntent.payment_intent,
+                    p_new_status: 'refunded',
+                    p_metadata: { refund_id: paymentIntent.refunds?.data[0]?.id }
+                });
+                break;
+                
+            case 'charge.dispute.created':
+                const dispute = event.data.object as any;
+                console.log(`🚨 FRAUDE DETECTADO: Chargeback de ${dispute.amount / 100}€ en ${dispute.payment_intent}`);
+                // Dispara el bloqueador SQL
+                await supabaseAdmin.rpc('handle_stripe_dispute', {
+                    p_payment_intent_id: dispute.payment_intent,
+                    p_dispute_amount: dispute.amount / 100
+                });
+                break;
         }
 
         return new Response(JSON.stringify({ received: true }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         })
-    } catch (error) {
-        console.error(`🚨 Webhook Process Error: ${error.message}`)
-        return new Response(JSON.stringify({ error: error.message }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-        })
+    } catch (err) {
+        console.error(`🚨 Error Webhook: ${err.message}`)
+        return new Response(JSON.stringify({ error: err.message }), { status: 400 })
     }
 })

@@ -32,7 +32,7 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
         try {
             const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
                 elements,
-                confirmParams: { 
+                confirmParams: {
                     return_url: `${window.location.origin}/wallet`,
                     payment_method_data: { billing_details: { email: user.email } }
                 },
@@ -40,12 +40,12 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
             });
 
             if (confirmError) throw confirmError;
-            
+
             if (paymentIntent?.status === 'succeeded') {
                 const { success } = await rpc.safeCall(
-                    () => supabase.rpc('credit_wallet_on_success', { 
+                    () => supabase.rpc('credit_wallet_on_success', {
                         p_payment_intent_id: paymentIntent.id,
-                        p_amount: amount 
+                        p_amount: amount
                     }),
                     'credit_wallet_on_success'
                 );
@@ -88,7 +88,7 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
 const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
     const { user } = useOutletContext();
     const [amount, setAmount] = useState(20);
-    const [step, setStep] = useState('amount'); 
+    const [step, setStep] = useState('amount');
     const [clientSecret, setClientSecret] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
 
@@ -119,14 +119,14 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
             <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white outline-none max-h-[90vh]">
-                <DialogHeader className="space-y-2">
+                <DialogHeader>
                     <div className="flex items-center gap-3">
                         <div className="size-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
                             <ShieldCheck className="h-6 w-6 text-primary" />
                         </div>
                         <div>
                             <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">Recarga</DialogTitle>
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">Trust Core™ Financial</p>
+                            <DialogDescription className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">Trust Core™ Financial</DialogDescription>
                         </div>
                     </div>
                 </DialogHeader>
@@ -134,11 +134,11 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                 {step === 'amount' ? (
                     <div className="space-y-8 pt-6 animate-in fade-in">
                         <div className="relative group">
-                            <Input 
-                                type="number" 
-                                value={amount} 
-                                onChange={(e) => setAmount(e.target.value)} 
-                                className="pl-12 h-24 rounded-[2rem] bg-slate-50 border-none font-black text-4xl italic text-slate-900" 
+                            <Input
+                                type="number"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                className="pl-12 h-24 rounded-[2rem] bg-slate-50 border-none font-black text-4xl italic text-slate-900"
                             />
                             <Euro className="absolute left-5 top-1/2 -translate-y-1/2 text-primary size-6" />
                         </div>

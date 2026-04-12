@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
-import { LogOut, Star, User, Settings, Wallet, Route, ShieldCheck, Car, Cigarette, Dog, Music, MessageCircle, ChevronRight, Mail, Calendar, Shield, Leaf } from 'lucide-react';
+import { LogOut, Star, User, Settings, Wallet, Route, ShieldCheck, Car, Cigarette, Dog, Music, MessageCircle, ChevronRight, Mail, Calendar, Shield, Leaf, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const getInitials = (name) => {

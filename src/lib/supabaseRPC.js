@@ -4,7 +4,7 @@ import { supabase } from './supabase';
  * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout
  */
 export const safeCall = async (rpcCall, functionName, retries = 2) => {
-    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride'];
+    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show'];
     const TIMEOUT_MS = CRITICAL_FUNCTIONS.includes(functionName) ? 25000 : 15000;
 
     const executeCall = async (attempt) => {
@@ -53,11 +53,14 @@ export const completeRide = (rideId) =>
 export const cancelRide = (rideId) =>
     safeCall(() => supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
 
-export const verifyPassenger = (rideId, passengerId, pin) =>
-    safeCall(() => supabase.rpc('verify_passenger_boarding', { p_ride_id: rideId, p_pin: pin }), 'verify_passenger_boarding');
-
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
+
+export const verifyPassenger = (rideId, pin) =>
+    safeCall(() => supabase.rpc('verify_passenger_boarding', { 
+        p_ride_id: rideId, 
+        p_pin: pin 
+    }), 'verify_passenger_boarding');
 
 export const getMyRidePin = (rideId) =>
     safeCall(() => supabase.rpc('get_my_ride_pin', { p_ride_id: rideId }), 'get_my_ride_pin');
@@ -66,7 +69,7 @@ export const removePassenger = (rideId, passengerId) =>
     safeCall(() => supabase.rpc('remove_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'remove_passenger');
 
 
-export const getUserRides = (userId) =>
+export const getUserRides = (userId = null) =>
     safeCall(() => supabase.rpc('get_user_rides', { p_user_id: userId, p_role: 'all' }), 'get_user_rides');
 
 export const createRide = (rideData) =>
@@ -82,8 +85,14 @@ export const createRide = (rideData) =>
         p_waypoints: rideData.waypoints || []
     }), 'create_ride');
 
-export const confirmTripAndPay = (rideId, requestId = null) =>
-    safeCall(() => supabase.rpc('confirm_trip_and_pay', { p_ride_id: rideId, p_request_id: requestId }), 'confirm_trip_and_pay');
+export const confirmTripAndPay = (rideId, requestId = null, pickupLocation = null, pickupAddress = null, price = null) =>
+    safeCall(() => supabase.rpc('confirm_trip_and_pay', {
+        p_ride_id: rideId,
+        p_request_id: requestId,
+        p_pickup_location: pickupLocation,
+        p_pickup_address: pickupAddress,
+        p_price: price
+    }), 'confirm_trip_and_pay');
 
 export const cancelBookingAndRefund = (rideId) =>
     safeCall(() => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
@@ -155,16 +164,47 @@ export const requestPlatformPayout = () =>
 export const addFunds = (amount, paymentMethodId) =>
     safeCall(() => supabase.rpc('add_funds', { p_amount: amount, p_payment_method_id: paymentMethodId }), 'add_funds');
 
+export const confirmStripeBooking = (rideId, paymentIntentId, pickupLocation = null, pickupAddress = null) =>
+    safeCall(() => supabase.rpc('confirm_stripe_booking', {
+        p_ride_id: rideId,
+        p_payment_intent_id: paymentIntentId,
+        p_pickup_location: pickupLocation,
+        p_pickup_address: pickupAddress
+    }), 'confirm_stripe_booking');
+
 export const requestPayout = (amount) =>
     safeCall(() => supabase.rpc('request_payout', { p_amount: amount }), 'request_payout');
 
 export const createPayoutRequest = requestPayout;
 
-export const searchUsers = (searchTerm) =>
-    safeCall(() => supabase.rpc('search_users', { p_search_term: searchTerm }), 'search_users');
+export const searchUsers = async (searchTerm) => {
+    const { data, success } = await safeCall(() => supabase.rpc('search_users', { p_search_term: searchTerm }), 'search_users');
+    if (success && data) {
+        // Map robust SQL names back to UI-friendly names
+        const mappedData = data.map(u => ({
+            id: u.user_id,
+            display_name: u.user_display_name,
+            email: u.user_email,
+            photo_url: u.user_photo_url,
+            role: u.user_role,
+            is_suspended: u.user_is_suspended,
+            verification: u.user_verification,
+            is_admin: u.user_is_admin,
+            created_at: u.user_created_at
+        }));
+        return mappedData;
+    }
+    return [];
+};
 
 export const cancelRideRequest = (requestId) =>
     safeCall(() => supabase.rpc('cancel_ride_request', { p_request_id: requestId }), 'cancel_ride_request');
+
+export const handlePassengerNoShow = (rideId, passengerId) =>
+    safeCall(() => supabase.rpc('handle_passenger_no_show', { 
+        p_ride_id: rideId, 
+        p_passenger_id: passengerId 
+    }), 'handle_passenger_no_show');
 
 // --- EXTERNAL INTEGRATIONS ---
 export const createStripeConnectOnboarding = async () => {

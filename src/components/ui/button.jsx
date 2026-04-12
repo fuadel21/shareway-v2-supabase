@@ -5,7 +5,18 @@ import { cva } from "class-variance-authority";
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  [
+    // Base visual
+    "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium",
+    "ring-offset-background transition-colors",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+    "disabled:pointer-events-none disabled:opacity-50",
+    // Mobile touch optimizations
+    "touch-action-manipulation select-none",          // elimina delay 300ms
+    "active:scale-95 active:brightness-90",            // feedback táctil claro
+    // Mínimo área de toque según HIG / Material (44px)
+    "min-h-[44px] min-w-[44px]",
+  ].join(" "),
   {
     variants: {
       variant: {
@@ -17,13 +28,14 @@ const buttonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary underline-offset-4 hover:underline min-h-0 min-w-0",
       },
       size: {
-        default: "h-12 px-6 text-base", // Más grande
-        sm: "h-10 rounded-md px-4", // Más grande
-        lg: "h-14 rounded-md px-10 text-lg", // Más grande
-        icon: "h-12 w-12", // Más grande
+        default: "h-12 px-6 text-base",
+        sm: "h-11 rounded-md px-4 text-sm",
+        lg: "h-14 rounded-md px-10 text-lg",
+        icon: "h-12 w-12 p-0 rounded-xl",
+        "icon-sm": "h-11 w-11 p-0 rounded-xl",
       },
     },
     defaultVariants: {

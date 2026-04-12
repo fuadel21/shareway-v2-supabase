@@ -152,7 +152,8 @@ const CreateRequest = () => {
             });
 
             localStorage.removeItem(STORAGE_KEY);
-            toast.success(t('dashboard.accept_request'), { id: toastId });
+            // CORREGIDO: Mensaje correcto al publicar solicitud
+            toast.success("Solicitud publicada", { id: toastId });
             navigate('/my-requests');
         } catch (error) {
             toast.error(t('common.error'), { id: toastId, description: error.message });
@@ -165,7 +166,9 @@ const CreateRequest = () => {
     return (
         <div className="bg-slate-50 min-h-screen pb-32 font-sans text-left">
             <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20 flex items-center gap-4">
-                <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 size-12 shadow-sm" onClick={() => navigate('/dashboard')}><ChevronLeft className="h-6 w-6 text-slate-900" /></Button>
+                <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 size-12 shadow-sm active:scale-90 transition-all touch-action-manipulation" onClick={() => navigate('/dashboard')}>
+                    <ChevronLeft className="h-6 w-6 text-slate-900" />
+                </Button>
                 <div className="text-left">
                     <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Pedir Plaza</h1>
                     <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Busca conductores en tu ruta</p>
@@ -221,9 +224,17 @@ const CreateRequest = () => {
                         </Card>
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Plazas y Precio</p>
-                            <div className="flex bg-slate-50 p-1 rounded-xl">
+                            <div className="flex bg-slate-50 p-1.5 rounded-2xl gap-1">
                                 {[1, 2, 3, 4].map(n => (
-                                    <button key={n} type="button" onClick={() => setSeats(n)} className={cn("flex-1 py-2 rounded-lg text-[10px] font-black transition-all", seats === n ? "bg-slate-900 text-white shadow-lg" : "text-slate-400")}>{n}</button>
+                                    <button key={n} 
+                                            type="button" 
+                                            onClick={() => setSeats(n)} 
+                                            className={cn(
+                                                "flex-1 h-11 rounded-xl text-xs font-black transition-all touch-action-manipulation active:scale-95", 
+                                                seats === n ? "bg-slate-900 text-white shadow-lg" : "text-slate-400"
+                                            )}>
+                                        {n}
+                                    </button>
                                 ))}
                             </div>
                             <div className="relative">
@@ -234,11 +245,17 @@ const CreateRequest = () => {
                     </div>
 
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">Escudo Activo</h3>
-                            <button type="button" onClick={() => setIsWomenOnly(!isWomenOnly)} className={cn("flex items-center gap-2 px-4 py-2 rounded-full border-2 transition-all", isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm" : "bg-slate-50 border-transparent text-slate-400")}>
-                                <Heart size={14} className={isWomenOnly ? "fill-pink-600" : ""} />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Solo Mujeres</span>
+                            <button type="button" 
+                                    onClick={() => setIsWomenOnly(!isWomenOnly)} 
+                                    className={cn(
+                                        "flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center", 
+                                        isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm" : "bg-slate-50 border-transparent text-slate-400",
+                                        "active:scale-95 touch-action-manipulation"
+                                    )}>
+                                <Heart size={16} className={isWomenOnly ? "fill-pink-600" : ""} />
+                                <span className="text-xs font-black uppercase tracking-tight leading-none">Solo Mujeres</span>
                             </button>
                         </div>
                         <Textarea placeholder="Cuéntanos algún detalle (ej: llevo equipaje)" className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-700" value={note} onChange={(e) => setNote(e.target.value)} />
