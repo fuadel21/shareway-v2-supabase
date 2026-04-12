@@ -303,6 +303,16 @@ function Dashboard() {
                             </button>
                         ))}
                     </div>
+
+                    {/* QUICK DESTINATIONS (UBER/CABIFY KILLER FEATURE) */}
+                    <div className="flex gap-2 px-1">
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white/40 backdrop-blur-md rounded-xl border border-white/20 text-[9px] font-black text-slate-700 uppercase tracking-widest shadow-sm active:scale-95 transition-all">
+                            <MapPin size={12} className="text-secondary" /> Home
+                        </button>
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white/40 backdrop-blur-md rounded-xl border border-white/20 text-[9px] font-black text-slate-700 uppercase tracking-widest shadow-sm active:scale-95 transition-all">
+                            <Activity size={12} className="text-primary" /> Work
+                        </button>
+                    </div>
                 </div>
                 {/* BOTÓN "CERCA DE TI" INTELIGENTE (LATERAL INFERIOR IZQUIERDO PARA EQUILIBRIO) */}
                 <Button 
