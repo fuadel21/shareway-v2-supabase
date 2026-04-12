@@ -29,7 +29,7 @@ const ImpactBadge = ({ profile }) => {
     const savedKg = parseFloat(profile.total_co2_saved) || 0;
 
     return (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[40] pointer-events-none lg:top-24">
+        <div className="absolute top-36 left-1/2 -translate-x-1/2 z-[40] pointer-events-none lg:top-24">
             <div className="bg-slate-950/80 backdrop-blur-xl border border-white/10 px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-3 animate-elite-in">
                 <div className="size-8 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
                     <Leaf size={16} className="text-white" />
@@ -295,26 +295,27 @@ function Dashboard() {
 
             {/* MAP AREA */}
             <div className="flex-1 relative h-full">
-                <Button onClick={handleLocateMe} className="absolute top-6 right-6 z-[1000] h-12 w-12 rounded-2xl bg-white text-slate-900 shadow-2xl border-none flex items-center justify-center hover:bg-slate-50 transition-all active:scale-90"><Navigation className="h-5 w-5 text-primary" /></Button>
+                {/* BOTÓN UBICACIÓN (ARRIBA DERECHA, JUSTO BAJO EL BUSCADOR) */}
+                <Button onClick={handleLocateMe} className="lg:absolute lg:top-6 lg:right-6 lg:z-[1000] absolute top-40 right-4 z-[1000] h-12 w-12 rounded-2xl bg-white text-slate-900 shadow-2xl border-none flex items-center justify-center hover:bg-slate-50 transition-all active:scale-90"><Navigation className="h-5 w-5 text-primary" /></Button>
                 
-                {/* BOTONES DE ACCIÓN EN EL MAPA (MOBILE) */}
+                {/* BOTONES DE ACCIÓN EN EL MAPA (LATERAL DERECHO INFERIOR PARA ERGONOMÍA) */}
                 {isMobile && (
-                    <div className="absolute top-24 right-6 z-[1000] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
+                    <div className="absolute bottom-40 right-4 z-[1000] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
                         <Button
                             onClick={() => navigate('/publish')}
-                            className="h-12 w-12 rounded-xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
+                            className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
                             size="icon"
                         >
-                            <Plus className="h-5 w-5 text-primary" />
-                            <span className="text-[6px] font-black uppercase tracking-tighter">Ofrecer</span>
+                            <Plus className="h-6 w-6 text-primary" />
+                            <span className="text-[7px] font-black uppercase tracking-tighter">Ofrecer</span>
                         </Button>
                         <Button
                             onClick={() => navigate('/request')}
-                            className="h-12 w-12 rounded-xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
+                            className="h-14 w-14 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
                             size="icon"
                         >
-                            <Megaphone className="h-5 w-5 text-amber-500" />
-                            <span className="text-[6px] font-black uppercase tracking-tighter">Pedir</span>
+                            <Megaphone className="h-6 w-6 text-amber-500" />
+                            <span className="text-[7px] font-black uppercase tracking-tighter">Pedir</span>
                         </Button>
                     </div>
                 )}
