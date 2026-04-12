@@ -93,9 +93,9 @@ function AdminDashboard() {
                     size="sm" 
                     onClick={fetchPlatformStats}
                     disabled={loading}
-                    className="rounded-xl border-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2"
+                    className="rounded-xl border-slate-100 font-black text-xs uppercase tracking-tight gap-2 h-11 px-4 active:scale-95 transition-all"
                 >
-                    <RefreshCw className={cn("h-3 w-3", loading && "animate-spin")} /> Sincronizar
+                    <RefreshCw className={cn("h-4 w-4", loading && "animate-spin text-primary")} /> Sincronizar
                 </Button>
             </div>
 
@@ -116,8 +116,8 @@ function AdminDashboard() {
                     <CardFooter className="pt-0">
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button size="sm" className="w-full rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-[10px] uppercase tracking-widest h-10" disabled={(stats?.totalUncollectedFees || 0) <= 0 || isPayoutLoading || loading}>
-                                    {isPayoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-4 w-4 mr-2" />} Cobrar Tesorería
+                                <Button size="sm" className="w-full rounded-xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-tight h-12 active:scale-95 transition-all shadow-lg" disabled={(stats?.totalUncollectedFees || 0) <= 0 || isPayoutLoading || loading}>
+                                    {isPayoutLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Banknote className="h-5 w-5 mr-3 text-emerald-500" />} Cobrar Tesorería
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent className="rounded-[2rem] border-none">
@@ -175,8 +175,8 @@ function AdminDashboard() {
                                 { val: 'climate', label: 'Impacto', icon: Leaf },
                                 { val: 'maintenance', label: 'Sistema', icon: RefreshCw }
                             ].map((t) => (
-                                <TabsTrigger key={t.val} value={t.val} className="rounded-xl px-5 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all whitespace-nowrap flex-shrink-0 text-[10px] font-black uppercase tracking-widest gap-2 border border-transparent data-[state=active]:border-slate-100">
-                                    <t.icon className="h-3.5 w-3.5" /> {t.label}
+                                <TabsTrigger key={t.val} value={t.val} className="rounded-xl px-5 py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all whitespace-nowrap flex-shrink-0 text-xs font-black uppercase tracking-tight gap-2 border border-transparent data-[state=active]:border-slate-100 h-11">
+                                    <t.icon className="h-4 w-4" /> {t.label}
                                 </TabsTrigger>
                             ))}
                         </TabsList>

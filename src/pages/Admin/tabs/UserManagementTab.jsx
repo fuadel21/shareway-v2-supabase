@@ -96,10 +96,10 @@ const UserManagementTab = () => {
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
-                    placeholder="Buscar usuarios por nombre o correo..."
+                    placeholder="Escribe nombre o correo..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    className="pl-12 h-14 rounded-2xl border-gray-100 shadow-sm focus:ring-primary/20 text-sm font-medium"
+                    className="pl-12 h-14 rounded-[1.5rem] border-slate-100 shadow-sm focus:ring-primary/20 text-sm font-bold bg-white"
                 />
             </div>
 
@@ -132,11 +132,11 @@ const UserManagementTab = () => {
                                         )}
                                     </div>
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="font-black text-slate-900 tracking-tight">{user.display_name}</p>
-                                            <Badge variant="outline" className="text-[8px] font-black uppercase tracking-tighter bg-slate-100 border-none">{user.role}</Badge>
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <p className="font-black text-slate-900 tracking-tight text-sm">{user.display_name}</p>
+                                            <Badge variant="outline" className="text-[7px] font-black uppercase tracking-tighter bg-slate-100 border-none px-1.5">{user.role}</Badge>
                                         </div>
-                                        <p className="text-xs text-slate-400 font-medium">{user.email || 'Sin correo asociado'}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold truncate max-w-[120px] sm:max-w-none">{user.email || 'Sin correo'}</p>
                                     </div>
                                 </div>
 
@@ -147,16 +147,16 @@ const UserManagementTab = () => {
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="rounded-xl h-10 border-slate-100 text-slate-600 font-bold text-[10px] uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm"
-                                            onClick={() => navigate(`/admin/profile/${user.id}`)}
+                                            className="rounded-xl h-11 border-slate-100 text-slate-600 font-black text-[10px] uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm active:scale-90"
+                                            onClick={() => navigate(`/admin/review/${user.id}`)}
                                         >
                                             Expediente
                                         </Button>
 
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button size="icon" variant="ghost" className="h-10 w-10 rounded-xl hover:bg-slate-100" disabled={processingId === user.id}>
-                                                    {processingId === user.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-4" />}
+                                                <Button size="icon" variant="ghost" className="h-11 w-11 rounded-xl bg-slate-50 hover:bg-slate-100 shadow-sm active:scale-95 transition-all" disabled={processingId === user.id}>
+                                                    {processingId === user.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-5" />}
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="rounded-2xl border-slate-100 p-2 min-w-48 shadow-xl">

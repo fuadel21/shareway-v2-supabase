@@ -49,10 +49,10 @@ const SecureImage = ({ imagePath, alt }) => {
     if (!imageUrl) return <div className="flex items-center justify-center bg-gray-50 h-64 rounded-2xl border-2 border-dashed border-gray-100 text-gray-400">No disponible</div>;
 
     return (
-        <div className="relative group overflow-hidden rounded-2xl border-2 border-gray-100">
-            <img src={imageUrl} alt={alt} className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-black p-3 rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-transform">
+        <div className="relative group overflow-hidden rounded-2xl border-2 border-slate-100 bg-slate-50">
+            <img src={imageUrl} alt={alt} className="w-full h-64 lg:h-80 object-contain transition-transform duration-500 group-hover:scale-105" />
+            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="bg-white text-slate-900 p-4 rounded-2xl shadow-2xl transform translate-y-4 group-hover:translate-y-0 transition-all active:scale-90">
                     <ExternalLink className="h-6 w-6" />
                 </a>
             </div>
@@ -141,8 +141,8 @@ const VerificationReview = () => {
     return (
         <div className="space-y-6 pb-20">
             <div className="flex items-center justify-between">
-                <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-xl hover:bg-white">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Volver a la lista
+                <Button variant="ghost" onClick={() => navigate(-1)} className="rounded-2xl bg-white h-11 px-4 shadow-sm border border-slate-100 active:scale-90 transition-all">
+                    <ArrowLeft className="mr-2 h-4 w-4 text-primary" /> Volver
                 </Button>
                 <div className="flex gap-2">
                     <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider ${verification?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
@@ -201,23 +201,23 @@ const VerificationReview = () => {
                         </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row justify-center gap-4 pt-10 border-t border-gray-50">
+                    <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 pt-10 border-t border-gray-50">
                         <Button
                             variant="outline"
-                            className="rounded-2xl h-14 px-10 text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 font-bold transition-all shadow-sm"
+                            className="rounded-2xl h-16 px-10 text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 font-extrabold text-xs uppercase tracking-widest transition-all shadow-sm active:scale-95"
                             onClick={() => handleVerificationAction('rejected')}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <XCircle className="mr-2 h-5 w-5" />}
-                            Rechazar Verificación
+                            {isSubmitting ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : <XCircle className="mr-3 h-6 w-6" />}
+                            Rechazar KYC
                         </Button>
                         <Button
-                            className="rounded-2xl h-14 px-10 bg-primary hover:bg-primary/90 font-bold transition-all shadow-lg shadow-primary/20"
+                            className="rounded-2xl h-16 px-10 bg-primary hover:bg-primary/90 font-extrabold text-xs uppercase tracking-widest transition-all shadow-xl shadow-primary/20 active:scale-95"
                             onClick={() => handleVerificationAction('approved')}
                             disabled={isSubmitting}
                         >
-                            {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CheckCircle2 className="mr-2 h-5 w-5" />}
-                            Aprobar Expediente
+                            {isSubmitting ? <Loader2 className="mr-3 h-6 w-6 animate-spin" /> : <CheckCircle2 className="mr-3 h-6 w-6" />}
+                            Aprobar Cuenta
                         </Button>
                     </div>
                 </CardContent>
