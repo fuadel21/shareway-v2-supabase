@@ -219,12 +219,12 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
     }, [itemsToDisplay, selectedItemId]);
 
     return (
-        <div className="w-full h-full relative overflow-hidden bg-slate-100 rounded-inherit">
+        <div className="w-full h-full relative overflow-hidden bg-slate-900 rounded-inherit">
             <MapContainer
                 center={[normalizedCenter.lat, normalizedCenter.lng]}
                 zoom={zoom || 6}
                 scrollWheelZoom={true}
-                className="w-full h-full grayscale-[0.2] contrast-[1.1] brightness-[0.95]"
+                className="w-full h-full grayscale-[0.1] contrast-[1.1] brightness-[0.95]"
                 zoomControl={false}
             >
                 <TileLayer
@@ -265,7 +265,6 @@ const MapComponent = ({ center, zoom, userLocation, itemsToDisplay, onMapClick, 
                     const originCoords = toLatLng(item.origin);
                     if (!originCoords) return null;
 
-                    // Determinar icono: Coche Verde (Viaje) o Amarillo (Solicitud)
                     const icon = isSelected ? carIcons.selected : (item.type === 'request' ? carIcons.request : carIcons.ride);
 
                     return (

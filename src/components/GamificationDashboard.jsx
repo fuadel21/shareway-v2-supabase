@@ -373,40 +373,60 @@ const GamificationDashboard = ({ userId }) => {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header con puntos y nivel */}
-            <Card className="border-none shadow-lg">
-                <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className={`w-16 h-16 rounded-full ${getLevelColor(stats?.current_level || 1)} flex items-center justify-center text-white text-2xl font-bold`}>
-                                {getLevelIcon(stats?.current_level || 1)}
+        <div className="space-y-6 animate-elite-in">
+            {/* Header Elite con puntos y nivel */}
+            <Card className="border-none shadow-diamond overflow-hidden relative group">
+                <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity duration-500" />
+                <CardContent className="p-8 relative z-10">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className={cn(
+                                "w-20 h-20 rounded-2xl flex items-center justify-center text-3xl shadow-lg relative",
+                                getLevelColor(stats?.current_level || 1)
+                            )}>
+                                <div className="absolute inset-0 rounded-2xl animate-pulse-elite bg-white/20" />
+                                <span className="relative z-10">{getLevelIcon(stats?.current_level || 1)}</span>
                             </div>
                             <div>
-                                <h3 className="text-2xl font-bold">Nivel {stats?.current_level || 1}</h3>
-                                <p className="text-muted-foreground">
-                                    {stats?.current_xp || 0} / {stats?.total_xp || 0} XP
+                                <h3 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
+                                    Nivel {stats?.current_level || 1}
+                                </h3>
+                                <p className="text-primary font-bold flex items-center gap-2">
+                                    <TrendingUp className="h-4 w-4" />
+                                    {stats?.current_xp || 0} / {stats?.total_xp || 0} XP para el siguiente rango
                                 </p>
                             </div>
                         </div>
                         
-                        <div className="text-right">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Zap className="h-6 w-6 text-amber-500" />
-                                <span className="text-3xl font-bold">{pointsBalance?.available_points || 0}</span>
+                        <div className="flex flex-row md:flex-col items-center md:items-end gap-2 bg-white/50 dark:bg-black/20 p-4 rounded-3xl backdrop-blur-md border border-white/20 shadow-inner">
+                            <div className="flex items-center gap-3">
+                                <Zap className="h-8 w-8 text-amber-500 animate-pulse-elite" />
+                                <span className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white">
+                                    {pointsBalance?.available_points || 0}
+                                </span>
                             </div>
-                            <p className="text-sm text-muted-foreground">EcoPoints</p>
-                            <Button size="sm" variant="outline" onClick={claimDailyLogin} className="mt-2">
-                                <Gift className="h-3 w-3 mr-1" />
-                                Diario
-                            </Button>
+                            <p className="text-xs font-black uppercase text-muted-foreground tracking-widest">ShareWay Points</p>
                         </div>
                     </div>
                     
-                    <Progress 
-                        value={((stats?.current_xp || 0) / (stats?.total_xp || 1)) * 100} 
-                        className="h-2 mt-4" 
-                    />
+                    <div className="mt-8 relative">
+                        <div className="flex justify-between text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                            <span>Progreso de Maestría</span>
+                            <span>{Math.round(((stats?.current_xp || 0) / (stats?.total_xp || 1)) * 100)}%</span>
+                        </div>
+                        <Progress 
+                            value={((stats?.current_xp || 0) / (stats?.total_xp || 1)) * 100} 
+                            className="h-3 rounded-full bg-slate-200 dark:bg-slate-800 shadow-inner" 
+                        />
+                        <div className="group-hover:shadow-[0_0_20px_rgba(255,100,0,0.4)] transition-shadow h-3 absolute top-0 left-0 w-full rounded-full pointer-events-none" />
+                    </div>
+                    
+                    <div className="mt-6 flex justify-end">
+                        <Button onClick={claimDailyLogin} size="sm" className="rounded-full bg-gradient-premium border-none shadow-lg hover:shadow-primary/40 text-white font-black">
+                            <Gift className="h-4 w-4 mr-2" />
+                            RECLAMAR BONUS DIARIO
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 

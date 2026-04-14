@@ -3,8 +3,13 @@ export default [
     files: ['src/**/*.{js,jsx}'],
     ignores: ['node_modules/**', 'coverage/**', 'dist/**'],
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
       globals: {
         window: 'readonly',
         document: 'readonly',
@@ -19,8 +24,13 @@ export default [
   {
     files: ['src/**/*.{test,spec}.js', 'src/**/*.{test,spec}.jsx', 'src/**/__tests__/**/*.{js,jsx}'],
     languageOptions: {
-      ecmaVersion: 2022,
+      ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
       globals: {
         describe: 'readonly',
         it: 'readonly',

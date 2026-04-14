@@ -82,31 +82,35 @@
 
   .dark {
     /* Paleta Elite Dark: "Obsidian Sunset" */
-    --background: 224 71% 4%;
+    --background: 224 71% 2%;
     --foreground: 210 20% 98%;
 
-    --card: 224 71% 6%;
+    --card: 224 71% 4%;
     --card-foreground: 210 20% 98%;
 
-    --popover: 224 71% 6%;
+    --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
 
-    /* Primario: Naranja Neón */
-    --primary: 20 100% 60%;
-    --primary-foreground: 224 71% 4%;
+    /* Primario: Naranja Neón Ultra */
+    --primary: 22 100% 60%;
+    --primary-foreground: 224 71% 2%;
 
-    --secondary: 215 25% 15%;
+    --secondary: 215 25% 10%;
     --secondary-foreground: 210 20% 98%;
 
-    --muted: 215 25% 12%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 215 25% 8%;
+    --muted-foreground: 215 20% 60%;
 
-    --accent: 20 100% 60%;
+    --accent: 260 80% 60%; /* Añadimos un Violeta Eléctrico para acentos Élite */
     --accent-foreground: 210 20% 98%;
 
-    --border: 215 25% 18%;
-    --input: 215 25% 18%;
-    --ring: 20 100% 60%;
+    --border: 215 25% 12%;
+    --input: 215 25% 12%;
+    --ring: 22 100% 60%;
+
+    /* Utilidades de Diseño Élite */
+    --gradient-premium: linear-gradient(135deg, hsla(22, 100%, 60%, 1) 0%, hsla(260, 80%, 60%, 1) 100%);
+    --shadow-diamond: 0 0 40px -10px hsla(22, 100%, 60%, 0.3);
   }
 }
 
@@ -236,35 +240,12 @@
 
 /* ───────────────────────────────────────────────
    Elite Mobile Adjustments
-   Garantiza que todos los botones sean fácilmente
-   tocables y legibles en pantallas pequeñas.
 ─────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  /* Botones de texto: asegurar altura táctil mínima */
   button:not([data-size="icon"]):not([data-size="icon-sm"]) {
     min-height: 44px;
     padding-top: 0.65rem;
     padding-bottom: 0.65rem;
-    font-size: 0.9375rem;   /* 15px — más legible que 14px */
-  }
-
-  /* Botones de tipo icon: cuadrado o circular bien tocable */
-  button[data-size="icon"],
-  button[data-size="icon-sm"] {
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  /* Feedback más pronunciado en pantalla táctil */
-  button:active {
-    transform: scale(0.94);
-    filter: brightness(0.85);
-    transition-duration: 0.08s;
-  }
-
-  /* Inputs también deben ser elegantemente grandes */
-  input, select, textarea {
-    font-size: 1rem;   /* Evita el zoom automático de iOS (mín. 16px) */
-    min-height: 48px;
+    font-size: 0.9375rem; 
   }
 }

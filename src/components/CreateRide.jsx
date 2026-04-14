@@ -19,6 +19,7 @@ import {
 import { format, isBefore, startOfToday, addMinutes } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
+import MapComponent from './MapComponent.jsx';
 import { createSingleRide, RIDE_RULES, calculateRecommendedPrice } from '@/services/rideService';
 import { validateRidePrice } from '@/utils/pricingRules';
 import { cn } from '@/lib/utils';

@@ -301,7 +301,11 @@ export const completeRide = async (rideId) => {
 };
 
 export const cancelRide = async (rideId) => {
-    const { success, error } = await rpc.cancelRide(rideId);
+    // Usamos el RPC hardened que gestiona reembolsos automáticos
+    const { success, error } = await rpc.safeCall(
+        () => supabase.rpc('cancel_ride_by_driver', { p_ride_id: rideId }),
+        'cancel_ride_by_driver'
+    );
     if (!success) throw new Error(error);
     return true;
 };
@@ -353,16 +357,27 @@ export const markNoShow = async (rideId, passengerId) => {
 };
 
 export const updateRide = async (rideId, rideData) => {
-    const { data, error } = await supabase.rpc('update_ride_v2', {
-        p_ride_id: rideId,
-        p_departure_time: rideData.dateTime.toISOString(),
-        p_seats: parseInt(rideData.seats),
-        p_price: parseFloat(rideData.price),
-        p_details: rideData.details || '',
-        p_is_women_only: rideData.isWomenOnly || false
-    });
-    if (error) throw new Error(error.message);
-    return data;
+    try {
+        const { data, error } = await supabase.rpc('update_ride_v2', {
+            p_ride_id: rideId,
+            p_departure_time: rideData.dateTime.toISOString(),
+            p_seats: parseInt(rideData.seats),
+            p_price: parseFloat(rideData.price),
+            p_details: rideData.details || '',
+            p_is_women_only: rideData.isWomenOnly || false
+        });
+        if (error) {
+            // Capturar error del Trigger de Protección de Contrato
+            if (error.message.includes('No se pueden modificar')) {
+                throw new Error("⚠️ CONTRATO BLINDADO: Tienes pasajeros confirmados. No puedes cambiar precio ni ruta. Por favor, cancela el viaje si necesitas hacer cambios críticos.");
+            }
+            throw new Error(error.message);
+        }
+        return data;
+    } catch (error) {
+        console.error("🛡️ [Update Flow] updateRide failed:", error);
+        throw error;
+    }
 };
 
 export const getUserRides = async () => {

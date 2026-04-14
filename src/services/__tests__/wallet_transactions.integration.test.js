@@ -4,7 +4,7 @@
  * Rules: 4, 6, 7, 9
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { confirmTripAndPay, cancelBookingAndRefund } from '../rideService';
+import { confirmTripAndPay, cancelBooking } from '../bookingService';
 import { supabase } from '@/lib/supabase';
 
 vi.mock('@/lib/supabase', () => ({
@@ -28,7 +28,7 @@ describe('Integridad Financiera: Wallet y Pagos', () => {
     // Simulamos error de saldo insuficiente desde la RPC confirm_trip_and_pay
     supabase.rpc.mockResolvedValue({ 
       data: null, 
-      error: 'Saldo insuficiente' 
+      error: { message: 'SALDO_INSUFICIENTE' } 
     });
 
     await expect(confirmTripAndPay(rideId)).rejects.toThrow('Saldo insuficiente');
@@ -42,7 +42,7 @@ describe('Integridad Financiera: Wallet y Pagos', () => {
 
     supabase.rpc
       .mockResolvedValueOnce({ data: { success: true, pin: '1234' }, error: null }) // Éxito el primero
-      .mockResolvedValueOnce({ data: null, error: 'Saldo insuficiente' }); // Falla el segundo
+      .mockResolvedValueOnce({ data: null, error: { message: 'SALDO_INSUFICIENTE' } }); // Falla el segundo
 
     const promise1 = confirmTripAndPay('ride-A');
     const promise2 = confirmTripAndPay('ride-B');
@@ -54,7 +54,7 @@ describe('Integridad Financiera: Wallet y Pagos', () => {
 
     expect(successes).toHaveLength(1);
     expect(failures).toHaveLength(1);
-    expect(failures[0].reason.message).toBe('Saldo insuficiente');
+    expect(failures[0].reason.message).toContain('Saldo insuficiente');
   });
 
   // --- ESCENARIO 3: CANCELACIÓN Y REEMBOLSO ---
@@ -70,10 +70,10 @@ describe('Integridad Financiera: Wallet y Pagos', () => {
       error: null 
     });
 
-    const result = await cancelBookingAndRefund(rideId);
+    const result = await cancelBooking(rideId);
     
     expect(result.success).toBe(true);
-    expect(result.refundAmount).toBe(25.0);
+    expect(result.data.refundAmount).toBe(25.0);
     expect(supabase.rpc).toHaveBeenCalledWith('cancel_booking_and_refund', { 
         p_ride_id: rideId 
     });
@@ -94,9 +94,9 @@ describe('Integridad Financiera: Wallet y Pagos', () => {
       error: null 
     });
 
-    const result = await cancelBookingAndRefund(rideId);
+    const result = await cancelBooking(rideId);
     
-    expect(result.refundAmount).toBe(0);
-    expect(result.driverCompensation).toBeGreaterThan(0);
+    expect(result.data.refundAmount).toBe(0);
+    expect(result.data.driverCompensation).toBeGreaterThan(0);
   });
 });

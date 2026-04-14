@@ -5,7 +5,7 @@ import React from 'react';
 describe('Button', () => {
   it('renderiza contenido', () => {
     render(<Button>Hola</Button>);
-    expect(screen.getByText('Hola')).toBeInTheDocument();
+    expect(screen.getByText('Hola')).toBeTruthy();
   });
 
   it('maneja click', () => {

@@ -50,20 +50,33 @@ const VerificationStatus = ({ profile }) => {
     };
 
     const current = STATUS_MAP[status] || STATUS_MAP.not_verified;
-    const Icon = current.icon; // Sintaxis correcta para componentes dinámicos
+    const Icon = current.icon;
 
     return (
-        <Card className={cn("rounded-[3rem] border-none shadow-2xl overflow-hidden relative", current.color)}>
-            <div className="absolute top-0 right-0 p-10 opacity-10"><Icon className="size-32" /></div>
-            <CardContent className="p-10 relative z-10 space-y-6 text-left">
-                <div className="flex items-center gap-4">
-                    <div className={cn("size-14 rounded-2xl flex items-center justify-center shadow-xl", current.badge)}><Icon className="h-8 w-8" /></div>
+        <Card className={cn(
+            "rounded-[2.5rem] border-none shadow-diamond overflow-hidden relative group transition-all duration-700",
+            current.color
+        )}>
+            <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity" />
+            <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:opacity-10 transition-all group-hover:scale-110">
+                <Icon size={200} />
+            </div>
+            <CardContent className="p-8 lg:p-12 relative z-10 space-y-4 text-left">
+                <div className="flex items-center gap-5">
+                    <div className={cn(
+                        "size-16 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 animate-pulse-elite",
+                        current.badge
+                    )}>
+                        <Icon size={32} />
+                    </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-40">ShareWay Trust Hub</p>
-                        <h2 className="text-3xl font-black tracking-tighter italic uppercase leading-none">{current.text}</h2>
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-40">Security Protocol</p>
+                        <h2 className="text-3xl lg:text-4xl font-black tracking-tighter italic uppercase leading-none">{current.text}</h2>
                     </div>
                 </div>
-                <p className="text-sm font-bold opacity-70 max-w-[80%] leading-relaxed">{current.description}</p>
+                <p className="text-xs lg:text-sm font-bold opacity-70 max-w-[85%] leading-relaxed uppercase tracking-tight italic">
+                    {current.description}
+                </p>
             </CardContent>
         </Card>
     );

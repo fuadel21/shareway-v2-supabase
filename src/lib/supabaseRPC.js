@@ -85,7 +85,7 @@ export const createRide = (rideData) =>
         p_waypoints: rideData.waypoints || []
     }), 'create_ride');
 
-export const confirmTripAndPay = (rideId, requestId = null, pickupLocation = null, pickupAddress = null, price = null) =>
+export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null } = {}) =>
     safeCall(() => supabase.rpc('confirm_trip_and_pay', {
         p_ride_id: rideId,
         p_request_id: requestId,
