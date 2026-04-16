@@ -1,5 +1,6 @@
+
 -- ========================================================
--- FIX: Función para cancelar reserva de pasajero con reembolso
+-- FIX: Función INTELIGENTE para cancelar reserva con reembolso por tramos horarios
 -- ========================================================
 
 CREATE OR REPLACE FUNCTION public.cancel_booking_and_refund(p_ride_id UUID)
@@ -11,7 +12,9 @@ DECLARE
     v_booked_price DECIMAL;
     v_refund_amount DECIMAL;
     v_penalty_amount DECIMAL;
-    v_penalty_percent DECIMAL := 0.20; -- 20% de penalización según UI
+    v_refund_percent DECIMAL;
+    v_hours_until_departure DECIMAL;
+    v_status_msg TEXT;
 BEGIN
     -- 1. Bloquear y obtener datos del viaje
     SELECT * INTO v_ride_record FROM public.rides WHERE id = p_ride_id FOR UPDATE;
@@ -20,7 +23,7 @@ BEGIN
         RAISE EXCEPTION 'Viaje no encontrado';
     END IF;
 
-    -- 2. Buscar al pasajero en el array de pasajeros
+    -- 2. Buscar al pasajero activo
     SELECT p INTO v_passenger_entry 
     FROM jsonb_array_elements(v_ride_record.passengers) AS p 
     WHERE (p->>'id')::UUID = v_passenger_id AND p->>'status' != 'cancelled';
@@ -30,10 +33,32 @@ BEGIN
     END IF;
 
     v_booked_price := (v_passenger_entry->>'booked_price')::DECIMAL;
-    v_penalty_amount := v_booked_price * v_penalty_percent;
-    v_refund_amount := v_booked_price - v_penalty_amount;
+    
+    -- 3. CALCULAR LÓGICA DE TIEMPO
+    v_hours_until_departure := EXTRACT(EPOCH FROM (v_ride_record.departure_time - NOW())) / 3600;
 
-    -- 3. Procesar Reembolso en la Wallet
+    IF v_hours_until_departure < 0 THEN
+        -- Viaje caducado o en curso: Reembolso total (Protección plataforma)
+        v_refund_percent := 1.0;
+        v_status_msg := 'Reembolso total por viaje caducado';
+    ELSIF v_hours_until_departure > 24 THEN
+        -- Más de 24h: Reembolso total
+        v_refund_percent := 1.0;
+        v_status_msg := 'Reembolso total (+24h antelación)';
+    ELSIF v_hours_until_departure >= 2 THEN
+        -- Entre 2h y 24h: Reembolso 50%
+        v_refund_percent := 0.5;
+        v_status_msg := 'Reembolso del 50% (2h a 24h antelación)';
+    ELSE
+        -- Menos de 2h: Sin reembolso
+        v_refund_percent := 0.0;
+        v_status_msg := 'Sin reembolso (menos de 2h para la salida)';
+    END IF;
+
+    v_refund_amount := v_booked_price * v_refund_percent;
+    v_penalty_amount := v_booked_price - v_refund_amount;
+
+    -- 4. Procesar Wallet
     UPDATE public.wallets
     SET 
         held_balance = held_balance - v_booked_price,
@@ -41,16 +66,18 @@ BEGIN
         updated_at = NOW()
     WHERE user_id = v_passenger_id;
 
-    -- 4. Registrar Transacciones
-    -- Registro del reembolso
-    INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
-    VALUES (v_passenger_id, v_refund_amount, 'refund', 'Reembolso por cancelación de reserva (Parcial)', p_ride_id);
+    -- 5. Registrar Transacciones (Solo si hay montos)
+    IF v_refund_amount > 0 THEN
+        INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
+        VALUES (v_passenger_id, v_refund_amount, 'refund', v_status_msg, p_ride_id);
+    END IF;
 
-    -- Registro de la penalización (informativo)
-    INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
-    VALUES (v_passenger_id, -v_penalty_amount, 'penalty', 'Gasto de gestión por cancelación (20%)', p_ride_id);
+    IF v_penalty_amount > 0 THEN
+        INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
+        VALUES (v_passenger_id, -v_penalty_amount, 'penalty', 'Cargo por cancelación tardía', p_ride_id);
+    END IF;
 
-    -- 5. Actualizar el Viaje (Eliminar pasajero y liberar asiento)
+    -- 6. Actualizar el Viaje
     UPDATE public.rides
     SET 
         seats_available = seats_available + 1,
@@ -58,7 +85,8 @@ BEGIN
         passengers = (
             SELECT jsonb_agg(
                 CASE 
-                    WHEN (p->>'id')::UUID = v_passenger_id THEN p || '{"status": "cancelled", "cancelled_at": "' || NOW() || '"}'::jsonb
+                    WHEN (p->>'id')::UUID = v_passenger_id THEN 
+                        p || jsonb_build_object('status', 'cancelled', 'cancelled_at', NOW(), 'refund_processed', v_refund_amount)
                     ELSE p 
                 END
             )
@@ -69,12 +97,9 @@ BEGIN
 
     RETURN json_build_object(
         'success', true,
-        'message', 'Reserva cancelada y reembolso procesado',
+        'message', v_status_msg,
         'refunded', v_refund_amount,
         'penalty', v_penalty_amount
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
--- Comentario para auditoría
-COMMENT ON FUNCTION public.cancel_booking_and_refund IS 'Cancela la reserva de un pasajero, libera el asiento y procesa el reembolso parcial (80%)';
