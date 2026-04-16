@@ -46,6 +46,7 @@ import RideChatSelector from '@/components/RideChatSelector';
 import EmergencyChat from '@/components/EmergencyChat';
 import EditFavoriteRoute from '@/components/EditFavoriteRoute';
 import VerificationCenter from '@/components/VerificationCenter';
+import ClimateImpact from '@/components/ClimateImpact'; // NUEVO
 
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
@@ -196,7 +197,7 @@ function App() {
         isLoading,
         refreshProfile,
         handleSignOut,
-        totalUnreadChats: 0 // FALLO 108 ARREGLADO: Badge inicializado para evitar undefined en MainLayout
+        totalUnreadChats: 0
     }), [session?.user?.id, profile, isLoading, refreshProfile, handleSignOut]);
 
     return (
@@ -226,6 +227,7 @@ function App() {
                         <Route path="settings/appearance" element={<AppearanceSettings />} />
                         <Route path="settings/notifications" element={<NotificationSettings />} />
                         <Route path="settings/emergency" element={<EmergencyContacts />} />
+                        <Route path="settings/impact" element={<ClimateImpact />} /> {/* RUTA NUEVA */}
                         <Route path="verification-center" element={<VerificationCenter />} />
 
                         <Route path="profile/edit" element={<EditProfile />} />

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
@@ -5,7 +6,7 @@ import {
   Key, ChevronRight, LogOut, User, Bell, Palette,
   CreditCard, ChevronLeft, ShieldCheck, Sparkles,
   Landmark, Wallet as WalletIcon, Share2, Radio,
-  Smartphone, Eye
+  Smartphone, Eye, Leaf
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
@@ -75,6 +76,14 @@ const Settings = () => {
               color="bg-slate-900"
               onClick={() => navigate('/profile/edit')}
             />
+            {/* NUEVO: IMPACTO AMBIENTAL */}
+            <SettingItem
+              icon={Leaf}
+              label="Impacto Ambiental"
+              sublabel="Mira cuánto CO₂ has ahorrado"
+              color="bg-emerald-600"
+              onClick={() => navigate('/settings/impact')}
+            />
           </div>
         </section>
 
@@ -93,7 +102,7 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* PREFERENCIAS DE VIAJE (Aquí movimos rutas) */}
+        {/* PREFERENCIAS DE VIAJE */}
         <section>
           <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
           <div className="grid grid-cols-1 gap-4">
