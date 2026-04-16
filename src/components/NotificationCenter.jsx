@@ -92,8 +92,12 @@ const NotificationCenter = ({ children, user }) => {
             const subscription = subscribeToNotifications(user.id, (newNotification) => {
                 setNotifications(prev => [newNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
-                toast(newNotification.title, {
+                const isBooking = newNotification.type === 'booking' || newNotification.title?.toLowerCase().includes('reserva');
+                const toastFn = isBooking ? toast.success : toast.info;
+
+                toastFn(newNotification.title, {
                     description: newNotification.content,
+                    duration: 2000, // Desaparece en 2 segundos
                     action: {
                         label: 'Ver',
                         onClick: () => setIsOpen(true)

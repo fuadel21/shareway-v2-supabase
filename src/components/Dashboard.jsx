@@ -267,7 +267,7 @@ function Dashboard() {
 
                     <div className="space-y-3">
                         {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div> : itemsToDisplay.length > 0 ? itemsToDisplay.map((item) => (
-                            <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={handleSelection} />
+                            <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
                         )) : <div className="text-center py-16 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><Car className="mx-auto h-10 w-10 text-slate-200 mb-2 opacity-30" /><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('dashboard.no_results')}</p></div>}
                     </div>
                 </div>
@@ -354,7 +354,7 @@ function Dashboard() {
                     zoom={zoom}
                     itemsToDisplay={itemsToDisplay}
                     selectedItemId={selectedItem?.id}
-                    onItemSelected={handleSelection}
+                    onItemSelected={(item) => handleSelection(item, true)}
                 />
 
                 {/* MOBILE / QUICK VIEW BOTTOM SHEET */}
@@ -378,7 +378,7 @@ function Dashboard() {
                                                 <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div>
                                             ) : itemsToDisplay.length > 0 ? (
                                                 itemsToDisplay.map((item) => (
-                                                    <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={handleSelection} />
+                                                    <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
                                                 ))
                                             ) : (
                                                 <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">

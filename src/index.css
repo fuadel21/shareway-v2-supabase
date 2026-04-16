@@ -249,3 +249,24 @@
     font-size: 0.9375rem; 
   }
 }
+
+/* ───────────────────────────────────────────────
+   Leaflet & Map Optimizations
+─────────────────────────────────────────────── */
+.leaflet-container {
+    touch-action: pan-x pan-y !important;
+    font-family: inherit;
+}
+
+.leaflet-grab {
+    cursor: grab !important;
+}
+
+.leaflet-dragging .leaflet-grab {
+    cursor: grabbing !important;
+}
+
+/* Fix for touchmove intervention warnings */
+.leaflet-container {
+    -webkit-tap-highlight-color: transparent;
+}

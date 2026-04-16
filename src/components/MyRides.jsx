@@ -57,7 +57,13 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
                             {currentTheme.text}
                         </div>
                         <p className="text-[10px] font-black text-slate-900 uppercase italic">
-                            {isDriver ? 'CONDUCES' : (ride.role === 'requester' ? 'SOLICITANTE' : 'PASAJERO')}
+                            {isDriver ? 'CONDUCES' : (
+                                (() => {
+                                    const meAsPax = Array.isArray(ride.passengers) ? ride.passengers.find(p => String(p.id) === String(currentUserId)) : null;
+                                    if (meAsPax && (meAsPax.status === 'verified' || meAsPax.status === 'on_board')) return 'A BORDO';
+                                    return ride.role === 'requester' ? 'SOLICITANTE' : 'PASAJERO';
+                                })()
+                            )}
                         </p>
                     </div>
                 </div>

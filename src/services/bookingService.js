@@ -52,9 +52,7 @@ export const confirmTripAndPay = async (rideId, requestId = null, additionalData
     const { data, success, error } = await rpc.confirmTripAndPay(
       rideId,
       requestId,
-      additionalData.pickupLocation,
-      additionalData.pickupAddress,
-      additionalData.price
+      additionalData
     );
 
     if (!success) {

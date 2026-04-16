@@ -76,8 +76,15 @@ function RideDetails() {
             if (user && normalizedRide.passengers) {
                 const activePassenger = normalizedRide.passengers.find(p => String(p.id) === String(user.id) && p.status !== 'cancelled');
                 if (activePassenger && ['confirmed', 'verified', 'on_board', 'picked_up'].includes(activePassenger.status)) {
-                    const pinRes = await getMyRidePin(rideId);
-                    if (pinRes.success) setMyPin(String(pinRes.data.pin || pinRes.data));
+                    if (activePassenger.pin) {
+                        setMyPin(String(activePassenger.pin));
+                    } else {
+                        const pinRes = await getMyRidePin(rideId);
+                        if (pinRes.success && pinRes.data) {
+                            const rawPin = pinRes.data.pin || pinRes.data.get_my_ride_pin || (typeof pinRes.data === 'object' ? Object.values(pinRes.data)[0] : pinRes.data);
+                            setMyPin(String(rawPin));
+                        }
+                    }
                 }
             }
         } catch (error) {
@@ -168,12 +175,15 @@ function RideDetails() {
         const loadingToast = toast.loading("Procesando reserva...");
 
         try {
-            const res = await confirmTripAndPay({
-                rideId: ride.id,
-                pickupLat: pickupLocation?.lat,
-                pickupLng: pickupLocation?.lng,
-                pickupAddress: pickupAddress
-            });
+            const res = await confirmTripAndPay(
+                ride.id,
+                null, // No es una reserva desde 'Solicitud'
+                {
+                    pickupLocation: pickupLocation,
+                    pickupAddress: pickupAddress,
+                    price: dynamicPricing ? dynamicPricing.pricing.totalPrice : ride.price
+                }
+            );
 
             if (res.success) {
                 toast.success("¡Viaje reservado con éxito!", { id: loadingToast });
@@ -190,20 +200,26 @@ function RideDetails() {
         }
     };
 
-    const handleMapClick = (latlng) => {
+    const handleMapClick = useCallback(async (latlng) => {
         if (isDriver || activePassenger || isRideCompleted) return;
         setPickupLocation({ lat: latlng.lat, lng: latlng.lng });
         setPickupAddress("Cargando dirección...");
 
-        const geocoder = L.Control.Geocoder.nominatim();
-        geocoder.reverse(latlng, 18, (results) => {
-            if (results && results[0]) {
-                setPickupAddress(results[0].name);
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latlng.lat}&lon=${latlng.lng}`);
+            const data = await res.json();
+            if (data && data.display_name) {
+                const parts = data.display_name.split(',');
+                const compactAddress = parts.length > 2 ? `${parts[0].trim()}, ${parts[1].trim()}` : data.display_name;
+                setPickupAddress(compactAddress);
             } else {
                 setPickupAddress(`Punto: ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
             }
-        });
-    };
+        } catch (err) {
+            console.error("Reverse Geocode Error:", err);
+            setPickupAddress(`Punto: ${latlng.lat.toFixed(4)}, ${latlng.lng.toFixed(4)}`);
+        }
+    }, [isDriver, activePassenger, isRideCompleted]);
 
     const handleSOS = async () => {
         if (!user) return;
@@ -292,6 +308,12 @@ function RideDetails() {
                             <h2 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tighter italic leading-none">
                                 {rideDateTime ? format(rideDateTime, "HH:mm") : '--:--'}
                             </h2>
+                            <div className="flex items-center gap-2 mt-3">
+                                <div className={cn("flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest", ride.seats_available > 0 ? "bg-primary/10 text-primary" : "bg-red-100 text-red-600")}>
+                                    <Users size={12} />
+                                    <span>{ride.seats_available > 0 ? `${ride.seats_available} PLAZAS LIBRES` : 'VIAJE COMPLETO'}</span>
+                                </div>
+                            </div>
                         </div>
                         <div className="text-right">
                             <div className="flex flex-col items-end">
@@ -340,12 +362,23 @@ function RideDetails() {
                         <div className="pt-2">
                             {activePassenger ? (
                                 <div className="space-y-4">
-                                    {myPin && (
+                                    {myPin && activePassenger?.status === 'confirmed' && (
                                         <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-diamond text-center space-y-3 relative overflow-hidden group">
                                             <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity" />
                                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Tu PIN de llegada</p>
                                             <p className="text-5xl font-black italic tracking-tighter animate-pulse-elite leading-none">{myPin}</p>
                                             <p className="text-[9px] text-slate-400 font-medium px-4 leading-relaxed">Díselo al conductor cuando llegues al destino para completar el pago.</p>
+                                        </div>
+                                    )}
+                                    {(activePassenger?.status === 'verified' || activePassenger?.status === 'on_board') && (
+                                        <div className="bg-emerald-500 text-white p-6 rounded-3xl shadow-diamond text-center space-y-3 relative overflow-hidden group">
+                                            <div className="absolute inset-0 bg-white/10 opacity-10 group-hover:opacity-20 transition-opacity" />
+                                            <div className="bg-white/20 size-12 rounded-2xl flex items-center justify-center mx-auto mb-2">
+                                                <BadgeCheck className="size-8" />
+                                            </div>
+                                            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Estado del Pasajero</p>
+                                            <p className="text-3xl font-black italic tracking-tighter leading-none">YA ESTÁS A BORDO</p>
+                                            <p className="text-[9px] text-emerald-100 font-medium px-4 leading-relaxed italic">Tu viaje ha sido verificado. ¡Disfruta del trayecto!</p>
                                         </div>
                                     )}
                                     <Button onClick={handleSOS} variant="destructive" className="w-full h-14 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg active:scale-95 transition-all">
@@ -383,10 +416,12 @@ function RideDetails() {
                 </Card>
 
                 {isDriver && (
-                    <div className="p-6 lg:p-8 bg-slate-900 rounded-2xl lg:rounded-[2.5rem] text-white space-y-3 lg:space-y-4 shadow-2xl animate-in zoom-in duration-500">
-                        <Sparkles className="size-8 lg:size-10 text-primary" />
-                        <h3 className="text-lg lg:text-xl font-black uppercase italic tracking-tighter">Panel de Control</h3>
-                        <p className="text-[10px] lg:text-xs text-slate-400 font-medium leading-relaxed">Gestiona pasajeros y el estado del trayecto desde el panel de gestión.</p>
+                    <div className="mt-8 animate-in zoom-in duration-500">
+                        <RideManagement
+                            ride={ride}
+                            onUpdate={fetchRideDetails}
+                            wallet={wallet}
+                        />
                     </div>
                 )}
             </div>
