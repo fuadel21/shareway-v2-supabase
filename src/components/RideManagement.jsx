@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { ShieldAlert, MessageCircle, Navigation, Loader2, PlayCircle, ShieldCheck, Settings2, BadgeCheck, UserX, MapPin, MapPinCheck, Radio, Users, CheckCircle2, AlertTriangle, Clock, Star, Info, MapPinned, Lock } from 'lucide-react';
+import { ShieldAlert, MessageCircle, Navigation, Loader2, PlayCircle, ShieldCheck, Settings2, BadgeCheck, UserX, MapPin, MapPinCheck, Radio, Users, CheckCircle2, AlertTriangle, Clock, Star, Info, MapPinned, Lock, Trash2 } from 'lucide-react';
 import PinVerificationDialog from './PinVerificationDialog';
 import { startRide, completeRide, verifyPassenger, removePassenger, markNoShow, acceptPassenger, cancelRide } from '@/services/rideService';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,13 @@ const PassengerItem = ({ passenger, onVerify, onNoShow, isRideActive, rideId }) 
 
     if (isCancelled) return null;
 
+    const handleOpenChat = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Navegamos al chat grupal del viaje (RideChat)
+        navigate(`/ride-chat/${rideId}`);
+    };
+
     return (
         <div className={cn(
             "flex flex-col p-4 lg:p-5 rounded-2xl lg:rounded-3xl border shadow-sm mb-3 transition-all bg-white border-slate-100 text-left",
@@ -45,8 +52,8 @@ const PassengerItem = ({ passenger, onVerify, onNoShow, isRideActive, rideId }) 
                                 <Button 
                                     size="icon" 
                                     variant="ghost" 
-                                    className="size-7 lg:size-8 rounded-lg bg-slate-50 text-primary hover:bg-primary/10 transition-colors"
-                                    onClick={() => navigate(`/ride-chat/${rideId}/${passenger.id}`)}
+                                    className="size-7 lg:size-8 rounded-lg bg-orange-50 text-orange-500 hover:bg-orange-100 transition-colors"
+                                    onClick={handleOpenChat}
                                 >
                                     <MessageCircle size={12} className="lg:size-[14px]" />
                                 </Button>
@@ -118,7 +125,6 @@ const RideManagement = ({ ride, onRefresh }) => {
         return (ride.passengers || []).filter(p => p.status === 'confirmed').length;
     }, [ride.passengers]);
 
-    // Lógica 1: Ventana de tiempo de 15 minutos para iniciar
     const isTimeWindowOpen = useMemo(() => {
         if (!ride.departure_time) return false;
         const depTime = new Date(ride.departure_time).getTime();
@@ -126,32 +132,21 @@ const RideManagement = ({ ride, onRefresh }) => {
         return now >= (depTime - (15 * 60 * 1000));
     }, [ride.departure_time]);
 
-    // Lógica 2: Geovalla de llegada (500 metros del destino)
     const isAtDestination = useMemo(() => {
         if (!currentCoords || !ride.destination?.coordinates) return false;
         const dest = ride.destination.coordinates;
-        
-        // Haversine distance simplified
-        const R = 6371e3; // metres
+        const R = 6371e3; 
         const φ1 = currentCoords.lat * Math.PI/180;
         const φ2 = dest.lat * Math.PI/180;
         const Δφ = (dest.lat - currentCoords.lat) * Math.PI/180;
         const Δλ = (dest.lng - currentCoords.lng) * Math.PI/180;
-
-        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                Math.cos(φ1) * Math.cos(φ2) *
-                Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        const d = R * c;
-
-        return d <= 500; // 500 metros
+        return (R * c) <= 500;
     }, [currentCoords, ride.destination]);
 
-    // Lógica 3: ¿Se puede finalizar? (GPS o Verificación manual del pasajero)
     const canCompleteRide = useMemo(() => {
-        // Si ya verificó a todos los pasajeros, permitimos finalizar (autorización manual)
         if (pendingVerifications === 0 && hasPassengers) return true;
-        // O si está físicamente en el destino
         return isAtDestination;
     }, [pendingVerifications, hasPassengers, isAtDestination]);
 
@@ -165,9 +160,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                     await supabase.rpc('update_ride_location', { p_ride_id: ride.id, p_lat: latitude, p_lng: longitude });
                     setIsSharingLocation(true);
                     resolve(true);
-                } catch (e) {
-                    resolve(false);
-                }
+                } catch (e) { resolve(false); }
             }, () => resolve(false), { enableHighAccuracy: true, timeout: 5000 });
         });
     };
@@ -179,10 +172,7 @@ const RideManagement = ({ ride, onRefresh }) => {
     }, [ride.id]);
 
     const stopLocationSharing = useCallback(() => {
-        if (locationIntervalRef.current) {
-            clearInterval(locationIntervalRef.current);
-            locationIntervalRef.current = null;
-        }
+        if (locationIntervalRef.current) { clearInterval(locationIntervalRef.current); locationIntervalRef.current = null; }
         setIsSharingLocation(false);
     }, []);
 
@@ -194,37 +184,41 @@ const RideManagement = ({ ride, onRefresh }) => {
 
     const handleStartRide = async () => {
         if (isLoading) return;
-        if (!isTimeWindowOpen) {
-            return toast.error("Demasiado pronto", { description: "Estará disponible 15 min antes de la hora." });
-        }
+        if (!isTimeWindowOpen) return toast.error("Disponible 15 min antes.");
         setIsLoading(true);
         try {
             await syncGPSNow();
             await startRide(ride.id);
-            toast.success("¡Buen viaje! GPS activado.");
+            toast.success("¡Viaje iniciado!");
             if (onRefresh) await onRefresh();
-        } catch (e) {
-            toast.error(e.message);
-        } finally {
-            setIsLoading(false);
-        }
+        } catch (e) { toast.error(e.message); }
+        finally { setIsLoading(false); }
     };
 
     const handleCompleteRide = async () => {
-        if (!canCompleteRide) {
-            return toast.error("Acción bloqueada", { 
-                description: "Debes estar en el destino o verificar a todos los pasajeros." 
-            });
-        }
+        if (!canCompleteRide) return toast.error("Bloqueado hasta llegada.");
         setIsLoading(true);
         try {
             await syncGPSNow();
             await completeRide(ride.id);
             stopLocationSharing();
-            toast.success("Viaje finalizado y pagos procesados.");
+            toast.success("Viaje finalizado.");
             navigate('/my-rides');
-        } catch (e) {
-            toast.error(e.message);
+        } catch (e) { toast.error(e.message); }
+        finally { setIsLoading(false); }
+    };
+
+    const handleConfirmPin = async (fullPin) => {
+        if (!selectedPassenger || isLoading) return;
+        setIsLoading(true);
+        try {
+            await verifyPassenger(ride.id, selectedPassenger.id, fullPin);
+            toast.success("Pasajero verificado");
+            setIsPinDialogOpen(false);
+            setSelectedPassenger(null);
+            if (onRefresh) await onRefresh();
+        } catch (error) {
+            toast.error(error.message || "PIN inválido");
         } finally {
             setIsLoading(false);
         }
@@ -242,7 +236,7 @@ const RideManagement = ({ ride, onRefresh }) => {
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="bg-slate-900 p-3 rounded-2xl shadow-lg"><Settings2 className="text-primary h-5 w-5" /></div>
-                    <h3 className="font-black text-xl text-slate-900 tracking-tighter uppercase italic leading-none">Gestión del Viaje</h3>
+                    <h3 className="font-black text-xl text-slate-900 tracking-tighter uppercase italic leading-none">Gestión</h3>
                 </div>
             </div>
 
@@ -259,27 +253,46 @@ const RideManagement = ({ ride, onRefresh }) => {
                                 setIsPinDialogOpen(true);
                             }}
                             onNoShow={async (p) => {
-                                if (window.confirm(`¿Confirmas que ${p.displayName} no se ha presentado?`)) {
+                                if (window.confirm(`¿No se ha presentado?`)) {
                                     setIsLoading(true);
-                                    try {
-                                        await markNoShow(ride.id, p.id);
-                                        toast.success("No-show registrado");
-                                        if (onRefresh) await onRefresh();
-                                    } catch (e) { toast.error(e.message); }
+                                    try { await markNoShow(ride.id, p.id); toast.success("No-show registrado"); if (onRefresh) await onRefresh(); }
+                                    catch (e) { toast.error(e.message); }
                                     finally { setIsLoading(false); }
                                 }
                             }}
                         />
                     ))
                 ) : (
-                    <div className="p-12 text-center bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-100">
-                        <Users className="h-10 w-10 text-slate-200 mx-auto mb-3" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Esperando pasajeros...</p>
+                    <div className="p-10 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
+                        <Users className="h-10 w-10 text-slate-200 mx-auto mb-2" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Sin pasajeros</p>
                     </div>
                 )}
             </div>
 
             <div className="pt-4 space-y-4">
+                {hasPassengers && (
+                    <div className="grid grid-cols-2 gap-3 lg:gap-4">
+                        <Button 
+                            onClick={() => navigate(`/ride-chat/${ride.id}`)} 
+                            variant="secondary" 
+                            className="h-10 lg:h-12 rounded-xl font-black text-[9px] uppercase tracking-widest bg-white border-2 border-slate-50 shadow-sm hover:border-primary transition-all"
+                        >
+                            <MessageCircle className="mr-1.5 h-3.5 w-3.5 text-primary" /> CHAT GRUPAL
+                        </Button>
+                        <Button 
+                            onClick={() => {
+                                const target = isRideStarted ? ride.destination : ride.origin;
+                                window.open(`https://www.google.com/maps/dir/?api=1&destination=${target.coordinates?.lat || target.lat},${target.coordinates?.lng || target.lng}`, '_blank');
+                            }} 
+                            variant="secondary" 
+                            className="h-10 lg:h-12 rounded-xl font-black text-[9px] uppercase tracking-widest bg-white border-2 border-slate-50 shadow-sm"
+                        >
+                            <Navigation className="mr-1.5 h-3.5 w-3.5 text-emerald-500" /> GPS RUTA
+                        </Button>
+                    </div>
+                )}
+
                 {isRideScheduled && (
                     <div className="space-y-3">
                         <Button
@@ -292,12 +305,6 @@ const RideManagement = ({ ride, onRefresh }) => {
                         >
                             {isLoading ? <Loader2 className="animate-spin" /> : <>INICIAR VIAJE <PlayCircle className="ml-2 text-primary h-5 w-5" /></>}
                         </Button>
-                        {!isTimeWindowOpen && hasPassengers && (
-                            <div className="flex items-center gap-2 justify-center py-2 text-amber-600 bg-amber-50 rounded-xl animate-pulse">
-                                <Clock size={14} />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Disponible 15 min antes de la salida</span>
-                            </div>
-                        )}
                     </div>
                 )}
 
@@ -313,17 +320,32 @@ const RideManagement = ({ ride, onRefresh }) => {
                         >
                             {isLoading ? <Loader2 className="animate-spin" /> : (canCompleteRide ? "FINALIZAR VIAJE" : "BLOQUEADO HASTA LLEGADA")}
                         </Button>
-                        
-                        {!canCompleteRide && (
-                            <div className="p-4 bg-slate-100 rounded-2xl flex items-start gap-3 border border-slate-200">
-                                <MapPinned size={18} className="text-slate-400 shrink-0 mt-0.5" />
-                                <div className="text-left">
-                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-tighter italic">Seguridad de Pago</p>
-                                    <p className="text-[9px] font-bold text-slate-500 leading-snug">El botón se activará cuando llegues al destino (GPS) o cuando verifiques a los pasajeros.</p>
-                                </div>
-                            </div>
-                        )}
                     </div>
+                )}
+
+                {isRideScheduled && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="ghost" className="w-full h-12 rounded-xl text-red-500 font-bold uppercase tracking-widest hover:bg-red-50">
+                                <Trash2 size={18} className="mr-2" /> Cancelar Viaje
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-3xl">
+                            <AlertDialogHeader>
+                                <AlertDialogTitle className="font-black text-xl uppercase italic">¿Cancelar viaje?</AlertDialogTitle>
+                                <AlertDialogDescription>Se devolverá el 100% del dinero a todos los pasajeros.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel className="rounded-xl">Volver</AlertDialogCancel>
+                                <AlertDialogAction onClick={async () => {
+                                    setIsLoading(true);
+                                    try { await cancelRide(ride.id); toast.success("Viaje cancelado"); navigate('/my-rides'); }
+                                    catch (e) { toast.error(e.message); }
+                                    finally { setIsLoading(false); }
+                                }} className="rounded-xl bg-red-600 text-white font-bold uppercase italic">Confirmar Cancelación</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 )}
             </div>
 
