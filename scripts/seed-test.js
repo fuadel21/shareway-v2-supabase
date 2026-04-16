@@ -6,28 +6,35 @@ const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABAS
 
 const PASS = 'ShareWayTest2026!';
 const USERS = [
-    { id: '10000000-0000-0000-0000-000000000001', email: 'driver.elite@shareway.test', name: 'Test Driver' },
-    { id: '10000000-0000-0000-0000-000000000002', email: 'passenger.1@shareway.test', name: 'Passenger 1' },
-    { id: '10000000-0000-0000-0000-000000000003', email: 'passenger.2@shareway.test', name: 'Passenger 2' }
+    { 
+        id: '10000000-0000-0000-0000-000000000001', 
+        email: 'driver.elite@shareway.test', 
+        name: 'Test Driver',
+        vehicle: { brand: 'Tesla', model: 'Model 3', color: 'Blanco Élite', plate: '7777-SWY' } 
+    },
+    { 
+        id: '10000000-0000-0000-0000-000000000002', 
+        email: 'passenger.1@shareway.test', 
+        name: 'Passenger 1' 
+    },
+    { 
+        id: '10000000-0000-0000-0000-000000000003', 
+        email: 'passenger.2@shareway.test', 
+        name: 'Passenger 2' 
+    }
 ];
 
 async function seed() {
-    console.log("🚀 MASTER SEED: Clean & Provision...");
+    console.log("🚀 MASTER SEED: Provisioning Elite Users...");
 
     try {
-        // Cleaning
-        console.log("🧹 Cleaning profiles/rides...");
-        // Borrar dependencias explícitas para asegurar limpieza
-        await supabase.from('rides').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
         for (const u of USERS) {
             console.log(`👤 Provisioning ${u.email}...`);
 
-            // Delete if exists (Nuclear option)
+            // Delete if exists
             await supabase.auth.admin.deleteUser(u.id).catch(() => { });
 
-            const { data, error } = await supabase.auth.admin.createUser({
+            const { data: authData, error } = await supabase.auth.admin.createUser({
                 id: u.id,
                 email: u.email,
                 password: PASS,
@@ -35,50 +42,43 @@ async function seed() {
                 user_metadata: { full_name: u.name }
             });
 
-            if (error) {
-                console.warn(`   ⚠️ Warning: ${error.message} (attempting password reset)`);
-                await supabase.auth.admin.updateUserById(u.id, { password: PASS });
-            } else {
-                console.log(`   ✅ User ready: ${u.id}`);
-            }
-
-            // Ensure profile exists with verification
+            // Upsert profile with vehicle and verification
             await supabase.from('profiles').upsert({
                 id: u.id,
                 email: u.email,
                 display_name: u.name,
                 full_name: u.name,
+                vehicle: u.vehicle || null,
                 verification: { status: 'verified' }
             });
 
-            // Ensure wallet has funds
-            const balance = u.id.endsWith('1') ? 100 : 500;
+            // Provision Wallet
             await supabase.from('wallets').upsert({
                 user_id: u.id,
-                balance: balance,
+                balance: 1000.00,
                 held_balance: 0
             });
         }
 
-        console.log("🚕 Adding reference ride...");
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(12, 0, 0, 0);
+        console.log("🚕 Adding active ride for testing...");
+        const farFuture = new Date();
+        farFuture.setHours(farFuture.getHours() + 5); // 5h en el futuro para probar bloqueo 15min
 
         await supabase.from('rides').insert({
             driver_id: USERS[0].id,
-            origin: { address: 'Madrid', lat: 40.41, lng: -3.70 },
-            destination: { address: 'Barcelona', lat: 41.38, lng: 2.17 },
-            departure_time: tomorrow.toISOString(),
+            origin: { address: 'Madrid', coordinates: { lat: 40.41, lng: -3.70 } },
+            destination: { address: 'Barcelona', coordinates: { lat: 41.38, lng: 2.17 } },
+            departure_time: farFuture.toISOString(),
             seats_total: 4,
             seats_available: 4,
             price: 30.00,
-            status: 'scheduled'
+            status: 'scheduled',
+            participant_ids: [USERS[0].id]
         });
 
-        console.log("✨ Seed completed successfully!");
+        console.log("✨ Elite Seed completed successfully!");
     } catch (err) {
-        console.error("❌ Master Seed CRITICAL FAILURE:", err);
+        console.error("❌ Seed failure:", err);
     }
 }
 
