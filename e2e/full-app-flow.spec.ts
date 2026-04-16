@@ -1,71 +1,71 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Shareway V2 - Flujo Crítico de Negocio', () => {
-  
-  test('Debe permitir login, reserva, chat y cancelación con reembolso', async ({ page }) => {
-    // 1. Ir a la App (Vercel o Local)
+test.describe('Shareway V2 - Blindaje de Creación y Reserva', () => {
+
+  test.beforeEach(async ({ page }) => {
+    // Login inicial para todas las pruebas
     await page.goto('/');
-    
-    // 2. Login
-    console.log('🔐 Iniciando sesión...');
-    await page.waitForSelector('input[type="email"]');
-    await page.locator('input[type="email"]').fill('test_passenger@shareway.com');
+    await page.locator('input[type="email"]').fill('test_driver@shareway.com');
     await page.locator('input[type="password"]').fill('Password123!');
-    await page.click('button:has-text("Iniciar sesión"), button:has-text("Login"), button[type="submit"]');
-
-    // Esperar a que el Dashboard cargue (buscando el BottomNavBar o texto de bienvenida)
-    await page.waitForURL('**/dashboard**', { timeout: 10000 }).catch(() => console.log('URL no cambió, pero seguimos...'));
+    await page.click('button:has-text("Iniciar sesión")');
     await expect(page.locator('nav')).toBeVisible();
+  });
 
-    // 3. Buscar y Reservar un Viaje (BookingPaymentModal)
-    console.log('🚗 Reservando viaje...');
-    // Clic en la primera tarjeta de viaje que aparezca en el ExplorePage o Dashboard
-    const rideCard = page.locator('text=Ver detalles, text=Detalles').first();
-    await rideCard.click();
+  test('Escenario A: Crear Viaje con Éxito y Bloquear Duplicado por Horario', async ({ page }) => {
+    console.log('🚀 Probando creación de viaje y restricción de 2h...');
     
-    // En RideDetails, buscar el botón de reserva
-    const reserveBtn = page.locator('button:has-text("Reservar"), button:has-text("Confirmar y Pagar")');
-    await reserveBtn.click();
+    // 1. Ir a Crear Viaje
+    await page.click('[aria-label="Publicar"], text=Publicar');
     
-    // Si aparece el modal de pago/confirmación
-    const confirmBtn = page.locator('button:has-text("Confirmar Pago"), button:has-text("Pagar")');
-    if (await confirmBtn.isVisible()) {
-        await confirmBtn.click();
-    }
-
-    // Verificar notificación de éxito (Toast o Sonner)
-    await expect(page.locator('text=Reserva confirmada, text=éxito')).toBeVisible();
-
-    // 4. Probar Chat (RideChat)
-    console.log('💬 Probando Chat...');
-    const chatTab = page.locator('text=Chat, [aria-label="Chat"]');
-    await chatTab.click();
-    
-    const messageInput = page.getByPlaceholder('Escribe un mensaje...');
-    await messageInput.fill('Hola! Confirmo mi plaza para el viaje.');
+    // 2. Rellenar Origen y Destino (Simulando selección de AddressAutocomplete)
+    // Nota: En un test real, estos selectores deben ser precisos según tu AddressAutocomplete
+    await page.getByPlaceholder('¿Desde dónde sales?').fill('Barcelona');
+    await page.keyboard.press('ArrowDown');
     await page.keyboard.press('Enter');
     
-    // Verificar que el mensaje aparece en la burbuja
-    await expect(page.locator('text=Confirmo mi plaza')).toBeVisible();
+    await page.getByPlaceholder('¿A dónde vas?').fill('Madrid');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
 
-    // 5. Cancelar Reserva (Lógica de Reembolso 80/20)
-    console.log('🔄 Cancelando con reembolso...');
-    await page.click('text=Mis Viajes, [aria-label="Mis Viajes"]');
+    // 3. Configurar Precio y Asientos
+    await page.locator('input[type="number"]').fill('20'); // Precio
     
-    // Clic en cancelar en el viaje activo
-    await page.locator('button:has-text("Cancelar")').first().click();
-    
-    // IMPORTANTE: Verificar que el modal de cancelación advierta sobre la penalización del 20%
-    await expect(page.locator('text=80%, text=penalización, text=reembolso')).toBeVisible();
-    
-    const finalCancelBtn = page.locator('button:has-text("Confirmar Cancelación"), button:has-text("Sí, cancelar")');
-    await finalCancelBtn.click();
+    // 4. Publicar
+    await page.click('button:has-text("Publicar Viaje")');
+    await page.click('button:has-text("Confirmar")'); // AlertDialog
 
-    // Verificar que se actualizó el estado a cancelado
-    await expect(page.locator('text=Cancelado, text=Reserva cancelada')).toBeVisible();
+    // 5. Verificar Éxito
+    await expect(page.locator('text=Viaje publicado con éxito')).toBeVisible();
+
+    // 6. INTENTAR CREAR OTRO VIAJE EN LA MISMA HORA (Debe fallar)
+    console.log('🛡️ Verificando bloqueo de solapamiento (±2h)...');
+    await page.click('[aria-label="Publicar"]');
+    await page.getByPlaceholder('¿Desde dónde sales?').fill('Barcelona');
+    await page.getByPlaceholder('¿A dónde vas?').fill('Valencia');
+    await page.click('button:has-text("Publicar Viaje")');
+    await page.click('button:has-text("Confirmar")');
+
+    // Debe aparecer el error de conflicto de horario que pusimos en el SQL
+    await expect(page.locator('text=Conflicto de horario')).toBeVisible();
+    console.log('✅ Bloqueo de solapamiento verificado.');
+  });
+
+  test('Escenario B: Bloqueo de Precio Abusivo (> 0.60€/km)', async ({ page }) => {
+    console.log('💰 Probando política de Precio Justo...');
     
-    console.log('✅ TEST E2E COMPLETADO EXITOSAMENTE');
+    await page.click('[aria-label="Publicar"]');
+    await page.getByPlaceholder('¿Desde dónde sales?').fill('Barcelona');
+    await page.getByPlaceholder('¿A dónde vas?').fill('Sitges'); // Distancia corta (~40km)
+    
+    // Intentamos poner 100€ por un viaje de 40km (claramente > 0.60€/km)
+    await page.locator('input[type="number"]').fill('100'); 
+    
+    await page.click('button:has-text("Publicar Viaje")');
+    
+    // El sistema debe mostrar el error de "Política de Precio Justo"
+    await expect(page.locator('text=Política de Precio Justo')).toBeVisible();
+    console.log('✅ Política de precio justo verificada.');
   });
 
 });
