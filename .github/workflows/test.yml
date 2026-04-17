@@ -1,3 +1,4 @@
+
 name: ShareWay CI/CD Suite
 
 on:
@@ -22,28 +23,32 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Verify Secrets
+        run: |
+          if [ -z "${{ secrets.TEST_SUPABASE_URL }}" ]; then echo "❌ Missing TEST_SUPABASE_URL"; exit 1; fi
+          if [ -z "${{ secrets.TEST_SUPABASE_ANON_KEY }}" ]; then echo "❌ Missing TEST_SUPABASE_ANON_KEY"; exit 1; fi
+          if [ -z "${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}" ]; then echo "❌ Missing TEST_SUPABASE_SERVICE_ROLE_KEY"; exit 1; fi
+          echo "✅ All secrets are present"
+
       - name: Create .env.test
         run: |
-          echo "VITE_SUPABASE_URL=${{ secrets.TEST_SUPABASE_URL }}" >> .env.test
+          echo "VITE_SUPABASE_URL=${{ secrets.TEST_SUPABASE_URL }}" > .env.test
           echo "VITE_SUPABASE_ANON_KEY=${{ secrets.TEST_SUPABASE_ANON_KEY }}" >> .env.test
           echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
           echo "VITE_SUPABASE_SERVICE_ROLE_KEY=${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}" >> .env.test
 
       - name: Provision Test Data
         run: node scripts/seed-test.js
-
-      - name: Run Unit & Integration Tests (Vitest)
-        run: npm run test
         env:
           NODE_ENV: test
+          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-
-      - name: Run E2E Tests (Playwright)
+      - name: Run E2E Tests (Headless)
         run: |
-          npm run dev & # Start dev server in background
-          npx wait-on http://localhost:5173
-          npm run test:e2e
+          npx playwright install --with-deps
+          npx playwright test
         env:
           NODE_ENV: test
+          VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
