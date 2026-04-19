@@ -4,7 +4,7 @@ import { supabase } from './supabase';
  * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout
  */
 export const safeCall = async (rpcCall, functionName, retries = 2) => {
-    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show'];
+    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund'];
     const TIMEOUT_MS = CRITICAL_FUNCTIONS.includes(functionName) ? 25000 : 15000;
 
     const executeCall = async (attempt) => {
@@ -50,16 +50,20 @@ export const updateRideLocation = (rideId, lat, lng) =>
 export const completeRide = (rideId) =>
     safeCall(() => supabase.rpc('complete_ride', { p_ride_id: rideId }), 'complete_ride');
 
+/**
+ * Cancela el viaje (Conductor). Unificado.
+ */
 export const cancelRide = (rideId) =>
     safeCall(() => supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
 
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
 
-export const verifyPassenger = (rideId, pin) =>
-    safeCall(() => supabase.rpc('verify_passenger_boarding', { 
-        p_ride_id: rideId, 
-        p_pin: pin 
+export const verifyPassenger = (rideId, pin, passengerId = null) =>
+    safeCall(() => supabase.rpc('verify_passenger_boarding', {
+        p_ride_id: rideId,
+        p_pin: pin,
+        p_passenger_id: passengerId
     }), 'verify_passenger_boarding');
 
 export const getMyRidePin = (rideId) =>
@@ -68,6 +72,11 @@ export const getMyRidePin = (rideId) =>
 export const removePassenger = (rideId, passengerId) =>
     safeCall(() => supabase.rpc('remove_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'remove_passenger');
 
+export const acceptPassenger = (rideId, passengerId) =>
+    safeCall(() => supabase.rpc('accept_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'accept_passenger');
+
+export const rejectPassenger = (rideId, passengerId) =>
+    safeCall(() => supabase.rpc('reject_passenger', { p_ride_id: rideId, p_passenger_id: passengerId }), 'reject_passenger');
 
 export const getUserRides = (userId = null) =>
     safeCall(() => supabase.rpc('get_user_rides', { p_user_id: userId, p_role: 'all' }), 'get_user_rides');

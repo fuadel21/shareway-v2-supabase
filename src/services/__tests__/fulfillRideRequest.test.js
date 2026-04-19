@@ -698,19 +698,16 @@ describe('🚗 Tests de Aceptación de Solicitudes (fulfill_ride_request)', () =
     });
 
     it('debería verificar pasajero antes del viaje', async () => {
-      const mockResult = {
-        success: true,
-        verified: true,
-        passengerId: mockRequesterId
-      };
-      
+      const mockResult = { success: true };
+
       supabase.rpc.mockResolvedValue({ data: mockResult, error: null });
 
-      const result = await verifyPassenger(mockRideId, mockRequesterId);
+      const result = await verifyPassenger(mockRideId, mockRequesterId, '4242');
 
-      expect(result.success).toBe(true);
-      expect(supabase.rpc).toHaveBeenCalledWith('verify_passenger', {
+      expect(result).toBe(true);
+      expect(supabase.rpc).toHaveBeenCalledWith('verify_passenger_boarding', {
         p_ride_id: mockRideId,
+        p_pin: '4242',
         p_passenger_id: mockRequesterId
       });
     });

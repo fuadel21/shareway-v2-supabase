@@ -255,7 +255,7 @@ describe('Rating and Reviews System', () => {
             // Assert
             expect(mockSafeCall).toHaveBeenCalledWith(
                 expect.any(Function),
-                'submit_reviews'
+                'submit_review_v2'
             );
         });
 

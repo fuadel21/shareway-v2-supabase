@@ -18,10 +18,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          # Hemos quitado la línea de caché para evitar el error del lock file
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-package-lock # Instalación limpia sin exigir lock file
 
       - name: Verify Secrets
         run: |
@@ -40,15 +40,18 @@ jobs:
       - name: Provision Test Data
         run: node scripts/seed-test.js
         env:
-          NODE_ENV: test
           VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Run E2E Tests (Headless)
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps
+
+      - name: Run E2E Tests
         run: |
-          npx playwright install --with-deps
+          # Arrancamos la app y esperamos a que el puerto responda
+          npx vite & 
           npx playwright test
         env:
-          NODE_ENV: test
           VITE_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+          NODE_ENV: test

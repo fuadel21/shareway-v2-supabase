@@ -1,259 +1,298 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate, useParams, useOutletContext, Link, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useParams, useOutletContext, Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { format, isValid } from 'date-fns';
+import { format, differenceInMinutes, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import SubPageHeader from './SubPageHeader';
-import RideManagement from './RideManagement.jsx';
 import MapComponent from './MapComponent';
+import BookingPaymentModal from './BookingPaymentModal'; 
+import PinVerificationDialog from './PinVerificationDialog'; // MODAL DE VERIFICACIÓN CIEGA
 import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.jsx';
+import { Card } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { Loader2, UserX, Armchair, BadgeCheck, Sparkles, Navigation, Euro, ShieldCheck, Car as CarIcon, MapPin as MapPinIcon, Phone, ShieldAlert, Share2, Copy, MessageCircle, CheckCircle, Star, Users, AlertCircle, Calendar, Clock, Leaf, Sprout, CreditCard, Radio, Shield, Heart, Ban, Fingerprint, Wallet, X, Trash2, Music, Dog, Baby, ExternalLink, ChevronRight } from 'lucide-react';
+import { 
+    Loader2, Users, Calendar, Clock, MapPin, 
+    ShieldCheck, Star, Car, Heart, Music, 
+    ChevronRight, BadgeCheck, MessageCircle, Phone, Lock,
+    Share2, Zap, Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useWallet } from '@/hooks/useWallet';
-import { getRideDetailsSecure, getMyRidePin } from '@/lib/supabaseRPC';
-import { useTranslation } from 'react-i18next';
-import { triggerSOS, getEmergencyContacts } from '@/services/safetyService';
-import { confirmTripAndPay, cancelBooking } from '@/services/bookingService';
-import { calculateRideDetour } from '@/services/rideService';
+import { getRideDetailsSecure, startRide, verifyPassenger } from '@/lib/supabaseRPC';
+import { cancelRide, cancelBooking } from '@/services/rideService';
 
-import BookingPaymentModal from './BookingPaymentModal';
-
-function RideDetails() {
-    const { t } = useTranslation();
+const RideDetails = () => {
     const { id: rideId } = useParams();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const { user, profile } = useOutletContext();
-    const { wallet, refreshWallet } = useWallet(user);
-
+    const { user } = useOutletContext();
     const [ride, setRide] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-    const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-    const [myPin, setMyPin] = useState(null);
-    const [emergencyContacts, setEmergencyContacts] = useState([]);
-    const [pickupLocation, setPickupLocation] = useState(null);
-    const [pickupAddress, setPickupAddress] = useState("");
-    const [dynamicPricing, setDynamicPricing] = useState(null);
-    const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isStarting, setIsStarting] = useState(false);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
-    const fetchRideDetails = useCallback(async () => {
-        if (!rideId) return;
+    // Estados para la verificación de PIN
+    const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+    const [selectedPassenger, setSelectedPassenger] = useState(null);
+    const [isVerifying, setIsVerifying] = useState(false);
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const fetchRide = useCallback(async () => {
         setLoading(true);
         try {
             const response = await getRideDetailsSecure(rideId);
-            const rawData = response.data?.data || response.data || response;
-            if (!rawData || !rawData.id) { setRide(null); return; }
-
-            const normalizedRide = {
-                ...rawData,
-                type: 'ride',
-                dateTime: rawData.departure_time ? new Date(rawData.departure_time) : null,
-                passengers: rawData.passengers || [],
-                driver: {
-                    id: rawData.driver_id,
-                    full_name: rawData.driver_name,
-                    photo_url: rawData.driver_photo,
-                    phone: rawData.driver_phone,
-                    verification: { status: rawData.driver_verified ? 'verified' : 'not_verified' },
-                    rating: rawData.driver_rating || 5.0,
-                    vehicle: rawData.vehicle || { brand: 'Vehículo', model: 'No especificado', color: 'N/A', plate: '****' }
-                }
-            };
-            setRide(normalizedRide);
-
-            if (user && normalizedRide.passengers) {
-                const activePassenger = normalizedRide.passengers.find(p => String(p.id) === String(user.id) && p.status !== 'cancelled');
-                if (activePassenger && ['confirmed', 'verified', 'on_board', 'picked_up'].includes(activePassenger.status)) {
-                    if (activePassenger.pin) { setMyPin(String(activePassenger.pin)); }
-                    else {
-                        const pinRes = await getMyRidePin(rideId);
-                        if (pinRes.success && pinRes.data) {
-                            const rawPin = pinRes.data.pin || pinRes.data.get_my_ride_pin || (typeof pinRes.data === 'object' ? Object.values(pinRes.data)[0] : pinRes.data);
-                            setMyPin(String(rawPin));
-                        }
-                    }
-                }
+            if (!response?.success) {
+                setRide(null);
+                toast.error(response?.error || 'No se pudo cargar la información del viaje');
+                return;
             }
-        } catch (error) { console.error("[RideDetails] Load Error:", error); } 
-        finally { setLoading(false); }
-    }, [rideId, user]);
+            setRide(response.data ?? null);
+        } catch (error) {
+            console.error("Error loading ride:", error);
+            toast.error("No se pudo cargar la información del viaje");
+        } finally {
+            setLoading(false);
+        }
+    }, [rideId]);
 
     useEffect(() => {
-        if (!rideId || loading) return;
-        const channel = supabase.channel(`ride-updates-${rideId}`)
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides', filter: `id=eq.${rideId}` }, () => fetchRideDetails())
-            .subscribe();
-        return () => supabase.removeChannel(channel);
-    }, [rideId, loading, fetchRideDetails]);
+        if (rideId) fetchRide();
+    }, [rideId, fetchRide]);
 
-    useEffect(() => { fetchRideDetails(); }, [fetchRideDetails]);
-
-    const { isDriver, activePassenger, isRideActive, isRideCompleted, genderLock, isParticipant } = useMemo(() => {
-        if (!ride || !user) return { isDriver: false, isParticipant: false, isRideCompleted: false, genderLock: false };
-        const isDriver = String(ride.driver_id) === String(user.id);
-        const activePassenger = (ride.passengers || []).find(p => String(p.id) === String(user.id) && !['cancelled', 'rejected'].includes(p.status));
-        const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
-        const isRideCompleted = ride.status === 'completed';
-        const genderLock = ride.is_women_only && String(profile?.gender).toLowerCase() !== 'female';
-        return { isDriver, activePassenger, isRideActive, isRideCompleted, genderLock, isParticipant: isDriver || !!activePassenger };
-    }, [ride, user, profile]);
-
-    const handleCancelBooking = async () => {
-        if (!ride || isProcessing) return;
-        setIsProcessing(true);
+    const handleStartRide = async () => {
+        setIsStarting(true);
         try {
-            await cancelBooking(ride.id);
-            toast.success("Reserva cancelada correctamente");
-            fetchRideDetails();
-            refreshWallet();
-        } catch (error) { toast.error(error.message); } 
-        finally { setIsProcessing(false); }
-    };
-
-    const handleConfirmTripWithWallet = async () => {
-        if (!ride || isProcessing) return;
-        setIsProcessing(true);
-        const loadingToast = toast.loading("Procesando pago con saldo...");
-        try {
-            const res = await confirmTripAndPay(ride.id);
-            if (res.success) {
-                toast.success("¡Reserva confirmada!", { id: loadingToast });
-                setIsSelectorOpen(false);
-                fetchRideDetails();
-                refreshWallet();
-            } else { throw new Error(res.error || "Saldo insuficiente"); }
+            const { success, error } = await startRide(rideId);
+            if (!success) throw new Error(error);
+            toast.success("¡Viaje iniciado! Buen camino.");
+            fetchRide();
         } catch (error) {
-            toast.error(error.message, { id: loadingToast });
-        } finally { setIsProcessing(false); }
+            toast.error(error.message || "No se pudo iniciar el viaje");
+        } finally {
+            setIsStarting(false);
+        }
     };
 
-    if (loading && !ride) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
+    const handleVerifyPin = async (pin) => {
+        setIsVerifying(true);
+        try {
+            // USANDO RPC DE VERIFICACIÓN CIEGA
+            const { data, success, error } = await verifyPassenger(rideId, pin, selectedPassenger?.id ?? null);
+            
+            if (!success) {
+                if (error?.includes('PIN_INCORRECTO')) {
+                    throw new Error("El PIN introducido no coincide. Solicítalo de nuevo al pasajero.");
+                }
+                throw new Error(error || "Error al verificar");
+            }
+
+            toast.success(`¡${selectedPassenger.displayName} verificado!`);
+            setIsPinDialogOpen(false);
+            fetchRide();
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-primary" /></div>;
     if (!ride) return <SubPageHeader title="No encontrado" backPath="/dashboard" />;
 
-    return (
-        <div className="min-h-screen bg-slate-50/50 pb-32">
-            <SubPageHeader title="Detalles del Viaje" backPath="/dashboard" />
+    const isDriver = user?.id === ride.driver_id;
+    const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
+    const isPassenger = passengers.some(p => p.id === user?.id || p.user_id === user?.id);
+    const confirmedPassengers = passengers.filter(p => p.status === 'confirmed' || p.status === 'verified');
+    const isRideCancelled = ride.status === 'cancelled';
+    const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
 
-            <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
-                {/* MAPA */}
-                <div className="h-64 w-full rounded-[2.5rem] overflow-hidden shadow-xl relative border-4 border-white">
-                    <MapComponent
-                        center={ride.current_location || ride.origin.coordinates || ride.origin}
-                        itemsToDisplay={[{ ...ride, type: ride.status === 'in_progress' ? 'live-location' : 'ride' }]}
-                        zoom={14}
-                    />
+    const departureDate = new Date(ride.departure_time);
+    const minutesToDeparture = differenceInMinutes(departureDate, currentTime);
+    const canStartRide = (minutesToDeparture <= 15 || isBefore(departureDate, currentTime)) && !isRideActive && !isRideCancelled;
+
+    return (
+        <div className="bg-[#F8FAFC] min-h-screen pb-32">
+            <SubPageHeader title="Detalles del Viaje" />
+
+            <main className="max-w-xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-500">
+                {isRideCancelled && (
+                    <div className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-red-600">
+                        <XCircle size={32} className="shrink-0" />
+                        <div>
+                            <p className="font-black uppercase italic leading-none">Viaje Cancelado</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">Este viaje ya no está disponible</p>
+                        </div>
+                    </div>
+                )}
+
+                <div className="h-56 w-full rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white relative group">
+                    <MapComponent center={ride.origin} itemsToDisplay={[ride]} zoom={12} interactive={false} />
                 </div>
 
-                {/* TARJETA PRINCIPAL */}
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-6 space-y-6">
+                {/* INFO TIEMPO Y PRECIO */}
+                <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8 space-y-6">
                     <div className="flex justify-between items-start">
-                        <div className="space-y-1">
+                        <div className="text-left space-y-1">
                             <div className="flex items-center gap-2 text-primary font-black uppercase tracking-widest text-[10px]">
-                                <Calendar size={12} /> {ride.dateTime ? format(ride.dateTime, "EEEE d 'de' MMMM", { locale: es }) : '--'}
+                                <Calendar size={12} /> {ride.departure_time ? format(new Date(ride.departure_time), "EEEE d 'de' MMMM", { locale: es }) : 'Fecha pendiente'}
                             </div>
                             <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic leading-none">
-                                {ride.dateTime ? format(ride.dateTime, "HH:mm") : '--:--'}
+                                {ride.departure_time ? format(new Date(ride.departure_time), "HH:mm") : '--:--'}
                             </h2>
                         </div>
                         <div className="text-right">
                             <p className="text-4xl font-black text-primary italic tracking-tighter leading-none">{ride.price}€</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 text-right">Por Plaza</p>
                         </div>
                     </div>
-
-                    {!isRideCompleted && (
-                        <div className="pt-2">
-                            {activePassenger ? (
-                                <div className="space-y-3">
-                                    {myPin && activePassenger?.status === 'confirmed' && (
-                                        <div className="bg-slate-900 text-white p-6 rounded-[2rem] text-center shadow-2xl relative overflow-hidden">
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Código de Embarque</p>
-                                            <p className="text-5xl font-black italic tracking-tighter animate-pulse">{myPin}</p>
-                                        </div>
-                                    )}
-                                    <Button onClick={handleCancelBooking} variant="ghost" className="w-full h-12 rounded-xl text-red-500 font-black text-[10px] uppercase tracking-widest">
-                                        <Trash2 size={16} className="mr-2" /> Cancelar Reserva
-                                    </Button>
-                                </div>
-                            ) : (
-                                !isDriver && (
-                                    <Button onClick={() => setIsSelectorOpen(true)} disabled={ride.seats_available <= 0 || genderLock} className="w-full h-16 lg:h-20 rounded-[2rem] bg-slate-900 text-white font-black text-xl italic shadow-2xl uppercase active:scale-95 transition-all">
-                                        RESERVAR PLAZA
-                                    </Button>
-                                )
-                            )}
-                        </div>
-                    )}
                 </Card>
 
-                {isDriver && <RideManagement ride={ride} onRefresh={fetchRideDetails} />}
-            </div>
+                {isDriver ? (
+                    !isRideCancelled && (
+                        <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
+                            <div className="bg-white border border-slate-100 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden">
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-8">
+                                        <div className="text-left">
+                                            <h4 className="text-xl font-black text-slate-900 uppercase italic">Control de Viaje</h4>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{confirmedPassengers.length} pasajeros confirmados</p>
+                                        </div>
+                                        <div className="bg-indigo-50 px-4 py-2 rounded-2xl flex items-center gap-2 border border-indigo-100">
+                                            <Users size={16} className="text-indigo-600" />
+                                            <span className="font-black text-indigo-600 text-sm">{ride.seats_available} LIBRES</span>
+                                        </div>
+                                    </div>
 
-            {/* SELECTOR DE PAGO PROFESIONAL */}
-            <Dialog open={isSelectorOpen} onOpenChange={setIsSelectorOpen}>
-                <DialogContent className="max-w-[90vw] sm:max-w-[420px] rounded-[2.5rem] border-none shadow-2xl p-0 bg-white overflow-hidden outline-none">
-                    <DialogHeader className="p-8 pb-4 text-left">
-                        <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">MÉTODO DE PAGO</DialogTitle>
-                        <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-1">
-                            Selecciona cómo deseas confirmar tu plaza
-                        </DialogDescription>
-                    </DialogHeader>
+                                    {/* LISTA DE PASAJEROS (VERIFICACIÓN CIEGA) */}
+                                    <div className="space-y-3 mb-8">
+                                        {confirmedPassengers.length > 0 ? (
+                                            confirmedPassengers.map((p, idx) => (
+                                                <div key={idx} className="flex flex-col gap-2 p-4 bg-slate-50 rounded-3xl border border-slate-100 group hover:bg-slate-100 transition-colors">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
+                                                                <AvatarImage src={p.photoURL} />
+                                                                <AvatarFallback className="bg-indigo-100 text-indigo-600 font-black text-xs">{p.displayName?.[0]}</AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="text-left">
+                                                                <p className="text-sm font-black text-slate-900 uppercase italic leading-none">{p.displayName || 'Pasajero'}</p>
+                                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate max-w-[150px]">{p.pickup_address || 'Recogida pendiente'}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-2">
+                                                            {/* Botón de Verificación (Sustituye al PIN visible) */}
+                                                            {p.status !== 'verified' ? (
+                                                                <Button 
+                                                                    onClick={() => { setSelectedPassenger(p); setIsPinDialogOpen(true); }}
+                                                                    className="h-10 px-4 rounded-2xl bg-indigo-600 text-white font-black text-[9px] uppercase tracking-widest shadow-md hover:bg-indigo-700"
+                                                                >
+                                                                    <Fingerprint size={14} className="mr-1.5" /> Verificar
+                                                                </Button>
+                                                            ) : (
+                                                                <div className="h-10 px-4 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
+                                                                    <CheckCircle2 size={14} />
+                                                                    <span className="text-[9px] font-black uppercase">A bordo</span>
+                                                                </div>
+                                                            )}
+                                                            <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-white text-indigo-600 shadow-sm border border-slate-100" onClick={() => navigate(`/chat/${ride.id}`)}>
+                                                                <MessageCircle size={16} />
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="py-6 text-center border-2 border-dashed border-slate-100 rounded-3xl">
+                                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Esperando pasajeros...</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <Button 
+                                            onClick={handleStartRide}
+                                            disabled={!canStartRide || isStarting}
+                                            className={cn(
+                                                "w-full h-20 rounded-[2.2rem] text-white font-black uppercase italic text-xl tracking-tighter shadow-2xl gap-3 transition-all",
+                                                canStartRide ? "bg-indigo-600 hover:bg-indigo-700" : "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
+                                            )}
+                                        >
+                                            {isStarting ? <Loader2 className="animate-spin" /> : <><Play size={20} className="fill-white" /> Iniciar Viaje</>}
+                                        </Button>
 
-                    <div className="px-8 pb-8 space-y-3">
-                        {/* OPCIÓN WALLET */}
-                        <button 
-                            onClick={handleConfirmTripWithWallet}
-                            disabled={isProcessing}
-                            className="w-full group relative flex items-center justify-between p-5 rounded-[1.8rem] bg-slate-50 hover:bg-emerald-50 border-2 border-transparent hover:border-emerald-200 transition-all text-left"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="size-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <Wallet className="size-6 text-emerald-500" />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-black uppercase italic tracking-tighter text-slate-900">Saldo Cartera</p>
-                                    <p className="text-[10px] font-bold text-emerald-600">{wallet?.balance?.toFixed(2)}€ disponible</p>
+                                        {!canStartRide && !isRideActive && (
+                                            <div className="flex items-center justify-center gap-2 text-slate-400">
+                                                <Clock size={12} />
+                                                <p className="text-[9px] font-bold uppercase tracking-widest">
+                                                    Activo {minutesToDeparture} min antes de la salida
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            <ChevronRight className="size-5 text-slate-300 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
-                        </button>
-
-                        {/* OPCIÓN TARJETA */}
-                        <button 
-                            onClick={() => { setIsSelectorOpen(false); setIsPaymentModalOpen(true); }}
-                            className="w-full group relative flex items-center justify-between p-5 rounded-[1.8rem] bg-slate-50 hover:bg-primary/5 border-2 border-transparent hover:border-primary/20 transition-all text-left"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="size-12 rounded-2xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <CreditCard className="size-6 text-slate-900" />
+                        </div>
+                    )
+                ) : (
+                    /* PANEL DEL PASAJERO */
+                    !isRideCancelled && (
+                        <div className="space-y-4">
+                            {isPassenger && ride.user_pin && (
+                                <div className="bg-emerald-50 border-2 border-dashed border-emerald-500 rounded-[2.5rem] p-6 text-center space-y-2 animate-in slide-in-from-bottom-4 duration-700">
+                                    <div className="flex items-center justify-center gap-2 text-emerald-600">
+                                        <Lock size={14} className="animate-pulse" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Código de Confirmación</p>
+                                    </div>
+                                    <p className="text-5xl font-black text-emerald-700 tracking-[0.4em] italic drop-shadow-sm">
+                                        {ride.user_pin}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-emerald-600/60 uppercase">Muestra este código al conductor al subir</p>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-black uppercase italic tracking-tighter text-slate-900">Tarjeta / Apple Pay</p>
-                                    <p className="text-[10px] font-bold text-slate-400">Pasarela Stripe segura</p>
-                                </div>
-                            </div>
-                            <ChevronRight className="size-5 text-slate-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                        </button>
-                    </div>
-                </DialogContent>
-            </Dialog>
+                            )}
 
-            <BookingPaymentModal 
-                isOpen={isPaymentModalOpen} 
-                onClose={() => setIsPaymentModalOpen(false)} 
-                ride={ride} 
-                onSuccess={() => { fetchRideDetails(); refreshWallet(); }} 
-            />
+                            <Button 
+                                onClick={() => !isPassenger && setIsBookingModalOpen(true)}
+                                disabled={ride.seats_available <= 0 && !isPassenger}
+                                className={cn(
+                                    "w-full h-20 rounded-[2.2rem] font-black text-xl italic uppercase shadow-2xl transition-all active:scale-95",
+                                    isPassenger 
+                                        ? "bg-emerald-500 text-white cursor-default hover:bg-emerald-500" 
+                                        : ride.seats_available <= 0 
+                                            ? "bg-slate-300 text-slate-500 cursor-not-allowed"
+                                            : "bg-slate-900 text-white hover:bg-slate-800"
+                                )}
+                            >
+                                {isPassenger ? "Plaza Reservada" : "Reservar Plaza"}
+                            </Button>
+                        </div>
+                    )
+                )}
+
+                {/* MODAL DE VERIFICACIÓN CIEGA */}
+                <PinVerificationDialog 
+                    open={isPinDialogOpen}
+                    onOpenChange={setIsPinDialogOpen}
+                    onConfirm={handleVerifyPin}
+                    isLoading={isVerifying}
+                    title={`Verificar a ${selectedPassenger?.displayName}`}
+                />
+
+                <BookingPaymentModal 
+                    isOpen={isBookingModalOpen}
+                    onClose={() => setIsBookingModalOpen(false)}
+                    rideId={ride.id}
+                    amount={Number(ride.price)}
+                    onSuccess={() => fetchRide()}
+                />
+            </main>
         </div>
     );
-}
+};
 
 export default RideDetails;

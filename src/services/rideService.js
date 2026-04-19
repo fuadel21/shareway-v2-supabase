@@ -1,5 +1,5 @@
 /**
- * Servicio de Viajes (Rides) - Blindaje de Integridad v13 (Corridor Matching enabled)
+ * Servicio de Viajes (Rides) - Blindaje de Integridad v14 (RPC Unified)
  */
 
 import { supabase } from '../lib/supabase';
@@ -16,7 +16,6 @@ export const RIDE_RULES = {
     MIN_SEATS: 1
 };
 
-// Re-exportamos para compatibilidad si alguien lo importaba de aquí
 export { RIDE_PRICING_CONFIG };
 
 /**
@@ -74,7 +73,6 @@ const normalizeLocation = (loc) => ({
  * Validador estricto unificado para Ofertas y Solicitudes.
  */
 const validateRidePayload = (data) => {
-    // 1. Geometría
     const oLat = parseFloat(data.origin?.lat ?? data.origin?.coordinates?.lat ?? data.origin?.coordinates?.latitude);
     const oLng = parseFloat(data.origin?.lng ?? data.origin?.coordinates?.lng ?? data.origin?.coordinates?.longitude);
     const dLat = parseFloat(data.destination?.lat ?? data.destination?.coordinates?.lat ?? data.destination?.coordinates?.latitude);
@@ -84,19 +82,16 @@ const validateRidePayload = (data) => {
         throw new Error("Datos de itinerario incompletos: Coordenadas GPS no detectadas.");
     }
 
-    // 2. Temporalidad (Anti-Past Trips)
     const tripDate = new Date(data.dateTime);
     if (isNaN(tripDate.getTime())) throw new Error("Fecha de viaje inválida.");
     if (isBefore(tripDate, addMinutes(new Date(), RIDE_RULES.MIN_ADVANCE_MINUTES - 1))) {
         throw new Error(`El viaje debe programarse con al menos ${RIDE_RULES.MIN_ADVANCE_MINUTES} minutos de antelación.`);
     }
 
-    // 3. Negocio
     const price = parseFloat(data.price);
     if (isNaN(price) || price < RIDE_RULES.MIN_PRICE) throw new Error(`El precio debe ser al menos ${RIDE_RULES.MIN_PRICE}€.`);
     if (price > RIDE_RULES.MAX_PRICE) throw new Error(`El precio excede el límite de seguridad (${RIDE_RULES.MAX_PRICE}€).`);
 
-    // Validar precio sugerido máximo
     if (data.distance && data.distance > 0) {
         const distanceMeters = data.distance * 1000;
         const recommendedMax = calculateRecommendedPrice(distanceMeters);
@@ -126,7 +121,6 @@ export const createSingleRide = async (rideData) => {
         };
 
         const { data, success, error } = await rpc.createRide(ridePayload);
-
         if (!success) throw new Error(error);
         return data.rideId;
     } catch (error) {
@@ -186,16 +180,19 @@ export const createRideRequest = async (requestData) => {
  */
 export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
     try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+        if (user?.id && revieweeId === user.id) {
+            throw new Error('No puedes valorarte a ti mismo');
+        }
         const { success, error } = await rpc.safeCall(
-            () => supabase.rpc('submit_reviews', {
+            () => supabase.rpc('submit_review_v2', {
                 p_ride_id: rideId,
-                p_reviews: [{
-                    target_id: revieweeId,
-                    rating: parseInt(rating),
-                    comment: comment
-                }]
+                p_reviewee_id: revieweeId,
+                p_rating: Math.max(1, Math.min(5, parseInt(rating, 10))),
+                p_comment: (comment || '').trim().substring(0, 1000)
             }),
-            'submit_reviews'
+            'submit_review_v2'
         );
 
         if (!success) throw new Error(error);
@@ -300,47 +297,39 @@ export const completeRide = async (rideId) => {
     return true;
 };
 
+/**
+ * Conductor cancela viaje. Usa el rpc unificado.
+ */
 export const cancelRide = async (rideId) => {
-    // Usamos el RPC hardened que gestiona reembolsos automáticos
-    const { success, error } = await rpc.safeCall(
-        () => supabase.rpc('cancel_ride_by_driver', { p_ride_id: rideId }),
-        'cancel_ride_by_driver'
-    );
+    const { success, error } = await rpc.cancelRide(rideId);
     if (!success) throw new Error(error);
     return true;
 };
 
+/**
+ * Pasajero cancela su reserva.
+ */
 export const cancelBooking = async (rideId) => {
-    try {
-        const { data, error } = await supabase.functions.invoke('cancel-booking-and-refund', {
-            body: { rideId }
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-        return true;
-    } catch (error) {
-        console.error("🛡️ [Booking Flow] cancelBooking failed:", error);
-        throw error;
-    }
+    const { success, error } = await rpc.cancelBookingAndRefund(rideId);
+    if (!success) throw new Error(error);
+    return true;
 };
 
 export const verifyPassenger = async (rideId, passengerId, pin) => {
-    // Nota: passengerId ya no es estrictamente necesario en el RPC unificado,
-    // pero lo mantenemos en la firma del servicio para no romper la UI.
-    const { success, error } = await rpc.verifyPassenger(rideId, pin);
+    const { success, error } = await rpc.verifyPassenger(rideId, pin, passengerId ?? null);
     if (!success) throw new Error(error);
     return true;
 };
 
 export const acceptPassenger = async (rideId, passengerId) => {
-    const { data, error } = await supabase.rpc('accept_passenger', { p_ride_id: rideId, p_passenger_id: passengerId });
-    if (error) throw new Error(error.message);
+    const { success, error, data } = await rpc.acceptPassenger(rideId, passengerId);
+    if (!success) throw new Error(error);
     return data;
 };
 
 export const rejectPassenger = async (rideId, passengerId) => {
-    const { data, error } = await supabase.rpc('reject_passenger', { p_ride_id: rideId, p_passenger_id: passengerId });
-    if (error) throw error;
+    const { success, error, data } = await rpc.rejectPassenger(rideId, passengerId);
+    if (!success) throw new Error(error);
     return data;
 };
 
@@ -367,7 +356,6 @@ export const updateRide = async (rideId, rideData) => {
             p_is_women_only: rideData.isWomenOnly || false
         });
         if (error) {
-            // Capturar error del Trigger de Protección de Contrato
             if (error.message.includes('No se pueden modificar')) {
                 throw new Error("⚠️ CONTRATO BLINDADO: Tienes pasajeros confirmados. No puedes cambiar precio ni ruta. Por favor, cancela el viaje si necesitas hacer cambios críticos.");
             }

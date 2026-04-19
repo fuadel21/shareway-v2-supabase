@@ -1,63 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, PaymentRequestButtonElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { confirmTripAndPay } from '@/lib/supabaseRPC';
+import { useWallet } from '@/hooks/useWallet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button.jsx';
-import { Loader2, Lock, CreditCard, ShieldCheck, AlertCircle } from 'lucide-react';
+import { 
+    Loader2, Lock, CreditCard, ShieldCheck, 
+    AlertCircle, Wallet, CheckCircle2, ChevronRight 
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ rideId, amount, pickupLocation, pickupAddress, onSuccess, onClose, clientSecret }) => {
+const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
     const stripe = useStripe();
     const elements = useElements();
     const { user } = useOutletContext();
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
-    const [paymentRequest, setPaymentRequest] = useState(null);
     const [isProcessingServer, setIsProcessingServer] = useState(false);
 
-    useEffect(() => {
-        if (stripe) {
-            const pr = stripe.paymentRequest({
-                country: 'ES',
-                currency: 'eur',
-                total: { label: 'Reserva ShareWay', amount: Math.round(amount * 100) },
-                requestPayerName: true,
-                requestPayerEmail: true,
-            });
-
-            pr.canMakePayment().then(result => {
-                if (result) setPaymentRequest(pr);
-            });
-
-            pr.on('paymentmethod', async (ev) => {
-                const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
-                    clientSecret,
-                    { payment_method: ev.paymentMethod.id },
-                    { handleActions: false }
-                );
-
-                if (confirmError) {
-                    ev.complete('fail');
-                    setErrorMessage(confirmError.message);
-                } else {
-                    ev.complete('success');
-                    if (paymentIntent.status === "succeeded") {
-                        await handlePostPayment(paymentIntent.id);
-                    }
-                }
-            });
-        }
-    }, [stripe, amount, clientSecret]);
-
-    const handlePostPayment = async (paymentIntentId) => {
+    const handlePostPayment = async () => {
         setIsProcessingServer(true);
         setErrorMessage(null);
         let attempts = 0;
-        const maxAttempts = 15; // 30 seconds
+        const maxAttempts = 15;
 
         const checkBooking = async () => {
             try {
@@ -106,7 +77,7 @@ const CheckoutForm = ({ rideId, amount, pickupLocation, pickupAddress, onSuccess
             if (confirmError) {
                 setErrorMessage(confirmError.message);
             } else if (paymentIntent.status === 'succeeded') {
-                await handlePostPayment(paymentIntent.id);
+                await handlePostPayment();
             }
         } catch (err) {
             setErrorMessage(err.message || "Error inesperado.");
@@ -117,28 +88,7 @@ const CheckoutForm = ({ rideId, amount, pickupLocation, pickupAddress, onSuccess
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-2xl mb-4 text-left">
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-                    <ShieldCheck size={80} />
-                </div>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Costo de Reserva</p>
-                <p className="text-4xl font-black italic tracking-tighter">
-                    {amount.toFixed(2)}<span className="text-xl ml-1">€</span>
-                </p>
-            </div>
-
-            {paymentRequest && (
-                <div className="mb-4">
-                    <div className="mb-2"><PaymentRequestButtonElement options={{ paymentRequest }} /></div>
-                    <div className="relative flex items-center gap-4 my-6">
-                        <div className="h-px bg-slate-100 flex-1" />
-                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest">o con tarjeta</span>
-                        <div className="h-px bg-slate-100 flex-1" />
-                    </div>
-                </div>
-            )}
-
-            <div className="p-4 bg-white rounded-2xl border border-slate-100 shadow-inner">
+            <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-inner">
                 <PaymentElement options={{ layout: 'accordion' }} />
             </div>
 
@@ -154,7 +104,7 @@ const CheckoutForm = ({ rideId, amount, pickupLocation, pickupAddress, onSuccess
                 <Button type="submit" disabled={!stripe || isLoading || isProcessingServer} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
                     {(isLoading || isProcessingServer) ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                         <span className="flex items-center gap-2">
-                            <Lock className="h-4 w-4" /> {isProcessingServer ? "Procesando..." : "Pagar y Reservar"}
+                            <Lock className="h-4 w-4" /> {isProcessingServer ? "Procesando..." : "Confirmar Pago"}
                         </span>
                     )}
                 </Button>
@@ -173,75 +123,191 @@ const CheckoutForm = ({ rideId, amount, pickupLocation, pickupAddress, onSuccess
 
 const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, pickupAddress, onSuccess }) => {
     const { user } = useOutletContext();
+    const { wallet, refreshWallet } = useWallet(user);
+    const [paymentMethod, setPaymentMethod] = useState('wallet');
     const [clientSecret, setClientSecret] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
+    const [isProcessingWallet, setIsProcessingWallet] = useState(false);
+
+    const hasBalance = wallet?.balance >= amount;
 
     useEffect(() => {
-        const preparePayment = async () => {
-            if (isOpen && rideId && user) {
+        if (isOpen && wallet) {
+            setPaymentMethod(wallet.balance >= amount ? 'wallet' : 'card');
+        }
+    }, [isOpen, wallet, amount]);
+
+    useEffect(() => {
+        const prepareStripe = async () => {
+            if (isOpen && paymentMethod === 'card' && !clientSecret && rideId && user) {
                 setIsPreparing(true);
-                setClientSecret(null);
                 try {
                     const { data, error } = await supabase.functions.invoke('create-booking-payment-intent', {
                         body: { rideId, pickupLocation, pickupAddress, totalAmount: amount },
                     });
-                    if (error || !data?.clientSecret) {
-                        const errMsg = data?.error?.message || error?.message || "Motor de reservas no disponible";
-                        throw new Error(errMsg);
-                    }
+                    if (error || !data?.clientSecret) throw new Error(data?.error?.message || "Stripe no disponible");
                     setClientSecret(data.clientSecret);
                 } catch (e) {
-                    toast.error("Error de reserva", { description: e.message });
-                    onClose();
+                    toast.error("Error Stripe", { description: e.message });
+                    setPaymentMethod('wallet');
                 } finally {
                     setIsPreparing(false);
                 }
             }
         };
-        preparePayment();
-    }, [isOpen, rideId, user]);
+        prepareStripe();
+    }, [isOpen, paymentMethod, rideId, user, amount, clientSecret]);
 
-    const handleClose = () => {
-        if (!isPreparing) {
-            setClientSecret(null);
-            onClose();
+    const handleWalletPayment = async () => {
+        setIsProcessingWallet(true);
+        try {
+            const { success, error, data } = await confirmTripAndPay(rideId, null, {
+                pickupLocation: pickupLocation ?? null,
+                pickupAddress: pickupAddress ?? null,
+                price: amount != null ? Number(amount) : null
+            });
+
+            if (!success) throw new Error(error || 'No se pudo procesar la reserva.');
+
+            if (data?.success) {
+                toast.success("¡Reserva confirmada!", {
+                    description: "Se ha descontado el importe de tu saldo ShareWay."
+                });
+                refreshWallet();
+                if (onSuccess) await onSuccess();
+            } else {
+                toast.error("Error en reserva", { description: data?.message || "No se pudo procesar." });
+            }
+        } catch (e) {
+            toast.error("Error crítico", { description: e.message });
+        } finally {
+            setIsProcessingWallet(false);
         }
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-[460px] rounded-[2.5rem] border-none shadow-2xl p-8 bg-slate-50/50 backdrop-blur-3xl overflow-hidden outline-none">
-                <DialogHeader className="space-y-2">
-                    <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 flex items-center gap-3">
-                        <div className="size-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
-                            <CreditCard className="h-5 w-5 text-white" />
-                        </div>
-                        Completar Pago
-                    </DialogTitle>
-                    <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        Protocolo de Pago Blindado ShareWay
-                    </DialogDescription>
-                </DialogHeader>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            {/* CORRECCIÓN FINAL: Z-INDEX SUPERIOR AL BOTTOM NAVBAR (Z-100) Y PADDING AGRESIVO */}
+            <DialogContent className="sm:max-w-[460px] rounded-[2.5rem] border-none shadow-2xl p-0 bg-slate-50 overflow-hidden outline-none z-[100]">
+                <div className="h-full max-h-[90vh] flex flex-col">
+                    
+                    {/* Header Fijo */}
+                    <div className="p-8 pb-4">
+                        <DialogHeader className="space-y-1">
+                            <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 flex items-center gap-3">
+                                <div className="size-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+                                    <Lock className="h-5 w-5 text-white" />
+                                </div>
+                                Finalizar Reserva
+                            </DialogTitle>
+                            <DialogDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                Selecciona tu método de pago seguro
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
 
-                <div className="mt-4">
-                    {isPreparing ? (
-                        <div className="flex flex-col items-center justify-center py-20 gap-4">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Iniciando protocolo de reserva...</p>
+                    {/* Contenido con Scroll y margen de seguridad extra */}
+                    <div className="flex-1 overflow-y-auto px-8 pb-32 no-scrollbar">
+                        <div className="space-y-6">
+                            {/* INFO PRECIO */}
+                            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-xl text-left">
+                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                                    <ShieldCheck size={80} />
+                                </div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Total a pagar</p>
+                                <p className="text-4xl font-black italic tracking-tighter">
+                                    {Number(amount).toFixed(2)}<span className="text-xl ml-1">€</span>
+                                </p>
+                            </div>
+
+                            {/* SELECTOR DE MÉTODO */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <button 
+                                    onClick={() => setPaymentMethod('wallet')}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all",
+                                        paymentMethod === 'wallet' 
+                                            ? "bg-white border-primary shadow-lg ring-1 ring-primary/20" 
+                                            : "bg-slate-100/50 border-transparent text-slate-400 hover:bg-white"
+                                    )}
+                                >
+                                    <Wallet size={20} className={paymentMethod === 'wallet' ? "text-primary" : ""} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Billetera</span>
+                                </button>
+                                <button 
+                                    onClick={() => setPaymentMethod('card')}
+                                    className={cn(
+                                        "flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all",
+                                        paymentMethod === 'card' 
+                                            ? "bg-white border-primary shadow-lg ring-1 ring-primary/20" 
+                                            : "bg-slate-100/50 border-transparent text-slate-400 hover:bg-white"
+                                    )}
+                                >
+                                    <CreditCard size={20} className={paymentMethod === 'card' ? "text-primary" : ""} />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Tarjeta</span>
+                                </button>
+                            </div>
+
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                {paymentMethod === 'wallet' ? (
+                                    <div className="space-y-4">
+                                        <div className={cn(
+                                            "p-5 rounded-3xl border-2 flex items-center justify-between",
+                                            hasBalance ? "bg-emerald-50 border-emerald-100" : "bg-red-50 border-red-100"
+                                        )}>
+                                            <div className="text-left">
+                                                <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Saldo Disponible</p>
+                                                <p className={cn("text-xl font-black", hasBalance ? "text-emerald-700" : "text-red-700")}>
+                                                    {wallet?.balance?.toFixed(2) || '0.00'}€
+                                                </p>
+                                            </div>
+                                            {hasBalance ? <CheckCircle2 className="text-emerald-500" /> : <AlertCircle className="text-red-500" />}
+                                        </div>
+
+                                        {hasBalance ? (
+                                            <Button 
+                                                onClick={handleWalletPayment}
+                                                disabled={isProcessingWallet}
+                                                className="w-full h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest shadow-xl shadow-emerald-200"
+                                            >
+                                                {isProcessingWallet ? <Loader2 className="animate-spin" /> : <>Confirmar con Saldo <ChevronRight className="ml-2" size={18} /></>}
+                                            </Button>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <p className="text-[10px] text-red-600 font-bold text-center italic">No tienes saldo suficiente en tu billetera.</p>
+                                                <Button 
+                                                    onClick={() => setPaymentMethod('card')}
+                                                    variant="outline" 
+                                                    className="w-full h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest"
+                                                >
+                                                    Usar Tarjeta de Crédito
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {isPreparing ? (
+                                            <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                                <Loader2 className="animate-spin text-primary opacity-20" size={30} />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enlazando con Stripe...</p>
+                                            </div>
+                                        ) : clientSecret ? (
+                                            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
+                                                <CheckoutForm
+                                                    rideId={rideId}
+                                                    amount={amount}
+                                                    onSuccess={onSuccess}
+                                                    onClose={onClose}
+                                                    clientSecret={clientSecret}
+                                                />
+                                            </Elements>
+                                        ) : null}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    ) : clientSecret ? (
-                        <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
-                            <CheckoutForm
-                                rideId={rideId}
-                                amount={amount}
-                                pickupLocation={pickupLocation}
-                                pickupAddress={pickupAddress}
-                                clientSecret={clientSecret}
-                                onSuccess={onSuccess}
-                                onClose={handleClose}
-                            />
-                        </Elements>
-                    ) : null}
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
