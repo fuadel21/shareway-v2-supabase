@@ -286,14 +286,16 @@ export const fulfillRequest = async (request, customPrice) => {
 };
 
 export const startRide = async (rideId) => {
-    const { success, error } = await rpc.startRide(rideId);
+    const { data, success, error } = await rpc.startRide(rideId);
     if (!success) throw new Error(error);
+    if (data && data.success === false) throw new Error(data.message || 'No se pudo iniciar el viaje');
     return true;
 };
 
 export const completeRide = async (rideId) => {
-    const { success, error } = await rpc.completeRide(rideId);
+    const { data, success, error } = await rpc.completeRide(rideId);
     if (!success) throw new Error(error);
+    if (data && data.success === false) throw new Error(data.message || 'No se pudo completar el viaje');
     return true;
 };
 
@@ -301,8 +303,9 @@ export const completeRide = async (rideId) => {
  * Conductor cancela viaje. Usa el rpc unificado.
  */
 export const cancelRide = async (rideId) => {
-    const { success, error } = await rpc.cancelRide(rideId);
+    const { data, success, error } = await rpc.cancelRide(rideId);
     if (!success) throw new Error(error);
+    if (data && data.success === false) throw new Error(data.message || 'No se pudo cancelar el viaje');
     return true;
 };
 
@@ -310,8 +313,9 @@ export const cancelRide = async (rideId) => {
  * Pasajero cancela su reserva.
  */
 export const cancelBooking = async (rideId) => {
-    const { success, error } = await rpc.cancelBookingAndRefund(rideId);
+    const { data, success, error } = await rpc.cancelBookingAndRefund(rideId);
     if (!success) throw new Error(error);
+    if (data && data.success === false) throw new Error(data.message || 'No se pudo cancelar la reserva');
     return true;
 };
 

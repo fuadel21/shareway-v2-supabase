@@ -97,10 +97,12 @@ export const createRide = (rideData) =>
 export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null } = {}) =>
     safeCall(() => supabase.rpc('confirm_trip_and_pay', {
         p_ride_id: rideId,
-        p_request_id: requestId,
-        p_pickup_location: pickupLocation,
-        p_pickup_address: pickupAddress,
-        p_price: price
+        // Siempre enviar las claves para evitar que el cliente omita nulls y quede solo p_ride_id
+        // (ambigüedad entre sobrecargas en PostgreSQL).
+        p_request_id: requestId ?? null,
+        p_pickup_location: pickupLocation ?? null,
+        p_pickup_address: pickupAddress ?? null,
+        p_price: price ?? null
     }), 'confirm_trip_and_pay');
 
 export const cancelBookingAndRefund = (rideId) =>

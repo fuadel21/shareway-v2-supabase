@@ -116,6 +116,12 @@ export const settleRideFunds = async (rideId) => {
     try {
         const { data, success, error } = await supabase.rpc('confirm_passenger_arrival', { p_ride_id: rideId });
         if (!success) throw new Error(error);
+
+        // Blindaje: Verificar éxito lógico del negocio
+        if (data && data.success === false) {
+            throw new Error(data.message || 'No se pudo liquidar el viaje');
+        }
+
         return data;
     } catch (error) {
         console.error("🛡️ [Wallet] Settlement failed:", error);

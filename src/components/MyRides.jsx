@@ -46,9 +46,6 @@ const RideCard = ({ ride, navigate, currentUserId }) => {
     const isActuallyExpired = isStaleOpenRidePastGrace(ride);
     const effectiveStatus = isActuallyExpired ? 'expired' : (ride.status || 'scheduled');
     const currentTheme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES.scheduled;
-    // #region agent log
-    fetch('http://127.0.0.1:7285/ingest/ca9ed2ed-0a56-4c31-adc2-4d76294edcac', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'ab39c8' }, body: JSON.stringify({ sessionId: 'ab39c8', hypothesisId: 'H1', location: 'MyRides.jsx:RideCard', message: 'badge path', data: { id: ride.id, rawStatus: ride.status, effectiveStatus, staleTimeExpired: isActuallyExpired, depMs: dateObj ? dateObj.getTime() : null, depValid: dateObj ? !Number.isNaN(dateObj.getTime()) : null }, timestamp: Date.now(), runId: 'post-fix' }) }).catch(() => { });
-    // #endregion
 
     return (
         <div
@@ -152,10 +149,6 @@ const MyRides = () => {
                 setRides(dataV1 || []);
             } else {
                 setRides(data || []);
-                // #region agent log
-                const rows = data || [];
-                fetch('http://127.0.0.1:7285/ingest/ca9ed2ed-0a56-4c31-adc2-4d76294edcac', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'ab39c8' }, body: JSON.stringify({ sessionId: 'ab39c8', hypothesisId: 'H3', location: 'MyRides.jsx:fetchRidesDirect', message: 'rpc v2 payload', data: { count: rows.length, statuses: rows.map((x) => x.status) }, timestamp: Date.now(), runId: 'post-fix' }) }).catch(() => { });
-                // #endregion
             }
         } catch (err) {
             console.error("❌ Error loading rides:", err);
@@ -187,10 +180,8 @@ const MyRides = () => {
     const filteredRides = useMemo(() => {
         const list = Array.isArray(rides) ? rides : [];
         const now = new Date();
-        const EXPIRATION_LIMIT = subMinutes(now, 120);
 
         const filtered = list.filter(r => {
-            const departureDate = new Date(r.departure_time);
             const isActuallyExpired = isStaleOpenRidePastGrace(r, now);
 
             // Normalize status
@@ -219,15 +210,6 @@ const MyRides = () => {
                 return dateA - dateB; // Ascendente (más próximo primero)
             }
         });
-        // #region agent log
-        const diag = list.map((r) => {
-            const departureDate = new Date(r.departure_time);
-            const timePastGrace = isBefore(departureDate, EXPIRATION_LIMIT);
-            const staleTimeExp = isStaleOpenRidePastGrace(r, now);
-            return { id: r.id, status: r.status, role: r.role, timePastGrace, staleTimeExp, depMs: departureDate.getTime(), depOk: !Number.isNaN(departureDate.getTime()) };
-        });
-        fetch('http://127.0.0.1:7285/ingest/ca9ed2ed-0a56-4c31-adc2-4d76294edcac', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'ab39c8' }, body: JSON.stringify({ sessionId: 'ab39c8', hypothesisId: 'H2', location: 'MyRides.jsx:filteredRides', message: 'aggregate time vs status', data: { activeTab, diag, filteredIds: filtered.map((x) => x.id) }, timestamp: Date.now(), runId: 'post-fix' }) }).catch(() => { });
-        // #endregion
         return filtered;
     }, [rides, activeTab]);
 
