@@ -1,14 +1,14 @@
 /**
  * Platform Commissions and Treasury Integration Test
- * Focus: Correct 15% distribution and Admin Stats accuracy
+ * Focus: Correct 10% distribution and Admin Stats accuracy
  * Rules: 1, 3, 7, 9
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { completeRide } from '../rideService';
-import { getPlatformStats } from '@/lib/supabaseRPC';
-import { supabase } from '@/lib/supabase';
+import { getPlatformStats } from '../../lib/supabaseRPC'; // Corregido el path relativo
+import { supabase } from '../../lib/supabase'; // Corregido el path relativo
 
-vi.mock('@/lib/supabase', () => ({
+vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: { getUser: vi.fn() },
     rpc: vi.fn(),
@@ -17,25 +17,21 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 describe('Sistema de Comisiones y Tesorería ShareWay', () => {
-  const TREASURY_ID = '00000000-0000-0000-0000-000000000000';
-
   beforeEach(() => {
     vi.clearAllMocks();
     supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'driver-123' } } });
   });
 
-  it('DEBE repartir exactamente el 15% a la App y el 85% al conductor (Regla 3)', async () => {
+  it('DEBE repartir exactamente el 10% a la App y el 90% al conductor (Regla 3)', async () => {
     const rideId = 'ride-commission-test';
-    const ridePrice = 10.00; // Un número fácil para validar el 15%
 
-    // Simulamos la respuesta exitosa de la RPC complete_ride tras el reparto
-    // El reparto real ocurre en SQL, aquí validamos que el servicio interpreta el éxito
+    // Simulamos la respuesta exitosa de la RPC complete_ride tras el reparto (10%)
     supabase.rpc.mockResolvedValue({ 
       data: { 
         success: true, 
-        total_processed: 10.00,
-        platform_fee: 1.50, // 15%
-        driver_payout: 8.50  // 85%
+        gross_collected: 10.00,
+        platform_fee: 1.00, // 10% de 10.00
+        driver_net_payout: 9.00  // 90% de 10.00
       }, 
       error: null 
     });
@@ -47,7 +43,6 @@ describe('Sistema de Comisiones y Tesorería ShareWay', () => {
   });
 
   it('DEBE mostrar el balance real de tesorería en el Dashboard Admin (Regla 10)', async () => {
-    // Simulamos que la App ha acumulado 150.50€ de comisiones
     const mockStats = {
       success: true,
       stats: {
@@ -68,23 +63,24 @@ describe('Sistema de Comisiones y Tesorería ShareWay', () => {
   });
 
   it('DEBE fallar si el conductor intenta completar un viaje que no es suyo (Regla 7)', async () => {
-    supabase.rpc.mockResolvedValue({ 
-      data: null, 
-      error: 'El viaje no está activo o no eres el conductor' 
+    // Simulamos un error devuelto por Supabase
+    supabase.rpc.mockResolvedValue({
+      data: { success: false, message: 'No eres el conductor de este viaje' },
+      error: null
     });
 
-    await expect(completeRide('alien-ride')).rejects.toThrow(/no eres el conductor/);
+    await expect(completeRide('alien-ride')).rejects.toThrow(/no eres el conductor/i);
   });
 
   it('DEBE gestionar correctamente el redondeo de céntimos (Regla 4)', async () => {
-    // Escenario de 5.55€ (15% = 0.8325 -> debe redondear a 0.83)
+    // Escenario de 5.55€ (10% = 0.555 -> debe redondear a 0.56 o 0.55 según lógica SQL)
     const rideId = 'ride-cents-test';
     
     supabase.rpc.mockResolvedValue({ 
       data: { 
         success: true, 
-        platform_fee: 0.83, 
-        driver_payout: 4.72 
+        platform_fee: 0.56,
+        driver_net_payout: 4.99
       }, 
       error: null 
     });

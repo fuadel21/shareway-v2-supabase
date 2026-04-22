@@ -304,8 +304,14 @@ export const startRide = async (rideId) => {
 
 export const completeRide = async (rideId) => {
     const { data, success, error } = await rpc.completeRide(rideId);
-    if (!success) throw new Error(error);
-    if (data && data.success === false) throw new Error(data.message || 'No se pudo completar el viaje');
+    if (!success) {
+        // Si hay un error de red o de RPC, lanzamos el error de Supabase
+        throw new Error(error?.message || error || 'No se pudo completar el viaje');
+    }
+    if (data && data.success === false) {
+        // Si la función SQL devolvió success: false, lanzamos su mensaje
+        throw new Error(data.message || 'No se pudo completar el viaje');
+    }
     return true;
 };
 
