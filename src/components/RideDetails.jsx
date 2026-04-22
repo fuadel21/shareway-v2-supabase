@@ -8,10 +8,10 @@ import { es } from 'date-fns/locale';
 import SubPageHeader from './SubPageHeader';
 import MapComponent from './MapComponent';
 import BookingPaymentModal from './BookingPaymentModal'; 
-import PinVerificationDialog from './PinVerificationDialog'; // MODAL DE VERIFICACIÓN CIEGA
-import { Button } from '@/components/ui/button.jsx';
-import { Card } from '@/components/ui/card.jsx';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
+import PinVerificationDialog from './PinVerificationDialog.jsx';
+import { Button } from './ui/button.jsx';
+import { Card } from './ui/card.jsx';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar.jsx';
 import { 
     Loader2, Users, Calendar, Clock, MapPin, 
     ShieldCheck, Star, Car, Heart, Music, 
