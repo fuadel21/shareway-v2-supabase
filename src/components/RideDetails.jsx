@@ -18,9 +18,9 @@ import {
     ChevronRight, BadgeCheck, MessageCircle, Phone, Lock,
     Share2, Zap, Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { getRideDetailsSecure, startRide, verifyPassenger } from '@/lib/supabaseRPC';
-import { cancelRide, cancelBooking } from '@/services/rideService';
+import { cn } from '../lib/utils.js';
+import { getRideDetailsSecure, startRide, verifyPassenger } from '../lib/supabaseRPC.js';
+import { cancelRide, cancelBooking } from '../services/rideService.js';
 
 const RideDetails = () => {
     const { id: rideId } = useParams();

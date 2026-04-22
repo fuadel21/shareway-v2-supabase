@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
-import { Input } from './ui/input';
-import { Button } from './ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog.jsx";
+import { Input } from './ui/input.jsx';
+import { Button } from './ui/button.jsx';
 import { Loader2, ShieldCheck, Lock, Sparkles, X } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '../lib/utils.js';
 
 const PinVerificationDialog = ({ open, onOpenChange, onConfirm, isLoading, title }) => {
     const [pin, setPin] = useState(['', '', '', '']);

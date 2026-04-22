@@ -3,16 +3,16 @@ import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
-import { confirmTripAndPay } from '@/lib/supabaseRPC';
-import { useWallet } from '@/hooks/useWallet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button.jsx';
+import { supabase } from '../lib/supabase.js';
+import { confirmTripAndPay } from '../lib/supabaseRPC.js';
+import { useWallet } from '../hooks/useWallet.js';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog.jsx';
+import { Button } from './ui/button.jsx';
 import { 
     Loader2, Lock, CreditCard, ShieldCheck, 
     AlertCircle, Wallet, CheckCircle2, ChevronRight 
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils.js';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
