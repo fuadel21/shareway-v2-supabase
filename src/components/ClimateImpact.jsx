@@ -1,15 +1,14 @@
 
 import React, { useMemo } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { Card } from './ui/card.jsx';
+import { Button } from './ui/button.jsx';
 import { 
-    Leaf, CloudRain, Trees, Zap, ChevronLeft, 
-    TrendingUp, Award, Share2, Info, Globe
+    Leaf, Trees, Zap, TrendingUp, Award, Share2, Globe
 } from 'lucide-react';
-import SubPageHeader from './SubPageHeader';
-import { getImpactEquivalency } from '@/utils/climateImpact';
-import { cn } from '@/lib/utils';
+import SubPageHeader from './SubPageHeader.jsx';
+import { getImpactEquivalency } from '../utils/climateImpact.js';
+import { cn } from '../lib/utils.js';
 
 const StatCard = ({ icon: Icon, label, value, unit, color }) => (
     <Card className="p-6 rounded-[2rem] border-none shadow-xl bg-white flex flex-col items-center text-center gap-2 overflow-hidden relative group">
@@ -25,8 +24,7 @@ const StatCard = ({ icon: Icon, label, value, unit, color }) => (
 
 const ClimateImpact = () => {
     const { profile } = useOutletContext();
-    const navigate = useNavigate();
-    
+
     const co2Saved = parseFloat(profile?.total_co2_saved) || 0;
     const impact = useMemo(() => getImpactEquivalency(co2Saved), [co2Saved]);
 
