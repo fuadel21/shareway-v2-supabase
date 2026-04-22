@@ -4,7 +4,6 @@ import path from 'path';
 import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
 
-// https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react()],
     css: {
@@ -17,7 +16,8 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@': path.resolve(new URL('.', import.meta.url).pathname, './src'),
+            // Usamos path.join y process.cwd() para evitar errores con espacios en Windows
+            '@': path.join(process.cwd(), 'src'),
         },
         extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
     },
@@ -42,9 +42,7 @@ export default defineConfig({
             'leaflet',
             'react-leaflet',
             'leaflet-defaulticon-compatibility',
-            'sonner',
-            'clsx',
-            'tailwind-merge'
+            'sonner'
         ],
     },
     build: {
@@ -72,26 +70,6 @@ export default defineConfig({
                     'notify': ['sonner']
                 }
             }
-        }
-    },
-    test: {
-        environment: 'jsdom',
-        setupFiles: ['src/test/setup.ts'],
-        globals: true,
-        testTimeout: 60000, // 60 seconds for integration tests with auth
-        include: ['src/**/*.test.{js,jsx,ts,tsx}'],
-        exclude: ['e2e/**', 'node_modules/**'],
-        fileParallelism: false,
-        pool: 'forks',
-        poolOptions: {
-            forks: {
-                singleFork: true,
-            },
-        },
-        coverage: {
-            provider: 'v8',
-            reporter: ['text', 'json', 'html'],
-            exclude: ['node_modules/**', 'src/test/**', 'e2e/**']
         }
     }
 });
