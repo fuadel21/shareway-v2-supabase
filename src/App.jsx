@@ -1,52 +1,52 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
-import { Toaster, toast } from 'sonner';
+import { Toaster } from 'sonner';
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from './lib/supabase.js';
 import { Loader2 } from 'lucide-react';
 import { App as CapacitorApp } from '@capacitor/app';
 
 // --- Error Boundary ---
-import ErrorBoundary from '@/components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 // --- Layouts & Pages ---
-import MainLayout from '@/components/MainLayout';
-import AdminLayout from '@/pages/Admin/AdminLayout';
-import Login from '@/components/Login';
-import Register from '@/components/Register';
-import ForgotPassword from '@/components/ForgotPassword';
-import Dashboard from '@/components/Dashboard';
-import CreateRide from '@/components/CreateRide';
-import CreateRequest from '@/components/CreateRequest';
-import RideDetails from '@/components/RideDetails';
-import RequestDetails from '@/components/RequestDetails';
-import MyRides from '@/components/MyRides';
-import MyRequests from '@/components/MyRequests';
-import UserProfile from '@/components/UserProfile';
-import EditProfile from '@/components/EditProfile';
-import Settings from '@/components/Settings';
-import Wallet from '@/components/Wallet';
-import VerificationSettings from '@/components/VerificationSettings';
-import SecuritySettings from '@/components/SecuritySettings';
-import Achievements from '@/components/Achievements';
-import ComingSoon from '@/components/ComingSoon';
-import NotificationSettings from '@/components/NotificationSettings';
-import AppearanceSettings from '@/components/AppearanceSettings';
-import AdminDashboard from '@/pages/Admin/AdminDashboard';
-import ChatList from '@/components/ChatList';
-import Chat from '@/components/Chat';
-import PayoutSettings from '@/components/PayoutSettings';
-import LeaveReview from '@/components/LeaveReview';
-import DisputeHistory from '@/components/DisputeHistory';
-import FavoriteRoutes from '@/components/FavoriteRoutes';
-import EmergencyContacts from '@/components/EmergencyContacts';
-import RideChat from '@/components/RideChat';
-import RideChatSelector from '@/components/RideChatSelector';
-import EmergencyChat from '@/components/EmergencyChat';
-import EditFavoriteRoute from '@/components/EditFavoriteRoute';
-import VerificationCenter from '@/components/VerificationCenter';
-import ClimateImpact from '@/components/ClimateImpact'; // NUEVO
+import MainLayout from './components/MainLayout.jsx';
+import AdminLayout from './pages/Admin/AdminLayout.jsx';
+import Login from './components/Login.jsx';
+import Register from './components/Register.jsx';
+import ForgotPassword from './components/ForgotPassword.jsx';
+import Dashboard from './components/Dashboard.jsx';
+import CreateRide from './components/CreateRide.jsx';
+import CreateRequest from './components/CreateRequest.jsx';
+import RideDetails from './components/RideDetails.jsx';
+import RequestDetails from './components/RequestDetails.jsx';
+import MyRides from './components/MyRides.jsx';
+import MyRequests from './components/MyRequests.jsx';
+import UserProfile from './components/UserProfile.jsx';
+import EditProfile from './components/EditProfile.jsx';
+import Settings from './components/Settings.jsx';
+import Wallet from './components/Wallet.jsx';
+import VerificationSettings from './components/VerificationSettings.jsx';
+import SecuritySettings from './components/SecuritySettings.jsx';
+import Achievements from './components/Achievements.jsx';
+import ComingSoon from './components/ComingSoon.jsx';
+import NotificationSettings from './components/NotificationSettings.jsx';
+import AppearanceSettings from './components/AppearanceSettings.jsx';
+import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
+import ChatList from './components/ChatList.jsx';
+import Chat from './components/Chat.jsx';
+import PayoutSettings from './components/PayoutSettings.jsx';
+import LeaveReview from './components/LeaveReview.jsx';
+import DisputeHistory from './components/DisputeHistory.jsx';
+import FavoriteRoutes from './components/FavoriteRoutes.jsx';
+import EmergencyContacts from './components/EmergencyContacts.jsx';
+import RideChat from './components/RideChat.jsx';
+import RideChatSelector from './components/RideChatSelector.jsx';
+import EmergencyChat from './components/EmergencyChat.jsx';
+import EditFavoriteRoute from './components/EditFavoriteRoute.jsx';
+import VerificationCenter from './components/VerificationCenter.jsx';
+import ClimateImpact from './components/ClimateImpact.jsx';
 
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
@@ -227,7 +227,7 @@ function App() {
                         <Route path="settings/appearance" element={<AppearanceSettings />} />
                         <Route path="settings/notifications" element={<NotificationSettings />} />
                         <Route path="settings/emergency" element={<EmergencyContacts />} />
-                        <Route path="settings/impact" element={<ClimateImpact />} /> {/* RUTA NUEVA */}
+                        <Route path="settings/impact" element={<ClimateImpact />} />
                         <Route path="verification-center" element={<VerificationCenter />} />
 
                         <Route path="profile/edit" element={<EditProfile />} />
