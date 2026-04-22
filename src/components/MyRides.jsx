@@ -190,9 +190,11 @@ const MyRides = () => {
 
             switch (activeTab) {
                 case 'active':
-                    return ['scheduled', 'active', 'in_progress'].includes(status) && r.role !== 'requester';
+                    // Próximos: Viajes programados/activos donde soy Conductor o Pasajero Confirmado
+                    return ['scheduled', 'active', 'in_progress'].includes(status) && (r.role === 'driver' || r.role === 'passenger');
                 case 'requested':
-                    return (status === 'requested' || r.role === 'requester') && !['completed', 'expired', 'cancelled', 'rejected'].includes(status);
+                    // Solicitudes: Mis peticiones pendientes de aprobación
+                    return r.role === 'requester' && !['completed', 'expired', 'cancelled', 'rejected'].includes(status);
                 case 'history':
                     return ['completed', 'expired'].includes(status);
                 case 'cancelled':
@@ -214,8 +216,8 @@ const MyRides = () => {
     }, [rides, activeTab]);
 
     const tabs = [
-        { id: 'active', label: 'Activos', icon: Clock },
-        { id: 'requested', label: 'Solicitados', icon: Users },
+        { id: 'active', label: 'Próximos', icon: Calendar },
+        { id: 'requested', label: 'Solicitudes', icon: Users },
         { id: 'history', label: 'Historial', icon: CheckCircle },
         { id: 'cancelled', label: 'Cancelados', icon: XCircle },
     ];

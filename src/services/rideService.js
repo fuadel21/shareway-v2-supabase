@@ -112,16 +112,26 @@ const validateRidePayload = (data) => {
 export const createSingleRide = async (rideData) => {
     try {
         validateRidePayload(rideData);
+
+        // Generamos Idempotency Key para evitar duplicados por doble clic
+        const idempotencyKey = crypto.randomUUID();
+
         const ridePayload = {
             ...rideData,
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
-            dateTime: rideData.dateTime instanceof Date ? rideData.dateTime : new Date(rideData.dateTime)
+            dateTime: rideData.dateTime instanceof Date ? rideData.dateTime : new Date(rideData.dateTime),
+            idempotency_key: idempotencyKey
         };
 
         const { data, success, error } = await rpc.createRide(ridePayload);
         if (!success) throw new Error(error);
+
+        if (data?.note === 'duplicate_prevented') {
+            console.warn("🛡️ [Offer Flow] Duplicate creation prevented by idempotency key.");
+        }
+
         return data.rideId;
     } catch (error) {
         console.error("🛡️ [Offer Flow] createSingleRide failed:", error);

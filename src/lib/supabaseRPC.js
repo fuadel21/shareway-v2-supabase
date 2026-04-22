@@ -91,7 +91,8 @@ export const createRide = (rideData) =>
         p_details: rideData.details || '',
         p_distance: rideData.distance || 0,
         p_overview_polyline: rideData.overview_polyline || '',
-        p_waypoints: rideData.waypoints || []
+        p_waypoints: rideData.waypoints || [],
+        p_idempotency_key: rideData.idempotency_key || null
     }), 'create_ride');
 
 export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null } = {}) =>

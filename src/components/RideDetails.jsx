@@ -92,9 +92,9 @@ const RideDetails = () => {
                 throw new Error(error || "Error al verificar");
             }
 
-            toast.success(`¡${selectedPassenger.displayName} verificado!`);
+            toast.success(`¡${selectedPassenger.displayName || 'Pasajero'} verificado!`);
             setIsPinDialogOpen(false);
-            fetchRide();
+            await fetchRide(); // Refrescar datos del viaje
         } catch (error) {
             toast.error(error.message);
         } finally {
@@ -105,9 +105,9 @@ const RideDetails = () => {
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-primary" /></div>;
     if (!ride) return <SubPageHeader title="No encontrado" backPath="/dashboard" />;
 
-    const isDriver = user?.id === ride.driver_id;
+    const isDriver = user?.id && ride?.driver_id && String(user.id) === String(ride.driver_id);
     const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
-    const isPassenger = passengers.some(p => p.id === user?.id || p.user_id === user?.id);
+    const isPassenger = passengers.some(p => String(p.id) === String(user?.id));
     const confirmedPassengers = passengers.filter(p => p.status === 'confirmed' || p.status === 'verified');
     const isRideCancelled = ride.status === 'cancelled';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
@@ -153,6 +153,67 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
+                {/* PERFIL DEL CONDUCTOR (Novedad) */}
+                {!isDriver && (
+                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-6 overflow-hidden relative group">
+                        <div className="flex items-center gap-4">
+                            <div className="relative">
+                                <Avatar className="h-16 w-16 border-4 border-slate-50 shadow-lg transition-transform group-hover:scale-105">
+                                    <AvatarImage src={ride.driver_photo} />
+                                    <AvatarFallback className="bg-primary/10 text-primary font-black text-xl">
+                                        {ride.driver_name?.[0]}
+                                    </AvatarFallback>
+                                </Avatar>
+                                {ride.driver_verified && (
+                                    <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white p-1 rounded-full border-2 border-white shadow-sm">
+                                        <BadgeCheck size={12} />
+                                    </div>
+                                )}
+                            </div>
+                            <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-xl font-black text-slate-900 italic uppercase leading-none">
+                                        {ride.driver_name || 'Conductor'}
+                                    </h3>
+                                </div>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
+                                        <Star size={10} className="text-amber-500 fill-amber-500" />
+                                        <span className="text-[10px] font-black text-amber-700">4.8</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                        124 Viajes
+                                    </span>
+                                </div>
+                            </div>
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 hover:text-primary hover:bg-primary/5 border border-slate-100"
+                                onClick={() => navigate(`/chat/${ride.id}`)}
+                            >
+                                <MessageCircle size={20} />
+                            </Button>
+                        </div>
+
+                        {/* Info de Vehículo (Muestra si existe) */}
+                        <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-slate-500">
+                                <Car size={14} />
+                                <span className="text-[10px] font-black uppercase tracking-widest italic">
+                                    {typeof ride.driver_vehicle === 'object' && ride.driver_vehicle !== null
+                                        ? `${ride.driver_vehicle.brand} ${ride.driver_vehicle.model} • ${ride.driver_vehicle.plate}`
+                                        : (ride.driver_vehicle || 'Vehículo verificado')}
+                                </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <Music size={14} className="text-slate-200" />
+                                <Zap size={14} className="text-slate-200" />
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
                 {isDriver ? (
                     !isRideCancelled && (
                         <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
@@ -160,7 +221,7 @@ const RideDetails = () => {
                                 <div className="relative z-10">
                                     <div className="flex items-center justify-between mb-8">
                                         <div className="text-left">
-                                            <h4 className="text-xl font-black text-slate-900 uppercase italic">Control de Viaje</h4>
+                                            <h4 className="text-xl font-black text-slate-900 uppercase italic">Control del Conductor</h4>
                                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{confirmedPassengers.length} pasajeros confirmados</p>
                                         </div>
                                         <div className="bg-indigo-50 px-4 py-2 rounded-2xl flex items-center gap-2 border border-indigo-100">
@@ -169,7 +230,7 @@ const RideDetails = () => {
                                         </div>
                                     </div>
 
-                                    {/* LISTA DE PASAJEROS (VERIFICACIÓN CIEGA) */}
+                                    {/* LISTA DE PASAJEROS PARA EL CONDUCTOR */}
                                     <div className="space-y-3 mb-8">
                                         {confirmedPassengers.length > 0 ? (
                                             confirmedPassengers.map((p, idx) => (
@@ -177,7 +238,7 @@ const RideDetails = () => {
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                                                <AvatarImage src={p.photoURL} />
+                                                                <AvatarImage src={p.photoURL || p.photo_url} />
                                                                 <AvatarFallback className="bg-indigo-100 text-indigo-600 font-black text-xs">{p.displayName?.[0]}</AvatarFallback>
                                                             </Avatar>
                                                             <div className="text-left">
@@ -186,23 +247,20 @@ const RideDetails = () => {
                                                             </div>
                                                         </div>
                                                         <div className="flex gap-2">
-                                                            {/* Botón de Verificación (Sustituye al PIN visible) */}
-                                                            {p.status !== 'verified' ? (
+                                                            {/* SOLO EL CONDUCTOR PUEDE VALIDAR - Soporta 'verified' o 'on_board' */}
+                                                            {p.status !== 'verified' && p.status !== 'on_board' ? (
                                                                 <Button 
                                                                     onClick={() => { setSelectedPassenger(p); setIsPinDialogOpen(true); }}
                                                                     className="h-10 px-4 rounded-2xl bg-indigo-600 text-white font-black text-[9px] uppercase tracking-widest shadow-md hover:bg-indigo-700"
                                                                 >
-                                                                    <Fingerprint size={14} className="mr-1.5" /> Verificar
+                                                                    <Fingerprint size={14} className="mr-1.5" /> Validar PIN
                                                                 </Button>
                                                             ) : (
-                                                                <div className="h-10 px-4 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-2">
-                                                                    <CheckCircle2 size={14} />
-                                                                    <span className="text-[9px] font-black uppercase">A bordo</span>
+                                                                <div className="h-10 px-4 rounded-2xl bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-2 animate-in zoom-in-95 duration-300">
+                                                                    <CheckCircle2 size={14} className="fill-emerald-700 text-white" />
+                                                                    <span className="text-[9px] font-black uppercase tracking-widest">A bordo</span>
                                                                 </div>
                                                             )}
-                                                            <Button size="icon" variant="ghost" className="h-10 w-10 rounded-2xl bg-white text-indigo-600 shadow-sm border border-slate-100" onClick={() => navigate(`/chat/${ride.id}`)}>
-                                                                <MessageCircle size={16} />
-                                                            </Button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -225,15 +283,6 @@ const RideDetails = () => {
                                         >
                                             {isStarting ? <Loader2 className="animate-spin" /> : <><Play size={20} className="fill-white" /> Iniciar Viaje</>}
                                         </Button>
-
-                                        {!canStartRide && !isRideActive && (
-                                            <div className="flex items-center justify-center gap-2 text-slate-400">
-                                                <Clock size={12} />
-                                                <p className="text-[9px] font-bold uppercase tracking-widest">
-                                                    Activo {minutesToDeparture} min antes de la salida
-                                                </p>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -244,15 +293,17 @@ const RideDetails = () => {
                     !isRideCancelled && (
                         <div className="space-y-4">
                             {isPassenger && ride.user_pin && (
-                                <div className="bg-emerald-50 border-2 border-dashed border-emerald-500 rounded-[2.5rem] p-6 text-center space-y-2 animate-in slide-in-from-bottom-4 duration-700">
+                                <div className="bg-emerald-50 border-2 border-dashed border-emerald-500 rounded-[2.5rem] p-8 text-center space-y-4 animate-in slide-in-from-bottom-4 duration-700 shadow-inner">
                                     <div className="flex items-center justify-center gap-2 text-emerald-600">
-                                        <Lock size={14} className="animate-pulse" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Código de Confirmación</p>
+                                        <Lock size={16} className="animate-pulse" />
+                                        <p className="text-[11px] font-black uppercase tracking-[0.2em]">Código de Abordaje</p>
                                     </div>
-                                    <p className="text-5xl font-black text-emerald-700 tracking-[0.4em] italic drop-shadow-sm">
+                                    <p className="text-6xl font-black text-emerald-700 tracking-[0.3em] italic drop-shadow-md">
                                         {ride.user_pin}
                                     </p>
-                                    <p className="text-[9px] font-bold text-emerald-600/60 uppercase">Muestra este código al conductor al subir</p>
+                                    <div className="bg-white/50 py-2 px-4 rounded-2xl inline-block border border-emerald-100">
+                                        <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest">Muestra este código al conductor para validar tu plaza</p>
+                                    </div>
                                 </div>
                             )}
 
@@ -268,7 +319,12 @@ const RideDetails = () => {
                                             : "bg-slate-900 text-white hover:bg-slate-800"
                                 )}
                             >
-                                {isPassenger ? "Plaza Reservada" : "Reservar Plaza"}
+                                {isPassenger ? (
+                                    <div className="flex items-center gap-3">
+                                        <CheckCircle2 size={24} />
+                                        <span>Plaza Reservada</span>
+                                    </div>
+                                ) : "Reservar Plaza"}
                             </Button>
                         </div>
                     )
