@@ -68,8 +68,15 @@
             "ride_escrow": "Reserva de viaje (Escrow)",
             "stripe_deposit": "Recarga vía Stripe",
             "refund": "Reembolso",
-            "payout": "Retirada de fondos",
+            "payout": "Ingreso por Viaje",
+            "withdrawal": "Retirada a Banco",
+            "compensation": "Compensación por Cancelación",
             "generic": "Transacción"
+        },
+        "breakdown": {
+            "driver_payout": "Pago Neto (90%)",
+            "platform_fee": "Comisión (10%)",
+            "total_gross": "Total Bruto"
         }
     },
     "payouts": {

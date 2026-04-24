@@ -10,9 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button.jsx';
 import { 
     Loader2, Lock, CreditCard, ShieldCheck, 
-    AlertCircle, Wallet, CheckCircle2, ChevronRight 
+    AlertCircle, Wallet, CheckCircle2, ChevronRight,
+    MapPin, TrendingUp
 } from 'lucide-react';
-import { cn } from '../lib/utils.js';
+import { cn, calculateDistance } from '../lib/utils.js';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -121,21 +122,68 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
     );
 };
 
-const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, pickupAddress, onSuccess }) => {
-    const { user } = useOutletContext();
+import MapComponent from './MapComponent';
+
+const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLocation }) => {
+    const { user, userLocation } = useOutletContext();
     const { wallet, refreshWallet } = useWallet(user);
     const [paymentMethod, setPaymentMethod] = useState('wallet');
     const [clientSecret, setClientSecret] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
     const [isProcessingWallet, setIsProcessingWallet] = useState(false);
 
-    const hasBalance = wallet?.balance >= amount;
+    const rideId = ride?.id;
+    const baseAmount = Number(ride?.price) || 0;
+
+    // Nuevo estado para la ubicación de recogida personalizada
+    const [pickupLocation, setPickupLocation] = useState(initialPickupLocation || null);
+    const [pickupAddress, setPickupAddress] = useState('');
+    const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
+
+    useEffect(() => {
+        if (isOpen && !pickupLocation) {
+            // Intentar usar la ubicación del usuario si está disponible
+            if (userLocation) {
+                setPickupLocation(userLocation);
+            } else if (initialPickupLocation) {
+                setPickupLocation(initialPickupLocation);
+            } else if (ride?.origin) {
+                setPickupLocation(ride.origin);
+            }
+        }
+    }, [isOpen, userLocation, initialPickupLocation, ride?.origin]);
+
+    // Recalcular precio cuando cambia la ubicación de recogida
+    useEffect(() => {
+        if (pickupLocation && ride?.origin) {
+            const distance = calculateDistance(
+                ride.origin.lat, ride.origin.lng,
+                pickupLocation.lat, pickupLocation.lng
+            );
+
+            // Lógica de recargo: 0.50€ por KM de desviación desde el origen original
+            const surcharge = distance * 0.50;
+            const finalPrice = baseAmount + surcharge;
+            setDynamicAmount(parseFloat(finalPrice.toFixed(2)));
+        } else {
+            setDynamicAmount(baseAmount);
+        }
+    }, [pickupLocation, ride?.origin, baseAmount]);
+
+    const hasBalance = wallet?.balance >= dynamicAmount;
 
     useEffect(() => {
         if (isOpen && wallet) {
-            setPaymentMethod(wallet.balance >= amount ? 'wallet' : 'card');
+            setPaymentMethod(wallet.balance >= dynamicAmount ? 'wallet' : 'card');
         }
-    }, [isOpen, wallet, amount]);
+    }, [isOpen, wallet, dynamicAmount]);
+
+    const handleLocationSelect = (loc) => {
+        setPickupLocation({ lat: loc.lat, lng: loc.lng });
+        if (loc.address) setPickupAddress(loc.address);
+    };
+
+    const displayAmount = dynamicAmount;
 
     useEffect(() => {
         const prepareStripe = async () => {
@@ -143,7 +191,7 @@ const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, 
                 setIsPreparing(true);
                 try {
                     const { data, error } = await supabase.functions.invoke('create-booking-payment-intent', {
-                        body: { rideId, pickupLocation, pickupAddress, totalAmount: amount },
+                        body: { rideId, pickupLocation, pickupAddress, totalAmount: dynamicAmount },
                     });
                     if (error || !data?.clientSecret) throw new Error(data?.error?.message || "Stripe no disponible");
                     setClientSecret(data.clientSecret);
@@ -156,29 +204,56 @@ const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, 
             }
         };
         prepareStripe();
-    }, [isOpen, paymentMethod, rideId, user, amount, clientSecret]);
+    }, [isOpen, paymentMethod, rideId, user, dynamicAmount, clientSecret]);
 
     const handleWalletPayment = async () => {
         setIsProcessingWallet(true);
         try {
+            // Limpieza agresiva del precio para evitar errores de tipo en PostgreSQL
+            const numericPrice = Number(dynamicAmount);
+            if (isNaN(numericPrice)) throw new Error("Precio no válido");
+
+            const cleanPrice = parseFloat(numericPrice.toFixed(2));
+
+            console.log("💳 Intentando pago con wallet:", { rideId, price: cleanPrice });
+
             const { success, error, data } = await confirmTripAndPay(rideId, null, {
                 pickupLocation: pickupLocation ?? null,
                 pickupAddress: pickupAddress ?? null,
-                price: amount != null ? Number(amount) : null
+                price: cleanPrice
             });
 
-            if (!success) throw new Error(error || 'No se pudo procesar la reserva.');
+            if (!success) {
+                // Si el error viene de la comunicación con Supabase
+                throw new Error(error || 'Error de conexión con el servidor.');
+            }
 
-            if (data?.success) {
+            // La respuesta de confirmTripAndPay (RPC) suele venir estructurada
+            // Si data es el resultado del JSON del RPC:
+            const result = data?.success !== undefined ? data : (data?.[0] || data);
+
+            if (result?.success) {
                 toast.success("¡Reserva confirmada!", {
                     description: "Se ha descontado el importe de tu saldo ShareWay."
                 });
                 refreshWallet();
-                if (onSuccess) await onSuccess();
+
+                // CERRAR MODAL TRAS ÉXITO
+                setTimeout(() => {
+                    if (onSuccess) onSuccess();
+                    onClose();
+                }, 1500);
+
             } else {
-                toast.error("Error en reserva", { description: data?.message || "No se pudo procesar." });
+                // Error devuelto específicamente por la lógica de negocio del RPC
+                const msg = result?.message || result?.error || "No se pudo procesar la reserva.";
+                toast.error("Reserva denegada", {
+                    description: msg,
+                    duration: 5000
+                });
             }
         } catch (e) {
+            console.error("❌ Error en handleWalletPayment:", e);
             toast.error("Error crítico", { description: e.message });
         } finally {
             setIsProcessingWallet(false);
@@ -206,18 +281,55 @@ const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, 
                         </DialogHeader>
                     </div>
 
-                    {/* Contenido con Scroll y margen de seguridad extra */}
                     <div className="flex-1 overflow-y-auto px-8 pb-32 no-scrollbar">
-                        <div className="space-y-6">
+                        <div className="space-y-6 text-left">
+
+                            {/* PASO 1: SELECCIONAR UBICACIÓN DE RECOGIDA */}
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 1: ¿Dónde te recogemos?</p>
+                                <div className="h-40 rounded-3xl overflow-hidden border-2 border-slate-100 shadow-inner relative group">
+                                    <MapComponent
+                                        center={pickupLocation}
+                                        zoom={15}
+                                        onLocationSelect={handleLocationSelect}
+                                        showSearch={false}
+                                        height="100%"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm">
+                                        <MapPin className="size-3 text-primary animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">Mueve el pin</span>
+                                    </div>
+                                </div>
+                                {pickupAddress && (
+                                    <p className="text-[9px] font-bold text-slate-500 italic px-2">
+                                        Recogida en: {pickupAddress}
+                                    </p>
+                                )}
+                            </div>
+
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 2: Pago Seguro</p>
+
                             {/* INFO PRECIO */}
-                            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-xl text-left">
+                            <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-xl">
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                                     <ShieldCheck size={80} />
                                 </div>
-                                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Total a pagar</p>
-                                <p className="text-4xl font-black italic tracking-tighter">
-                                    {Number(amount).toFixed(2)}<span className="text-xl ml-1">€</span>
-                                </p>
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Total a pagar</p>
+                                        <p className="text-4xl font-black italic tracking-tighter">
+                                            {displayAmount.toFixed(2)}<span className="text-xl ml-1">€</span>
+                                        </p>
+                                    </div>
+                                    {displayAmount > baseAmount && (
+                                        <div className="text-right pb-1">
+                                            <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
+                                                <TrendingUp size={10} /> +{(displayAmount - baseAmount).toFixed(2)}€
+                                            </div>
+                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Extra por recogida</p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             {/* SELECTOR DE MÉTODO */}
@@ -296,7 +408,7 @@ const BookingPaymentModal = ({ isOpen, onClose, rideId, amount, pickupLocation, 
                                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
                                                 <CheckoutForm
                                                     rideId={rideId}
-                                                    amount={amount}
+                                                    amount={dynamicAmount}
                                                     onSuccess={onSuccess}
                                                     onClose={onClose}
                                                     clientSecret={clientSecret}

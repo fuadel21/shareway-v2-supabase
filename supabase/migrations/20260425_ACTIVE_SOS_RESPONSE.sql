@@ -82,6 +82,17 @@ BEGIN
            jsonb_build_object('alert_id', v_alert_id, 'ride_id', p_ride_id), 'urgent', 'system'
     FROM public.profiles WHERE (verification->>'is_admin')::BOOLEAN = true;
 
+    -- E. CREAR MENSAJE INICIAL EN EL CHAT DE EMERGENCIA
+    INSERT INTO public.messages (
+        sender_id,
+        content,
+        chat_id
+    ) VALUES (
+        '00000000-0000-0000-0000-000000000000', -- ID de sistema
+        '🚨 Protocolo SOS iniciado por ' || v_user_name || '. Ubicación: ' || COALESCE(p_current_location->>'lat', '?') || ',' || COALESCE(p_current_location->>'lng', '?'),
+        'sos_' || p_ride_id::TEXT
+    );
+
     RETURN jsonb_build_object(
         'success', true,
         'alertId', v_alert_id,

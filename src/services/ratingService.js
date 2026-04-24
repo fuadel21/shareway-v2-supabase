@@ -12,12 +12,28 @@ import { safeCall } from '@/lib/supabaseRPC';
  */
 export const submitReview = async ({ rideId, revieweeId, rating, comment = '' }) => {
     try {
+        const { data: authData } = await supabase.auth.getUser();
+        const user = authData?.user;
+
+        if (user?.id && revieweeId === user.id) {
+            throw new Error('No puedes valorarte a ti mismo');
+        }
+
+        const ratingVal = parseInt(rating);
+        if (isNaN(ratingVal) || ratingVal < 1 || ratingVal > 5) {
+            throw new Error('El rating debe estar entre 1 y 5');
+        }
+
+        if (comment && comment.length > 500) {
+            throw new Error('El comentario no puede exceder los 500 caracteres');
+        }
+
         const { success, error, data } = await safeCall(
             () => supabase.rpc('submit_review_v2', {
                 p_ride_id: rideId,
                 p_reviewee_id: revieweeId,
-                p_rating: Math.max(1, Math.min(5, parseInt(rating))),
-                p_comment: comment.trim().substring(0, 1000)
+                p_rating: ratingVal,
+                p_comment: (comment || '').trim().substring(0, 1000)
             }),
             'submit_review_v2'
         );
@@ -36,6 +52,8 @@ export const submitReview = async ({ rideId, revieweeId, rating, comment = '' })
         throw error;
     }
 };
+
+export const submitReviewSecure = submitReview;
 
 /**
  * Obtiene el perfil de reputación de un usuario (Rating + Badges + Estadísticas)

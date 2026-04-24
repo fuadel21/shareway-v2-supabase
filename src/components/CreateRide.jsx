@@ -29,9 +29,15 @@ import { useTranslation } from 'react-i18next';
 const STORAGE_KEY = 'sw_ride_offer_draft';
 
 const getNextHalfHour = () => {
-    const now = new Date();
-    now.setMinutes(Math.ceil(now.getMinutes() / 30) * 30, 0, 0);
-    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    // Bug Fix #4: partimos de ahora+30min para garantizar la antelación mínima exigida
+    const future = new Date(Date.now() + 30 * 60 * 1000);
+    const mins = future.getMinutes();
+    if (mins < 30) {
+        future.setMinutes(30, 0, 0);
+    } else {
+        future.setHours(future.getHours() + 1, 0, 0, 0);
+    }
+    return `${String(future.getHours()).padStart(2, '0')}:${String(future.getMinutes()).padStart(2, '0')}`;
 };
 
 const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
@@ -72,6 +78,7 @@ const CreateRide = () => {
     const routeDataRef = useRef(null);
     const routeAbortRef = useRef(null);
     const routeReqIdRef = useRef(0);
+    const isPriceManualRef = useRef(false); // Bug Fix #3: evita sobreescritura silenciosa del precio
 
     // PERSISTENCIA DE BORRADOR (UX RECOVERY)
     useEffect(() => {
@@ -79,6 +86,11 @@ const CreateRide = () => {
         if (draft && !origin && !destination) {
             try {
                 const data = JSON.parse(draft);
+                // Bug Fix #6: Descartar borradores con más de 24 horas (TTL)
+                if (data.savedAt && Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }
                 setOrigin(data.origin);
                 setDestination(data.destination);
                 setSeats(data.seats || 3);
@@ -94,7 +106,8 @@ const CreateRide = () => {
         const timer = setTimeout(() => {
             if (origin || destination || details) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                    origin, destination, seats, price, details, isWomenOnly, preferences
+                    origin, destination, seats, price, details, isWomenOnly, preferences,
+                    savedAt: Date.now() // Bug Fix #6: TTL para evitar restaurar borradores obsoletos
                 }));
             }
         }, 1500);
@@ -113,6 +126,7 @@ const CreateRide = () => {
             }
 
             routeDataRef.current = null;
+            isPriceManualRef.current = false; // Bug Fix #3: la ruta cambió, re-habilitar precio automático
             if (routeAbortRef.current) {
                 try { routeAbortRef.current.abort(); } catch (e) { }
             }
@@ -129,13 +143,16 @@ const CreateRide = () => {
 
                 if (reqId !== routeReqIdRef.current) return;
 
-                    if (data.code === 'Ok' && data.routes[0]) {
+                if (data.code === 'Ok' && data.routes[0]) {
                     const route = data.routes[0];
                     const distanceKm = route.distance / 1000;
                     routeDataRef.current = { distance: distanceKm, polyline: route.geometry };
 
-                    const suggested = calculateRecommendedPrice(route.distance);
-                    setPrice(suggested.toString());
+                    // Bug Fix #3: solo auto-setear precio si el usuario no lo cambió manualmente
+                    if (!isPriceManualRef.current) {
+                        const suggested = calculateRecommendedPrice(route.distance);
+                        setPrice(suggested.toString());
+                    }
                 }
             } catch (e) {
                 if (e?.name !== 'AbortError') console.error("Route calculation error:", e);
@@ -167,14 +184,16 @@ const CreateRide = () => {
             return toast.error(`El precio mínimo es ${RIDE_RULES.MIN_PRICE}€`);
         }
 
-        // VALIDACIÓN DE PRECIO MÁXIMO (Blindaje)
-        if (routeDataRef.current?.distance) {
-            const validation = validateRidePrice(numPrice, routeDataRef.current.distance);
-            if (!validation.valid) {
-                return toast.error(validation.error, {
-                    description: validation.details
-                });
-            }
+        // Bug Fix #5: la distancia es obligatoria para validar el precio máximo
+        const routeDistance = routeDataRef.current?.distance || 0;
+        if (routeDistance <= 0) {
+            return toast.error("No se pudo calcular la distancia del trayecto. Por favor, reintenta.");
+        }
+        const validation = validateRidePrice(numPrice, routeDistance);
+        if (!validation.valid) {
+            return toast.error(validation.error, {
+                description: validation.details
+            });
         }
 
         const [h, m] = time.split(':').map(Number);
@@ -213,7 +232,7 @@ const CreateRide = () => {
                 distance: routeDataRef.current?.distance
             };
 
-            await createSingleRide(rideData);
+            const newRideId = await createSingleRide(rideData);
 
             localStorage.removeItem(STORAGE_KEY);
 
@@ -224,7 +243,13 @@ const CreateRide = () => {
 
             try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) { }
             toast.success(t('create_ride.confirm_button'), { id: toastId });
-            navigate('/dashboard');
+
+            // REDIRECCIÓN CRÍTICA: Usar el ID real devuelto por la DB
+            if (newRideId) {
+                navigate(`/ride/${newRideId}`);
+            } else {
+                navigate('/dashboard');
+            }
         } catch (error) {
             toast.error(t('common.error'), { id: toastId, description: error.message });
         } finally {
@@ -306,7 +331,7 @@ const CreateRide = () => {
                             </div>
                             <div className="relative">
                                 <Euro className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-primary" />
-                                <Input type="number" step="0.5" value={price} onChange={(e) => setPrice(e.target.value)} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
+                                <Input type="number" step="0.5" value={price} onChange={(e) => { setPrice(e.target.value); isPriceManualRef.current = true; }} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
                             </div>
                         </Card>
                     </div>

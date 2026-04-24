@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { useWallet } from '../hooks/useWallet';
 import AddFundsModal from './AddFundsModal';
+import TransactionDetailModal from './TransactionDetailModal';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
 import { toast } from 'sonner';
@@ -28,7 +29,7 @@ import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
-const TransactionItem = ({ tx, index }) => {
+const TransactionItem = ({ tx, index, onClick }) => {
     const { t, i18n } = useTranslation();
     if (!tx) return null;
 
@@ -42,31 +43,41 @@ const TransactionItem = ({ tx, index }) => {
     const formattedAmount = new Intl.NumberFormat(i18n.language === 'es' ? 'es-ES' : 'en-US', {
         style: 'currency',
         currency: 'EUR'
-    }).format(amount);
+    }).format(Math.abs(amount));
 
-    const getDescription = (desc) => {
-        if (!desc) return t('wallet.tx_types.generic') || "Transacción";
+    const getDescription = (desc, type) => {
+        if (!desc) return t('wallet.tx_types.generic');
         const d = desc.toUpperCase();
-        if (d.includes('RESERVA') || d.includes('ESCROW')) return t('wallet.tx_types.ride_escrow') || "Reserva de Viaje";
-        if (d.includes('RECARGA') || d.includes('STRIPE')) return t('wallet.tx_types.stripe_deposit') || "Carga de Saldo";
-        if (d.includes('REEMBOLSO')) return t('wallet.tx_types.refund') || "Reembolso Recibido";
-        if (d.includes('GANANCIA') || d.includes('INGRESO')) return "Ganancia por Viaje";
-        if (d.includes('RETIRO') || d.includes('WITHDRAWAL')) return "Retiro a Banco";
+
+        // Prioridad por tipo de transacción (Enum DB)
+        if (type === 'payout') return t('wallet.tx_types.payout');
+        if (type === 'withdrawal') return t('wallet.tx_types.withdrawal');
+        if (type === 'hold') return t('wallet.tx_types.ride_escrow');
+        if (type === 'refund') return t('wallet.tx_types.refund');
+
+        // Fallback por descripción
+        if (d.includes('RESERVA') || d.includes('ESCROW')) return t('wallet.tx_types.ride_escrow');
+        if (d.includes('RECARGA') || d.includes('STRIPE')) return t('wallet.tx_types.stripe_deposit');
+        if (d.includes('GANANCIA') || d.includes('INGRESO') || d.includes('LIQUIDACIÓN')) return t('wallet.tx_types.payout');
+
         return desc;
     };
 
     return (
-        <div className="group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[2rem] hover:shadow-md transition-all mb-3 text-left">
+        <button
+            onClick={() => onClick(tx)}
+            className="w-full group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[2rem] hover:shadow-md hover:border-primary/20 transition-all mb-3 text-left active:scale-[0.98]"
+        >
             <div className="flex items-center gap-4 text-left">
                 <div className={cn(
-                    "h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm border",
+                    "h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm border transition-colors",
                     isDeposit ? "bg-emerald-50 text-emerald-600 border-emerald-100" : isHold ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-slate-50 text-slate-600 border-slate-100"
                 )}>
                     {isDeposit ? <ArrowUpRight size={20} /> : isHold ? <ShieldCheck size={20} /> : <ArrowDownLeft size={20} />}
                 </div>
                 <div className="min-w-0 text-left">
                     <p className="font-black text-slate-900 text-[11px] uppercase tracking-tight italic truncate max-w-[180px]">
-                        {getDescription(tx.description)}
+                        {getDescription(tx.description, tx.type)}
                     </p>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1 mt-1">
                         <Clock className="h-3 w-3" /> {safeDate}
@@ -75,10 +86,13 @@ const TransactionItem = ({ tx, index }) => {
             </div>
             <div className="text-right">
                 <p className={cn("font-black text-base tracking-tighter italic", isDeposit ? "text-emerald-600" : "text-slate-900")}>
-                    {formattedAmount}
+                    {isDeposit ? '+' : '-'}{formattedAmount}
                 </p>
+                {tx.type === 'payout' && (
+                    <p className="text-[8px] font-bold text-emerald-500/60 uppercase tracking-tighter">Neto (90%)</p>
+                )}
             </div>
-        </div>
+        </button>
     );
 };
 
@@ -90,6 +104,8 @@ const Wallet = () => {
     const [transactions, setTransactions] = useState([]);
     const [isLoadingTxs, setIsLoadingTxs] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTx, setSelectedTx] = useState(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     // FALLO 169 ARREGLADO: Modo Privacidad para ocultar saldo
     const [showBalance, setShowBalance] = useState(() => localStorage.getItem('wallet_privacy') !== 'true');
@@ -123,6 +139,16 @@ const Wallet = () => {
         fetchTransactions();
     }, [user?.id, fetchTransactions]);
 
+    const handleTxClick = (tx) => {
+        setSelectedTx(tx);
+        setIsDetailOpen(true);
+    };
+
+    const handleViewRide = (rideId) => {
+        setIsDetailOpen(false);
+        navigate(`/ride/${rideId}`);
+    };
+
     const balance = useMemo(() => parseFloat(wallet?.balance || 0), [wallet]);
     const heldBalance = useMemo(() => parseFloat(wallet?.heldBalance || 0), [wallet]);
 
@@ -144,6 +170,12 @@ const Wallet = () => {
     return (
         <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
             <AddFundsModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={async () => { await refreshWallet(); await fetchTransactions(); }} />
+            <TransactionDetailModal
+                isOpen={isDetailOpen}
+                onClose={() => { setIsDetailOpen(false); setSelectedTx(null); }}
+                tx={selectedTx}
+                onViewRide={handleViewRide}
+            />
 
             <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20 shadow-sm">
                 <div className="max-w-xl mx-auto flex items-center gap-4">
@@ -207,7 +239,7 @@ const Wallet = () => {
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic"><History className="h-4 w-4 text-primary" /> {t('wallet.activity')}</h3>
                     </div>
                     <div className="space-y-1">
-                        {transactions.length > 0 ? (transactions.map((tx, idx) => <TransactionItem key={tx.id} tx={tx} index={idx} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
+                        {transactions.length > 0 ? (transactions.map((tx, idx) => <TransactionItem key={tx.id} tx={tx} index={idx} onClick={handleTxClick} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
                     </div>
                 </div>
             </main>

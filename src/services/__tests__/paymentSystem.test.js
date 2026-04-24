@@ -32,7 +32,7 @@ vi.mock('@/lib/supabase', () => ({
                 then: vi.fn()
               }))
             }))
-          })
+          }))
         })),
         in: vi.fn(() => ({
           then: vi.fn()

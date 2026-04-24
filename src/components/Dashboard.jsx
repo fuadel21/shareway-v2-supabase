@@ -55,6 +55,12 @@ const RideCard = ({ item, isSelected, onClick }) => {
     const timeLabel = (departureDate && isValid(departureDate)) ? format(departureDate, "HH:mm") : '--:--';
     const dayLabel = (departureDate && isValid(departureDate)) ? format(departureDate, "d MMM", { locale: es }) : '';
 
+    // Lógica para mostrar pasajeros a bordo
+    const totalSeats = item.seats || 1;
+    const availableSeats = item.seats_available ?? totalSeats;
+    const occupiedSeats = totalSeats - availableSeats;
+    const participantPhotos = item.participant_photos || []; // Asumiendo que el RPC nos da esto
+
     return (
         <div
             onClick={() => onClick(item)}
@@ -72,11 +78,19 @@ const RideCard = ({ item, isSelected, onClick }) => {
 
             <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12 border-2 border-white shadow-md">
-                        <AvatarImage src={photo} className="object-cover" />
-                        <AvatarFallback className="font-bold bg-slate-100 text-slate-400">{name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="text-left">
+                    <div className="relative mb-2">
+                        <Avatar className="h-12 w-12 border-2 border-white shadow-md">
+                            <AvatarImage src={photo} className="object-cover" />
+                            <AvatarFallback className="font-bold bg-slate-100 text-slate-400">{name.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white border-2 border-slate-50 rounded-full px-3 py-1 shadow-xl flex items-center gap-1.5 z-20 min-w-[50px] justify-center scale-110">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.4)]" />
+                            <span className="text-[11px] font-black text-slate-900 leading-none tracking-tighter">
+                                {profile?.rating ? parseFloat(profile.rating).toFixed(1) : '5.0'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-left pt-1">
                         <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-none">{profile?.display_name || 'Usuario'}</h3>
                         <div className="flex items-center gap-2 mt-1">
                             <span className={cn("text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm", isRequest ? "bg-amber-50 text-amber-700 border-amber-100" : "bg-emerald-50 text-emerald-700 border-emerald-100")}>
@@ -88,8 +102,35 @@ const RideCard = ({ item, isSelected, onClick }) => {
                 </div>
                 <div className="text-right">
                     <p className="text-lg font-black text-primary tracking-tighter leading-none">{item.price || item.suggested_price || 0}€</p>
+                    {!isRequest && (
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                            {availableSeats} plazas libres
+                        </p>
+                    )}
                 </div>
             </div>
+
+            {/* BARRA DE OCUPACIÓN (Estilo Elite) */}
+            {!isRequest && (
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <div className="flex -space-x-2">
+                        {participantPhotos.slice(0, 3).map((p, i) => (
+                            <img key={i} src={p} className="size-5 rounded-full border border-white bg-slate-100 object-cover" />
+                        ))}
+                        {occupiedSeats > 3 && (
+                            <div className="size-5 rounded-full border border-white bg-slate-900 text-white text-[7px] flex items-center justify-center font-black">
+                                +{occupiedSeats - 3}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                            className="h-full bg-primary transition-all duration-1000"
+                            style={{ width: `${(occupiedSeats / totalSeats) * 100}%` }}
+                        />
+                    </div>
+                </div>
+            )}
 
             <div className="space-y-2 py-3 border-y border-slate-50">
                 <div className="flex items-center gap-3">
@@ -147,8 +188,27 @@ function Dashboard() {
             const now = new Date();
             const marginTime = subMinutes(now, 60).toISOString();
 
+            // 1. Obtener viajes disponibles (vistas tradicionales)
             const rides = await getAvailableRides();
-            const { data: requests } = await supabase
+
+            // 2. Obtener solicitudes con matching inteligente si tenemos ubicación
+            let requests;
+            if (mapCenter && mapCenter[0] !== 40.416775) {
+                const { data: smartMatches, error: matchError } = await supabase.rpc('find_matching_rides_v2', {
+                    p_passenger_origin_lat: mapCenter[0],
+                    p_passenger_origin_lng: mapCenter[1],
+                    p_passenger_dest_lat: mapCenter[0], // Simplificación para búsqueda general
+                    p_passenger_dest_lng: mapCenter[1],
+                    p_radius_meters: 10000 // 10km a la redonda en el dashboard
+                });
+
+                if (!matchError && smartMatches) {
+                    // Si el RPC devuelve datos, los usamos para enriquecer
+                    console.log("🚀 Smart Matches found:", smartMatches.length);
+                }
+            }
+
+            const { data: rawRequests } = await supabase
                 .from('ride_requests')
                 .select('*, requester:profiles!requester_id(*)')
                 .eq('status', 'pending')
@@ -161,7 +221,7 @@ function Dashboard() {
                 return isNotMine && genderShield && isFuture;
             }).map(r => ({ ...r, type: 'ride' }));
 
-            const filteredRequests = (requests || []).filter(req => {
+            const filteredRequests = (rawRequests || []).filter(req => {
                 const isNotMine = req.requester_id !== user.id;
                 return isNotMine;
             }).map(req => ({ ...req, type: 'request' }));
@@ -177,7 +237,7 @@ function Dashboard() {
         } finally {
             setLoading(false);
         }
-    }, [user, profile]);
+    }, [user, profile, mapCenter]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -204,10 +264,20 @@ function Dashboard() {
 
     const handleSelection = (item, forceNavigate = false) => {
         if (!item) return;
+
+        // SEGURIDAD: Extraer el ID de forma robusta
+        const itemId = item.id || item.ride_id || item.request_id;
+
         if (forceNavigate) {
-            navigate(item.type === 'request' ? `/request/${item.id}` : `/ride/${item.id}`);
+            if (!itemId) {
+                console.error("❌ Error: Intento de navegación sin ID válido", item);
+                toast.error("No se pudo abrir el detalle: ID no encontrado");
+                return;
+            }
+            navigate(item.type === 'request' ? `/request/${itemId}` : `/ride/${itemId}`);
             return;
         }
+
         setSelectedItem(item);
         const coords = item.origin?.coordinates || item.origin;
         if (coords?.lat || coords?.latitude) {
@@ -267,7 +337,7 @@ function Dashboard() {
 
                     <div className="space-y-3">
                         {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div> : itemsToDisplay.length > 0 ? itemsToDisplay.map((item) => (
-                            <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
+                            <RideCard key={`${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
                         )) : <div className="text-center py-16 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><Car className="mx-auto h-10 w-10 text-slate-200 mb-2 opacity-30" /><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('dashboard.no_results')}</p></div>}
                     </div>
                 </div>
@@ -360,7 +430,7 @@ function Dashboard() {
                 {/* MOBILE / QUICK VIEW BOTTOM SHEET */}
                 {isMobile && (
                     <div className="lg:hidden">
-                        <DraggableSheet>
+                        <DraggableSheet activeSnap={selectedItem ? 1 : undefined}>
                             <div className="px-6 py-4 space-y-4 text-left">
                                 {!selectedItem ? (
                                     <>
@@ -378,7 +448,7 @@ function Dashboard() {
                                                 <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div>
                                             ) : itemsToDisplay.length > 0 ? (
                                                 itemsToDisplay.map((item) => (
-                                                    <RideCard key={item.id} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
+                                                    <RideCard key={`mobile-${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} />
                                                 ))
                                             ) : (
                                                 <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">

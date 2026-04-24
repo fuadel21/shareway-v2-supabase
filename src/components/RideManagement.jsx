@@ -185,8 +185,18 @@ const RideManagement = ({ ride, onRefresh }) => {
             <div className="pt-4 space-y-4">
                 {isRideScheduled && (
                     <Button 
-                        onClick={() => startRide(ride.id).then(onRefresh)} 
-                        disabled={onboardPassengers.length === 0}
+                        onClick={async () => {
+                            try {
+                                setIsLoading(true);
+                                await startRide(ride.id);
+                                onRefresh();
+                            } catch(e) {
+                                toast.error(e.message || 'No se pudo iniciar el viaje');
+                            } finally {
+                                setIsLoading(false);
+                            }
+                        }}
+                        disabled={onboardPassengers.length === 0 || isLoading}
                         className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none"
                     >
                         INICIAR VIAJE <PlayCircle className="ml-3 text-primary h-6 w-6" />
@@ -205,8 +215,18 @@ const RideManagement = ({ ride, onRefresh }) => {
                             </div>
                         )}
                         <Button
-                            onClick={() => completeRide(ride.id, currentCoords?.lat, currentCoords?.lng).then(() => navigate('/my-rides'))}
-                            disabled={!canCompleteRide}
+                            onClick={async () => {
+                                try {
+                                    setIsLoading(true);
+                                    await completeRide(ride.id); // Bug Fix #9: solo acepta rideId
+                                    navigate('/my-rides');
+                                } catch(e) {
+                                    toast.error(e.message || 'No se pudo finalizar el viaje');
+                                } finally {
+                                    setIsLoading(false);
+                                }
+                            }}
+                            disabled={!canCompleteRide || isLoading}
                             className={cn("w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl transition-all border-none", 
                                 !canCompleteRide ? "bg-slate-100 text-slate-300" : "bg-emerald-600 text-white")}
                         >
@@ -216,7 +236,24 @@ const RideManagement = ({ ride, onRefresh }) => {
                 )}
             </div>
 
-            <PinVerificationDialog open={isPinDialogOpen} onOpenChange={setIsPinDialogOpen} onConfirm={(pin) => verifyPassenger(ride.id, selectedPassenger.id, pin).then(() => { setIsPinDialogOpen(false); onRefresh(); })} />
+            <PinVerificationDialog
+                open={isPinDialogOpen}
+                onOpenChange={setIsPinDialogOpen}
+                onConfirm={async (pin) => {
+                    // Bug Fix #10: null guard + manejo de error + parámetros correctos
+                    if (!selectedPassenger?.id) return;
+                    try {
+                        await verifyPassenger(ride.id, selectedPassenger.id, pin);
+                        setIsPinDialogOpen(false);
+                        onRefresh();
+                    } catch(e) {
+                        const msg = e.message?.includes('PIN_INCORRECTO')
+                            ? 'PIN incorrecto. Solicítalo de nuevo al pasajero.'
+                            : (e.message || 'Error al verificar PIN');
+                        toast.error(msg);
+                    }
+                }}
+            />
         </Card>
     );
 };

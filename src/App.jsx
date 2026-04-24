@@ -33,6 +33,7 @@ import Achievements from './components/Achievements.jsx';
 import ComingSoon from './components/ComingSoon.jsx';
 import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
+import ActivityCenter from './components/ActivityCenter.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import ChatList from './components/ChatList.jsx';
 import Chat from './components/Chat.jsx';
@@ -91,6 +92,7 @@ const AdminLayoutWrapper = ({ user, profile, isLoading, ...rest }) => {
 function App() {
     const [session, setSession] = useState(null);
     const [profile, setProfile] = useState(null);
+    const [userLocation, setUserLocation] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
 
@@ -191,19 +193,53 @@ function App() {
         }
     }, []);
 
+    useEffect(() => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setUserLocation({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    });
+                },
+                (error) => console.warn("Location access denied or error:", error),
+                { enableHighAccuracy: true }
+            );
+        }
+    }, []);
+
     const outletContext = useMemo(() => ({
         user: session?.user,
         profile,
+        userLocation,
         isLoading,
         refreshProfile,
         handleSignOut,
         totalUnreadChats: 0
-    }), [session?.user?.id, profile, isLoading, refreshProfile, handleSignOut]);
+    }), [session?.user?.id, profile, userLocation, isLoading, refreshProfile, handleSignOut]);
 
     return (
         <ErrorBoundary level="root">
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                <Toaster richColors position="top-center" closeButton />
+                <Toaster
+                    position="top-center"
+                    closeButton
+                    toastOptions={{
+                        className: "rounded-[2.2rem] border-2 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] backdrop-blur-xl",
+                        style: {
+                            background: 'white',
+                            padding: '16px 24px',
+                            fontSize: '11px',
+                            fontWeight: '900',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            fontStyle: 'italic',
+                            color: '#0f172a',
+                            border: '2px solid #f1f5f9'
+                        },
+                        descriptionClassName: "text-slate-500 font-bold normal-case not-italic tracking-normal text-[10px] mt-1"
+                    }}
+                />
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
@@ -226,6 +262,7 @@ function App() {
                         <Route path="edit-favorite-route/:id" element={<EditFavoriteRoute />} />
                         <Route path="settings/appearance" element={<AppearanceSettings />} />
                         <Route path="settings/notifications" element={<NotificationSettings />} />
+                        <Route path="settings/activity" element={<ActivityCenter />} />
                         <Route path="settings/emergency" element={<EmergencyContacts />} />
                         <Route path="settings/impact" element={<ClimateImpact />} />
                         <Route path="verification-center" element={<VerificationCenter />} />
@@ -239,7 +276,7 @@ function App() {
                         <Route path="rides/:rideId/chats" element={<RideChatSelector />} />
                         <Route path="rides/:rideId/chat/:chatId" element={<RideChat />} />
                         <Route path="ride-chat/:rideId" element={<RideChat />} />
-                        <Route path="emergency" element={<EmergencyChat />} />
+                        <Route path="emergency/:rideId" element={<EmergencyChat />} />
                         <Route path="request/:id" element={<RequestDetails />} />
                         <Route path="profile/:userId" element={<UserProfile />} />
                         <Route path="wallet" element={<Wallet />} />

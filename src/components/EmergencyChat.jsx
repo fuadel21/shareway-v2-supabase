@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import {
     ShieldAlert,
@@ -17,9 +17,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const EmergencyChat = () => {
     const { user, profile } = useOutletContext();
+    const { rideId } = useParams();
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -27,23 +29,35 @@ const EmergencyChat = () => {
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef(null);
 
-    // En un sistema real, este ID sería un chat fijo con el equipo de soporte de seguridad
-    const EMERGENCY_CHAT_ID = 'shareway-emergency-response';
+    // En un sistema real, este ID sería un chat fijo con el equipo de soporte de seguridad vinculado al viaje
+    const EMERGENCY_CHAT_ID = `sos_${rideId}`;
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !rideId) return;
 
         const fetchMessages = async () => {
             try {
-                // Simulación de carga de historial de emergencia
-                setMessages([
-                    {
-                        id: 'system-1',
-                        sender_id: 'system',
-                        content: 'Has activado el Canal de Emergencia. Un agente de seguridad de ShareWay está revisando tu ubicación actual.',
-                        created_at: new Date().toISOString()
-                    }
-                ]);
+                const { data, error } = await supabase
+                    .from('messages')
+                    .select('*')
+                    .eq('chat_id', EMERGENCY_CHAT_ID)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    setMessages(data);
+                } else {
+                    // Mensaje inicial del sistema si no hay historial
+                    setMessages([
+                        {
+                            id: 'system-1',
+                            sender_id: 'system',
+                            content: 'Has activado el Canal de Emergencia. Un agente de seguridad de ShareWay está revisando tu ubicación actual y los detalles del viaje.',
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+                }
             } catch (error) {
                 console.error(error);
             } finally {
@@ -54,21 +68,24 @@ const EmergencyChat = () => {
         fetchMessages();
 
         // Suscripción Realtime para respuestas del equipo de seguridad
-        const channel = supabase.channel(`emergency:${user.id}`)
+        const channel = supabase.channel(`emergency:${EMERGENCY_CHAT_ID}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'messages',
                 filter: `chat_id=eq.${EMERGENCY_CHAT_ID}`
             }, (payload) => {
-                setMessages(prev => [...prev, payload.new]);
+                setMessages(prev => {
+                    if (prev.find(m => m.id === payload.new.id)) return prev;
+                    return [...prev, payload.new];
+                });
             })
             .subscribe();
 
         return () => {
             supabase.removeChannel(channel);
         };
-    }, [user]);
+    }, [user, rideId, EMERGENCY_CHAT_ID]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,13 +110,7 @@ const EmergencyChat = () => {
 
             if (error) throw error;
 
-            setMessages(prev => [...prev, {
-                id: Date.now(),
-                sender_id: user.id,
-                content: text,
-                created_at: new Date().toISOString()
-            }]);
-
+            // El mensaje se añadirá vía Realtime, pero podemos optimizar UI si queremos
         } catch (error) {
             toast.error("Error al enviar señal de auxilio.");
             setNewMessage(text);

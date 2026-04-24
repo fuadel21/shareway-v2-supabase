@@ -67,7 +67,14 @@
             "ride_escrow": "Trip reservation (Escrow)",
             "stripe_deposit": "Stripe Top-up",
             "refund": "Refund",
-            "payout": "Funds withdrawal"
+            "payout": "Ride Income",
+            "withdrawal": "Withdraw to Bank",
+            "compensation": "Cancellation Compensation"
+        },
+        "breakdown": {
+            "driver_payout": "Net Payout (90%)",
+            "platform_fee": "Fee (10%)",
+            "total_gross": "Total Gross"
         }
     },
     "payouts": {

@@ -40,8 +40,10 @@ describe('ShareWay Booking Logic - Final Validation', () => {
     });
 
     it('Step 1: Driver creates a ride', async () => {
+        // Usamos una hora aleatoria lejana para evitar conflictos de 2h en el entorno de test
         const futureDate = new Date();
         futureDate.setFullYear(futureDate.getFullYear() + 1);
+        futureDate.setHours(Math.floor(Math.random() * 24));
 
         const { data, error } = await driverClient.rpc('create_ride', {
             p_origin: { address: 'Origin', lat: 40, lng: -3 },

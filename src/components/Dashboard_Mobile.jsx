@@ -128,7 +128,18 @@ const RideCard = ({ item, isSelected, onClick, onAcceptRequest }) => {
                     </div>
                 </div>
                 <div className="text-right flex-shrink-0">
-                    <p className="font-black text-base text-slate-900 tracking-tighter leading-none">{item.price || item.suggested_price || 0}€</p>
+                    {/* Filtro defensivo: nunca mostrar precio > 300€ aunque llegue de BD */}
+                    {(() => {
+                        const rawPrice = parseFloat(item.price || item.suggested_price || 0);
+                        const displayPrice = (!isNaN(rawPrice) && rawPrice > 0 && rawPrice <= 300)
+                            ? rawPrice.toFixed(2)
+                            : null;
+                        return (
+                            <p className="font-black text-base text-slate-900 tracking-tighter leading-none">
+                                {displayPrice ? `${displayPrice}€` : <span className="text-slate-400 text-sm">—</span>}
+                            </p>
+                        );
+                    })()}
                     <p className="text-[7px] font-bold text-slate-400 mt-0.5 uppercase tracking-wide">{timeLabel}</p>
                 </div>
             </div>
@@ -200,8 +211,15 @@ function Dashboard() {
             const rides = await getAvailableRides();
             const { data: requests } = await supabase.from('ride_requests').select('*, requester:profiles!requester_id(*)').eq('status', 'pending').neq('requester_id', user.id).gte('departure_time', now);
 
+            // Filtro defensivo: descartar registros con precio absurdo (> 300€ = MAX_PRICE de la app)
+            const MAX_DISPLAY_PRICE = 300;
+            const sanitizedRides = (rides || []).filter(r => {
+                const p = parseFloat(r.price);
+                return !isNaN(p) && p > 0 && p <= MAX_DISPLAY_PRICE;
+            });
+
             setAllData([
-                ...(rides || []).map(ride => ({ ...ride, type: 'ride' })),
+                ...sanitizedRides.map(ride => ({ ...ride, type: 'ride' })),
                 ...(requests || []).map(r => ({ ...r, type: 'request' }))
             ].sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time)));
         } catch (error) {

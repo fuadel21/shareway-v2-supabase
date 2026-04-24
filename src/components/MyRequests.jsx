@@ -160,12 +160,24 @@ const MyRequests = () => {
     try {
       setCancellingId(id);
       const { cancelRideRequest } = await import('@/lib/supabaseRPC');
-      await cancelRideRequest(id);
-      toast.success('Solicitud cancelada correctamente.');
-      await fetchRequests();
+
+      // Llamada segura al RPC
+      const result = await cancelRideRequest(id);
+
+      if (result.success) {
+        toast.success('Solicitud cancelada', {
+          description: 'Tu petición ha sido eliminada correctamente.'
+        });
+        // Actualización optimista: quitamos de la lista local inmediatamente
+        setRequests(prev => prev.filter(req => req.id !== id));
+      } else {
+        // Si el error es conocido (ej: ya cancelada), informamos pero limpiamos
+        const errorMsg = result.error || 'No se pudo cancelar la solicitud.';
+        toast.error('Error al cancelar', { description: errorMsg });
+      }
     } catch (e) {
-      console.error('Error cancelando solicitud:', e);
-      toast.error(e.message || 'Error al cancelar la solicitud.');
+      console.error('Error en cancelación:', e);
+      toast.error('Error técnico', { description: 'Revisa tu conexión e inténtalo de nuevo.' });
     } finally {
       setCancellingId(null);
     }

@@ -12,9 +12,11 @@ export const PRICING_CONSTANTS = {
 // IMPORTANTE: Mantener sincronizado con src/services/rideService.js
 export const RIDE_PRICING_CONFIG = {
     TIERS: [
-        { maxKm: 100, rate: 0.25 },
-        { maxKm: 400, rate: 0.17 },
-        { maxKm: Infinity, rate: 0.14 }
+        { maxKm: 15, rate: 0.25 },   // Trayectos muy cortos (hasta 15km): ~3.75€
+        { maxKm: 50, rate: 0.18 },   // Trayectos medios (ej: ciudad a ciudad próxima): +0.18€/km
+        { maxKm: 200, rate: 0.12 },  // Trayectos largos: +0.12€/km
+        { maxKm: 500, rate: 0.09 },  // Muy larga distancia: +0.09€/km
+        { maxKm: Infinity, rate: 0.07 }
     ]
 };
 

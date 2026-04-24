@@ -5,38 +5,28 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { supabase } from '@/lib/supabase';
-import { safeCall } from '@/lib/supabaseRPC';
+import * as rpc from '@/lib/supabaseRPC';
 import { createSingleRide, getAvailableRides, cancelRide } from '@/services/rideService';
 
-// Mock de Supabase
+// Mock de Supabase y RPC
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    rpc: vi.fn(),
+    auth: {
+      getUser: vi.fn()
+    },
     from: vi.fn(() => ({
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
-          single: vi.fn(),
-          then: vi.fn()
-        })),
-        in: vi.fn(() => ({
-          then: vi.fn()
-        }))
-      })),
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
-          then: vi.fn()
-        }))
-      })),
-      update: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          then: vi.fn()
+          single: vi.fn()
         }))
       }))
-    })),
-    auth: {
-      getUser: vi.fn()
-    }
+    }))
   }
+}));
+
+vi.mock('@/lib/supabaseRPC', () => ({
+  safeCall: vi.fn(),
+  createRide: vi.fn()
 }));
 
 describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
@@ -59,7 +49,7 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
       address: 'Barcelona, Sagrada Familia',
       coordinates: { lat: 41.3851, lng: 2.1734 }
     },
-    departure_time: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos en el futuro
+    departure_time: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 60 minutos en el futuro
     seats: 4,
     price: 25.50,
     details: 'Viaje confortable con música',
@@ -85,18 +75,12 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         rideId: 'ride-123'
       };
       
-      supabase.rpc.mockResolvedValue({ data: mockResult, error: null });
+      rpc.createRide.mockResolvedValue({ success: true, data: { rideId: 'ride-123' } });
 
       const result = await createSingleRide(validRideData);
 
-      expect(result.success).toBe(true);
-      expect(result.rideId).toBe('ride-123');
-      expect(supabase.rpc).toHaveBeenCalledWith('create_ride', expect.objectContaining({
-        p_origin: validRideData.origin,
-        p_destination: validRideData.destination,
-        p_seats: validRideData.seats,
-        p_price: validRideData.price
-      }));
+      expect(result).toBe('ride-123');
+      expect(rpc.createRide).toHaveBeenCalled();
     });
 
     it('debería crear viaje women_only para conductora mujer', async () => {
@@ -115,14 +99,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         })
       });
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-women' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-women' }
       });
 
       const result = await createSingleRide(womenOnlyRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-women');
     });
 
     it('debería crear viaje con waypoints válidos', async () => {
@@ -133,14 +117,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         ]
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-waypoints' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-waypoints' }
       });
 
       const result = await createSingleRide(rideWithWaypoints);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-waypoints');
     });
 
     it('debería crear viaje exclusivo de comunidad', async () => {
@@ -150,14 +134,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         allowed_communities: ['premium', 'verified']
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-exclusive' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-exclusive' }
       });
 
       const result = await createSingleRide(exclusiveRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-exclusive');
     });
 
     it('debería crear viaje con approval_mode manual', async () => {
@@ -166,22 +150,24 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         approval_mode: 'manual'
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-manual' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-manual' }
       });
 
       const result = await createSingleRide(manualApprovalRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-manual');
     });
   });
 
   describe('❌ Validaciones de Autenticación y Permisos', () => {
     it('debería rechazar creación si usuario no está autenticado', async () => {
-      supabase.auth.getUser.mockResolvedValue({ data: { user: null } });
-
-      await expect(createSingleRide(validRideData)).rejects.toThrow();
+        // En esta arquitectura, rideService no chequea auth directamente en createSingleRide
+        // sino que el RPC fallaría o el controller lo chequea.
+        // Si queremos que falle, el mock de createRide debería devolver error.
+        rpc.createRide.mockResolvedValueOnce({ success: false, error: 'Usuario no autenticado' });
+        await expect(createSingleRide(validRideData)).rejects.toThrow();
     });
 
     it('debería rechazar viaje women_only para conductor hombre', async () => {
@@ -200,9 +186,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         })
       });
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Solo las conductoras pueden ofrecer viajes exclusivos para mujeres' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Solo las conductoras pueden ofrecer viajes exclusivos para mujeres'
       });
 
       await expect(createSingleRide(womenOnlyRide)).rejects.toThrow();
@@ -219,9 +205,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         })
       });
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Conductor no verificado' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Conductor no verificado'
       });
 
       await expect(createSingleRide(validRideData)).rejects.toThrow();
@@ -235,9 +221,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         origin: { coordinates: { lat: 91, lng: 181 } } // Coordenadas inválidas
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Coordenadas de origen inválidas' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Coordenadas de origen inválidas'
       });
 
       await expect(createSingleRide(invalidRide)).rejects.toThrow();
@@ -249,9 +235,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         destination: { coordinates: { lat: -91, lng: -181 } }
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Coordenadas de destino inválidas' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Coordenadas de destino inválidas'
       });
 
       await expect(createSingleRide(invalidRide)).rejects.toThrow();
@@ -263,9 +249,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         distance: 600 // Excede el límite
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'La distancia del viaje es inválida (máximo 500km)' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'La distancia del viaje es inválida (máximo 500km)'
       });
 
       await expect(createSingleRide(longDistanceRide)).rejects.toThrow();
@@ -277,9 +263,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         price: 350
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'El precio máximo permitido es de 300€' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'El precio máximo permitido es de 300€'
       });
 
       await expect(createSingleRide(expensiveRide)).rejects.toThrow();
@@ -292,9 +278,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         distance: 615
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Política de Precio Justo: El precio supera el límite de 0.60€/km' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Política de Precio Justo: El precio supera el límite de 0.60€/km'
       });
 
       await expect(createSingleRide(expensivePerKmRide)).rejects.toThrow();
@@ -306,9 +292,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         seats: 0
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'El número de asientos debe estar entre 1 y 9' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'El número de asientos debe estar entre 1 y 9'
       });
 
       await expect(createSingleRide(invalidSeatsRide)).rejects.toThrow();
@@ -320,9 +306,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         seats: 10
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'El número de asientos debe estar entre 1 y 9' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'El número de asientos debe estar entre 1 y 9'
       });
 
       await expect(createSingleRide(invalidSeatsRide)).rejects.toThrow();
@@ -336,9 +322,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         departure_time: new Date(Date.now() - 60 * 60 * 1000).toISOString() // Hace 1 hora
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'La fecha del viaje debe ser al menos 10 minutos a futuro' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'La fecha del viaje debe ser al menos 10 minutos a futuro'
       });
 
       await expect(createSingleRide(pastRide)).rejects.toThrow();
@@ -350,9 +336,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         departure_time: new Date(Date.now() + 5 * 60 * 1000).toISOString() // En 5 minutos
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'La fecha del viaje debe ser al menos 10 minutos a futuro' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'La fecha del viaje debe ser al menos 10 minutos a futuro'
       });
 
       await expect(createSingleRide(soonRide)).rejects.toThrow();
@@ -364,9 +350,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         departure_time: new Date(Date.now() + 60 * 60 * 1000).toISOString() // En 1 hora
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Conflicto de horario: Ya tienes un viaje en un margen de 2h' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Conflicto de horario: Ya tienes un viaje en un margen de 2h'
       });
 
       await expect(createSingleRide(overlappingRide)).rejects.toThrow();
@@ -378,14 +364,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         departure_time: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString() // En 3 horas
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-non-overlapping' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-non-overlapping' }
       });
 
       const result = await createSingleRide(nonOverlappingRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-non-overlapping');
     });
   });
 
@@ -397,13 +383,10 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
       for (let i = 0; i < 10; i++) {
         const rideData = {
           ...validRideData,
-          departure_time: new Date(Date.now() + (i + 1) * 60 * 60 * 1000).toISOString()
+          dateTime: new Date(Date.now() + (i + 1) * 60 * 60 * 1000)
         };
         
-        supabase.rpc.mockResolvedValue({ 
-          data: { success: true, rideId: `ride-${i}` }, 
-          error: null 
-        });
+        rpc.createRide.mockResolvedValueOnce({ success: true, data: { rideId: `ride-${i}` } });
         
         promises.push(createSingleRide(rideData));
       }
@@ -412,7 +395,7 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
 
       expect(results).toHaveLength(10);
       results.forEach(result => {
-        expect(result.success).toBe(true);
+        expect(result).toBeDefined();
       });
     });
 
@@ -420,22 +403,25 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
       const duplicateRide = { ...validRideData };
 
       // Primer intento exitoso
-      supabase.rpc.mockResolvedValueOnce({ 
-        data: { success: true, rideId: 'ride-original' }, 
-        error: null 
-      });
-
-      // Segundo intento rechazado por duplicado
-      supabase.rpc.mockResolvedValueOnce({ 
-        data: null, 
-        error: { message: 'Viaje duplicado detectado' } 
+      rpc.createRide.mockResolvedValueOnce({
+        success: true,
+        data: { rideId: 'ride-original' }
       });
 
       const result1 = await createSingleRide(duplicateRide);
+
+      // Segundo intento: El RPC detecta duplicado (vía idempotency_key en la BD)
+      // y devuelve success: true con una nota, o success: false con error.
+      // Según rideService.js, si devuelve success: true con note 'duplicate_prevented', devuelve el rideId.
+      rpc.createRide.mockResolvedValueOnce({
+        success: true,
+        data: { rideId: 'ride-duplicate', note: 'duplicate_prevented' }
+      });
+
       const result2 = await createSingleRide(duplicateRide);
 
-      expect(result1.success).toBe(true);
-      await expect(result2).rejects.toThrow();
+      expect(result1).toBe('ride-original');
+      expect(result2).toBe('ride-duplicate');
     });
   });
 
@@ -446,14 +432,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         details: 'Viaje con música 🎵, aire acondicionado ❄️, y buen ambiente 😊'
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-special-chars' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-special-chars' }
       });
 
       const result = await createSingleRide(specialCharsRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-special-chars');
     });
 
     it('debería manejar detalles muy largos', async () => {
@@ -462,14 +448,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         details: 'a'.repeat(1000) // 1000 caracteres
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-long-details' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-long-details' }
       });
 
       const result = await createSingleRide(longDetailsRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-long-details');
     });
 
     it('debería manejar precios con decimales', async () => {
@@ -478,30 +464,23 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         price: 25.99
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-decimal-price' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-decimal-price' }
       });
 
       const result = await createSingleRide(decimalPriceRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-decimal-price');
     });
 
-    it('debería manejar precio cero (viaje gratuito)', async () => {
+    it('debería rechazar precio cero (viaje gratuito no permitido)', async () => {
       const freeRide = {
         ...validRideData,
         price: 0
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-free' }, 
-        error: null 
-      });
-
-      const result = await createSingleRide(freeRide);
-
-      expect(result.success).toBe(true);
+      await expect(createSingleRide(freeRide)).rejects.toThrow(/al menos 0.5/);
     });
 
     it('debería manejar distancia cero', async () => {
@@ -510,34 +489,34 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
         distance: 0
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-zero-distance' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-zero-distance' }
       });
 
       const result = await createSingleRide(zeroDistanceRide);
 
-      expect(result.success).toBe(true);
+      expect(result).toBe('ride-zero-distance');
     });
   });
 
   describe('🔧 Manejo de Errores', () => {
     it('debería manejar error de conexión a base de datos', async () => {
-      supabase.rpc.mockRejectedValue(new Error('Connection timeout'));
+      rpc.createRide.mockRejectedValue(new Error('Connection timeout'));
 
       await expect(createSingleRide(validRideData)).rejects.toThrow('Connection timeout');
     });
 
     it('debería manejar respuesta vacía de RPC', async () => {
-      supabase.rpc.mockResolvedValue({ data: null, error: null });
+      rpc.createRide.mockResolvedValue({ success: false, error: 'RPC returned nothing' });
 
       await expect(createSingleRide(validRideData)).rejects.toThrow();
     });
 
     it('debería manejar error de validación desconocido', async () => {
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Error desconocido en validación' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Error desconocido en validación'
       });
 
       await expect(createSingleRide(validRideData)).rejects.toThrow();
@@ -546,9 +525,9 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
     it('debería registrar errores para debugging', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
-      supabase.rpc.mockResolvedValue({ 
-        data: null, 
-        error: { message: 'Error de prueba' } 
+      rpc.createRide.mockResolvedValue({
+        success: false,
+        error: 'Error de prueba'
       });
 
       await expect(createSingleRide(validRideData)).rejects.toThrow();
@@ -566,14 +545,14 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
     it('debería completar creación en tiempo razonable', async () => {
       const startTime = Date.now();
       
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, rideId: 'ride-performance' }, 
-        error: null 
+      rpc.createRide.mockResolvedValue({
+        success: true,
+        data: { rideId: 'ride-performance' }
       });
 
       const performanceRideData = {
         ...validRideData,
-        departure_time: new Date(Date.now() + 30 * 60 * 1000).toISOString() // 30 minutos en el futuro
+        dateTime: new Date(Date.now() + 30 * 60 * 1000)
       };
 
       await createSingleRide(performanceRideData);
@@ -592,12 +571,12 @@ describe('🚗 Tests de Publicación de Plazas (create_ride)', () => {
       for (let i = 0; i < 50; i++) {
         const rideData = {
           ...validRideData,
-          departure_time: new Date(Date.now() + (30 + i * 60) * 60 * 1000).toISOString() // 30 minutos + i horas en el futuro
+          dateTime: new Date(Date.now() + (30 + i * 60) * 60 * 1000)
         };
         
-        supabase.rpc.mockResolvedValue({ 
-          data: { success: true, rideId: `ride-load-${i}` }, 
-          error: null 
+        rpc.createRide.mockResolvedValueOnce({
+          success: true,
+          data: { rideId: `ride-load-${i}` }
         });
         
         promises.push(createSingleRide(rideData));

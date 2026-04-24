@@ -169,33 +169,39 @@ CREATE OR REPLACE FUNCTION public.verify_passenger_boarding(
     p_pin TEXT,
     p_passenger_id UUID DEFAULT NULL
 )
-RETURNS JSONB LANGUAGE sql SECURITY DEFINER AS $$
-    WITH upd AS (
-        UPDATE public.rides r SET status = 'in_progress',
-            passengers = (
-                SELECT jsonb_agg(
-                    CASE
-                        WHEN (p->>'pin' = p_pin)
-                             AND (p_passenger_id IS NULL OR (p->>'id')::UUID = p_passenger_id)
-                        THEN p || '{"status": "on_board"}'::jsonb
-                        ELSE p
-                    END
-                )
-                FROM public.rides r2, jsonb_array_elements(r2.passengers) p
-                WHERE r2.id = p_ride_id
+RETURNS JSONB LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+    -- Actualizar el estado del pasajero específico en el array JSONB
+    UPDATE public.rides r
+    SET
+        status = 'in_progress',
+        passengers = (
+            SELECT jsonb_agg(
+                CASE
+                    WHEN (p->>'pin' = p_pin)
+                         AND (p_passenger_id IS NULL OR (p->>'id')::UUID = p_passenger_id)
+                    THEN p || '{"status": "verified"}'::jsonb
+                    ELSE p
+                END
             )
-        WHERE r.id = p_ride_id
-          AND r.driver_id = auth.uid()
-          AND EXISTS (
-              SELECT 1
-              FROM jsonb_array_elements(r.passengers) p
-              WHERE p->>'pin' = p_pin
-                AND p->>'status' = 'confirmed'
-                AND (p_passenger_id IS NULL OR (p->>'id')::UUID = p_passenger_id)
-          )
-        RETURNING r.id
-    )
-    SELECT jsonb_build_object('success', EXISTS (SELECT 1 FROM upd));
+            FROM jsonb_array_elements(r.passengers) p
+        )
+    WHERE r.id = p_ride_id
+      AND r.driver_id = auth.uid()
+      AND EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(r.passengers) p
+          WHERE p->>'pin' = p_pin
+            AND p->>'status' = 'confirmed'
+            AND (p_passenger_id IS NULL OR (p->>'id')::UUID = p_passenger_id)
+      );
+
+    IF FOUND THEN
+        RETURN jsonb_build_object('success', true);
+    ELSE
+        RETURN jsonb_build_object('success', false, 'error', 'PIN_INCORRECTO');
+    END IF;
+END;
 $$;
 
 -- 10. RPC: trigger_emergency_alert

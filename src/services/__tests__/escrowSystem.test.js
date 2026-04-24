@@ -14,7 +14,8 @@ import {
   resolveDispute,
   getEscrowTransactions,
   holdEscrowFunds,
-  validateEscrowRelease
+  validateEscrowRelease,
+  getEscrowStatistics
 } from '@/services/escrowService';
 
 // Mock de Supabase
@@ -32,7 +33,7 @@ vi.mock('@/lib/supabase', () => ({
                 then: vi.fn()
               }))
             }))
-          })
+          }))
         })),
         in: vi.fn(() => ({
           then: vi.fn()

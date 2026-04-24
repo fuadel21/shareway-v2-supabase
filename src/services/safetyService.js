@@ -22,11 +22,11 @@ export const triggerSOS = async (rideId) => {
 
         // 2. Llamar al RPC de emergencia
         const { data, success, error } = await rpc.safeCall(
-            () => supabase.rpc('trigger_emergency_alert', {
+            () => supabase.rpc('trigger_emergency_alert_v2', {
                 p_ride_id: rideId,
                 p_current_location: location
             }),
-            'trigger_emergency_alert'
+            'trigger_emergency_alert_v2'
         );
 
         if (!success) throw new Error(error);

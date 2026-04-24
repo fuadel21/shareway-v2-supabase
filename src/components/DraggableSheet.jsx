@@ -7,15 +7,23 @@ import { ChevronUp, ChevronDown } from 'lucide-react';
  * Reemplaza a react-spring-bottom-sheet por su inestabilidad con react-spring v9 en este entorno.
  * 
  * @param {Object} props - Las propiedades del componente.
+ * @param {number} props.activeSnap - Estado snap controlado externamente (opcional)
  * @param {React.ReactNode} props.children - El contenido que se mostrará dentro del panel.
  */
-export function DraggableSheet({ children }) {
+export function DraggableSheet({ children, activeSnap }) {
     const [snap, setSnap] = useState(0); // 0: Mínimo, 1: Medio, 2: Full
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Sincronizar snap si viene una prop externa (ej: al seleccionar un item)
+    useEffect(() => {
+        if (activeSnap !== undefined) {
+            setSnap(activeSnap);
+        }
+    }, [activeSnap]);
 
     if (!mounted) return null;
 

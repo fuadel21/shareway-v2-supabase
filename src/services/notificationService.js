@@ -90,6 +90,19 @@ export const markAllAsRead = async (userId) => {
     }
 };
 
+export const deleteNotification = async (id) => {
+    try {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    } catch (error) {
+        console.error('🛡️ [NotificationService] Delete error:', error.message);
+        throw error;
+    }
+};
+
 export const subscribeToNotifications = (userId, callback) => {
     return supabase
         .channel(`notifications:${userId}`)

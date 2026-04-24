@@ -128,21 +128,27 @@ function UserProfile() {
             <main className="max-w-xl mx-auto px-4 py-8 space-y-8 text-left">
                 <div className="relative text-center space-y-4">
                     <div className="relative inline-block">
-                        <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative z-10 mx-auto">
+                        <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative z-10 mx-auto transition-transform hover:scale-105 duration-500">
                             <AvatarImage src={profile.photo_url || profile.avatar_url} />
                             <AvatarFallback className="bg-slate-900 text-white text-3xl font-black">{profile.display_name?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
+
+                        {/* RATING PROMINENTE BAJO LA FOTO */}
+                        <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-white px-4 py-1.5 rounded-full shadow-xl border border-slate-100 flex items-center gap-1.5 animate-in zoom-in duration-700 delay-300">
+                            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                            <span className="font-black text-slate-900 text-sm">{profile.rating}</span>
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest ml-1">{profile.rides_count} viajes</span>
+                        </div>
+
                         {profile.verification_status === 'verified' && (
-                            <div className="absolute bottom-1 right-1 bg-emerald-500 border-4 border-white h-8 w-8 rounded-full z-20 flex items-center justify-center shadow-lg animate-in zoom-in">
+                            <div className="absolute top-0 right-0 bg-emerald-500 border-4 border-white h-8 w-8 rounded-full z-20 flex items-center justify-center shadow-lg animate-in zoom-in">
                                 <ShieldCheck className="h-4 w-4 text-white" />
                             </div>
                         )}
                     </div>
-                    <div>
+                    <div className="pt-4">
                         <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic truncate px-4">{profile.display_name}</h2>
                         <div className="flex items-center justify-center gap-2 mt-1">
-                            <div className="flex items-center gap-1 text-amber-500"><Star className="h-4 w-4 fill-current" /><span className="font-black text-sm">{profile.rating}</span></div>
-                            <span className="text-slate-300">•</span>
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Miembro desde {memberDate}</span>
                         </div>
                     </div>

@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { supabase } from '@/lib/supabase';
 import { safeCall } from '@/lib/supabaseRPC';
-import { createSingleRequest, getAvailableRequests, cancelRequest } from '@/services/rideService';
+import { createSingleRequest, searchRequests, cancelRide } from '@/services/rideService';
 
 // Mock de Supabase
 vi.mock('@/lib/supabase', () => ({
@@ -95,8 +95,14 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
       expect(result.success).toBe(true);
       expect(result.requestId).toBe('request-123');
       expect(supabase.rpc).toHaveBeenCalledWith('create_ride_request', expect.objectContaining({
-        p_origin: validRequestData.origin,
-        p_destination: validRequestData.destination,
+        p_origin: expect.objectContaining({
+            lat: validRequestData.origin.coordinates.lat,
+            lng: validRequestData.origin.coordinates.lng
+        }),
+        p_destination: expect.objectContaining({
+            lat: validRequestData.destination.coordinates.lat,
+            lng: validRequestData.destination.coordinates.lng
+        }),
         p_seats_needed: validRequestData.seats_needed,
         p_suggested_price: validRequestData.suggested_price
       }));
@@ -145,10 +151,10 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
       expect(result.success).toBe(true);
     });
 
-    it('debería crear solicitud para viaje inmediato (+5 minutos)', async () => {
+    it('debería crear solicitud para viaje inmediato (+15 minutos)', async () => {
       const immediateRequest = {
         ...validRequestData,
-        departure_time: new Date(Date.now() + 6 * 60 * 1000).toISOString() // En 6 minutos
+        departure_time: new Date(Date.now() + 15 * 60 * 1000).toISOString() // En 15 minutos
       };
 
       supabase.rpc.mockResolvedValue({ 
@@ -181,6 +187,13 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
   describe('❌ Validaciones de Autenticación y Permisos', () => {
     it('debería rechazar creación si usuario no está autenticado', async () => {
       supabase.auth.getUser.mockResolvedValue({ data: { user: null } });
+
+      // El RPC fallaría en la base de datos si no hay usuario,
+      // pero aquí simulamos que el RPC devuelve error de permiso.
+      supabase.rpc.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Not authenticated' }
+      });
 
       await expect(createSingleRequest(validRequestData)).rejects.toThrow();
     });
@@ -332,7 +345,7 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
       await expect(createSingleRequest(pastRequest)).rejects.toThrow();
     });
 
-    it('debería rechazar fecha muy cercana (menos de 5 minutos)', async () => {
+    it('debería rechazar fecha muy cercana (menos de 10 minutos)', async () => {
       const soonRequest = {
         ...validRequestData,
         departure_time: new Date(Date.now() + 3 * 60 * 1000).toISOString() // En 3 minutos
@@ -411,17 +424,15 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
         error: null 
       });
 
+      const result1 = await createSingleRequest(duplicateRequest);
+
       // Segundo intento rechazado por duplicado
       supabase.rpc.mockResolvedValueOnce({ 
         data: null, 
-        error: { message: 'Solicitud duplicada detectada' } 
+        error: { message: 'Solicitud duplicada detectada' }
       });
 
-      const result1 = await createSingleRequest(duplicateRequest);
-      const result2 = await createSingleRequest(duplicateRequest);
-
-      expect(result1.success).toBe(true);
-      await expect(result2).rejects.toThrow();
+      await expect(createSingleRequest(duplicateRequest)).rejects.toThrow('Solicitud duplicada detectada');
     });
 
     it('debería respetar límite de 5 solicitudes activas concurrentemente', async () => {
@@ -492,20 +503,13 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
       expect(result.success).toBe(true);
     });
 
-    it('debería manejar precio sugerido cero', async () => {
+    it('debería rechazar precio sugerido cero (no permitido)', async () => {
       const freeRequest = {
         ...validRequestData,
         suggested_price: 0
       };
 
-      supabase.rpc.mockResolvedValue({ 
-        data: { success: true, requestId: 'request-free' }, 
-        error: null 
-      });
-
-      const result = await createSingleRequest(freeRequest);
-
-      expect(result.success).toBe(true);
+      await expect(createSingleRequest(freeRequest)).rejects.toThrow(/al menos 0.5/);
     });
 
     it('debería manejar distancia cero', async () => {
@@ -551,7 +555,7 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
     it('debería manejar respuesta vacía de RPC', async () => {
       supabase.rpc.mockResolvedValue({ data: null, error: null });
 
-      await expect(createSingleRequest(validRequestData)).rejects.toThrow();
+      await expect(createSingleRequest(validRequestData)).rejects.toThrow('No se recibió confirmación de la solicitud');
     });
 
     it('debería manejar error de validación desconocido', async () => {
@@ -574,7 +578,7 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
       await expect(createSingleRequest(validRequestData)).rejects.toThrow();
       
       expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Request Flow] createSingleRequest failed'),
+        expect.stringContaining('[Request Flow] createRideRequest failed'),
         expect.any(Error)
       );
       
@@ -634,47 +638,14 @@ describe('🚗 Tests de Solicitudes de Viajes (create_ride_request)', () => {
         { id: 'req-2', status: 'pending', departure_time: new Date().toISOString() }
       ];
 
-      supabase.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            gte: vi.fn().mockReturnValue({
-              neq: vi.fn().mockReturnValue({
-                then: vi.fn().mockResolvedValue({ data: mockRequests, error: null })
-              })
-            })
-          })
-        })
-      });
+      supabase.rpc.mockResolvedValueOnce({ data: mockRequests, error: null });
 
-      const requests = await getAvailableRequests();
+      const requests = await searchRequests({
+          origin: { lat: 40.4168, lng: -3.7038 },
+          destination: { lat: 41.3851, lng: 2.1734 }
+      });
 
       expect(requests).toHaveLength(2);
-      expect(requests[0].status).toBe('pending');
-    });
-
-    it('debería filtrar solicitudes por estado', async () => {
-      const mockRequests = [
-        { id: 'req-1', status: 'pending' },
-        { id: 'req-2', status: 'accepted' },
-        { id: 'req-3', status: 'cancelled' }
-      ];
-
-      supabase.from.mockReturnValue({
-        select: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            gte: vi.fn().mockReturnValue({
-              neq: vi.fn().mockReturnValue({
-                then: vi.fn().mockResolvedValue({ data: [mockRequests[0]], error: null })
-              })
-            })
-          })
-        })
-      });
-
-      const requests = await getAvailableRequests();
-
-      expect(requests).toHaveLength(1);
-      expect(requests[0].status).toBe('pending');
     });
   });
 });

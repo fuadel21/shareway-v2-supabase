@@ -14,7 +14,8 @@ import {
   getCurrentRides,
   getRideDetails,
   updateRideLocation,
-  emergencyStopRide
+  emergencyStopRide,
+  getRideStatusHistory
 } from '@/services/rideService';
 
 // Mock de Supabase
@@ -30,7 +31,7 @@ vi.mock('@/lib/supabase', () => ({
             eq: vi.fn(() => ({
               then: vi.fn()
             }))
-          })
+          }))
         })),
         in: vi.fn(() => ({
           then: vi.fn()

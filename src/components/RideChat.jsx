@@ -91,6 +91,14 @@ function RideChat() {
                 if (msgsError) throw msgsError;
                 if (isMounted.current) setMessages(msgs || []);
 
+                // MARCAR COMO LEÍDOS AL ENTRAR
+                await supabase
+                    .from('messages')
+                    .update({ read: true })
+                    .eq('chat_id', activeChatId)
+                    .neq('sender_id', currentUser.id)
+                    .eq('read', false);
+
             } catch (error) {
                 console.error("🛡️ stability: RideChat init failed:", error);
                 if (isMounted.current) {
@@ -158,28 +166,46 @@ function RideChat() {
     }, [messages]);
 
     const handleSendMessage = async (e) => {
-        e.preventDefault();
-        const chat_id = ride?.chat?.id;
-        if (!newMessage.trim() || !currentUser || !chat_id || isSending) return;
+        if (e) e.preventDefault();
 
-        const textToSend = newMessage.trim();
-        if (isMounted.current) {
-            setNewMessage('');
-            setIsSending(true);
+        // Obtenemos el ID del chat desde el estado local 'ride'
+        const activeChatId = ride?.chat?.id;
+
+        if (!newMessage.trim() || !currentUser?.id || !activeChatId || isSending) {
+            console.warn("🛡️ Chat: No se cumplen las condiciones para enviar", { activeChatId, userId: currentUser?.id });
+            return;
         }
 
+        const textToSend = newMessage.trim();
+        setIsSending(true);
+        setNewMessage(''); // Limpiar rápido para feedback visual
+
         try {
-            const result = await sendMessage(chat_id, currentUser.id, textToSend);
-            if (!result) throw new Error("No se recibió respuesta del servidor");
+            console.log("📨 Enviando mensaje al chat:", activeChatId);
+            const { data, error } = await supabase
+                .from('messages')
+                .insert({
+                    chat_id: activeChatId,
+                    sender_id: currentUser.id,
+                    content: textToSend
+                })
+                .select()
+                .single();
+
+            if (error) throw error;
+
+            // Actualizar timestamp del chat
+            await supabase.from('chats')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', activeChatId);
+
+            console.log("✅ Mensaje enviado con éxito");
         } catch (error) {
             console.error("🛡️ stability: RideChat send failed:", error);
-            if (isMounted.current) {
-                const errorMsg = error.message || "Error desconocido";
-                toast.error(`Error de envío: ${errorMsg}`);
-                setNewMessage(textToSend);
-            }
+            toast.error("Error al enviar", { description: error.message });
+            setNewMessage(textToSend); // Recuperar el texto si falla
         } finally {
-            if (isMounted.current) setIsSending(false);
+            setIsSending(false);
         }
     };
 
@@ -210,48 +236,45 @@ function RideChat() {
     }
 
     return (
-        <div className="h-full flex flex-col bg-[#F8FAFC] overflow-hidden">
-            <header className="bg-white border-b border-slate-100 p-4 shrink-0 flex items-center gap-4">
-                <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-12 w-12 rounded-2xl bg-white shadow-sm border border-slate-100 hover:scale-105">
-                    <ChevronLeft className="size-6 text-slate-900" />
+        <div className="fixed inset-0 flex flex-col bg-[#F8FAFC] z-[50]">
+            <header className="bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shrink-0 flex items-center gap-4 z-[60] pt-6 lg:pt-4">
+                <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 lg:h-12 lg:w-12 rounded-2xl bg-white shadow-sm border border-slate-100 hover:scale-105">
+                    <ChevronLeft className="size-5 lg:size-6 text-slate-900" />
                 </Button>
 
                 <div className="flex-1 min-w-0" onClick={() => navigate(`/ride/${rideId}`)}>
                     <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-black text-slate-900 tracking-tighter truncate uppercase italic leading-none">
+                        <h2 className="text-sm lg:text-lg font-black text-slate-900 tracking-tighter truncate uppercase italic leading-none">
                             {ride.destination?.name || 'Trayecto Activo'}
                         </h2>
                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                         <Calendar className="size-3 text-primary" />
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
+                        <p className="text-[8px] lg:text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">
                             {ride.departure_time ? format(new Date(ride.departure_time), "EEEE d '•' HH:mm", { locale: es }) : '--:--'}
                         </p>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 hover:text-primary transition-all">
-                        <Phone className="size-5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 hover:text-slate-900">
-                        <MoreVertical className="size-5" />
+                <div className="flex gap-1 lg:gap-2">
+                    <Button variant="ghost" size="icon" className="h-10 w-10 lg:h-12 lg:w-12 rounded-2xl bg-slate-50 text-slate-400 hover:text-primary transition-all">
+                        <Phone className="size-4 lg:size-5" />
                     </Button>
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 animate-in fade-in duration-1000">
-                    <div className="size-10 bg-primary/5 rounded-xl flex items-center justify-center shrink-0">
-                        <ShieldCheck className="size-5 text-primary" />
+            <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 scroll-smooth bg-slate-50/50">
+                <div className="bg-white/60 backdrop-blur-sm p-3 lg:p-4 rounded-3xl border border-white shadow-sm flex items-center gap-4 animate-in fade-in duration-1000">
+                    <div className="size-8 lg:size-10 bg-primary/5 rounded-xl flex items-center justify-center shrink-0">
+                        <ShieldCheck className="size-4 lg:size-5 text-primary" />
                     </div>
-                    <p className="text-[9px] font-bold text-emerald-600 uppercase tracking-widest leading-relaxed">
-                        COMUNICACIÓN CIFRADA PUNTO A PUNTO. TUS DATOS PERSONALES NO SON VISIBLES.
+                    <p className="text-[8px] lg:text-[9px] font-black text-slate-400 uppercase tracking-widest leading-relaxed italic">
+                        CHAT SEGURO • DATOS PRIVADOS PROTEGIDOS
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-6 pb-4">
                     {messages.map((msg, idx) => {
                         const messageSenderId = String(msg.sender_id);
                         const currentUserId = String(currentUser?.id);
@@ -308,45 +331,52 @@ function RideChat() {
                 </div>
             </main>
 
-            <footer className="bg-white border-t border-slate-100 relative z-[100] pb-24 lg:pb-32">
-                {/* ⚡ Quick Messages */}
-                <div className="px-6 py-3 border-b border-slate-50 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-white">
+            <footer className="bg-white border-t border-slate-100 shrink-0 relative z-[60]">
+                {/* ⚡ Quick Messages - Más compactos */}
+                <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-slate-50/50">
                     {QUICK_MESSAGES.map((msg, i) => (
                         <button
                             key={i}
                             onClick={() => {
                                 setNewMessage(msg);
-                                // Trigger send slightly after to allow state update or just send directly
                                 setTimeout(() => document.getElementById('chat-form-submit')?.click(), 50);
                             }}
-                            className="shrink-0 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 text-[10px] font-bold text-slate-500 hover:bg-primary/5 hover:border-primary/20 hover:text-primary transition-all whitespace-nowrap uppercase tracking-widest active:scale-95"
+                            className="shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[9px] font-black text-slate-500 hover:text-primary hover:border-primary/30 transition-all whitespace-nowrap uppercase tracking-widest active:scale-95 shadow-sm"
                         >
                             {msg}
                         </button>
                     ))}
                 </div>
 
-                <form onSubmit={handleSendMessage} className="flex items-center gap-4 max-w-xl mx-auto p-4 px-6">
-                    <div className="flex-1 relative group">
-                        <textarea
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    handleSendMessage(e);
-                                }
-                            }}
-                            placeholder="Escribe un mensaje..."
-                            className="w-full bg-slate-50 border-none rounded-[2rem] px-8 py-5 text-sm font-bold text-slate-900 placeholder:text-slate-300 focus:ring-4 focus:ring-primary/10 transition-all resize-none max-h-32 min-h-[64px] shadow-inner"
-                            rows={1}
-                        />
-                    </div>
-                    <Button id="chat-form-submit" type="submit" disabled={!newMessage.trim() || isSending} className="h-16 w-16 rounded-[2rem] bg-navy hover:bg-navy-600 text-white shadow-2xl shadow-slate-900/40 hover:scale-110 active:scale-90 transition-all group shrink-0">
-                        {isSending ? <Loader2 className="size-6 animate-spin" /> : <Send className="size-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
-                    </Button>
-                </form>
-            </footer >
+                {/* Input Area - Ajustada para no colapsar la vista */}
+                <div className="p-3 lg:p-4 pb-12 lg:pb-8 bg-white">
+                    <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
+                        <div className="flex-1 relative">
+                            <textarea
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }}
+                                placeholder="Escribe un mensaje..."
+                                className="w-full bg-slate-50 border-none rounded-[1.8rem] px-6 py-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 transition-all resize-none max-h-24 min-h-[52px] shadow-inner no-scrollbar"
+                                rows={1}
+                            />
+                        </div>
+                        <Button
+                            id="chat-form-submit"
+                            type="submit"
+                            disabled={!newMessage.trim() || isSending}
+                            className="h-12 w-12 lg:h-14 lg:w-14 rounded-2xl bg-slate-900 hover:bg-primary text-white shadow-xl hover:scale-105 active:scale-95 transition-all group shrink-0"
+                        >
+                            {isSending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5 lg:size-6" />}
+                        </Button>
+                    </form>
+                </div>
+            </footer>
         </div>
     );
 }

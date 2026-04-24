@@ -6,7 +6,7 @@ import {
   Key, ChevronRight, LogOut, User, Bell, Palette,
   CreditCard, ChevronLeft, ShieldCheck, Sparkles,
   Landmark, Wallet as WalletIcon, Share2, Radio,
-  Smartphone, Eye, Leaf
+  Smartphone, Eye, Leaf, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
@@ -84,6 +84,13 @@ const Settings = () => {
               color="bg-emerald-600"
               onClick={() => navigate('/settings/impact')}
             />
+            <SettingItem
+              icon={Star}
+              label="Mis Valoraciones"
+              sublabel="Lo que otros dicen de ti"
+              color="bg-amber-500"
+              onClick={() => navigate(`/profile/${profile?.id}`)}
+            />
           </div>
         </section>
 
@@ -154,6 +161,13 @@ const Settings = () => {
               sublabel={t('settings.notifications_sub')}
               color="bg-violet-600"
               onClick={() => navigate('/settings/notifications')}
+            />
+            <SettingItem
+              icon={History}
+              label="Historial de Actividad"
+              sublabel="Gestiona tus notificaciones"
+              color="bg-slate-900"
+              onClick={() => navigate('/settings/activity')}
             />
           </div>
         </section>
