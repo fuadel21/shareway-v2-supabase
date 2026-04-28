@@ -147,7 +147,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. Asegurar que complete_ride use una descripción clara con ruta para el conductor
+-- 3. Asegurar que complete_ride use una descripción clara y sea robusto contra IDs corruptos
 CREATE OR REPLACE FUNCTION public.complete_ride(p_ride_id UUID)
 RETURNS JSONB AS $$
 DECLARE
@@ -175,57 +175,44 @@ BEGIN
 
     -- Procesamiento de pasajeros
     FOR v_passenger IN
-        SELECT (p->>'id')::UUID as id,
+        SELECT (p->>'id')::TEXT as id_str,
                COALESCE((p->>'booked_price')::NUMERIC, 0) as price,
                COALESCE((p->>'seats_booked')::INTEGER, 1) as seats,
                (p->>'status') as status
         FROM public.rides r, jsonb_array_elements(r.passengers) p
         WHERE r.id = p_ride_id
     LOOP
-        DECLARE
-            v_subtotal NUMERIC := v_passenger.price * v_passenger.seats;
-        BEGIN
-            IF v_passenger.status = 'verified' OR v_passenger.status = 'confirmed' THEN
-                DECLARE
-                    v_net_payout NUMERIC := v_subtotal * 0.90;
-                BEGIN
-                    UPDATE public.wallets SET balance = COALESCE(balance, 0.00) + v_net_payout WHERE user_id = v_driver_id;
-                    UPDATE public.wallets SET held_balance = COALESCE(held_balance, 0.00) - v_subtotal WHERE user_id = v_passenger.id;
+        -- VALIDACIÓN DE UUID: Evitar error "567"
+        IF v_passenger.id_str ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN
+            DECLARE
+                v_p_id UUID := v_passenger.id_str::UUID;
+                v_subtotal NUMERIC := v_passenger.price * v_passenger.seats;
+            BEGIN
+                IF v_passenger.status = 'verified' OR v_passenger.status = 'confirmed' THEN
+                    DECLARE
+                        v_net_payout NUMERIC := v_subtotal * 0.90;
+                    BEGIN
+                        UPDATE public.wallets SET balance = COALESCE(balance, 0.00) + v_net_payout WHERE user_id = v_driver_id;
+                        UPDATE public.wallets SET held_balance = COALESCE(held_balance, 0.00) - v_subtotal WHERE user_id = v_p_id;
 
-                    -- Registro para el CONDUCTOR (Cobro)
+                        INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
+                        VALUES (v_driver_id, v_net_payout, 'payout', p_ride_id, 'Cobro viaje: ' || COALESCE(v_origin_address, 'Origen') || ' -> ' || COALESCE(v_dest_address, 'Destino'));
+
+                        INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
+                        VALUES (v_p_id, 0, 'payment_finalized', p_ride_id, 'Viaje finalizado: ' || COALESCE(v_origin_address, 'Origen') || ' -> ' || COALESCE(v_dest_address, 'Destino'));
+
+                        v_total_payout := v_total_payout + v_net_payout;
+                    END;
+                ELSE
+                    UPDATE public.wallets SET balance = balance + v_subtotal, held_balance = held_balance - v_subtotal WHERE user_id = v_p_id;
                     INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
-                    VALUES (
-                        v_driver_id,
-                        v_net_payout,
-                        'payout',
-                        p_ride_id,
-                        'Cobro viaje: ' || COALESCE(v_origin_address, 'Origen') || ' -> ' || COALESCE(v_dest_address, 'Destino')
-                    );
-
-                    -- Registro para el PASAJERO (Finalización)
-                    INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
-                    VALUES (
-                        v_passenger.id,
-                        0,
-                        'payment_finalized',
-                        p_ride_id,
-                        'Viaje finalizado: ' || COALESCE(v_origin_address, 'Origen') || ' -> ' || COALESCE(v_dest_address, 'Destino')
-                    );
-
-                    v_total_payout := v_total_payout + v_net_payout;
-                END;
-            ELSE
-                -- Devolución si no se verificó
-                UPDATE public.wallets SET balance = balance + v_subtotal, held_balance = held_balance - v_subtotal WHERE user_id = v_passenger.id;
-
-                INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
-                VALUES (v_passenger.id, v_subtotal, 'refund', p_ride_id, 'Reembolso: Pasajero no verificado');
-            END IF;
-        END;
+                    VALUES (v_p_id, v_subtotal, 'refund', p_ride_id, 'Reembolso: Pasajero no verificado');
+                END IF;
+            END;
+        END IF;
     END LOOP;
 
     UPDATE public.rides SET status = 'completed', updated_at = NOW() WHERE id = p_ride_id;
-
     RETURN jsonb_build_object('success', true, 'payout', v_total_payout);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

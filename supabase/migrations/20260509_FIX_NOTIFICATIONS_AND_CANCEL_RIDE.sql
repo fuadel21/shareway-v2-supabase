@@ -1,6 +1,6 @@
 -- ==========================================
 -- 20260509_FIX_NOTIFICATIONS_AND_CANCEL_RIDE.sql
--- Reparación de la API de Notificaciones y Cancelación (V2 - Anti-Ambigüedad)
+-- Reparación de la API de Notificaciones y Cancelación (V3 - Blindaje UUID)
 -- ==========================================
 
 -- 0. FLEXIBILIZAR TABLA DE NOTIFICACIONES
@@ -20,7 +20,6 @@ BEGIN
 END $$;
 
 -- 2. DEFINICIÓN ÚNICA Y UNIVERSAL
--- Esta versión con parámetros por defecto evita que PostgreSQL se confunda con múltiples firmas.
 CREATE OR REPLACE FUNCTION public.create_notification(
     p_user_id UUID,
     p_type TEXT DEFAULT 'info',
@@ -37,7 +36,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 3. REPARACIÓN DE CANCEL_RIDE
+-- 3. REPARACIÓN DE CANCEL_RIDE (Blindado contra datos corruptos "567")
 DROP FUNCTION IF EXISTS public.cancel_ride(uuid);
 DROP FUNCTION IF EXISTS public.cancel_ride_unified(uuid, text);
 
@@ -48,6 +47,7 @@ DECLARE
     v_passenger JSONB;
     v_passenger_id UUID;
     v_booked_price NUMERIC;
+    v_p_id_str TEXT;
 BEGIN
     SELECT * INTO v_ride_record FROM public.rides WHERE id = p_ride_id FOR UPDATE;
 
@@ -57,26 +57,34 @@ BEGIN
 
     IF v_ride_record.passengers IS NOT NULL THEN
         FOR v_passenger IN SELECT * FROM jsonb_array_elements(v_ride_record.passengers) LOOP
-            v_passenger_id := (v_passenger->>'id')::UUID;
-            v_booked_price := COALESCE((v_passenger->>'booked_price')::NUMERIC, 0);
+            -- Intentar obtener el ID del pasajero de forma segura (id o user_id)
+            v_p_id_str := COALESCE(v_passenger->>'id', v_passenger->>'user_id');
 
-            IF v_passenger->>'status' != 'cancelled' AND v_passenger_id IS NOT NULL THEN
-                UPDATE public.wallets
-                SET held_balance = GREATEST(0, held_balance - v_booked_price),
-                    balance = balance + v_booked_price
-                WHERE user_id = v_passenger_id;
+            -- VALIDACIÓN DE UUID: Solo procesamos si el ID tiene formato válido de UUID
+            IF v_p_id_str ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' THEN
+                v_passenger_id := v_p_id_str::UUID;
+                v_booked_price := COALESCE((v_passenger->>'booked_price')::NUMERIC, 0);
 
-                INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
-                VALUES (v_passenger_id, v_booked_price, 'refund', 'Reembolso por cancelación: ' || p_reason, p_ride_id);
+                IF v_passenger->>'status' != 'cancelled' AND v_passenger_id IS NOT NULL THEN
+                    UPDATE public.wallets
+                    SET held_balance = GREATEST(0, held_balance - v_booked_price),
+                        balance = balance + v_booked_price
+                    WHERE user_id = v_passenger_id;
 
-                -- Notificación usando la firma universal
-                PERFORM public.create_notification(
-                    v_passenger_id,
-                    'ride_cancelled',
-                    'Viaje Cancelado',
-                    'El conductor ha cancelado el viaje. Se ha devuelto tu dinero.',
-                    jsonb_build_object('ride_id', p_ride_id)
-                );
+                    INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
+                    VALUES (v_passenger_id, v_booked_price, 'refund', 'Reembolso por cancelación: ' || p_reason, p_ride_id);
+
+                    PERFORM public.create_notification(
+                        v_passenger_id,
+                        'ride_cancelled',
+                        'Viaje Cancelado',
+                        'El conductor ha cancelado el viaje. Se ha devuelto tu dinero.',
+                        jsonb_build_object('ride_id', p_ride_id)
+                    );
+                END IF;
+            ELSE
+                -- Si no es un UUID (ej: "567"), lo ignoramos para no romper la función
+                CONTINUE;
             END IF;
         END LOOP;
     END IF;
@@ -96,3 +104,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 4. PERMISOS
 GRANT EXECUTE ON FUNCTION public.create_notification TO authenticated;
 GRANT EXECUTE ON FUNCTION public.cancel_ride(UUID) TO authenticated;
+
