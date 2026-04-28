@@ -14,6 +14,7 @@ export default function MaintenanceTab() {
     const [health, setHealth] = useState(null);
     const [settings, setSettings] = useState([]);
     const [auditLogs, setAuditLogs] = useState([]);
+    const [auditFilter, setAuditFilter] = useState('all');
     const [loading, setLoading] = useState(true);
     const [isRunning, setIsRunning] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -42,6 +43,7 @@ export default function MaintenanceTab() {
             'Finanzas': { icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
             'Caducidad': { icon: Timer, color: 'text-amber-500', bg: 'bg-amber-50' },
             'Seguridad': { icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-50' },
+            'Impacto': { icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50' },
             'General': { icon: Settings2, color: 'text-slate-500', bg: 'bg-slate-50' }
         };
 
@@ -52,11 +54,16 @@ export default function MaintenanceTab() {
             return acc;
         }, {});
 
-        return Object.entries(grouped).map(([name, items]) => ({
-            name,
-            items,
-            ...categories[name]
-        }));
+        return Object.entries(grouped).map(([name, items]) => {
+            const config = categories[name] || categories['General'];
+            return {
+                name,
+                items,
+                icon: config.icon,
+                color: config.color,
+                bg: config.bg
+            };
+        });
     }, [settings]);
 
     const handleRunMaintenance = async () => {
@@ -140,46 +147,95 @@ export default function MaintenanceTab() {
             {showAudit ? (
                 <Card className="border-none shadow-xl rounded-[2.5rem] bg-slate-900 text-white overflow-hidden animate-in slide-in-from-top-4 duration-500">
                     <CardHeader className="p-8 border-b border-white/5">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div>
                                 <CardTitle className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-3">
-                                    <History className="text-primary" /> Auditoría de Sistema
+                                    <History className="text-primary" /> Centro de Auditoría Forense
                                 </CardTitle>
-                                <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1">Historial de cambios realizados por administradores.</CardDescription>
+                                <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1">Caja negra del sistema ShareWay Elite.</CardDescription>
                             </div>
-                            <Button variant="ghost" onClick={() => setShowAudit(false)} className="text-slate-400 hover:text-white uppercase font-black text-[10px]">Cerrar</Button>
+                            <div className="flex gap-2">
+                                {['all', 'update_setting', 'manual_maintenance', 'security'].map((f) => (
+                                    <Button
+                                        key={f}
+                                        variant="ghost"
+                                        size="sm"
+                                        className={cn(
+                                            "text-[9px] font-black uppercase tracking-widest rounded-xl h-9 px-4",
+                                            auditFilter === f ? "bg-primary text-white" : "bg-white/5 text-slate-400"
+                                        )}
+                                        onClick={() => setAuditFilter(f)}
+                                    >
+                                        {f.replace('_', ' ')}
+                                    </Button>
+                                ))}
+                                <Button variant="ghost" onClick={() => setShowAudit(false)} className="text-slate-400 hover:text-white uppercase font-black text-[10px]">Cerrar</Button>
+                            </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-0 max-h-[500px] overflow-y-auto custom-scrollbar">
+                    <CardContent className="p-0 max-h-[600px] overflow-y-auto custom-scrollbar">
                         <div className="divide-y divide-white/5">
-                            {auditLogs.length === 0 ? (
-                                <div className="p-10 text-center text-slate-500 uppercase font-black text-xs">No hay registros de auditoría aún</div>
+                            {auditLogs
+                                .filter(log => auditFilter === 'all' || log.action.includes(auditFilter))
+                                .length === 0 ? (
+                                <div className="p-16 text-center">
+                                    <Activity className="size-12 text-slate-800 mx-auto mb-4 opacity-20" />
+                                    <p className="text-slate-500 uppercase font-black text-xs tracking-widest">Sin registros en esta categoría</p>
+                                </div>
                             ) : (
-                                auditLogs.map((log) => (
-                                    <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-white/5 transition-colors">
-                                        <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                                            <Activity className="size-5 text-primary" />
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            <div className="flex items-center justify-between">
-                                                <p className="text-xs font-black uppercase italic tracking-tight text-white">{log.action.replace(/_/g, ' ')}</p>
-                                                <span className="text-[9px] font-bold text-slate-500 uppercase">{format(new Date(log.created_at), "dd MMM HH:mm", { locale: es })}</span>
+                                auditLogs
+                                    .filter(log => auditFilter === 'all' || log.action.includes(auditFilter))
+                                    .map((log) => (
+                                        <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-white/5 transition-colors group">
+                                            <div className={cn(
+                                                "size-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5",
+                                                log.action.includes('update') ? "bg-blue-500/10 text-blue-400" : "bg-emerald-500/10 text-emerald-400"
+                                            )}>
+                                                <Activity className="size-5" />
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <User className="size-3 text-slate-400" />
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{log.admin_name || 'Admin Sistema'}</p>
-                                            </div>
-                                            {log.target_key && (
-                                                <div className="mt-2 text-[10px] bg-white/5 p-2 rounded-lg border border-white/5">
-                                                    <span className="text-primary font-black uppercase tracking-tighter mr-2">{log.target_key}:</span>
-                                                    <span className="text-slate-400 font-mono">{JSON.stringify(log.old_value)}</span>
-                                                    <span className="mx-2 text-white">→</span>
-                                                    <span className="text-emerald-400 font-mono font-bold">{JSON.stringify(log.new_value)}</span>
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <p className="text-xs font-black uppercase italic tracking-tight text-white">{log.action.replace(/_/g, ' ')}</p>
+                                                        <Badge className={cn(
+                                                            "text-[7px] font-black uppercase px-2 h-4",
+                                                            log.action.includes('update') ? "bg-blue-500" : "bg-emerald-500"
+                                                        )}>
+                                                            {log.action.split('_')[0]}
+                                                        </Badge>
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                        <Clock className="size-3" /> {format(new Date(log.created_at), "dd MMM HH:mm:ss", { locale: es })}
+                                                    </span>
                                                 </div>
-                                            )}
+                                                <div className="flex items-center gap-2">
+                                                    <div className="size-5 rounded-full bg-primary/20 flex items-center justify-center">
+                                                        <User className="size-3 text-primary" />
+                                                    </div>
+                                                    <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{log.admin_name || 'Admin Sistema'}</p>
+                                                    <span className="text-[8px] text-slate-600 font-mono">ID: {log.admin_id?.split('-')[0]}...</span>
+                                                </div>
+
+                                                {log.target_key && (
+                                                    <div className="mt-3 text-[10px] bg-black/40 p-4 rounded-2xl border border-white/5 space-y-2 font-mono overflow-hidden">
+                                                        <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                                                            <span className="text-primary font-black uppercase tracking-tighter">Parámetro: {log.target_key}</span>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-4 pt-1">
+                                                            <div className="space-y-1">
+                                                                <p className="text-[8px] text-slate-500 uppercase font-black">Antes</p>
+                                                                <p className="text-red-400/80 truncate">{JSON.stringify(log.old_value) || 'NULL'}</p>
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                <p className="text-[8px] text-emerald-500 uppercase font-black">Después</p>
+                                                                <p className="text-emerald-400 font-bold truncate">{JSON.stringify(log.new_value)}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
+                                    ))
                             )}
                         </div>
                     </CardContent>

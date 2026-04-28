@@ -13,7 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json()
+    // Aceptamos return_url opcional desde el body para soportar Deep Links de Capacitor
+    const { userId, return_url } = await req.json()
+
+    if (!userId) throw new Error('User ID is required');
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL'),
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -28,6 +32,8 @@ serve(async (req) => {
     if (profileError) throw profileError
 
     let accountId = profile.stripe_account_id
+
+    // 1. Crear cuenta de Stripe Express si no existe
     if (!accountId) {
       const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
       if (userError) throw userError
@@ -39,16 +45,25 @@ serve(async (req) => {
           card_payments: { requested: true },
           transfers: { requested: true },
         },
+        settings: {
+          payouts: {
+            schedule: { interval: 'manual' }
+          }
+        }
       })
       accountId = account.id
       await supabaseAdmin.from('profiles').update({ stripe_account_id: accountId }).eq('id', userId)
     }
 
-    const origin = req.headers.get('origin') || 'http://localhost:5173'
+    // 2. Determinar URLs de retorno (Prioridad al body, luego al origin)
+    const requestOrigin = req.headers.get('origin') || 'https://shareway.vercel.app';
+    const finalReturnUrl = return_url || `${requestOrigin}/settings/payout`;
+
+    // 3. Crear el link de Onboarding
     const accountLink = await stripe.accountLinks.create({
       account: accountId,
-      refresh_url: `${origin}/settings/payout`,
-      return_url: `${origin}/settings/payout`,
+      refresh_url: finalReturnUrl,
+      return_url: finalReturnUrl,
       type: 'account_onboarding',
     })
 
@@ -57,6 +72,7 @@ serve(async (req) => {
       status: 200,
     })
   } catch (error) {
+    console.error('Stripe Account Link Error:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,

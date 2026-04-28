@@ -47,6 +47,13 @@ const TransactionItem = ({ tx, index, onClick }) => {
 
     const getDescription = (desc, type) => {
         if (!desc) return t('wallet.tx_types.generic');
+
+        // MEJORA ELITE: Si la descripción contiene una ruta, mostrarla directamente
+        // Las nuevas transacciones V16.4 guardan "Pago viaje: Calle A -> Calle B"
+        if (desc.includes(' -> ')) {
+            return desc.replace(/^(Pago viaje: |Cobro viaje: )/i, '');
+        }
+
         const d = desc.toUpperCase();
 
         // Prioridad por tipo de transacción (Enum DB)

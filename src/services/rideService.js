@@ -122,7 +122,9 @@ export const createSingleRide = async (rideData) => {
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
-            dateTime: rideData.dateTime instanceof Date ? rideData.dateTime : new Date(rideData.dateTime),
+            dateTime: rideData.dateTime instanceof Date
+                ? rideData.dateTime
+                : new Date(rideData.dateTime || rideData.departure_time),
             idempotency_key: idempotencyKey
         };
 
@@ -281,13 +283,14 @@ export const searchRides = async ({ origin, destination, date, maxDetour = 2500 
     }
 };
 
-export const fulfillRequest = async (request, customPrice) => {
+export const fulfillRequest = async (request, customPrice, totalSeats = null) => {
     const rideData = {
         requestId: request.id,
         origin: request.origin,
         destination: request.destination,
         dateTime: new Date(request.departure_time),
-        seats: request.seats_needed || 1,
+        // Si el conductor no especifica, usamos el máximo entre lo pedido y 4 (estándar berlina)
+        seats: totalSeats || Math.max(request.requested_seats || request.seats_needed || 1, 4),
         price: customPrice || request.suggested_price,
         details: `Aceptado desde solicitud de pasajero`,
         distance: request.distance || 0,
@@ -608,7 +611,10 @@ export const saveFavoriteRoute = async (routeData) => {
         name: routeData.name,
         origin: normalizeLocation(routeData.origin),
         destination: normalizeLocation(routeData.destination),
-        days: routeData.days || []
+        days: routeData.days || [],
+        seats: routeData.seats,
+        price: routeData.price,
+        departure_time: routeData.departure_time
     };
 
     if (routeData.id) {

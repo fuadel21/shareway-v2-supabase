@@ -8,6 +8,13 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 
+/**
+ * ClimateTab Component
+ *
+ * Part of the Admin Dashboard. Provides climate impact auditing data.
+ * Displays CO2 savings, distance shared, and occupancy metrics aligned with EU Green Deal standards.
+ * Features data visualization (recharts) and CSV export functionality.
+ */
 const ClimateTab = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,6 +29,10 @@ const ClimateTab = () => {
         fetchClimateData();
     }, []);
 
+    /**
+     * Fetches climate report data from the `v_eu_grant_report` view.
+     * Processes raw data for charting and summary calculation.
+     */
     const fetchClimateData = async () => {
         try {
             setLoading(true);
@@ -67,6 +78,9 @@ const ClimateTab = () => {
         }
     };
 
+    /**
+     * Generates and downloads a CSV file containing the detailed climate audit report.
+     */
     const downloadCSV = () => {
         const headers = ['Mes', 'Viajes', 'KM Totales', 'Emisiones Baseline (kg)', 'Emisiones Reales (kg)', 'Ahorro Neto (kg)', 'Ocupación Media'];
         const csvContent = [
@@ -168,45 +182,51 @@ const ClimateTab = () => {
                         <CardTitle>Evolución de Ahorro de CO₂</CardTitle>
                         <CardDescription>Comparativa mensual: Emisiones evitadas vs Emisiones reales</CardDescription>
                     </CardHeader>
-                    <CardContent className="h-[350px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis 
-                                    dataKey="monthLabel" 
-                                    stroke="#94a3b8" 
-                                    fontSize={12} 
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                />
-                                <YAxis 
-                                    stroke="#94a3b8" 
-                                    fontSize={12} 
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                    tickFormatter={(value) => `${value}kg`} 
-                                />
-                                <Tooltip 
-                                    cursor={{ fill: '#f1f5f9' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Legend />
-                                <Bar 
-                                    name="CO₂ Ahorrado (Neto)" 
-                                    dataKey="net_co2_savings_kg" 
-                                    fill="#10b981" 
-                                    radius={[4, 4, 0, 0]} 
-                                    stackId="a"
-                                />
-                                <Bar 
-                                    name="Emisión Residual" 
-                                    dataKey="actual_emissions_kg" 
-                                    fill="#e2e8f0" 
-                                    radius={[4, 4, 0, 0]} 
-                                    stackId="a"
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <CardContent className="h-[350px] min-h-[350px] w-full">
+                        {data && data.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
+                                <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="monthLabel"
+                                        stroke="#94a3b8"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis
+                                        stroke="#94a3b8"
+                                        fontSize={12}
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickFormatter={(value) => `${value}kg`}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: '#f1f5f9' }}
+                                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                                    />
+                                    <Legend />
+                                    <Bar
+                                        name="CO₂ Ahorrado (Neto)"
+                                        dataKey="net_co2_savings_kg"
+                                        fill="#10b981"
+                                        radius={[4, 4, 0, 0]}
+                                        stackId="a"
+                                    />
+                                    <Bar
+                                        name="Emisión Residual"
+                                        dataKey="actual_emissions_kg"
+                                        fill="#e2e8f0"
+                                        radius={[4, 4, 0, 0]}
+                                        stackId="a"
+                                    />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full w-full flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-xl">
+                                No hay datos de auditoría disponibles todavía
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

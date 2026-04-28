@@ -67,9 +67,9 @@ const TopHeader = ({ user }) => {
 
                 <div className="flex items-center gap-3">
                     <NotificationCenter user={user}>
-                        <button className="size-14 bg-white/80 backdrop-blur-xl rounded-[1.5rem] shadow-xl flex items-center justify-center border border-white hover:bg-white transition-all relative group">
+                        <div className="size-14 bg-white/90 backdrop-blur-xl rounded-[1.6rem] shadow-xl flex items-center justify-center border border-white hover:bg-white transition-all relative group pointer-events-auto">
                             <Bell className="h-6 w-6 text-slate-800 group-hover:text-primary transition-colors" />
-                        </button>
+                        </div>
                     </NotificationCenter>
                 </div>
             </div>

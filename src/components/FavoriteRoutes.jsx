@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase';
 import SubPageHeader from './SubPageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Plus, Route, Trash2, Edit, Loader2, Calendar } from 'lucide-react';
+import { Plus, Route, Trash2, Edit, Loader2, Calendar, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { createSingleRide } from '@/services/rideService';
+import { addMinutes } from 'date-fns';
 
 const weekDaysMap = { 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 0: 'D' };
 const weekDaysMapEn = { 1: 'M', 2: 'T', 3: 'W', 4: 'T', 5: 'F', 6: 'S', 0: 'S' };
@@ -18,6 +20,7 @@ const FavoriteRoutes = () => {
     const [routes, setRoutes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDeleting, setIsDeleting] = useState(null);
+    const [isPublishing, setIsPublishing] = useState(null);
 
     const fetchRoutes = useCallback(async () => {
         if (!profile?.id) return;
@@ -56,7 +59,58 @@ const FavoriteRoutes = () => {
         }
     }, [profile?.id, fetchRoutes]);
 
+    const handlePublishNow = async (route) => {
+        setIsPublishing(route.id);
+        try {
+            // Lógica de tiempo inteligente para "Publicar ahora"
+            let departureDate = addMinutes(new Date(), 21);
+
+            // Si la ruta tiene una hora guardada y es para hoy, intentamos usarla si es futura
+            if (route.departure_time) {
+                const [hours, minutes] = route.departure_time.split(':');
+                const todayScheduled = new Date();
+                todayScheduled.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+
+                // Si la hora programada es al menos 21 minutos en el futuro, la usamos
+                if (todayScheduled > addMinutes(new Date(), 20)) {
+                    departureDate = todayScheduled;
+                }
+            }
+
+            const rideData = {
+                driver_id: profile.id,
+                origin: route.origin,
+                destination: route.destination,
+                departure_time: departureDate.toISOString(),
+                seats: route.seats || 4,
+                price: route.price || 5.00,
+                status: 'scheduled',
+                vehicle_model: profile.vehicle_model || 'Coche compartido',
+                vehicle_plate: profile.vehicle_plate || 'TEST-123'
+            };
+
+            const rideId = await createSingleRide(rideData);
+
+            toast.success("¡Viaje publicado!", {
+                description: "Tu coche ya es visible en el mapa. ¡Buen viaje!"
+            });
+
+            navigate(`/ride/${rideId}`);
+        } catch (error) {
+            console.error("Error publishing ride from favorite:", error);
+            toast.error("No se pudo publicar", {
+                description: error.message || "Inténtalo de nuevo más tarde."
+            });
+        } finally {
+            setIsPublishing(null);
+        }
+    };
+
     const handleDelete = async (routeId) => {
+        if (!routeId) {
+            console.error("No routeId provided for deletion");
+            return;
+        }
         if (!window.confirm(t('favorite_routes.delete_confirm'))) return;
         setIsDeleting(routeId);
         try {
@@ -116,20 +170,22 @@ const FavoriteRoutes = () => {
                                                 </CardDescription>
                                             </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => navigate(`/edit-favorite-route/${route.id}`)}>
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="rounded-xl text-gray-300 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDelete(route.id)} disabled={isDeleting === route.id}>
-                                                {isDeleting === route.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                                            </Button>
+                                        <div className="flex flex-col gap-2">
+                                            <div className="flex gap-2">
+                                                <Button variant="ghost" size="icon" className="rounded-xl hover:bg-primary/10 hover:text-primary transition-colors" onClick={() => navigate(`/edit-favorite-route/${route.id}`)}>
+                                                    <Edit className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" className="rounded-xl text-gray-300 hover:text-destructive hover:bg-destructive/10 transition-colors" onClick={() => handleDelete(route.id)} disabled={isDeleting === route.id}>
+                                                    {isDeleting === route.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="pt-0">
+                                <CardContent className="pt-0 space-y-4">
                                     <div className="flex items-center gap-3 bg-gray-50/50 p-3 rounded-2xl border border-gray-100/50">
                                         <Calendar className="h-4 w-4 text-gray-400" />
-                                        <div className="flex gap-1.5">
+                                        <div className="flex gap-1.5 flex-1">
                                             {[1, 2, 3, 4, 5, 6, 0].map(d => (
                                                 <span
                                                     key={d}
@@ -141,7 +197,26 @@ const FavoriteRoutes = () => {
                                                     {i18n.language === 'es' ? weekDaysMap[d] : weekDaysMapEn[d]}
                                                 </span>
                                             ))}
+                                            <div className="ml-2 flex items-center gap-2 border-l pl-3 border-gray-200">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase">Hora</span>
+                                                    <span className="text-xs font-black text-primary">{route.departure_time?.slice(0, 5) || '--:--'}</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase">Precio</span>
+                                                    <span className="text-xs font-black text-primary">{route.price || 0}€</span>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        <Button
+                                            onClick={() => handlePublishNow(route)}
+                                            disabled={isPublishing === route.id}
+                                            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black uppercase italic tracking-tighter text-[10px] h-10 px-4 shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
+                                        >
+                                            {isPublishing === route.id ? <Loader2 className="size-3 animate-spin mr-2" /> : <Zap className="size-3 mr-2 fill-current" />}
+                                            Publicar para hoy
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>

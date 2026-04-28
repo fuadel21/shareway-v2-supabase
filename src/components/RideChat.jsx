@@ -18,7 +18,7 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { sendMessage } from '../services/chatService';
+import { sendMessage, markChatAsRead } from '../services/chatService';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
@@ -92,12 +92,7 @@ function RideChat() {
                 if (isMounted.current) setMessages(msgs || []);
 
                 // MARCAR COMO LEÍDOS AL ENTRAR
-                await supabase
-                    .from('messages')
-                    .update({ read: true })
-                    .eq('chat_id', activeChatId)
-                    .neq('sender_id', currentUser.id)
-                    .eq('read', false);
+                await markChatAsRead(activeChatId);
 
             } catch (error) {
                 console.error("🛡️ stability: RideChat init failed:", error);
@@ -124,6 +119,11 @@ function RideChat() {
                     if (!isMounted.current) return;
 
                     try {
+                        // Si recibimos un mensaje de otro, marcar como leído automáticamente si estamos en la pantalla
+                        if (payload.new.sender_id !== currentUser?.id) {
+                            markChatAsRead(ride.chat.id);
+                        }
+
                         // Evitar duplicados locales
                         setMessages(prev => {
                             if (prev.some(m => m.id === payload.new.id)) return prev;
@@ -146,6 +146,20 @@ function RideChat() {
                     } catch (e) {
                         console.error("🛡️ Real-time processing error:", e);
                     }
+                }
+            )
+            .on('postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'messages',
+                    filter: ride?.chat?.id ? `chat_id=eq.${ride.chat.id}` : undefined
+                },
+                (payload) => {
+                    if (!isMounted.current) return;
+                    setMessages(prev => prev.map(msg =>
+                        msg.id === payload.new.id ? { ...msg, ...payload.new } : msg
+                    ));
                 }
             )
             .subscribe((status) => {
@@ -236,7 +250,7 @@ function RideChat() {
     }
 
     return (
-        <div className="fixed inset-0 flex flex-col bg-[#F8FAFC] z-[50]">
+        <div className="fixed inset-0 flex flex-col bg-[#F8FAFC] z-[1100]">
             <header className="bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shrink-0 flex items-center gap-4 z-[60] pt-6 lg:pt-4">
                 <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-10 w-10 lg:h-12 lg:w-12 rounded-2xl bg-white shadow-sm border border-slate-100 hover:scale-105">
                     <ChevronLeft className="size-5 lg:size-6 text-slate-900" />
@@ -321,7 +335,14 @@ function RideChat() {
                                         <span className="text-[8px] font-black text-slate-300 uppercase letter-spacing-widest">
                                             {safeTime}
                                         </span>
-                                        {isMe && <CheckCheck className="size-3 text-primary/40" />}
+                                        {isMe && (
+                                            <CheckCheck className={cn(
+                                                "size-3 transition-colors",
+                                                (msg.read_by && msg.read_by.some(uid => uid !== currentUserId))
+                                                    ? "text-sky-400"
+                                                    : "text-slate-300"
+                                            )} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -349,7 +370,7 @@ function RideChat() {
                 </div>
 
                 {/* Input Area - Ajustada para no colapsar la vista */}
-                <div className="p-3 lg:p-4 pb-12 lg:pb-8 bg-white">
+                <div className="p-3 lg:p-4 pb-6 lg:pb-8 bg-white">
                     <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
                         <div className="flex-1 relative">
                             <textarea

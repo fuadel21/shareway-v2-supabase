@@ -1,19 +1,46 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Building2, Users, MapPin, Plus, ExternalLink, Search, Loader2, X, Globe, Lock, Save } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from '@/lib/supabase';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card.jsx';
-import { Button } from '@/components/ui/button.jsx';
-import { Input } from '@/components/ui/input.jsx';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Plus, Trash2, Building2, Globe, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function CommunitiesTab() {
+/**
+ * CommunitiesTab Component
+ *
+ * Part of the Admin Dashboard. Manages the "Elite" communities ecosystem.
+ * Features a search interface, a modal for creating new communities,
+ * and cards displaying existing communities with their basic stats and management links.
+ */
+const CommunitiesTab = () => {
+    const navigate = useNavigate();
     const [communities, setCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [name, setName] = useState('');
-    const [domain, setDomain] = useState('');
-    const [isAdding, setIsAdding] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
+    // Formulario de nueva comunidad
+    const [newCommunity, setNewCommunity] = useState({
+        name: '',
+        description: '',
+        location: '',
+        is_private: false
+    });
+
+    useEffect(() => {
+        fetchCommunities();
+    }, []);
+
+    /**
+     * Fetches all communities from the 'communities' table, ordered by name.
+     */
     const fetchCommunities = async () => {
         setLoading(true);
         try {
@@ -24,154 +51,184 @@ export default function CommunitiesTab() {
 
             if (error) throw error;
             setCommunities(data || []);
-        } catch (err) {
+        } catch (error) {
             toast.error("Error al cargar comunidades");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchCommunities();
-    }, []);
+    /**
+     * Creates a new Elite community.
+     * Captures current user as admin_id and resets the form on success.
+     */
+    const handleCreateCommunity = async () => {
+        if (!newCommunity.name) return toast.error("El nombre es obligatorio");
 
-    const handleAdd = async (e) => {
-        e.preventDefault();
-        if (!name || !domain) return toast.error("Completa todos los campos");
-
-        setIsAdding(true);
+        setIsSaving(true);
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.user) throw new Error("No hay sesión activa");
+
             const { error } = await supabase
                 .from('communities')
-                .insert([{ name, allowed_domain: domain }]);
+                .insert([{
+                    name: newCommunity.name,
+                    description: newCommunity.description,
+                    location: newCommunity.location,
+                    is_private: newCommunity.is_private,
+                    admin_id: session.user.id
+                }]);
 
             if (error) throw error;
 
-            toast.success("Comunidad añadida");
-            setName('');
-            setDomain('');
+            toast.success("Comunidad creada con éxito");
+            setIsCreateModalOpen(false);
+            setNewCommunity({ name: '', description: '', location: '', is_private: false });
             fetchCommunities();
-        } catch (err) {
-            toast.error("Error: " + err.message);
+        } catch (error) {
+            console.error("Error al crear:", error);
+            toast.error(error.message || "Error al crear la comunidad");
         } finally {
-            setIsAdding(false);
+            setIsSaving(false);
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm("¿Seguro que quieres borrar esta comunidad?")) return;
+    const filtered = communities.filter(c =>
+        c.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-        try {
-            const { error } = await supabase
-                .from('communities')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-            toast.success("Comunidad eliminada");
-            fetchCommunities();
-        } catch (err) {
-            toast.error("Error al eliminar");
-        }
-    };
+    if (loading) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" /></div>;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 text-left">
-            <div className="grid gap-6 md:grid-cols-3">
-                <Card className="md:col-span-1 border-none shadow-sm rounded-3xl bg-slate-50/50">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-slate-900 uppercase italic font-black text-sm">
-                            <Plus className="h-5 w-5 text-primary" /> Nueva Comunidad
-                        </CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Restringe el acceso por dominio.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleAdd} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Nombre</label>
-                                <Input
-                                    placeholder="Ej: Universidad de Sevilla"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                    className="h-12 rounded-2xl bg-white border-slate-100 shadow-sm"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 px-1">Dominio Permitido</label>
-                                <Input
-                                    placeholder="Ej: us.es"
-                                    value={domain}
-                                    onChange={e => setDomain(e.target.value)}
-                                    className="h-12 rounded-2xl bg-white border-slate-100 shadow-sm"
-                                />
-                            </div>
-                            <Button
-                                type="submit"
-                                className="w-full h-12 rounded-2xl font-black uppercase italic tracking-widest text-[10px]"
-                                disabled={isAdding}
-                            >
-                                {isAdding ? <Loader2 className="animate-spin" /> : "Crear Comunidad"}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+        <div className="space-y-6 animate-in fade-in duration-500 text-left">
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                        placeholder="Buscar comunidad..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-11 rounded-2xl border-slate-100 bg-white h-12 font-bold"
+                    />
+                </div>
+                <Button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="rounded-2xl bg-slate-900 h-12 px-6 font-black uppercase italic tracking-widest text-[10px]"
+                >
+                    <Plus className="mr-2 h-4 w-4" /> Crear Comunidad
+                </Button>
+            </div>
 
-                <Card className="md:col-span-2 border-none shadow-sm rounded-3xl bg-white overflow-hidden">
-                    <CardHeader className="bg-white border-b border-slate-50 pb-6">
-                        <CardTitle className="flex items-center gap-2 text-slate-900 uppercase italic font-black text-sm">
-                            <Building2 className="h-5 w-5 text-primary" /> Comunidades Activas
-                        </CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total: {communities.length}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        {loading ? (
-                            <div className="flex justify-center p-12"><Loader2 className="animate-spin text-primary" /></div>
-                        ) : communities.length === 0 ? (
-                            <div className="p-12 text-center text-slate-400 font-bold uppercase text-[10px]">No hay comunidades creadas</div>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="hover:bg-transparent border-slate-50">
-                                        <TableHead className="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Comunidad</TableHead>
-                                        <TableHead className="px-6 py-4 text-[10px] font-black uppercase text-slate-400">Dominio</TableHead>
-                                        <TableHead className="px-6 py-4 text-right"></TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {communities.map((c) => (
-                                        <TableRow key={c.id} className="border-slate-50 hover:bg-slate-50/50 transition-colors">
-                                            <TableCell className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-lg bg-primary/5 flex items-center justify-center">
-                                                        <ShieldCheck className="size-4 text-primary" />
-                                                    </div>
-                                                    <span className="font-bold text-slate-900 text-sm">{c.name}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="px-6 py-4">
-                                                <div className="flex items-center gap-2 text-slate-500 font-medium">
-                                                    <Globe className="size-3" />
-                                                    <span className="text-xs">@{c.allowed_domain}</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="px-6 py-4 text-right">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => handleDelete(c.id)}
-                                                    className="h-9 w-9 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                                                >
-                                                    <Trash2 className="size-4" />
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
+            {/* Modal de Creación */}
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogContent className="rounded-[2.5rem] border-none max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Nueva Comunidad</DialogTitle>
+                        <DialogDescription className="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Configura un nuevo espacio exclusivo</DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-6 py-4">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest px-1">Nombre de la Comunidad</Label>
+                            <Input
+                                placeholder="Ej: Google Madrid"
+                                className="rounded-xl border-slate-100 h-12 font-bold"
+                                value={newCommunity.name}
+                                onChange={e => setNewCommunity({...newCommunity, name: e.target.value})}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest px-1">Ubicación / Empresa</Label>
+                            <Input
+                                placeholder="Ej: Torre Picasso, Madrid"
+                                className="rounded-xl border-slate-100 h-12 font-bold"
+                                value={newCommunity.location}
+                                onChange={e => setNewCommunity({...newCommunity, location: e.target.value})}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                            <div className="flex items-center gap-3">
+                                {newCommunity.is_private ? <Lock className="h-5 w-5 text-amber-500" /> : <Globe className="h-5 w-5 text-emerald-500" />}
+                                <div>
+                                    <p className="text-xs font-black uppercase italic tracking-tight">Privacidad</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                                        {newCommunity.is_private ? 'Solo con invitación' : 'Cualquiera puede unirse'}
+                                    </p>
+                                </div>
+                            </div>
+                            <Switch
+                                checked={newCommunity.is_private}
+                                onCheckedChange={checked => setNewCommunity({...newCommunity, is_private: checked})}
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            className="w-full rounded-2xl bg-primary h-14 font-black uppercase italic tracking-widest text-xs shadow-lg shadow-primary/20"
+                            onClick={handleCreateCommunity}
+                            disabled={isSaving}
+                        >
+                            {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />} Crear Comunidad Elite
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {filtered.map((comm) => (
+                    <Card key={comm.id} className="border-none shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-500">
+                        <div className="h-24 bg-slate-50 relative overflow-hidden">
+                            {comm.banner_url ? (
+                                <img src={comm.banner_url} alt="" className="w-full h-full object-cover opacity-50" />
+                            ) : (
+                                <div className="absolute inset-0 bg-gradient-to-br from-slate-100 to-white" />
+                            )}
+                            <Badge className="absolute top-4 right-4 bg-white/80 backdrop-blur-md text-slate-900 border-none font-black text-[9px] tracking-widest uppercase">
+                                {comm.is_private ? 'Privada' : 'Abierta'}
+                            </Badge>
+                        </div>
+                        <CardContent className="p-6 -mt-10 relative">
+                            <div className="size-16 rounded-2xl bg-white shadow-lg border border-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                <Building2 className="h-8 w-8 text-primary" />
+                            </div>
+                            <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tighter mb-1">{comm.name}</h3>
+                            <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">
+                                <MapPin className="h-3 w-3" /> {comm.location || 'Global'}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="p-3 bg-slate-50 rounded-xl">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Miembros</p>
+                                    <p className="text-xl font-black text-slate-900 italic tracking-tighter">--</p>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-xl">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">Viajes Mes</p>
+                                    <p className="text-xl font-black text-slate-900 italic tracking-tighter">--</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="flex-1 rounded-xl font-black text-[9px] uppercase tracking-widest border-slate-100 h-10"
+                                    onClick={() => navigate(`/admin/communities/${comm.id}`)}
+                                >
+                                    Gestionar
+                                </Button>
+                                <Button size="icon" variant="ghost" className="rounded-xl h-10 w-10 text-primary hover:bg-primary/5">
+                                    <ExternalLink className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
         </div>
     );
-}
+};
+
+export default CommunitiesTab;

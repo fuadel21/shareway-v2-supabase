@@ -22,6 +22,7 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
     const elements = useElements();
     const { user } = useOutletContext();
     const [isLoading, setIsLoading] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     const [errorMessage, setErrorMessage] = useState(null);
     const [isProcessingServer, setIsProcessingServer] = useState(false);
 
@@ -63,7 +64,7 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (!stripe || !elements || !user || isLoading) return;
+        if (!stripe || !elements || !user || isLoading || !isReady) return;
 
         setIsLoading(true);
         setErrorMessage(null);
@@ -89,8 +90,17 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in duration-300">
-            <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-inner">
-                <PaymentElement options={{ layout: 'accordion' }} />
+            <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-inner min-h-[200px] flex flex-col justify-center">
+                {!isReady && (
+                    <div className="flex flex-col items-center gap-2 text-slate-400 py-10">
+                        <Loader2 className="animate-spin" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Cargando pasarela...</span>
+                    </div>
+                )}
+                <PaymentElement
+                    options={{ layout: 'accordion' }}
+                    onReady={() => setIsReady(true)}
+                />
             </div>
 
             {errorMessage && (
@@ -102,7 +112,7 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, clientSecret }) => {
 
             <div className="flex gap-3">
                 <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading || isProcessingServer} className="flex-1 h-14 rounded-2xl font-bold text-slate-400">Cancelar</Button>
-                <Button type="submit" disabled={!stripe || isLoading || isProcessingServer} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
+                <Button type="submit" disabled={!stripe || isLoading || isProcessingServer || !isReady} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
                     {(isLoading || isProcessingServer) ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                         <span className="flex items-center gap-2">
                             <Lock className="h-4 w-4" /> {isProcessingServer ? "Procesando..." : "Confirmar Pago"}
@@ -138,6 +148,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     // Nuevo estado para la ubicación de recogida personalizada
     const [pickupLocation, setPickupLocation] = useState(initialPickupLocation || null);
     const [pickupAddress, setPickupAddress] = useState('');
+    const [numSeats, setNumSeats] = useState(1);
     const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
 
     useEffect(() => {
@@ -153,7 +164,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         }
     }, [isOpen, userLocation, initialPickupLocation, ride?.origin]);
 
-    // Recalcular precio cuando cambia la ubicación de recogida
+    // Recalcular precio cuando cambia la ubicación de recogida o el número de plazas
     useEffect(() => {
         if (pickupLocation && ride?.origin) {
             const distance = calculateDistance(
@@ -163,12 +174,13 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
             // Lógica de recargo: 0.50€ por KM de desviación desde el origen original
             const surcharge = distance * 0.50;
-            const finalPrice = baseAmount + surcharge;
-            setDynamicAmount(parseFloat(finalPrice.toFixed(2)));
+            const finalPricePerSeat = baseAmount + surcharge;
+            const totalAmount = finalPricePerSeat * numSeats;
+            setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
         } else {
-            setDynamicAmount(baseAmount);
+            setDynamicAmount(baseAmount * numSeats);
         }
-    }, [pickupLocation, ride?.origin, baseAmount]);
+    }, [pickupLocation, ride?.origin, baseAmount, numSeats]);
 
     const hasBalance = wallet?.balance >= dynamicAmount;
 
@@ -220,7 +232,8 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             const { success, error, data } = await confirmTripAndPay(rideId, null, {
                 pickupLocation: pickupLocation ?? null,
                 pickupAddress: pickupAddress ?? null,
-                price: cleanPrice
+                price: cleanPrice / numSeats, // Enviamos el precio unitario pactado
+                numSeats: numSeats
             });
 
             if (!success) {
@@ -307,7 +320,27 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 )}
                             </div>
 
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 2: Pago Seguro</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 2: ¿Cuántas plazas?</p>
+                            <div className="flex bg-white p-1.5 rounded-3xl border-2 border-slate-100 gap-1 shadow-sm">
+                                {[1, 2, 3, 4].map(n => {
+                                    const isAvailable = n <= (ride?.seats_available || 0);
+                                    return (
+                                        <button key={n}
+                                            type="button"
+                                            disabled={!isAvailable}
+                                            onClick={() => setNumSeats(n)}
+                                            className={cn(
+                                                "flex-1 h-12 rounded-2xl text-xs font-black transition-all touch-action-manipulation active:scale-95 flex flex-col items-center justify-center leading-none",
+                                                numSeats === n ? "bg-slate-900 text-white shadow-lg" : isAvailable ? "text-slate-400 hover:bg-slate-50" : "text-slate-200 cursor-not-allowed opacity-30"
+                                            )}>
+                                            <span>{n}</span>
+                                            <span className="text-[8px] opacity-60 uppercase font-black">{n === 1 ? 'Plaza' : 'Plazas'}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 3: Pago Seguro</p>
 
                             {/* INFO PRECIO */}
                             <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-xl">

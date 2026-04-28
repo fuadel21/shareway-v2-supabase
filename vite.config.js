@@ -6,6 +6,15 @@ import autoprefixer from 'autoprefixer';
 
 export default defineConfig({
     plugins: [react()],
+    server: {
+        port: 5173,
+        strictPort: true,
+        hmr: {
+            protocol: 'ws',
+            host: 'localhost',
+            port: 5173,
+        },
+    },
     css: {
         postcss: {
             plugins: [

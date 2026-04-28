@@ -43,11 +43,12 @@ export const startRide = (rideId, driverId = null) =>
         p_driver_id: driverId
     }), 'start_ride');
 
-export const updateRideLocation = (rideId, lat, lng) =>
+export const updateRideLocation = (rideId, lat, lng, heading = 0) =>
     safeCall(() => supabase.rpc('update_ride_location', {
         p_ride_id: rideId,
         p_lat: parseFloat(lat),
-        p_lng: parseFloat(lng)
+        p_lng: parseFloat(lng),
+        p_heading: parseFloat(heading || 0)
     }), 'update_ride_location');
 
 export const completeRide = (rideId) =>
@@ -98,13 +99,14 @@ export const createRide = (rideData) =>
         p_idempotency_key: rideData.idempotency_key || null
     }), 'create_ride');
 
-export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null } = {}) =>
+export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null, numSeats = 1 } = {}) =>
     safeCall(() => supabase.rpc('confirm_trip_and_pay', {
         p_ride_id: rideId,
         p_request_id: requestId ?? null,
         p_pickup_address: pickupAddress ?? null,
         p_pickup_location: pickupLocation ?? null,
-        p_price: price !== null ? parseFloat(price) : null
+        p_price: price !== null ? parseFloat(price) : null,
+        p_num_seats: parseInt(numSeats || 1)
     }), 'confirm_trip_and_pay');
 
 export const cancelBookingAndRefund = (rideId) =>
@@ -157,7 +159,7 @@ export const getAdminHealthDashboard = () =>
     safeCall(() => supabase.rpc('get_admin_health_dashboard'), 'get_admin_health_dashboard');
 
 export const getPlatformStats = () =>
-    safeCall(() => supabase.rpc('get_platform_stats'), 'get_platform_stats');
+    safeCall(() => supabase.rpc('get_platform_admin_stats'), 'get_platform_admin_stats');
 
 export const runManualMaintenanceTasks = () =>
     safeCall(() => supabase.rpc('run_manual_maintenance_tasks'), 'run_manual_maintenance_tasks');
@@ -168,11 +170,68 @@ export const getPlatformSettings = () =>
 export const updatePlatformSetting = (key, value) =>
     safeCall(() => supabase.rpc('update_platform_setting', { p_key: key, p_value: value }), 'update_platform_setting');
 
-export const getPlatformAuditLogs = (limit = 50) =>
-    safeCall(() => supabase.rpc('get_platform_audit_logs', { p_limit: limit }), 'get_platform_audit_logs');
+export const getPlatformAuditLogs = (category = 'all', limit = 50) =>
+    safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_category: category, p_limit: limit }), 'get_filtered_audit_logs');
 
 export const requestPlatformPayout = () =>
     safeCall(() => supabase.rpc('request_platform_payout'), 'request_platform_payout');
+
+export const processPayout = (payoutId, status, errorMessage = null) =>
+    safeCall(() => supabase.rpc('process_payout', {
+        p_payout_id: payoutId,
+        p_status: status,
+        p_error_message: errorMessage
+    }), 'process_payout');
+
+export const processPayoutElite = (payoutId, action, notes = null) =>
+    safeCall(() => supabase.rpc('process_payout_elite', {
+        p_payout_id: payoutId,
+        p_action: action,
+        p_notes: notes
+    }), 'process_payout_elite');
+
+export const getPayoutRequests = () =>
+    safeCall(() => supabase
+        .from('payout_requests')
+        .select('*, profiles(display_name, email)')
+        .order('created_at', { ascending: false }), 'get_payout_requests');
+
+export const getPendingVerifications = () =>
+    safeCall(() => supabase
+        .from('profiles')
+        .select('*')
+        .eq('verification->>status', 'pending')
+        .order('created_at', { ascending: false }), 'get_pending_verifications');
+
+export const getRideManagementList = (statusFilter = 'all') => {
+    let query = supabase
+        .from('rides')
+        .select('*, profiles:driver_id(display_name)')
+        .order('departure_time', { ascending: false });
+
+    if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+    }
+
+    return safeCall(() => query.limit(50), 'get_ride_management_list');
+};
+
+export const getDisputesList = () =>
+    safeCall(() => supabase
+        .from('cancellation_disputes')
+        .select(`
+            *,
+            user:profiles!user_id(display_name, email),
+            ride:rides(id, origin, destination, departure_time)
+        `)
+        .order('created_at', { ascending: false }), 'get_disputes_list');
+
+export const resolveDispute = (disputeId, status, adminNotes = null) =>
+    safeCall(() => supabase.rpc('resolve_dispute_v2', {
+        p_dispute_id: disputeId,
+        p_status: status,
+        p_admin_notes: adminNotes
+    }), 'resolve_dispute_v2');
 
 export const addFunds = (amount, paymentMethodId) =>
     safeCall(() => supabase.rpc('add_funds', { p_amount: amount, p_payment_method_id: paymentMethodId }), 'add_funds');
@@ -220,10 +279,15 @@ export const handlePassengerNoShow = (rideId, passengerId) =>
     }), 'handle_passenger_no_show');
 
 // --- EXTERNAL INTEGRATIONS ---
-export const createStripeConnectOnboarding = async () => {
+export const createStripeConnectOnboarding = async (returnUrl) => {
     try {
-        const { data, error } = await supabase.functions.invoke('create-stripe-account-link');
+        const { data, error } = await supabase.functions.invoke('create-stripe-account-link', {
+            body: { return_url: returnUrl || window.location.href }
+        });
         if (error) throw error;
         return { success: true, data };
-    } catch (e) { return { success: false, error: e.message }; }
+    } catch (e) {
+        console.error("Stripe Onboarding Error:", e);
+        return { success: false, error: e.message };
+    }
 };

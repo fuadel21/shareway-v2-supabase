@@ -34,6 +34,7 @@ const RequestDetails = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showAcceptDialog, setShowAcceptDialog] = useState(false);
     const [price, setPrice] = useState('');
+    const [totalSeats, setTotalSeats] = useState('4');
 
     const fetchRequestDetails = useCallback(async () => {
         try {
@@ -81,10 +82,15 @@ const RequestDetails = () => {
         const numericPrice = Number(price.replace(',', '.'));
         if (isNaN(numericPrice) || numericPrice <= 0) return toast.error("Precio no válido");
 
+        const numericSeats = parseInt(totalSeats);
+        if (isNaN(numericSeats) || numericSeats < (request.requested_seats || 1)) {
+            return toast.error(`Debes ofrecer al menos ${request.requested_seats || 1} plazas.`);
+        }
+
         setIsSubmitting(true);
         const toastId = toast.loading("Creando viaje y aceptando pasajero...");
         try {
-            await fulfillRequest(request, numericPrice);
+            await fulfillRequest(request, numericPrice, numericSeats);
             toast.success("¡Solicitud aceptada!", { id: toastId });
             navigate('/my-rides');
         } catch (error) {
@@ -167,6 +173,23 @@ const RequestDetails = () => {
 
                     {/* ITINERARIO DETALLADO */}
                     <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
+                                    <Users size={12} /> Plazas Pedidas
+                                </p>
+                                <p className="text-sm font-bold text-slate-700">
+                                    {request.requested_seats || 1} { (request.requested_seats || 1) === 1 ? 'persona' : 'personas' }
+                                </p>
+                            </div>
+                            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-100">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5">
+                                    <ShieldCheck size={12} /> Seguro
+                                </p>
+                                <p className="text-sm font-bold text-slate-700">Incluido</p>
+                            </div>
+                        </div>
+
                         <div className="flex gap-4">
                             <div className="flex flex-col items-center pt-1">
                                 <div className="size-3 rounded-full border-2 border-primary bg-white" />
@@ -223,6 +246,24 @@ const RequestDetails = () => {
                                 className="h-16 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
                             />
                         </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label className="text-[10px] font-black uppercase tracking-widest ml-4">Tu Capacidad Total (Asientos)</Label>
+                        <div className="relative">
+                            <Users className="absolute left-6 top-1/2 -translate-y-1/2 text-primary" size={20} />
+                            <Input
+                                type="number"
+                                min={request.requested_seats || 1}
+                                max="8"
+                                value={totalSeats}
+                                onChange={(e) => setTotalSeats(e.target.value)}
+                                className="h-16 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
+                            />
+                        </div>
+                        <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-tight">
+                            Incluyendo las {request.requested_seats || 1} plazas del pasajero
+                        </p>
                     </div>
 
                     <Button 

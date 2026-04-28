@@ -11,73 +11,143 @@ import { getNotifications, markAsRead, markAllAsRead, subscribeToNotifications, 
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
+const icons = {
+    info: Info,
+    success: CheckCircle2,
+    warning: AlertTriangle,
+    error: XCircle,
+    booking: Car,
+    payment: Wallet,
+    match: Handshake,
+    chat: MessageSquare
+};
+
+const config = {
+    info: {
+        gradient: 'from-blue-600 to-cyan-500',
+        bg: 'bg-blue-50/80',
+        border: 'border-blue-100',
+        text: 'text-blue-900',
+        subtext: 'text-blue-700/70',
+        iconBg: 'bg-white/90 text-blue-600'
+    },
+    success: {
+        gradient: 'from-emerald-600 to-teal-500',
+        bg: 'bg-emerald-50/80',
+        border: 'border-emerald-100',
+        text: 'text-emerald-900',
+        subtext: 'text-emerald-700/70',
+        iconBg: 'bg-white/90 text-emerald-600'
+    },
+    warning: {
+        gradient: 'from-amber-600 to-orange-500',
+        bg: 'bg-amber-50/80',
+        border: 'border-amber-100',
+        text: 'text-amber-900',
+        subtext: 'text-amber-700/70',
+        iconBg: 'bg-white/90 text-amber-600'
+    },
+    error: {
+        gradient: 'from-red-600 to-rose-500',
+        bg: 'bg-red-50/80',
+        border: 'border-red-100',
+        text: 'text-red-900',
+        subtext: 'text-red-700/70',
+        iconBg: 'bg-white/90 text-red-600'
+    },
+    booking: {
+        gradient: 'from-indigo-600 to-violet-500',
+        bg: 'bg-indigo-50/80',
+        border: 'border-indigo-100',
+        text: 'text-indigo-900',
+        subtext: 'text-indigo-700/70',
+        iconBg: 'bg-white/90 text-indigo-600'
+    },
+    payment: {
+        gradient: 'from-purple-600 to-fuchsia-500',
+        bg: 'bg-purple-50/80',
+        border: 'border-purple-100',
+        text: 'text-purple-900',
+        subtext: 'text-purple-700/70',
+        iconBg: 'bg-white/90 text-purple-600'
+    },
+    match: {
+        gradient: 'from-primary to-orange-500',
+        bg: 'bg-orange-50/80',
+        border: 'border-orange-100',
+        text: 'text-orange-900',
+        subtext: 'text-orange-700/70',
+        iconBg: 'bg-white/90 text-primary'
+    },
+    chat: {
+        gradient: 'from-sky-600 to-blue-500',
+        bg: 'bg-sky-50/80',
+        border: 'border-sky-100',
+        text: 'text-sky-900',
+        subtext: 'text-sky-700/70',
+        iconBg: 'bg-white/90 text-sky-600'
+    }
+};
+
 const NotificationItem = ({ notification, onRead, onClick }) => {
-    const icons = {
-        info: Info,
-        success: CheckCircle2,
-        warning: AlertTriangle,
-        error: XCircle,
-        booking: Car,
-        payment: Wallet,
-        match: Handshake,
-        chat: MessageSquare
-    };
-
-    const gradientColors = {
-        info: 'from-blue-500 to-cyan-400 shadow-blue-200',
-        success: 'from-emerald-500 to-teal-400 shadow-emerald-200',
-        warning: 'from-amber-500 to-orange-400 shadow-amber-200',
-        error: 'from-red-500 to-rose-400 shadow-red-200',
-        booking: 'from-indigo-600 to-blue-500 shadow-indigo-200',
-        payment: 'from-purple-600 to-fuchsia-500 shadow-purple-200',
-        match: 'from-primary to-orange-400 shadow-primary/30',
-        chat: 'from-orange-500 to-amber-400 shadow-orange-200'
-    };
-
-    const Icon = icons[notification.type] || Info;
-    const gradient = gradientColors[notification.type] || gradientColors.info;
+    const type = notification.type || 'info';
+    const style = config[type] || config.info;
+    const Icon = icons[type] || Info;
 
     return (
         <div 
             className={cn(
-                "p-4 rounded-[2rem] border-2 transition-all duration-500 relative group cursor-pointer active:scale-95",
+                "p-5 rounded-[2.2rem] border-2 transition-all duration-500 relative group cursor-pointer active:scale-95 overflow-hidden",
                 notification.is_read
-                    ? "bg-white/40 border-slate-100/50 opacity-70 grayscale-[0.5]"
-                    : "bg-white border-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1"
+                    ? "bg-white/40 border-slate-100/50 opacity-60 grayscale-[0.8]"
+                    : cn(style.bg, style.border, "shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5")
             )}
             onClick={() => {
                 onRead(notification.id);
                 if (onClick) onClick(notification);
             }}
         >
-            <div className="flex gap-4 items-center">
+            {/* GRADIENT DECORATIVO DE FONDO */}
+            {!notification.is_read && (
                 <div className={cn(
-                    "h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg bg-gradient-to-br text-white transition-transform group-hover:rotate-6",
-                    gradient
+                    "absolute -right-8 -top-8 size-32 bg-gradient-to-br blur-3xl opacity-20 group-hover:opacity-40 transition-opacity",
+                    style.gradient
+                )} />
+            )}
+
+            <div className="flex gap-5 items-center relative z-10">
+                <div className={cn(
+                    "h-16 w-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
+                    notification.is_read ? "bg-slate-100 text-slate-400" : cn("bg-gradient-to-br text-white", style.gradient)
                 )}>
-                    <Icon className="h-7 w-7 stroke-[2.5px]" />
+                    <Icon className="h-8 w-8 stroke-[2.5px]" />
                 </div>
+
                 <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start mb-0.5">
+                    <div className="flex justify-between items-start mb-1.5">
                         <h4 className={cn(
-                            "text-[11px] font-black uppercase italic tracking-tighter leading-none",
-                            notification.is_read ? "text-slate-500" : "text-slate-900"
+                            "text-xs font-black uppercase italic tracking-tighter leading-none",
+                            notification.is_read ? "text-slate-500" : style.text
                         )}>
                             {notification.title}
                         </h4>
-                        <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest shrink-0 ml-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0 ml-2 opacity-60">
                             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: false, locale: es })}
                         </span>
                     </div>
-                    <p className="text-[10px] font-bold text-slate-500 leading-tight line-clamp-2">
+                    <p className={cn(
+                        "text-[11px] font-bold leading-snug line-clamp-2",
+                        notification.is_read ? "text-slate-400" : style.subtext
+                    )}>
                         {notification.content || notification.message || notification.body}
                     </p>
                 </div>
             </div>
+
             {!notification.is_read && (
-                <div className="absolute top-4 right-4 flex gap-1">
-                    <span className="h-2 w-2 bg-primary rounded-full animate-ping" />
-                    <span className="h-2 w-2 bg-primary rounded-full" />
+                <div className="absolute top-5 right-5 flex gap-1">
+                    <span className={cn("h-2.5 w-2.5 rounded-full animate-ping opacity-75", style.iconBg.split(' ')[0])} />
+                    <span className={cn("h-2.5 w-2.5 rounded-full shadow-sm", style.iconBg.split(' ')[0])} />
                 </div>
             )}
         </div>
@@ -113,20 +183,35 @@ const NotificationCenter = ({ children, user }) => {
                 setNotifications(prev => [newNotification, ...prev]);
                 setUnreadCount(prev => prev + 1);
                 
+                const type = newNotification.type || 'info';
+                const Icon = icons[type] || Bell;
+                const style = config[type] || config.info;
+
                 toast.custom((t) => (
                     <div 
-                        className="bg-white p-4 rounded-[2rem] shadow-2xl border-2 border-primary/20 flex gap-4 items-center max-w-sm animate-in slide-in-from-top-10"
+                        className={cn(
+                            "w-full max-w-sm p-5 rounded-[2.5rem] shadow-2xl border-2 flex gap-4 items-center animate-in slide-in-from-top-10 cursor-pointer backdrop-blur-2xl",
+                            style.bg, style.border
+                        )}
                         onClick={() => { toast.dismiss(t); setIsOpen(true); }}
                     >
-                        <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                            <Bell className="animate-bounce" />
+                        <div className={cn(
+                            "size-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg bg-gradient-to-br text-white",
+                            style.gradient
+                        )}>
+                            <Icon className="h-7 w-7 animate-bounce" />
                         </div>
-                        <div className="text-left">
-                            <p className="text-[10px] font-black uppercase tracking-tighter text-slate-900">{newNotification.title}</p>
-                            <p className="text-[9px] font-bold text-slate-500 line-clamp-2">{newNotification.content}</p>
+                        <div className="flex-1 text-left">
+                            <p className={cn("text-[11px] font-black uppercase italic tracking-tighter", style.text)}>
+                                {newNotification.title}
+                            </p>
+                            <p className={cn("text-[10px] font-bold line-clamp-2", style.subtext)}>
+                                {newNotification.content}
+                            </p>
                         </div>
+                        <div className="h-8 w-1 bg-slate-200/20 rounded-full" />
                     </div>
-                ));
+                ), { duration: 5000 });
             });
 
             return () => { subscription.unsubscribe(); };

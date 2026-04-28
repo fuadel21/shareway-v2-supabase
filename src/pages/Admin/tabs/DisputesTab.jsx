@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+import { getDisputesList, resolveDispute } from '@/lib/supabaseRPC';
+
 const DisputesTab = () => {
     const [disputes, setDisputes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,16 +27,8 @@ const DisputesTab = () => {
     const fetchDisputes = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('cancellation_disputes')
-                .select(`
-                    *,
-                    user:profiles!user_id(display_name, email),
-                    ride:rides(id, origin, destination, departure_time)
-                `)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
+            const { data, success, error } = await getDisputesList();
+            if (!success) throw new Error(error);
             setDisputes(data || []);
         } catch (error) {
             toast.error('Error al cargar disputas', { description: error.message });
@@ -49,14 +43,9 @@ const DisputesTab = () => {
         const toastId = toast.loading(status === 'approved' ? "Procesando reembolso..." : "Rechazando disputa...");
         
         try {
-            // FIX QA: Llamar a la función v2 blindada
-            const { data, error } = await supabase.rpc('resolve_dispute_v2', {
-                p_dispute_id: disputeId,
-                p_status: status,
-                p_admin_notes: adminNotes || null
-            });
+            const { success, error } = await resolveDispute(disputeId, status, adminNotes);
 
-            if (error) throw error;
+            if (!success) throw new Error(error);
 
             toast.success(status === 'approved' ? '¡Reembolso emitido con éxito!' : 'Disputa rechazada correctamente', { id: toastId });
             setSelectedDispute(null);

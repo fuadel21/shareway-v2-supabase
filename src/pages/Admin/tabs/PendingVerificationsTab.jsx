@@ -1,27 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
-import { toast } from 'sonner';
+import { getPendingVerifications } from '@/lib/supabaseRPC';
 import { Loader2, ShieldAlert } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
-import { Button } from '@/components/ui/button.jsx';
+import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 
 const getInitials = (name) => name ? name.split(' ').map(w => w[0]).join('').toUpperCase() : '?';
 
+/**
+ * PendingVerificationsTab Component
+ *
+ * Displays a list of users whose accounts are awaiting verification.
+ * Administrators can review each profile to approve or reject their verification request.
+ * Updates in real-time when profile data changes.
+ */
 const PendingVerificationsTab = () => {
     const [pendingUsers, setPendingUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    /**
+     * Fetches the list of users with a 'pending' verification status using an RPC call.
+     */
     const fetchPendingUsers = async () => {
         try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .filter('verification->>status', 'eq', 'pending')
-                .order('id', { ascending: false }); // Usar ID como fallback de orden mientras se crea created_at
-
-            if (error) throw error;
+            const { data, success, error } = await getPendingVerifications();
+            if (!success) throw new Error(error);
             setPendingUsers(data || []);
         } catch (error) {
             console.error("Error fetching pending:", error);
@@ -69,7 +75,7 @@ const PendingVerificationsTab = () => {
                                         {getInitials(user.display_name)}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div>
+                                <div className="text-left">
                                     <p className="font-bold text-gray-900 group-hover:text-primary transition-colors">{user.display_name}</p>
                                     <p className="text-sm text-muted-foreground">{user.email || 'Sin correo'}</p>
                                 </div>
@@ -90,4 +96,3 @@ const PendingVerificationsTab = () => {
 };
 
 export default PendingVerificationsTab;
-

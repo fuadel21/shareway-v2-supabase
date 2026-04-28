@@ -22,11 +22,11 @@ import {
     ShieldCheck, Star, Car, Heart, Music, 
     ChevronRight, BadgeCheck, MessageCircle, Phone, Lock,
     Share2, Zap, Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint,
-    ShieldAlert
+    ShieldAlert, UserX
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
-import { getRideDetailsSecure, startRide, verifyPassenger } from '../lib/supabaseRPC.js';
+import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking } from '../services/rideService.js';
 import { triggerSOS } from '../services/safetyService.js';
 
@@ -40,6 +40,7 @@ const RideDetails = () => {
     const [isCancelling, setIsCancelling] = useState(false);
     const [isStarting, setIsStarting] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
+    const [isDroppingOff, setIsDroppingOff] = useState(false);
     const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
     const [hasAutoOpenedRating, setHasAutoOpenedRating] = useState(false);
@@ -47,6 +48,7 @@ const RideDetails = () => {
     // Estados para la verificación de PIN
     const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
     const [selectedPassenger, setSelectedPassenger] = useState(null);
+    const [showRatingModal, setShowRatingModal] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
     // Nuevo estado para la ubicación de recogida seleccionada en el mapa
@@ -136,10 +138,6 @@ const RideDetails = () => {
                             <span>Total Bruto:</span>
                             <span>{totalGross.toFixed(2)}€</span>
                         </div>
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-red-400">
-                            <span>Comisión App (10%):</span>
-                            <span>-{platformFee.toFixed(2)}€</span>
-                        </div>
                         <div className="flex justify-between text-xs font-black uppercase italic text-emerald-600 pt-1 border-t border-dashed border-emerald-100">
                             <span>Tu Ganancia Neta:</span>
                             <span>{payoutNeto.toFixed(2)}€</span>
@@ -148,6 +146,12 @@ const RideDetails = () => {
                 ),
                 duration: 6000,
             });
+
+            // DISPARAR RATING AUTOMÁTICAMENTE
+            setTimeout(() => {
+                setShowRatingModal(true);
+            }, 1000);
+
             fetchRide();
         } catch (error) {
             console.error("🔴 Error en handleCompleteRide:", error);
@@ -217,6 +221,56 @@ const RideDetails = () => {
         }
     };
 
+    const onPassengerNoShow = async (passenger) => {
+        if (!window.confirm(`¿Confirmas que ${passenger.displayName} no se ha presentado? Esta acción es irreversible y le aplicará una penalización económica.`)) {
+            return;
+        }
+
+        try {
+            const res = await handlePassengerNoShow(rideId, passenger.id);
+            if (res.success) {
+                toast.success("No-Show registrado", {
+                    description: `Se ha procesado tu compensación de ${res.data.payout.toFixed(2)}€`
+                });
+                fetchRide();
+            } else {
+                throw new Error(res.error || "No se pudo procesar el no-show");
+            }
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    const handlePassengerDropoff = async (passenger) => {
+        if (!window.confirm(`¿Confirmas que has dejado a ${passenger.displayName} en su destino? Se liberará su pago inmediatamente.`)) {
+            return;
+        }
+
+        setIsDroppingOff(true);
+        try {
+            const { data, error } = await supabase.rpc('complete_passenger_dropoff', {
+                p_ride_id: rideId,
+                p_passenger_id: passenger.id
+            });
+
+            if (error) throw error;
+
+            if (data?.success) {
+                toast.success(`¡Pago de ${passenger.displayName} liberado!`, {
+                    icon: <CheckCircle2 className="text-emerald-500" />
+                });
+                fetchRide();
+            } else {
+                throw new Error(data?.error || "Error al procesar la entrega");
+            }
+        } catch (error) {
+            console.error("Error en dropoff:", error);
+            toast.error(error.message || "No se pudo procesar la entrega");
+        } finally {
+            setIsDroppingOff(false);
+        }
+    };
+
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-primary" /></div>;
     if (!ride) return <SubPageHeader title="No encontrado" backPath="/dashboard" />;
 
@@ -228,7 +282,7 @@ const RideDetails = () => {
 
     const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
     const isPassenger = passengers.some(p => p.id?.toString()?.toLowerCase() === currentUserId);
-    const confirmedPassengers = passengers.filter(p => p.status === 'confirmed' || p.status === 'verified');
+    const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
 
@@ -239,7 +293,12 @@ const RideDetails = () => {
 
     const departureDate = new Date(ride.departure_time);
     const minutesToDeparture = differenceInMinutes(departureDate, currentTime);
-    const canStartRide = (minutesToDeparture <= 15 || isBefore(departureDate, currentTime)) && !isRideActive && !isRideCancelled;
+
+    // Un viaje puede iniciarse desde 15 min antes hasta 2 horas después de la hora programada
+    const isTooLate = differenceInMinutes(currentTime, departureDate) > 120;
+    const isDelayed = isBefore(departureDate, currentTime) && !isRideActive && !isRideCancelled;
+
+    const canStartRide = (minutesToDeparture <= 15 || isBefore(departureDate, currentTime)) && !isRideActive && !isRideCancelled && !isTooLate;
 
     return (
         <div className="bg-[#F8FAFC] min-h-screen pb-96">
@@ -301,9 +360,22 @@ const RideDetails = () => {
                                 <Calendar size={12} className="shrink-0" />
                                 <span className="truncate">{ride.departure_time ? format(new Date(ride.departure_time), "EEEE d 'de' MMMM", { locale: es }) : 'Fecha pendiente'}</span>
                             </div>
-                            <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic leading-none pt-1">
+                            <h2 className={cn(
+                                "text-4xl font-black tracking-tighter italic leading-none pt-1 transition-colors",
+                                isDelayed ? "text-amber-500" : "text-slate-900"
+                            )}>
                                 {ride.departure_time ? format(new Date(ride.departure_time), "HH:mm") : '--:--'}
                             </h2>
+                            {isDelayed && !isTooLate && (
+                                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-amber-500 animate-pulse">
+                                    <AlertCircle size={10} /> Salida con retraso
+                                </div>
+                            )}
+                            {isTooLate && (
+                                <div className="flex items-center gap-1.5 text-[9px] font-black uppercase text-red-500">
+                                    <XCircle size={10} /> Viaje expirado
+                                </div>
+                            )}
                         </div>
                         <div className="text-right shrink-0">
                             <div className="bg-emerald-50 text-emerald-600 px-4 py-3 rounded-2xl inline-block border border-emerald-100 shadow-sm">
@@ -433,7 +505,11 @@ const RideDetails = () => {
                                         <div>
                                             <p className="text-sm font-bold text-slate-900 leading-none mb-1">{passenger.displayName}</p>
                                             <div className="flex items-center gap-1.5">
-                                                {passenger.status === 'verified' ? (
+                                                {passenger.status === 'completed' ? (
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
+                                                        <CheckCircle2 size={10} /> Entregado
+                                                    </span>
+                                                ) : passenger.status === 'verified' ? (
                                                     <span className="text-[9px] font-black uppercase tracking-tighter text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                                                         <BadgeCheck size={10} /> A bordo
                                                     </span>
@@ -447,27 +523,52 @@ const RideDetails = () => {
                                     </div>
                                     <div className="flex gap-2">
                                         {isDriver && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
-                                                onClick={() => {
-                                                    const lat = passenger.pickup_location?.lat || ride.origin?.lat;
-                                                    const lng = passenger.pickup_location?.lng || ride.origin?.lng;
-                                                    const destLat = ride.destination?.lat;
-                                                    const destLng = ride.destination?.lng;
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
+                                                    onClick={() => {
+                                                        const lat = passenger.pickup_location?.lat || ride.origin?.lat;
+                                                        const lng = passenger.pickup_location?.lng || ride.origin?.lng;
+                                                        const destLat = ride.destination?.lat;
+                                                        const destLng = ride.destination?.lng;
 
-                                                    // Si el pasajero ya está verificado, navegar al destino. Si no, a la recogida.
-                                                    const targetLat = passenger.status === 'verified' ? destLat : lat;
-                                                    const targetLng = passenger.status === 'verified' ? destLng : lng;
+                                                        // Si el pasajero ya está verificado, navegar al destino. Si no, a la recogida.
+                                                        const targetLat = passenger.status === 'verified' ? destLat : lat;
+                                                        const targetLng = passenger.status === 'verified' ? destLng : lng;
 
-                                                    const url = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
-                                                    window.open(url, '_blank');
-                                                }}
-                                                title={passenger.status === 'verified' ? "Navegar al Destino" : "Navegar a la Recogida"}
-                                            >
-                                                <Navigation size={18} className={cn(passenger.status === 'verified' ? "text-emerald-500" : "text-primary")} />
-                                            </Button>
+                                                        const url = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
+                                                        window.open(url, '_blank');
+                                                    }}
+                                                    title={passenger.status === 'verified' ? "Navegar al Destino" : "Navegar a la Recogida"}
+                                                >
+                                                    <Navigation size={18} className={cn(passenger.status === 'verified' ? "text-emerald-500" : "text-primary")} />
+                                                </Button>
+
+                                                {passenger.status === 'verified' && isRideActive && (
+                                                    <Button
+                                                        onClick={() => handlePassengerDropoff(passenger)}
+                                                        disabled={isDroppingOff}
+                                                        className="rounded-xl h-10 px-3 bg-emerald-500 text-white font-black uppercase italic tracking-tighter text-[10px] gap-2 shadow-lg shadow-emerald-200 hover:scale-105 active:scale-95 transition-all"
+                                                    >
+                                                        {isDroppingOff ? <Loader2 className="size-3 animate-spin" /> : <CheckCircle2 size={14} />}
+                                                        Finalizar Parada
+                                                    </Button>
+                                                )}
+
+                                                {passenger.status === 'confirmed' && (ride.status === 'active' || ride.status === 'in_progress') && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => onPassengerNoShow(passenger)}
+                                                        className="rounded-xl bg-red-50 hover:bg-red-100 text-red-500 transition-colors h-10 w-10"
+                                                        title="No se presentó"
+                                                    >
+                                                        <UserX size={18} />
+                                                    </Button>
+                                                )}
+                                            </>
                                         )}
                                         <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10">
                                             <MessageCircle size={18} />

@@ -28,20 +28,50 @@ const LiveTrackingMap = ({ rideId, initialPosition }) => {
     useEffect(() => {
         if (!rideId) return;
 
+        // Suscribirse a la tabla optimizada de ubicaciones
         const channel = supabase.channel(`ride_location_${rideId}`)
             .on('postgres_changes', 
-                { event: 'UPDATE', schema: 'public', table: 'rides', filter: `id=eq.${rideId}` },
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'ride_locations',
+                    filter: `ride_id=eq.${rideId}`
+                },
                 (payload) => {
-                    const newLocation = payload.new.current_location;
-                    if (newLocation) {
-                        setDriverLocation({ lat: newLocation.latitude, lng: newLocation.longitude, heading: newLocation.heading || 0 });
+                    const data = payload.new;
+                    if (data && data.latitude && data.longitude) {
+                        setDriverLocation({
+                            lat: data.latitude,
+                            lng: data.longitude,
+                            heading: data.heading || 0
+                        });
+
                         if (mapRef.current) {
-                            mapRef.current.panTo({ lat: newLocation.latitude, lng: newLocation.longitude });
+                            mapRef.current.panTo({ lat: data.latitude, lng: data.longitude });
                         }
                     }
                 }
             )
             .subscribe();
+
+        // Cargar ubicación inicial desde la nueva tabla
+        const fetchInitialLocation = async () => {
+            const { data } = await supabase
+                .from('ride_locations')
+                .select('latitude, longitude, heading')
+                .eq('ride_id', rideId)
+                .maybeSingle();
+
+            if (data) {
+                setDriverLocation({
+                    lat: data.latitude,
+                    lng: data.longitude,
+                    heading: data.heading || 0
+                });
+            }
+        };
+
+        fetchInitialLocation();
 
         return () => {
             supabase.removeChannel(channel);

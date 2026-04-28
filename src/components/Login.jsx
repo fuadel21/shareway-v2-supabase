@@ -57,14 +57,24 @@ function Login() {
     setError('');
     setIsSubmitting(true);
     try {
+      // MEJORA ELITE: Detección dinámica de entorno para redirección OAuth
+      const isApp = window.location.origin.includes('localhost') && !window.location.port;
+      // En Capacitor, el origin suele ser localhost sin puerto o con esquema propio
+
+      const redirectTo = window.location.origin.includes('localhost') && window.location.port
+        ? `${window.location.origin}/` // Desarrollo Web
+        : 'https://shareway-v2.vercel.app/'; // Producción / App (Ajustar a la URL real de Supabase Auth)
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo,
+          skipBrowserRedirect: false
         }
       });
       if (error) throw error;
     } catch (err) {
+      console.error("Google Auth Error:", err);
       setError(t('login.errors.google_error'));
       setIsSubmitting(false);
     }

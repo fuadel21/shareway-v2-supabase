@@ -13,6 +13,16 @@ import { cn } from '@/lib/utils';
 
 const getInitials = (name) => name ? name.split(' ').map(w => w[0]).join('').toUpperCase() : '?';
 
+/**
+ * UserManagementTab Component
+ *
+ * Provides an administrative interface for managing platform users.
+ * Features include:
+ * - Real-time search by name or email with debouncing.
+ * - Toggling user suspension.
+ * - Updating verification status (KYC).
+ * - Direct access to detailed user files.
+ */
 const UserManagementTab = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,6 +32,12 @@ const UserManagementTab = () => {
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
     const navigate = useNavigate();
 
+    /**
+     * Searches for users based on the provided term.
+     * Updates local state and toggles loading/searching indicators.
+     *
+     * @param {string} term - The search query.
+     */
     const fetchUsers = useCallback(async (term) => {
         if (term) {
             setIsSearching(true);
@@ -46,6 +62,12 @@ const UserManagementTab = () => {
         fetchUsers(debouncedSearchTerm);
     }, [debouncedSearchTerm, fetchUsers]);
 
+    /**
+     * Toggles the suspension status of a user.
+     *
+     * @param {string} userId - Target user ID.
+     * @param {boolean} isCurrentlySuspended - Current suspension state.
+     */
     const handleToggleSuspension = async (userId, isCurrentlySuspended) => {
         setProcessingId(userId);
         try {
@@ -61,6 +83,12 @@ const UserManagementTab = () => {
         }
     };
 
+    /**
+     * Updates the verification status of a user's KYC profile.
+     *
+     * @param {string} userId - Target user ID.
+     * @param {string} newStatus - The status to apply ('verified', 'rejected', etc.).
+     */
     const handleUpdateVerification = async (userId, newStatus) => {
         setProcessingId(userId);
         try {

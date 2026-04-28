@@ -10,6 +10,13 @@ import { Badge } from '@/components/ui/badge.jsx';
 
 const getInitials = (name) => name ? name.split(' ').map(w => w[0]).join('').toUpperCase() : '?';
 
+/**
+ * AdminUserProfile Component
+ *
+ * Provides a detailed view of a user's profile for administrative purposes.
+ * Displays personal information, account status, verification status, rating,
+ * and a comprehensive history of rides created as a driver and joined as a passenger.
+ */
 function AdminUserProfile() {
     const { userId } = useParams();
     const navigate = useNavigate();

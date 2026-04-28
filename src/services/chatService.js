@@ -2,15 +2,15 @@ import { supabase } from '../lib/supabase';
 
 /**
  * Obtiene todos los chats del usuario actual enriquecidos.
- * Versión Optimizada v2.0
+ * Versión Optimizada v3.0 con soporte para Unread Counts
  */
 export const getUserChats = async (userId) => {
     try {
+        // Obtenemos los chats básicos
         const { data, error } = await supabase
             .from('chats')
             .select(`
                 *,
-                messages:messages(content, created_at),
                 ride:rides(destination, origin, departure_time)
             `)
             .contains('participants', [userId])
@@ -23,27 +23,45 @@ export const getUserChats = async (userId) => {
             chat.participants.filter(p => p !== userId)
         ))];
 
-        if (otherUserIds.length === 0) return data;
+        // Obtener el último mensaje y el conteo de no leídos de cada chat
+        // Hacemos esto en paralelo para mayor velocidad
+        const chatEnrichments = await Promise.all(data.map(async (chat) => {
+            const [lastMsgRes, unreadRes] = await Promise.all([
+                supabase.from('messages')
+                    .select('content, created_at, sender_id, read_by')
+                    .eq('chat_id', chat.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1),
+                supabase.from('messages')
+                    .select('id', { count: 'exact' })
+                    .eq('chat_id', chat.id)
+                    .neq('sender_id', userId)
+                    .not('read_by', 'cs', `["${userId}"]`)
+            ]);
 
-        // Consulta de perfiles en una sola operación (Batch Fetching)
-        const { data: profiles, error: pError } = await supabase
+            return {
+                chatId: chat.id,
+                lastMessage: lastMsgRes.data?.[0],
+                unreadCount: unreadRes.count || 0
+            };
+        }));
+
+        if (otherUserIds.length === 0) return [];
+
+        // Consulta de perfiles
+        const { data: profiles } = await supabase
             .from('profiles')
             .select('id, display_name, photo_url, is_verified')
             .in('id', otherUserIds);
 
-        // Fallback en caso de que is_verified falte en la DB (aunque el SQL lo añade)
-        const safeProfiles = profiles || [];
-        const profilesMap = new Map(safeProfiles.map(p => [p.id, p]));
+        const profilesMap = new Map((profiles || []).map(p => [p.id, p]));
+        const enrichmentMap = new Map(chatEnrichments.map(e => [e.chatId, e]));
 
         return data.map(chat => {
             const otherId = chat.participants.find(p => p !== userId);
             const profile = profilesMap.get(otherId);
+            const enrichment = enrichmentMap.get(chat.id);
 
-            // Lógica de Previsualización: El mensaje más reciente
-            const messages = chat.messages || [];
-            const lastMessage = messages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
-
-            // Construcción del contexto del viaje
             const rideInfo = chat.ride ? {
                 dest: chat.ride.destination?.name || chat.ride.destination?.address?.split(',')[0],
                 time: chat.ride.departure_time
@@ -54,7 +72,10 @@ export const getUserChats = async (userId) => {
                 otherUserName: profile?.display_name || 'Usuario',
                 otherUserPhoto: profile?.photo_url,
                 isVerifiedUser: profile?.is_verified,
-                lastMessagePreview: lastMessage?.content || 'Inicia una conversación...',
+                lastMessagePreview: enrichment?.lastMessage?.content || 'Inicia una conversación...',
+                lastMessageSenderId: enrichment?.lastMessage?.sender_id,
+                lastMessageRead: enrichment?.lastMessage?.read_by?.length > 1, // Si hay más de 1 participante que lo leyó
+                unreadCount: enrichment?.unreadCount || 0,
                 lastActivity: chat.updated_at,
                 isRideChat: !!chat.ride_id,
                 rideContext: rideInfo
@@ -63,6 +84,36 @@ export const getUserChats = async (userId) => {
     } catch (error) {
         console.error("🛡️ [ChatService] getUserChats failed:", error);
         throw error;
+    }
+};
+
+/**
+ * Marca todos los mensajes de un chat como leídos para el usuario actual.
+ */
+export const markChatAsRead = async (chatId) => {
+    try {
+        const { error } = await supabase.rpc('mark_chat_as_read', {
+            p_chat_id: chatId
+        });
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error("🛡️ [ChatService] markChatAsRead failed:", error);
+        return false;
+    }
+};
+
+/**
+ * Obtiene el total global de mensajes no leídos.
+ */
+export const getTotalUnreadCount = async () => {
+    try {
+        const { data, error } = await supabase.rpc('get_total_unread_count');
+        if (error) throw error;
+        return data || 0;
+    } catch (error) {
+        console.error("🛡️ [ChatService] getTotalUnreadCount failed:", error);
+        return 0;
     }
 };
 

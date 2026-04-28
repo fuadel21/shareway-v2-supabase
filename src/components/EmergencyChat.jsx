@@ -19,6 +19,9 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
+import EmergencyContacts from './EmergencyContacts';
+import AudioRecording from './AudioRecording';
+
 const EmergencyChat = () => {
     const { user, profile } = useOutletContext();
     const { rideId } = useParams();
@@ -27,6 +30,7 @@ const EmergencyChat = () => {
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
+    const [showBlackbox, setShowBlackbox] = useState(false);
     const messagesEndRef = useRef(null);
 
     // En un sistema real, este ID sería un chat fijo con el equipo de soporte de seguridad vinculado al viaje
@@ -144,15 +148,32 @@ const EmergencyChat = () => {
                     <Radio size={12} className="animate-pulse" />
                     <span className="text-[9px] font-black uppercase">GPS ACTIVO</span>
                 </div>
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowBlackbox(!showBlackbox)}
+                    className={cn(
+                        "rounded-2xl transition-all h-12 w-12",
+                        showBlackbox ? "bg-white text-red-600" : "bg-white/10 text-white hover:bg-white/20"
+                    )}
+                >
+                    <Mic size={24} />
+                </Button>
             </header>
 
             {/* AVISO DE PROTOCOLO */}
-            <div className="bg-red-50 p-4 border-b border-red-100 flex items-start gap-3">
-                <AlertCircle className="text-red-600 size-5 shrink-0 mt-0.5" />
-                <p className="text-[10px] text-red-800 font-bold leading-relaxed uppercase tracking-widest">
-                    TU UBICACIÓN ESTÁ SIENDO COMPARTIDA CON LAS AUTORIDADES Y TUS CONTACTOS DE EMERGENCIA EN TIEMPO REAL.
-                </p>
-            </div>
+            {showBlackbox ? (
+                <div className="p-6 bg-slate-50 border-b border-slate-100 animate-in slide-in-from-top duration-300">
+                    <AudioRecording rideId={rideId} onRecordingComplete={() => setShowBlackbox(false)} />
+                </div>
+            ) : (
+                <div className="bg-red-50 p-4 border-b border-red-100 flex items-start gap-3">
+                    <AlertCircle className="text-red-600 size-5 shrink-0 mt-0.5" />
+                    <p className="text-[10px] text-red-800 font-bold leading-relaxed uppercase tracking-widest">
+                        TU UBICACIÓN ESTÁ SIENDO COMPARTIDA CON LAS AUTORIDADES Y TUS CONTACTOS DE EMERGENCIA EN TIEMPO REAL.
+                    </p>
+                </div>
+            )}
 
             {/* CHAT DE EMERGENCIA */}
             <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">

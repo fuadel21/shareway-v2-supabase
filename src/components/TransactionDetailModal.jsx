@@ -86,11 +86,21 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
                     <div className="space-y-4">
                         <div className="flex items-start gap-4">
                             <div className="mt-1 bg-slate-100 p-2 rounded-xl">
-                                <Info className="size-4 text-slate-500" />
+                                {tx.description?.includes(' -> ') ? (
+                                    <MapPin className="size-4 text-primary" />
+                                ) : (
+                                    <Info className="size-4 text-slate-500" />
+                                )}
                             </div>
                             <div className="flex-1">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Descripción</p>
-                                <p className="text-sm font-bold text-slate-700 leading-tight uppercase italic">{tx.description || 'Sin descripción'}</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                                    {tx.description?.includes(' -> ') ? 'Ruta del Viaje' : 'Descripción'}
+                                </p>
+                                <p className="text-sm font-bold text-slate-700 leading-tight uppercase italic">
+                                    {tx.description?.includes(' -> ')
+                                        ? tx.description.replace(/^(Pago viaje: |Cobro viaje: )/i, '')
+                                        : (tx.description || 'Sin descripción')}
+                                </p>
                             </div>
                         </div>
 

@@ -29,17 +29,16 @@ export function useDriverTracking(rideId) {
 
         watchIdRef.current = navigator.geolocation.watchPosition(
             async (position) => {
-                const { latitude, longitude } = position.coords;
+                const { latitude, longitude, heading } = position.coords;
 
                 try {
                     const { updateRideLocation } = await import('@/lib/supabaseRPC');
-                    const result = await updateRideLocation(rideId, latitude, longitude);
+                    const result = await updateRideLocation(rideId, latitude, longitude, heading || 0);
 
                     if (!result.success) throw new Error(result.error || "Error al actualizar ubicación");
 
                 } catch (error) {
-                    toast.error("No se pudo actualizar tu ubicación en el mapa.");
-                    stopTracking();
+                    console.error("Tracking error:", error);
                 }
             },
             (error) => {

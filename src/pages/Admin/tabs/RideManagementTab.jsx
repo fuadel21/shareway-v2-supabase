@@ -1,32 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { getRideManagementList } from '@/lib/supabaseRPC';
+import { Car, MapPin, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Loader2, Car, MapPin } from 'lucide-react';
-import { Button } from '@/components/ui/button.jsx';
-import { Badge } from '@/components/ui/badge.jsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+/**
+ * RideManagementTab Component
+ *
+ * Provides an administrative overview of all rides on the platform.
+ * Includes status-based filtering (scheduled, inprogress, completed, canceled)
+ * and detailed route information for each ride.
+ */
 const RideManagementTab = () => {
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState('all');
     const navigate = useNavigate();
 
+    /**
+     * Fetches rides from the backend using an RPC call, filtered by the current status selection.
+     */
     const fetchRides = async () => {
         setLoading(true);
         try {
-            let query = supabase
-                .from('rides')
-                .select('*, profiles:driver_id(display_name)')
-                .order('departure_time', { ascending: false });
-
-            if (statusFilter !== 'all') {
-                query = query.eq('status', statusFilter);
-            }
-
-            const { data, error } = await query.limit(50);
-            if (error) throw error;
+            const { data, success, error } = await getRideManagementList(statusFilter);
+            if (!success) throw new Error(error);
             setRides(data || []);
         } catch (error) {
             console.error("Error fetching rides:", error);
@@ -103,7 +104,7 @@ const RideManagementTab = () => {
                                                 <div className="w-0.5 h-6 bg-gray-100" />
                                                 <div className="w-2 h-2 rounded-full bg-yellow-500" />
                                             </div>
-                                            <div className="space-y-2">
+                                            <div className="space-y-2 text-left">
                                                 <p className="font-bold text-gray-900 leading-none">{ride.origin?.name || ride.origin?.address}</p>
                                                 <p className="font-bold text-gray-900 leading-none pt-1">{ride.destination?.name || ride.destination?.address}</p>
                                             </div>
@@ -134,4 +135,3 @@ const RideManagementTab = () => {
 };
 
 export default RideManagementTab;
-

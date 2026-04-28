@@ -5,7 +5,7 @@ import { getUserChats } from '@/services/chatService';
 import { Card } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Loader2, MessageSquare, ChevronRight, Sparkles, ShieldCheck, ChevronLeft, User } from 'lucide-react';
+import { Check, CheckCheck, Loader2, MessageSquare, ChevronRight, Sparkles, ShieldCheck, ChevronLeft, User, Clock } from 'lucide-react';
 import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -15,14 +15,18 @@ const getInitials = (name) => {
     return name.trim().split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().substring(0, 2);
 };
 
-const ChatItem = ({ chat, onClick }) => {
+const ChatItem = ({ chat, onClick, userId }) => {
     const date = chat.updated_at ? new Date(chat.updated_at) : null;
-    const safeDate = (date && isValid(date)) ? format(date, "d MMM", { locale: es }) : "";
+    const safeDate = (date && isValid(date)) ? format(date, "HH:mm", { locale: es }) : "";
+    const isMeLast = chat.lastMessageSenderId === userId;
 
     return (
         <div
             onClick={() => onClick(chat)}
-            className="group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer"
+            className={cn(
+                "group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer relative",
+                chat.unreadCount > 0 ? "border-emerald-100 bg-emerald-50/5" : ""
+            )}
         >
             <div className="relative">
                 <Avatar className="h-14 w-14 border-2 border-white shadow-md">
@@ -31,33 +35,58 @@ const ChatItem = ({ chat, onClick }) => {
                         {getInitials(chat.otherUserName)}
                     </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 bg-emerald-500 rounded-full border-2 border-white shadow-sm" />
+                {/* Indicador de Actividad */}
+                <div className={cn(
+                    "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm",
+                    chat.unreadCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-slate-200"
+                )} />
             </div>
 
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
                 <div className="flex justify-between items-start mb-1">
                     <div className="flex flex-col text-left">
-                        <h3 className="font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate pr-2">
-                            {chat.otherUserName || 'Usuario'}
-                        </h3>
-                        {/* Indicador de múltiples hilos si aplica */}
-                        {chat.isGrouped && (
-                            <span className="text-[7px] font-black text-primary uppercase tracking-widest px-1.5 py-0.5 bg-primary/5 rounded border border-primary/10 w-fit">
-                                Actividad en {chat.threadCount} viajes
-                            </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <h3 className={cn(
+                                "font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate max-w-[150px]",
+                                chat.unreadCount > 0 ? "text-emerald-900" : ""
+                            )}>
+                                {chat.otherUserName || 'Usuario'}
+                            </h3>
+                            {chat.isVerifiedUser && <ShieldCheck size={12} className="text-blue-500" />}
+                        </div>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest shrink-0 ml-2">
+                    <span className={cn(
+                        "text-[9px] font-bold uppercase tracking-widest shrink-0 ml-2",
+                        chat.unreadCount > 0 ? "text-emerald-500" : "text-slate-400"
+                    )}>
                         {safeDate}
                     </span>
                 </div>
-                <p className="text-xs text-slate-500 truncate font-medium leading-none">
-                    {chat.lastMessagePreview || 'Inicia una conversación...'}
-                </p>
+
+                <div className="flex items-center gap-1.5">
+                    {isMeLast && (
+                        chat.lastMessageRead ?
+                        <CheckCheck size={14} className="text-blue-500 shrink-0" /> :
+                        <Check size={14} className="text-slate-400 shrink-0" />
+                    )}
+                    <p className={cn(
+                        "text-xs truncate font-medium leading-none",
+                        chat.unreadCount > 0 ? "text-slate-900 font-black" : "text-slate-500"
+                    )}>
+                        {chat.lastMessagePreview || 'Inicia una conversación...'}
+                    </p>
+                </div>
             </div>
 
-            <div className="size-10 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all">
-                <ChevronRight size={20} />
+            <div className="flex flex-col items-end gap-2">
+                {chat.unreadCount > 0 && (
+                    <div className="bg-emerald-500 text-white min-w-[20px] h-5 rounded-full px-1.5 flex items-center justify-center text-[10px] font-black shadow-lg shadow-emerald-500/20 animate-in zoom-in">
+                        {chat.unreadCount}
+                    </div>
+                )}
+                <div className="size-8 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-primary group-hover:text-white transition-all">
+                    <ChevronRight size={18} />
+                </div>
             </div>
         </div>
     );
@@ -136,6 +165,7 @@ const ChatList = () => {
                         <ChatItem
                             key={chat.id}
                             chat={chat}
+                            userId={user.id}
                             onClick={(c) => {
                                 if (c.ride_id) {
                                     navigate(`/ride-chat/${c.ride_id}`);

@@ -1,6 +1,12 @@
 {
-    "appId": "com.taxicompartido.app",
-    "appName": "Taxi Compartido",
-    "webDir": "dist",
-    "bundledWebRuntime": false
+  "appId": "com.shareway.app",
+  "appName": "ShareWay",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always"
+  }
 }

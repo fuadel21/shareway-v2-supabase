@@ -34,7 +34,10 @@ import ComingSoon from './components/ComingSoon.jsx';
 import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
 import ActivityCenter from './components/ActivityCenter.jsx';
+import AdminStats from './pages/AdminStats.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
+import AdminUserProfile from './pages/Admin/AdminUserProfile.jsx';
+import AdminCommunityDetail from './pages/Admin/AdminCommunityDetail.jsx';
 import ChatList from './components/ChatList.jsx';
 import Chat from './components/Chat.jsx';
 import PayoutSettings from './components/PayoutSettings.jsx';
@@ -48,6 +51,8 @@ import EmergencyChat from './components/EmergencyChat.jsx';
 import EditFavoriteRoute from './components/EditFavoriteRoute.jsx';
 import VerificationCenter from './components/VerificationCenter.jsx';
 import ClimateImpact from './components/ClimateImpact.jsx';
+import MaintenanceMode from './components/MaintenanceMode.jsx';
+import { getPlatformSettings } from './lib/supabaseRPC';
 
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
@@ -95,8 +100,39 @@ function App() {
     const [userLocation, setUserLocation] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
 
     const refreshProfile = useCallback(() => setRefreshKey(prev => prev + 1), []);
+
+    // --- CHECK MAINTENANCE MODE (Realtime) ---
+    useEffect(() => {
+        const fetchInitialSettings = async () => {
+            const { data, success } = await getPlatformSettings();
+            if (success && data) {
+                const mode = data.find(s => s.key === 'platform_maintenance_mode')?.value;
+                setMaintenanceMode(mode === true);
+            }
+        };
+
+        fetchInitialSettings();
+
+        const channel = supabase
+            .channel('maintenance_status')
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'platform_settings',
+                filter: "key=eq.platform_maintenance_mode"
+            }, (payload) => {
+                console.log("🛡️ [App] Maintenance Mode Changed:", payload.new.value);
+                setMaintenanceMode(payload.new.value === true);
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, []);
 
     useEffect(() => {
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -110,20 +146,33 @@ function App() {
     }, []);
 
     useEffect(() => {
-        const setupBackButton = async () => {
-            const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-                const path = window.location.pathname;
-                if (['/', '/login', '/dashboard', '/my-rides', '/chats', '/settings'].includes(path)) {
-                    CapacitorApp.exitApp();
-                } else {
-                    window.history.back();
-                }
-            });
-            return listener;
-        };
+        // Solo configurar el botón de atrás si estamos en un entorno nativo (Capacitor)
+        const isNative = window.hasOwnProperty('Capacitor');
 
-        let listenerPromise = setupBackButton();
-        return () => { listenerPromise.then(l => l.remove()).catch(() => { }); };
+        if (isNative) {
+            const setupBackButton = async () => {
+                try {
+                    const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+                        const path = window.location.pathname;
+                        if (['/', '/login', '/dashboard', '/my-rides', '/chats', '/settings'].includes(path)) {
+                            CapacitorApp.exitApp();
+                        } else {
+                            window.history.back();
+                        }
+                    });
+                    return listener;
+                } catch (e) {
+                    console.warn("Capacitor App listener failed:", e);
+                }
+            };
+
+            let listenerPromise = setupBackButton();
+            return () => {
+                if (listenerPromise) {
+                    listenerPromise.then(l => l?.remove()).catch(() => { });
+                }
+            };
+        }
     }, []);
 
     useEffect(() => {
@@ -208,15 +257,23 @@ function App() {
         }
     }, []);
 
+    const isAdmin = useMemo(() => profile?.role === 'admin' || profile?.is_admin, [profile]);
+
     const outletContext = useMemo(() => ({
         user: session?.user,
         profile,
+        isAdmin,
         userLocation,
         isLoading,
         refreshProfile,
         handleSignOut,
         totalUnreadChats: 0
-    }), [session?.user?.id, profile, userLocation, isLoading, refreshProfile, handleSignOut]);
+    }), [session?.user?.id, profile, isAdmin, userLocation, isLoading, refreshProfile, handleSignOut]);
+
+    // BLOQUEO DE MANTENIMIENTO
+    if (maintenanceMode && !isAdmin && !isLoading) {
+        return <MaintenanceMode />;
+    }
 
     return (
         <ErrorBoundary level="root">
@@ -281,12 +338,15 @@ function App() {
                         <Route path="profile/:userId" element={<UserProfile />} />
                         <Route path="wallet" element={<Wallet />} />
                         <Route path="achievements" element={<Achievements />} />
+                        <Route path="admin/stats" element={<AdminStats />} />
                         <Route path="leave-review/:rideId/:revieweeId" element={<LeaveReview />} />
                         <Route path="disputes" element={<DisputeHistory />} />
                     </Route>
 
                     <Route path="/admin" element={<AdminLayoutWrapper {...outletContext} />}>
                         <Route index element={<Navigate to="/admin/verifications" replace />} />
+                        <Route path="review/:userId" element={<AdminUserProfile />} />
+                        <Route path="communities/:communityId" element={<AdminCommunityDetail />} />
                         <Route path=":tab" element={<AdminDashboard />} />
                     </Route>
 

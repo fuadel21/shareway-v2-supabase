@@ -47,6 +47,22 @@ function Register() {
 
       if (signUpError) throw signUpError;
 
+      // Notificar al administrador (Esperamos el envío antes de navegar)
+      try {
+        await supabase.functions.invoke('notify-admin-new-user', {
+          body: {
+            record: {
+              id: data.user?.id,
+              email: formData.email,
+              display_name: formData.name
+            }
+          }
+        });
+        console.log("[NOTIFY] Aviso enviado correctamente");
+      } catch (funcErr) {
+        console.warn("[NOTIFY] Error en notificación:", funcErr);
+      }
+
       if (data.user && !data.session) {
         toast.success(t('register.success_title'), {
           description: t('register.success_desc'),

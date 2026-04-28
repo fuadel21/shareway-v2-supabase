@@ -35,8 +35,15 @@ BEGIN
             UPDATE public.wallets SET held_balance = GREATEST(0, held_balance - v_booked_price)
             WHERE user_id = v_passenger_id;
         ELSIF v_passenger->>'status' = 'confirmed' THEN
-            -- No-show: Dinero se queda en held_balance para revisión de soporte o reembolso
-            -- No se suma al pago del conductor por ahora (Evita fraude)
+            -- No-show detectado al completar: Devolver dinero al balance del pasajero
+            UPDATE public.wallets SET
+                balance = balance + v_booked_price,
+                held_balance = GREATEST(0, held_balance - v_booked_price),
+                updated_at = NOW()
+            WHERE user_id = v_passenger_id;
+
+            INSERT INTO public.transactions (user_id, amount, type, description, related_ride_id)
+            VALUES (v_passenger_id, v_booked_price, 'refund', 'Reembolso automático: No-show en viaje finalizado.', p_ride_id);
         END IF;
     END LOOP;
 

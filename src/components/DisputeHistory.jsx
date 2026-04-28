@@ -12,11 +12,13 @@ import {
     FileText,
     MessageSquare,
     ExternalLink,
+    ShieldCheck,
     History as LucideHistory
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import SubPageHeader from './SubPageHeader';
 
@@ -107,6 +109,19 @@ const DisputeHistory = () => {
 
                             return (
                                 <Card key={dispute.id} className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden group">
+                                    {dispute.safety_evidence_id && (
+                                        <div className="bg-amber-500 py-1.5 px-6 flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <ShieldCheck size={12} className="text-white" />
+                                                <span className="text-[9px] font-black text-white uppercase tracking-[0.1em]">Evidencia SOS Protegida</span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <div className="size-1 bg-white/40 rounded-full animate-pulse" />
+                                                <div className="size-1 bg-white/40 rounded-full animate-pulse delay-75" />
+                                                <div className="size-1 bg-white/40 rounded-full animate-pulse delay-150" />
+                                            </div>
+                                        </div>
+                                    )}
                                     <CardContent className="p-6 space-y-4">
                                         <div className="flex justify-between items-start">
                                             <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 border", theme.bg, theme.color)}>

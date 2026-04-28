@@ -66,8 +66,15 @@ const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpeci
 };
 
 const MainLayout = (props) => {
-  const outletContext = useOutletContext();
-  const context = (props && props.user) ? props : outletContext;
+  // Evitamos llamar a useOutletContext si ya tenemos el contexto por props (evita errores en jerarquías de rutas)
+  const isDirectlyCalled = props && (props.user || props.profile);
+  const outletContextFromHook = isDirectlyCalled ? null : useOutletContext();
+  const context = isDirectlyCalled ? props : outletContextFromHook;
+
+  if (!context) {
+    return null;
+  }
+
   const navigate = useNavigate();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -146,8 +153,8 @@ const MainLayout = (props) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(notificationChannel);
-      supabase.removeChannel(chatChannel);
+      if (notificationChannel) supabase.removeChannel(notificationChannel);
+      if (chatChannel) supabase.removeChannel(chatChannel);
     };
   }, [context?.user?.id, location.pathname, navigate]);
 
@@ -191,19 +198,12 @@ const MainLayout = (props) => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full relative size-8 lg:size-9"
-            onClick={() => navigate('/settings/activity')}
-          >
-            <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-600 text-white text-[8px] font-black flex items-center justify-center rounded-full border-2 border-white shadow-lg animate-in zoom-in">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Button>
+          <NotificationCenter user={context.user}>
+            <div className="size-9 lg:size-11 bg-white border border-slate-100 rounded-xl lg:rounded-2xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all group relative">
+              <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600 group-hover:text-primary transition-colors" />
+            </div>
+          </NotificationCenter>
+
           <LanguageSwitcher />
 
           <div className="relative group cursor-pointer" onClick={() => navigate('/settings')}>

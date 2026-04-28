@@ -13,6 +13,13 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * AdminCommunityManagement Component
+ *
+ * Provides an administrative interface for managing communities.
+ * Allows viewing, creating, and deleting communities defined by name and allowed domain.
+ * Integrates with Supabase for real-time data management.
+ */
 const AdminCommunityManagement = () => {
     const [communities, setCommunities] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -20,6 +27,10 @@ const AdminCommunityManagement = () => {
     const [deletingId, setDeletingId] = useState(null);
     const [newCommunity, setNewCommunity] = useState({ name: '', domain: '' });
 
+    /**
+     * Fetches communities from Supabase, ordered alphabetically by name.
+     * Updates local state and handles errors.
+     */
     const fetchCommunities = useCallback(async () => {
         try {
             const { data, error } = await supabase
@@ -58,6 +69,12 @@ const AdminCommunityManagement = () => {
         setNewCommunity(prev => ({ ...prev, [name]: value }));
     };
 
+    /**
+     * Processes new community registration.
+     * Validates input, inserts into database, and provides user feedback.
+     *
+     * @param {React.FormEvent} e - Form submission event.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!newCommunity.name || !newCommunity.domain) {
@@ -85,6 +102,12 @@ const AdminCommunityManagement = () => {
         }
     };
 
+    /**
+     * Removes a community from the database after confirmation.
+     *
+     * @param {string} communityId - ID of community to delete.
+     * @param {string} communityName - Name of community for display.
+     */
     const handleDelete = async (communityId, communityName) => {
         // En una UI premium podríamos usar un modal personalizado, 
         // pero por ahora mantendremos la confirmación nativa o un toast con acción
