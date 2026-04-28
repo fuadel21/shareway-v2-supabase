@@ -26,8 +26,9 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
-import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow } from '../lib/supabaseRPC.js';
+import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking } from '../services/rideService.js';
+
 import { triggerSOS } from '../services/safetyService.js';
 
 const RideDetails = () => {
@@ -221,7 +222,23 @@ const RideDetails = () => {
         }
     };
 
+    const handleOpenPrivateChat = async (otherUserId) => {
+        try {
+            const { data, success, error } = await getOrCreateChat(otherUserId, rideId);
+            if (!success) throw new Error(error);
+            if (data?.chatId) {
+                navigate(`/rides/${rideId}/chat/${data.chatId}`);
+            } else {
+                throw new Error("No se pudo obtener el ID del chat");
+            }
+        } catch (error) {
+            toast.error("No se pudo abrir la conversación");
+            console.error("Chat error:", error);
+        }
+    };
+
     const onPassengerNoShow = async (passenger) => {
+
         if (!window.confirm(`¿Confirmas que ${passenger.displayName} no se ha presentado? Esta acción es irreversible y le aplicará una penalización económica.`)) {
             return;
         }
@@ -304,7 +321,17 @@ const RideDetails = () => {
         <div className="bg-[#F8FAFC] min-h-screen pb-96">
             <SubPageHeader
                 title="Detalles del Viaje"
+                actions={(isDriver || isPassenger) && (
+                    <button
+                        onClick={() => navigate(`/rides/${rideId}/chats`)}
+                        className="h-11 w-11 rounded-2xl bg-slate-900 shadow-lg flex items-center justify-center text-white active:scale-95 transition-all"
+                        title="Conversaciones"
+                    >
+                        <MessageCircle size={20} />
+                    </button>
+                )}
             />
+
 
             <main className="max-w-xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-500">
                 {isRideCancelled && (
@@ -570,10 +597,16 @@ const RideDetails = () => {
                                                 )}
                                             </>
                                         )}
-                                        <Button variant="ghost" size="icon" className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
+                                            onClick={() => handleOpenPrivateChat(passenger.id)}
+                                        >
                                             <MessageCircle size={18} />
                                         </Button>
                                         {isDriver && passenger.status !== 'verified' && (
+
                                             <Button
                                                 onClick={() => {
                                                     setSelectedPassenger(passenger);

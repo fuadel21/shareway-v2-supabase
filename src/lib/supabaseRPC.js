@@ -148,6 +148,13 @@ export const fulfillRideRequest = (rideData) =>
         p_waypoints: rideData.waypoints || []
     }), 'fulfill_ride_request');
 
+export const getOrCreateChat = (otherUserId, rideId = null) =>
+    safeCall(() => supabase.rpc('get_or_create_chat_v2', {
+        p_other_user_id: otherUserId,
+        p_ride_id: rideId
+    }), 'get_or_create_chat_v2');
+
+
 // --- ADMIN & MANAGEMENT RPCs ---
 export const adminUpdateUserStatus = (userId, status) =>
     safeCall(() => supabase.rpc('admin_update_user_status', { p_user_id: userId, p_status: status }), 'admin_update_user_status');
