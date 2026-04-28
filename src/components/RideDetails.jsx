@@ -577,24 +577,25 @@ const RideDetails = () => {
                                                     size="icon"
                                                     className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
                                                     onClick={() => {
-                                                        const lat = passenger.pickup_location?.lat || ride.origin?.lat;
-                                                        const lng = passenger.pickup_location?.lng || ride.origin?.lng;
+                                                        const pickupLat = passenger.pickup_location?.lat || ride.origin?.lat;
+                                                        const pickupLng = passenger.pickup_location?.lng || ride.origin?.lng;
                                                         const destLat = ride.destination?.lat;
                                                         const destLng = ride.destination?.lng;
 
-                                                        // Si el pasajero ya está verificado, navegar al destino. Si no, a la recogida.
-                                                        const targetLat = passenger.status === 'verified' ? destLat : lat;
-                                                        const targetLng = passenger.status === 'verified' ? destLng : lng;
+                                                        // LÓGICA ELITE: Si el viaje no ha empezado, siempre ir a recogida.
+                                                        // Si ya empezó y está a bordo, ir a destino.
+                                                        const targetLat = (isRideActive && passenger.status === 'verified') ? destLat : pickupLat;
+                                                        const targetLng = (isRideActive && passenger.status === 'verified') ? destLng : pickupLng;
 
                                                         const url = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
                                                         window.open(url, '_blank');
                                                     }}
-                                                    title={passenger.status === 'verified' ? "Navegar al Destino" : "Navegar a la Recogida"}
+                                                    title={(isRideActive && passenger.status === 'verified') ? "Navegar al Destino" : "Navegar a la Recogida"}
                                                 >
-                                                    <Navigation size={18} className={cn(passenger.status === 'verified' ? "text-emerald-500" : "text-primary")} />
+                                                    <Navigation size={18} className={cn((isRideActive && passenger.status === 'verified') ? "text-emerald-500" : "text-primary")} />
                                                 </Button>
 
-                                                {passenger.status === 'verified' && isRideActive && (
+                                                {passenger.status === 'verified' && (
                                                     <Button
                                                         onClick={() => handlePassengerDropoff(passenger)}
                                                         disabled={isDroppingOff}
@@ -604,6 +605,7 @@ const RideDetails = () => {
                                                         Finalizar Parada
                                                     </Button>
                                                 )}
+
 
                                                 {passenger.status === 'confirmed' && (ride.status === 'active' || ride.status === 'in_progress') && (
                                                     <Button
