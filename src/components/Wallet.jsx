@@ -144,7 +144,30 @@ const Wallet = () => {
 
     useEffect(() => {
         fetchTransactions();
-    }, [user?.id, fetchTransactions]);
+
+        if (!user?.id) return;
+
+        // SUSCRIPCIÓN EN TIEMPO REAL: Actualizar saldo e historial automáticamente
+        const walletChannel = supabase
+            .channel(`wallet_sync_${user.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'wallets',
+                filter: `user_id=eq.${user.id}`
+            }, () => refreshWallet())
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'transactions',
+                filter: `user_id=eq.${user.id}`
+            }, () => fetchTransactions())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(walletChannel);
+        };
+    }, [user?.id, fetchTransactions, refreshWallet]);
 
     const handleTxClick = (tx) => {
         setSelectedTx(tx);

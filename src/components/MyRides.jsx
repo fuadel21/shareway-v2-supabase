@@ -164,17 +164,34 @@ const MyRides = () => {
             if (user) {
                 setUserId(user.id);
                 fetchRidesDirect(user.id);
+
+                // SUSCRIPCIÓN EN TIEMPO REAL: Refrescar actividad cuando algo cambia
+                // Escuchamos cambios en la tabla 'rides' (status, plazas)
+                const channel = supabase
+                    .channel(`my_activity_${user.id}`)
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'rides'
+                    }, () => {
+                        console.log("🛡️ [MyRides] Activity update detected");
+                        fetchRidesDirect(user.id);
+                    })
+                    .on('postgres_changes', {
+                        event: '*',
+                        schema: 'public',
+                        table: 'ride_requests',
+                        filter: `requester_id=eq.${user.id}`
+                    }, () => fetchRidesDirect(user.id))
+                    .subscribe();
+
+                return () => {
+                    supabase.removeChannel(channel);
+                };
             }
         };
         init();
-
-        // Polling para actualizaciones (opcional, cada 30s)
-        const interval = setInterval(() => {
-            if (userId) fetchRidesDirect(userId);
-        }, 30000);
-
-        return () => clearInterval(interval);
-    }, [userId]); // Add userId dependency
+    }, []);
 
     // LÓGICA DE FILTRADO TÉCNICO
     const filteredRides = useMemo(() => {

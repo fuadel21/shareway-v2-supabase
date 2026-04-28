@@ -93,7 +93,28 @@ const RideDetails = () => {
     }, [rideId, user?.id, hasAutoOpenedRating]);
 
     useEffect(() => {
-        if (rideId) fetchRide();
+        if (!rideId) return;
+
+        fetchRide();
+
+        // SUSCRIPCIÓN EN TIEMPO REAL: Actualizar si el viaje cambia (status, plazas, pasajeros)
+        const channel = supabase
+            .channel(`ride_updates_${rideId}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'rides',
+                filter: `id=eq.${rideId}`
+            }, (payload) => {
+                console.log("🛡️ [RideDetails] Real-time update received:", payload.new.status);
+                // Si el cambio es crítico (status), refrescamos todo
+                fetchRide();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [rideId, fetchRide]);
 
     const handleStartRide = async () => {

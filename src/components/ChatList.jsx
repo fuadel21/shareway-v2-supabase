@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { getUserChats } from '@/services/chatService';
 import { Card } from '@/components/ui/card.jsx';
@@ -98,20 +98,42 @@ const ChatList = () => {
     const [rawChats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const fetchChats = useCallback(async () => {
         if (!user?.id) return;
-        const fetchChats = async () => {
-            try {
-                const data = await getUserChats(user.id);
-                setChats(data || []);
-            } catch (e) {
-                console.error("🛡️ ChatList Error:", e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchChats();
+        try {
+            const data = await getUserChats(user.id);
+            setChats(data || []);
+        } catch (e) {
+            console.error("🛡️ ChatList Error:", e);
+        } finally {
+            setLoading(false);
+        }
     }, [user?.id]);
+
+    useEffect(() => {
+        fetchChats();
+
+        if (!user?.id) return;
+
+        // SUSCRIPCIÓN EN TIEMPO REAL: Refrescar bandeja cuando hay nuevos mensajes
+        const chatChannel = supabase
+            .channel(`chat_list_${user.id}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'chats'
+            }, () => fetchChats())
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'messages'
+            }, () => fetchChats())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(chatChannel);
+        };
+    }, [user?.id, fetchChats]);
 
     // LÓGICA TIPO WHATSAPP: Agrupar por usuario único
     const groupedChats = useMemo(() => {

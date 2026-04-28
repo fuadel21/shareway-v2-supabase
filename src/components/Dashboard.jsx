@@ -239,7 +239,20 @@ function Dashboard() {
         }
     }, [user, profile, mapCenter]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => {
+        fetchData();
+
+        // SUSCRIPCIÓN EN TIEMPO REAL: Refrescar dashboard cuando hay nuevos viajes o solicitudes
+        const ridesChannel = supabase
+            .channel('dashboard_sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => fetchData())
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(ridesChannel);
+        };
+    }, [fetchData]);
 
     const handleLocateMe = () => {
         if (navigator.geolocation) {
