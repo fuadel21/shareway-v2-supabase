@@ -67,8 +67,31 @@ const RequestDetails = () => {
     }, [requestId, navigate]);
 
     useEffect(() => {
-        if (requestId) fetchRequestDetails();
-    }, [requestId, fetchRequestDetails]);
+        if (!requestId) return;
+        fetchRequestDetails();
+
+        // SUSCRIPCIÓN EN TIEMPO REAL: Refrescar si la solicitud es aceptada por otro
+        const channel = supabase
+            .channel(`request_updates_${requestId}`)
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'ride_requests',
+                filter: `id=eq.${requestId}`
+            }, (payload) => {
+                if (payload.new.status === 'fulfilled') {
+                    toast.info("Esta solicitud ya ha sido aceptada por otro conductor.");
+                    navigate('/dashboard');
+                } else {
+                    fetchRequestDetails();
+                }
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [requestId, fetchRequestDetails, navigate]);
 
     const handleCallRequester = () => {
         if (request?.requester?.phone) {
