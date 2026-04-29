@@ -156,6 +156,8 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
     const [tripDistance, setTripDistance] = useState(0);
 
+    const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+
     useEffect(() => {
         if (isOpen) {
             if (!pickupLocation) {
@@ -171,25 +173,49 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
     // Recalcular precio cuando cambia la ubicación de recogida, destino o el número de plazas
     useEffect(() => {
-        if (pickupLocation && dropoffLocation) {
-            const distanceKm = calculateDistance(
-                pickupLocation.lat, pickupLocation.lng,
-                dropoffLocation.lat, dropoffLocation.lng
-            );
-            setTripDistance(distanceKm);
+        const updatePrice = async () => {
+            if (!pickupLocation || !dropoffLocation || !ride) return;
 
-            // Calcular precio basado en la distancia real del pasajero
-            const recommendedPrice = calculateRecommendedPrice(distanceKm * 1000);
+            setIsCalculatingDistance(true);
+            try {
+                // USAR OSRM PARA DISTANCIA REAL POR CARRETERA (Igual que en CreateRide)
+                const coords = `${pickupLocation.lng},${pickupLocation.lat};${dropoffLocation.lng},${dropoffLocation.lat}`;
+                const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
+                const data = await res.json();
 
-            // Añadir Suplemento de Recogida Personalizada
-            const finalPricePerSeat = recommendedPrice + RIDE_RULES.PICKUP_SUPPLEMENT;
+                let distanceKm;
+                if (data.code === 'Ok' && data.routes[0]) {
+                    distanceKm = data.routes[0].distance / 1000;
+                } else {
+                    // Fallback a Haversine si falla el router
+                    distanceKm = calculateDistance(pickupLocation.lat, pickupLocation.lng, dropoffLocation.lat, dropoffLocation.lng);
+                }
 
-            const totalAmount = finalPricePerSeat * numSeats;
-            setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
-        } else {
-            setDynamicAmount(baseAmount * numSeats);
-        }
-    }, [pickupLocation, dropoffLocation, baseAmount, numSeats]);
+                setTripDistance(distanceKm);
+
+                // LÓGICA DE PRECIO PROPORCIONAL ELITE
+                // Tomamos el precio del conductor y lo dividimos por la distancia total del viaje
+                const rideTotalDistance = Number(ride.distance) || distanceKm;
+                const driverPricePerKm = Number(ride.price) / Math.max(rideTotalDistance, 1);
+
+                // El precio base del pasajero es su distancia por el ratio del conductor
+                const passengerBasePrice = driverPricePerKm * distanceKm;
+
+                // Añadimos el Suplemento de Recogida (1.50€)
+                const finalPricePerSeat = passengerBasePrice + RIDE_RULES.PICKUP_SUPPLEMENT;
+
+                const totalAmount = finalPricePerSeat * numSeats;
+                setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
+            } catch (error) {
+                console.error("Error updating price:", error);
+            } finally {
+                setIsCalculatingDistance(false);
+            }
+        };
+
+        updatePrice();
+    }, [pickupLocation, dropoffLocation, ride, numSeats]);
+
 
     const hasBalance = wallet?.balance >= dynamicAmount;
 
@@ -404,9 +430,14 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Tu Trayecto ({tripDistance.toFixed(1)} km)</p>
                                         <p className="text-4xl font-black italic tracking-tighter">
-                                            {displayAmount.toFixed(2)}<span className="text-xl ml-1">€</span>
+                                            {isCalculatingDistance ? (
+                                                <Loader2 className="h-8 w-8 animate-spin inline" />
+                                            ) : (
+                                                <>{displayAmount.toFixed(2)}<span className="text-xl ml-1">€</span></>
+                                            )}
                                         </p>
                                     </div>
+
                                     <div className="text-right">
                                         <div className="flex flex-col gap-1">
                                             <div className="flex items-center justify-end gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
