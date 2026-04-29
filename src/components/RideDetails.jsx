@@ -577,10 +577,11 @@ const RideDetails = () => {
                                                     size="icon"
                                                     className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
                                                     onClick={() => {
-                                                        const pickupLat = passenger.pickup_location?.lat || ride.origin?.lat;
-                                                        const pickupLng = passenger.pickup_location?.lng || ride.origin?.lng;
-                                                        const destLat = ride.destination?.lat;
-                                                        const destLng = ride.destination?.lng;
+                                                        const pickupLat = passenger.pickup_location?.lat || passenger.pickup_location?.latitude || ride.origin?.lat;
+                                                        const pickupLng = passenger.pickup_location?.lng || passenger.pickup_location?.longitude || ride.origin?.lng;
+                                                        const destLat = passenger.dropoff_location?.lat || passenger.dropoff_location?.latitude || ride.destination?.lat;
+                                                        const destLng = passenger.dropoff_location?.lng || passenger.dropoff_location?.longitude || ride.destination?.lng;
+
 
                                                         // LÓGICA ELITE: Si el viaje no ha empezado, siempre ir a recogida.
                                                         // Si ya empezó y está a bordo, ir a destino.

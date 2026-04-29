@@ -10,7 +10,9 @@ CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
     p_pickup_address TEXT DEFAULT NULL,
     p_pickup_location JSONB DEFAULT NULL,
     p_price DECIMAL DEFAULT NULL,
-    p_num_seats INTEGER DEFAULT 1
+    p_num_seats INTEGER DEFAULT 1,
+    p_dropoff_address TEXT DEFAULT NULL,
+    p_dropoff_location JSONB DEFAULT NULL
 ) RETURNS JSON AS $$
 DECLARE
     v_me UUID := auth.uid();
@@ -54,7 +56,7 @@ BEGIN
         'Reserva viaje: ' || COALESCE(v_origin_address, 'Origen') || ' -> ' || COALESCE(v_dest_address, 'Destino')
     );
 
-    -- Actualización de plazas y pasajeros
+    -- Actualización de plazas y pasajeros (Guardando recogida y destino exactos)
     UPDATE public.rides
     SET seats_available = seats_available - p_num_seats,
         participant_ids = array_append(participant_ids, v_me),
@@ -64,13 +66,17 @@ BEGIN
             'pin', v_pin,
             'booked_price', COALESCE(p_price, v_val_price),
             'seats_booked', p_num_seats,
-            'pickup_address', p_pickup_address
+            'pickup_address', p_pickup_address,
+            'pickup_location', p_pickup_location,
+            'dropoff_address', p_dropoff_address,
+            'dropoff_location', p_dropoff_location
         )
     WHERE id = p_ride_id;
 
     RETURN json_build_object('success', true, 'pin', v_pin, 'total_paid', v_total_cost);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- 2. Actualizar fulfill_ride_request para registrar la transacción cuando el conductor acepta
 CREATE OR REPLACE FUNCTION public.fulfill_ride_request(

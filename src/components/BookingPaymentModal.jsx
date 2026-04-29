@@ -247,9 +247,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             const { success, error, data } = await confirmTripAndPay(rideId, null, {
                 pickupLocation: pickupLocation ?? null,
                 pickupAddress: pickupAddress ?? null,
+                dropoffLocation: dropoffLocation ?? null,
+                dropoffAddress: dropoffAddress ?? null,
                 price: cleanPrice / numSeats, // Enviamos el precio unitario pactado
                 numSeats: numSeats
             });
+
 
             if (!success) {
                 // Si el error viene de la comunicación con Supabase

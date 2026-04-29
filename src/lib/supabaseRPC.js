@@ -99,15 +99,18 @@ export const createRide = (rideData) =>
         p_idempotency_key: rideData.idempotency_key || null
     }), 'create_ride');
 
-export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, price = null, numSeats = 1 } = {}) =>
+export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = null, pickupAddress = null, dropoffLocation = null, dropoffAddress = null, price = null, numSeats = 1 } = {}) =>
     safeCall(() => supabase.rpc('confirm_trip_and_pay', {
         p_ride_id: rideId,
         p_request_id: requestId ?? null,
         p_pickup_address: pickupAddress ?? null,
         p_pickup_location: pickupLocation ?? null,
+        p_dropoff_address: dropoffAddress ?? null,
+        p_dropoff_location: dropoffLocation ?? null,
         p_price: price !== null ? parseFloat(price) : null,
         p_num_seats: parseInt(numSeats || 1)
     }), 'confirm_trip_and_pay');
+
 
 export const cancelBookingAndRefund = (rideId) =>
     safeCall(() => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
