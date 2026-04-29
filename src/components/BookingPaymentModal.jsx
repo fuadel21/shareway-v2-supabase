@@ -155,7 +155,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [numSeats, setNumSeats] = useState(1);
     const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
     const [tripDistance, setTripDistance] = useState(0);
-
+    const [appliedSupplement, setAppliedSupplement] = useState(0);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
 
     useEffect(() => {
@@ -178,7 +178,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
             setIsCalculatingDistance(true);
             try {
-                // USAR OSRM PARA DISTANCIA REAL POR CARRETERA (Igual que en CreateRide)
+                // 1. DISTANCIA REAL POR CARRETERA
                 const coords = `${pickupLocation.lng},${pickupLocation.lat};${dropoffLocation.lng},${dropoffLocation.lat}`;
                 const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
                 const data = await res.json();
@@ -187,23 +187,30 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 if (data.code === 'Ok' && data.routes[0]) {
                     distanceKm = data.routes[0].distance / 1000;
                 } else {
-                    // Fallback a Haversine si falla el router
+                    // Fallback a Haversine
                     distanceKm = calculateDistance(pickupLocation.lat, pickupLocation.lng, dropoffLocation.lat, dropoffLocation.lng);
                 }
 
                 setTripDistance(distanceKm);
 
-                // LÓGICA DE PRECIO PROPORCIONAL ELITE
-                // Tomamos el precio del conductor y lo dividimos por la distancia total del viaje
+                // 2. LÓGICA DE PRECIO PROPORCIONAL ELITE
                 const rideTotalDistance = Number(ride.distance) || distanceKm;
                 const driverPricePerKm = Number(ride.price) / Math.max(rideTotalDistance, 1);
-
-                // El precio base del pasajero es su distancia por el ratio del conductor
                 const passengerBasePrice = driverPricePerKm * distanceKm;
 
-                // Añadimos el Suplemento de Recogida (1.50€)
-                const finalPricePerSeat = passengerBasePrice + RIDE_RULES.PICKUP_SUPPLEMENT;
+                // 3. LÓGICA DE SUPLEMENTO DINÁMICO POR DESVÍO
+                // Calculamos cuánto se aleja el punto de recogida del origen real del viaje
+                const detourDistance = calculateDistance(
+                    ride.origin.lat, ride.origin.lng,
+                    pickupLocation.lat, pickupLocation.lng
+                );
 
+                // Solo se cobra suplemento si el conductor tiene que desviarse más de 3km para recogerte
+                const detourThreshold = 3.0;
+                const supplement = detourDistance > detourThreshold ? RIDE_RULES.PICKUP_SUPPLEMENT : 0;
+                setAppliedSupplement(supplement);
+
+                const finalPricePerSeat = passengerBasePrice + supplement;
                 const totalAmount = finalPricePerSeat * numSeats;
                 setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
             } catch (error) {
@@ -215,6 +222,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
         updatePrice();
     }, [pickupLocation, dropoffLocation, ride, numSeats]);
+
 
 
     const hasBalance = wallet?.balance >= dynamicAmount;
@@ -440,14 +448,23 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                                     <div className="text-right">
                                         <div className="flex flex-col gap-1">
-                                            <div className="flex items-center justify-end gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
-                                                <MapPin size={10} /> Recogida incl.
-                                            </div>
-                                            <div className="px-2 py-1 bg-white/10 rounded-lg text-[8px] font-bold text-slate-300 uppercase tracking-tighter">
-                                                + {RIDE_RULES.PICKUP_SUPPLEMENT.toFixed(2)}€ Supl.
-                                            </div>
+                                            {appliedSupplement > 0 ? (
+                                                <>
+                                                    <div className="flex items-center justify-end gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
+                                                        <TrendingUp size={10} /> Desvío detectado
+                                                    </div>
+                                                    <div className="px-2 py-1 bg-white/10 rounded-lg text-[8px] font-bold text-slate-300 uppercase tracking-tighter">
+                                                        + {appliedSupplement.toFixed(2)}€ Supl.
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <div className="flex items-center justify-end gap-1 text-slate-400 text-[10px] font-black uppercase tracking-tighter opacity-50">
+                                                    <CheckCircle2 size={10} /> Sin desvío
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
 
