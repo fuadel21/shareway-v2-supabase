@@ -11,9 +11,11 @@ import { Button } from './ui/button.jsx';
 import { 
     Loader2, Lock, CreditCard, ShieldCheck, 
     AlertCircle, Wallet, CheckCircle2, ChevronRight,
-    MapPin, TrendingUp
+    MapPin, TrendingUp, ArrowRight, Navigation
 } from 'lucide-react';
 import { cn, calculateDistance } from '../lib/utils.js';
+import { RIDE_RULES, calculateRecommendedPrice } from '../services/rideService.js';
+
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -145,42 +147,49 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const rideId = ride?.id;
     const baseAmount = Number(ride?.price) || 0;
 
-    // Nuevo estado para la ubicación de recogida personalizada
+    // Nuevo estado para la ubicación de recogida y destino personalizada
     const [pickupLocation, setPickupLocation] = useState(initialPickupLocation || null);
     const [pickupAddress, setPickupAddress] = useState('');
+    const [dropoffLocation, setDropoffLocation] = useState(null);
+    const [dropoffAddress, setDropoffAddress] = useState('');
     const [numSeats, setNumSeats] = useState(1);
     const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
+    const [tripDistance, setTripDistance] = useState(0);
 
     useEffect(() => {
-        if (isOpen && !pickupLocation) {
-            // Intentar usar la ubicación del usuario si está disponible
-            if (userLocation) {
-                setPickupLocation(userLocation);
-            } else if (initialPickupLocation) {
-                setPickupLocation(initialPickupLocation);
-            } else if (ride?.origin) {
-                setPickupLocation(ride.origin);
+        if (isOpen) {
+            if (!pickupLocation) {
+                if (userLocation) setPickupLocation(userLocation);
+                else if (initialPickupLocation) setPickupLocation(initialPickupLocation);
+                else if (ride?.origin) setPickupLocation(ride.origin);
+            }
+            if (!dropoffLocation && ride?.destination) {
+                setDropoffLocation(ride.destination);
             }
         }
-    }, [isOpen, userLocation, initialPickupLocation, ride?.origin]);
+    }, [isOpen, userLocation, initialPickupLocation, ride?.origin, ride?.destination]);
 
-    // Recalcular precio cuando cambia la ubicación de recogida o el número de plazas
+    // Recalcular precio cuando cambia la ubicación de recogida, destino o el número de plazas
     useEffect(() => {
-        if (pickupLocation && ride?.origin) {
-            const distance = calculateDistance(
-                ride.origin.lat, ride.origin.lng,
-                pickupLocation.lat, pickupLocation.lng
+        if (pickupLocation && dropoffLocation) {
+            const distanceKm = calculateDistance(
+                pickupLocation.lat, pickupLocation.lng,
+                dropoffLocation.lat, dropoffLocation.lng
             );
+            setTripDistance(distanceKm);
 
-            // Lógica de recargo: 0.50€ por KM de desviación desde el origen original
-            const surcharge = distance * 0.50;
-            const finalPricePerSeat = baseAmount + surcharge;
+            // Calcular precio basado en la distancia real del pasajero
+            const recommendedPrice = calculateRecommendedPrice(distanceKm * 1000);
+
+            // Añadir Suplemento de Recogida Personalizada
+            const finalPricePerSeat = recommendedPrice + RIDE_RULES.PICKUP_SUPPLEMENT;
+
             const totalAmount = finalPricePerSeat * numSeats;
             setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
         } else {
             setDynamicAmount(baseAmount * numSeats);
         }
-    }, [pickupLocation, ride?.origin, baseAmount, numSeats]);
+    }, [pickupLocation, dropoffLocation, baseAmount, numSeats]);
 
     const hasBalance = wallet?.balance >= dynamicAmount;
 
@@ -194,6 +203,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         setPickupLocation({ lat: loc.lat, lng: loc.lng });
         if (loc.address) setPickupAddress(loc.address);
     };
+
+    const handleDropoffSelect = (loc) => {
+        setDropoffLocation({ lat: loc.lat, lng: loc.lng });
+        if (loc.address) setDropoffAddress(loc.address);
+    };
+
 
     const displayAmount = dynamicAmount;
 
@@ -299,7 +314,10 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                             {/* PASO 1: SELECCIONAR UBICACIÓN DE RECOGIDA */}
                             <div className="space-y-3">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 1: ¿Dónde te recogemos?</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                    <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">1</span>
+                                    ¿Dónde te recogemos?
+                                </p>
                                 <div className="h-40 rounded-3xl overflow-hidden border-2 border-slate-100 shadow-inner relative group">
                                     <MapComponent
                                         center={pickupLocation}
@@ -310,7 +328,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     />
                                     <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm">
                                         <MapPin className="size-3 text-primary animate-pulse" />
-                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">Mueve el pin</span>
+                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">Origen</span>
                                     </div>
                                 </div>
                                 {pickupAddress && (
@@ -320,7 +338,36 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 )}
                             </div>
 
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 2: ¿Cuántas plazas?</p>
+                            {/* PASO 2: SELECCIONAR UBICACIÓN DE DESTINO */}
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                    <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">2</span>
+                                    ¿A dónde vas?
+                                </p>
+                                <div className="h-40 rounded-3xl overflow-hidden border-2 border-slate-100 shadow-inner relative group">
+                                    <MapComponent
+                                        center={dropoffLocation || ride?.destination}
+                                        zoom={15}
+                                        onLocationSelect={handleDropoffSelect}
+                                        showSearch={false}
+                                        height="100%"
+                                    />
+                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm">
+                                        <Navigation className="size-3 text-emerald-500 animate-pulse" />
+                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">Destino</span>
+                                    </div>
+                                </div>
+                                {dropoffAddress && (
+                                    <p className="text-[9px] font-bold text-slate-500 italic px-2">
+                                        Destino en: {dropoffAddress}
+                                    </p>
+                                )}
+                            </div>
+
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">3</span>
+                                ¿Cuántas plazas?
+                            </p>
                             <div className="flex bg-white p-1.5 rounded-3xl border-2 border-slate-100 gap-1 shadow-sm">
                                 {[1, 2, 3, 4].map(n => {
                                     const isAvailable = n <= (ride?.seats_available || 0);
@@ -340,30 +387,36 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 })}
                             </div>
 
-                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Paso 3: Pago Seguro</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
+                                <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">4</span>
+                                Pago Seguro
+                            </p>
 
                             {/* INFO PRECIO */}
                             <div className="bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group shadow-xl">
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
                                     <ShieldCheck size={80} />
                                 </div>
-                                <div className="flex justify-between items-end">
+                                <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Total a pagar</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">Tu Trayecto ({tripDistance.toFixed(1)} km)</p>
                                         <p className="text-4xl font-black italic tracking-tighter">
                                             {displayAmount.toFixed(2)}<span className="text-xl ml-1">€</span>
                                         </p>
                                     </div>
-                                    {displayAmount > baseAmount && (
-                                        <div className="text-right pb-1">
-                                            <div className="flex items-center gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
-                                                <TrendingUp size={10} /> +{(displayAmount - baseAmount).toFixed(2)}€
+                                    <div className="text-right">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="flex items-center justify-end gap-1 text-emerald-400 text-[10px] font-black uppercase tracking-tighter">
+                                                <MapPin size={10} /> Recogida incl.
                                             </div>
-                                            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-tighter">Extra por recogida</p>
+                                            <div className="px-2 py-1 bg-white/10 rounded-lg text-[8px] font-bold text-slate-300 uppercase tracking-tighter">
+                                                + {RIDE_RULES.PICKUP_SUPPLEMENT.toFixed(2)}€ Supl.
+                                            </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
+
 
                             {/* SELECTOR DE MÉTODO */}
                             <div className="grid grid-cols-2 gap-3">

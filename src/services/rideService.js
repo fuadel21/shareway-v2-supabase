@@ -13,8 +13,10 @@ export const RIDE_RULES = {
     MAX_PRICE: 300,
     MIN_PRICE: 0.50,
     MAX_SEATS: 8,
-    MIN_SEATS: 1
+    MIN_SEATS: 1,
+    PICKUP_SUPPLEMENT: 1.50 // Suplemento fijo por recogida personalizada
 };
+
 
 export { RIDE_PRICING_CONFIG };
 
