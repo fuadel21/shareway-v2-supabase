@@ -4,6 +4,8 @@
 -- ==========================================
 
 -- 1. Actualizar confirm_trip_and_pay para registrar la transacción de reserva
+DROP FUNCTION IF EXISTS public.confirm_trip_and_pay(uuid, uuid, text, jsonb, numeric, integer, text, jsonb);
+
 CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
     p_ride_id UUID,
     p_request_id UUID DEFAULT NULL,
@@ -14,6 +16,7 @@ CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
     p_dropoff_address TEXT DEFAULT NULL,
     p_dropoff_location JSONB DEFAULT NULL
 ) RETURNS JSON AS $$
+
 DECLARE
     v_me UUID := auth.uid();
     v_val_price NUMERIC;
@@ -79,6 +82,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 
 -- 2. Actualizar fulfill_ride_request para registrar la transacción cuando el conductor acepta
+DROP FUNCTION IF EXISTS public.fulfill_ride_request(uuid, jsonb, jsonb, timestamptz, integer, numeric, text, numeric, text, jsonb);
+
 CREATE OR REPLACE FUNCTION public.fulfill_ride_request(
     p_request_id UUID,
     p_origin JSONB,
@@ -91,6 +96,7 @@ CREATE OR REPLACE FUNCTION public.fulfill_ride_request(
     p_overview_polyline TEXT DEFAULT NULL,
     p_waypoints JSONB DEFAULT '[]'::jsonb
 ) RETURNS JSON AS $$
+
 DECLARE
     v_driver_id UUID := auth.uid();
     v_passenger_id UUID;
