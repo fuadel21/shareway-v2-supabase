@@ -28,68 +28,73 @@ const EmergencyChat = () => {
     const navigate = useNavigate();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
+    const [chatId, setChatId] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
     const [showBlackbox, setShowBlackbox] = useState(false);
     const messagesEndRef = useRef(null);
 
-    // En un sistema real, este ID sería un chat fijo con el equipo de soporte de seguridad vinculado al viaje
-    const EMERGENCY_CHAT_ID = `sos_${rideId}`;
-
     useEffect(() => {
         if (!user || !rideId) return;
 
-        const fetchMessages = async () => {
+        const initEmergencyChat = async () => {
             try {
-                const { data, error } = await supabase
+                // 1. Buscar el chat de tipo 'emergency' para este viaje
+                const { data: chatData, error: chatError } = await supabase
+                    .from('chats')
+                    .select('id')
+                    .eq('ride_id', rideId)
+                    .eq('type', 'emergency')
+                    .single();
+
+                if (chatError) throw chatError;
+                setChatId(chatData.id);
+
+                // 2. Cargar mensajes
+                const { data: msgs, error: msgsError } = await supabase
                     .from('messages')
                     .select('*')
-                    .eq('chat_id', EMERGENCY_CHAT_ID)
+                    .eq('chat_id', chatData.id)
                     .order('created_at', { ascending: true });
 
-                if (error) throw error;
+                if (msgsError) throw msgsError;
+                setMessages(msgs || []);
 
-                if (data && data.length > 0) {
-                    setMessages(data);
-                } else {
-                    // Mensaje inicial del sistema si no hay historial
-                    setMessages([
-                        {
-                            id: 'system-1',
-                            sender_id: 'system',
-                            content: 'Has activado el Canal de Emergencia. Un agente de seguridad de ShareWay está revisando tu ubicación actual y los detalles del viaje.',
-                            created_at: new Date().toISOString()
-                        }
-                    ]);
-                }
+                // 3. Suscripción Realtime
+                const channel = supabase.channel(`emergency:${chatData.id}`)
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'messages',
+                        filter: `chat_id=eq.${chatData.id}`
+                    }, (payload) => {
+                        setMessages(prev => {
+                            if (prev.find(m => m.id === payload.new.id)) return prev;
+                            return [...prev, payload.new];
+                        });
+                    })
+                    .subscribe();
+
+                return () => {
+                    supabase.removeChannel(channel);
+                };
             } catch (error) {
-                console.error(error);
+                console.error("🛡️ [Safety] Error loading emergency chat:", error);
+                toast.error("No se pudo conectar con el canal de seguridad.");
+                // Si falla, al menos mostramos un mensaje de sistema
+                setMessages([{
+                    id: 'fallback',
+                    sender_id: 'system',
+                    content: 'Alerta registrada. Estamos monitorizando tu señal.',
+                    created_at: new Date().toISOString()
+                }]);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchMessages();
-
-        // Suscripción Realtime para respuestas del equipo de seguridad
-        const channel = supabase.channel(`emergency:${EMERGENCY_CHAT_ID}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `chat_id=eq.${EMERGENCY_CHAT_ID}`
-            }, (payload) => {
-                setMessages(prev => {
-                    if (prev.find(m => m.id === payload.new.id)) return prev;
-                    return [...prev, payload.new];
-                });
-            })
-            .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
-    }, [user, rideId, EMERGENCY_CHAT_ID]);
+        initEmergencyChat();
+    }, [user, rideId]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -97,31 +102,28 @@ const EmergencyChat = () => {
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() || isSending) return;
+        if (!newMessage.trim() || isSending || !chatId) return;
 
         setIsSending(true);
         const text = newMessage.trim();
         setNewMessage('');
 
         try {
-            // Registrar mensaje de emergencia en la base de datos
-            // En producción esto dispararía alertas inmediatas a los admins
             const { error } = await supabase.from('messages').insert({
                 sender_id: user.id,
-                content: `⚠️ EMERGENCIA: ${text}`,
-                chat_id: EMERGENCY_CHAT_ID
+                content: `⚠️ AUXILIO: ${text}`,
+                chat_id: chatId
             });
 
             if (error) throw error;
-
-            // El mensaje se añadirá vía Realtime, pero podemos optimizar UI si queremos
         } catch (error) {
-            toast.error("Error al enviar señal de auxilio.");
+            toast.error("Error al enviar señal.");
             setNewMessage(text);
         } finally {
             setIsSending(false);
         }
     };
+
 
     if (isLoading) return <div className="h-screen flex items-center justify-center bg-red-50"><Loader2 className="animate-spin text-red-600" /></div>;
 

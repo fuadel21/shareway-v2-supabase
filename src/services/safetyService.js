@@ -36,7 +36,8 @@ export const triggerSOS = async (rideId) => {
             duration: 10000
         });
 
-        return { success: true, alertId: data.alertId };
+        return { success: true, alertId: data.alertId, chatId: data.chatId };
+
     } catch (error) {
         console.error("🛡️ [Safety] SOS trigger failed:", error);
         toast.error("Error al activar SOS", {
