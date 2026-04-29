@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
+import { supabase } from '@/lib/supabase';
 import { getUserChats } from '@/services/chatService';
+
 import { Card } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import { Button } from '@/components/ui/button.jsx';
