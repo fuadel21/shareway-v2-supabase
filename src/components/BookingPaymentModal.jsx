@@ -14,7 +14,7 @@ import {
     MapPin, TrendingUp, ArrowRight, Navigation
 } from 'lucide-react';
 import { cn, calculateDistance } from '../lib/utils.js';
-import { RIDE_RULES, calculateRecommendedPrice } from '../services/rideService.js';
+import { RIDE_RULES, calculateRecommendedPrice, fetchRoute } from '../services/rideService.js';
 
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -180,8 +180,9 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             try {
                 // 1. DISTANCIA REAL POR CARRETERA
                 const coords = `${pickupLocation.lng},${pickupLocation.lat};${dropoffLocation.lng},${dropoffLocation.lat}`;
-                const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=false`);
-                const data = await res.json();
+
+                // Usamos el proxy para evitar errores de CORS
+                const data = await fetchRoute(coords, 'false');
 
                 let distanceKm;
                 if (data.code === 'Ok' && data.routes[0]) {

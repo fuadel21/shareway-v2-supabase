@@ -138,6 +138,19 @@ SET total_reviews = EXCLUDED.total_reviews,
     rating_5_count = EXCLUDED.rating_5_count,
     last_review_date = EXCLUDED.last_review_date,
     updated_at = NOW();
+
+-- Actualizar rating en la tabla profiles para redundancia rápida
+UPDATE public.profiles SET rating = v_avg_rating WHERE id = p_user_id;
+
+-- Registrar cambio en historial de reputación
+PERFORM public.log_reputation_change(
+    p_user_id,
+    'rating',
+    0, -- El amount es relativo en ratings, aquí registramos el nuevo absoluto
+    v_avg_rating,
+    'Recalculado tras nueva valoración (Total: ' || v_total_reviews || ')'
+);
+
 RETURN v_avg_rating;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

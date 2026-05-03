@@ -217,8 +217,12 @@ function Dashboard() {
             const filteredRides = (rides || []).filter(r => {
                 const isNotMine = r.driver_id !== user.id;
                 const genderShield = !r.is_women_only || profile.gender === 'female';
-                const isFuture = isAfter(new Date(r.departure_time), subMinutes(new Date(), 30));
-                return isNotMine && genderShield && isFuture;
+
+                // ✅ FIX: Si el viaje está activo, lo mostramos siempre.
+                // Si está programado, permitimos un margen de 30 min de cortesía tras la salida.
+                const isStatusValid = r.status === 'active' || isAfter(new Date(r.departure_time), subMinutes(new Date(), 30));
+
+                return isNotMine && genderShield && isStatusValid;
             }).map(r => ({ ...r, type: 'ride' }));
 
             const filteredRequests = (rawRequests || []).filter(req => {

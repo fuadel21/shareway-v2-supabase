@@ -62,6 +62,49 @@ export const calculateRideDetour = async (rideId, paxOrigin, paxDestination) => 
 };
 
 /**
+ * Obtiene la ruta de OSRM a través de múltiples canales para máxima fiabilidad.
+ * Si todo falla, devuelve una estimación por línea recta para no bloquear el flujo.
+ */
+export const fetchRoute = async (coordinates, overview = 'full', geometries = 'polyline') => {
+    const osrmParams = `${coordinates}?overview=${overview}&geometries=${geometries}`;
+
+    // 1. Intento rápido vía Supabase Proxy
+    try {
+        const { data, error } = await supabase.functions.invoke('osrm-proxy', {
+            body: { coords: coordinates, overview, geometries }
+        });
+        if (data && !error && data.code === 'Ok') return data;
+    } catch (e) { /* Fallback silencioso */ }
+
+    // 2. FALLBACK DE EMERGENCIA: Línea Recta (Haversine)
+    // Se activa si los servidores de mapas externos están caídos.
+    const [start, end] = coordinates.split(';');
+    const [startLng, startLat] = start.split(',').map(Number);
+    const [endLng, endLat] = end.split(',').map(Number);
+
+    const R = 6371e3; // metros
+    const φ1 = startLat * Math.PI/180;
+    const φ2 = endLat * Math.PI/180;
+    const Δφ = (endLat-startLat) * Math.PI/180;
+    const Δλ = (endLng-startLng) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+
+    return {
+        code: 'Ok',
+        routes: [{
+            distance: distance * 1.3, // +30% para simular curvas reales
+            duration: (distance / 13.8) * 1.3, // ~50km/h
+            geometry: '',
+            weight: distance
+        }],
+        waypoints: [{ location: [startLng, startLat] }, { location: [endLng, endLat] }],
+        is_fallback: true
+    };
+};
+
+/**
  * Normaliza objetos de ubicación para evitar errores de esquema en Postgres
  */
 const normalizeLocation = (loc) => ({

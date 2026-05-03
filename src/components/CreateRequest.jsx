@@ -15,7 +15,7 @@ import { format, isBefore, addMinutes } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
 import MapComponent from './MapComponent.jsx';
-import { createRideRequest, RIDE_RULES, calculateRecommendedPrice } from '@/services/rideService';
+import { createRideRequest, RIDE_RULES, calculateRecommendedPrice, fetchRoute } from '@/services/rideService';
 import { cn, decodePolyline } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -84,11 +84,11 @@ const CreateRequest = () => {
 
             setIsCalculatingRoute(true);
             try {
-                const res = await fetch(
-                    `https://router.project-osrm.org/route/v1/driving/${origin.coordinates.lng},${origin.coordinates.lat};${destination.coordinates.lng},${destination.coordinates.lat}?overview=full&geometries=polyline`,
-                    { signal: controller.signal }
-                );
-                const data = await res.json();
+                const coords = `${origin.coordinates.lng},${origin.coordinates.lat};${destination.coordinates.lng},${destination.coordinates.lat}`;
+
+                // Usamos el proxy para evitar errores de CORS
+                const data = await fetchRoute(coords, 'full', 'polyline');
+
                 if (data.code === 'Ok' && data.routes[0]) {
                     const route = data.routes[0];
                     setRouteInfo({

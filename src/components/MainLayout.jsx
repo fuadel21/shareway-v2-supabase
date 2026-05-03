@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button.jsx';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useTranslation } from 'react-i18next';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -20,7 +21,8 @@ const AUDIO_ASSETS = {
   welcome: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
   review: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
   arrival: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-  chat: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3' // Sonito tipo burbuja/pop
+  chat: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3', // Sonito tipo burbuja/pop
+  sos: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3' // Alerta SOS (Sirena)
 };
 
 const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
@@ -86,7 +88,14 @@ const MainLayout = (props) => {
       const audio = new Audio(AUDIO_ASSETS[type]);
       audio.volume = 0.4;
       audio.play().catch(e => console.warn("Audio play blocked by browser policy"));
-    } catch (e) { console.error("Audio init error", e); }
+
+      // FASE 18: Feedback háptico (Vibración) según prioridad
+      if (type === 'sos') {
+        Haptics.vibrate({ duration: 1000 }); // Vibración larga para SOS
+      } else {
+        Haptics.impact({ style: ImpactStyle.Medium });
+      }
+    } catch (e) { console.error("Audio/Haptic init error", e); }
   };
 
   useEffect(() => {
@@ -127,6 +136,7 @@ const MainLayout = (props) => {
         // Sonido según tipo
         if (notif.type === 'booking') playSound('booking');
         else if (notif.type === 'payment') playSound('arrival');
+        else if (notif.type === 'emergency_alert') playSound('sos');
         else playSound('welcome');
 
         toast(notif.title, { description: notif.content });

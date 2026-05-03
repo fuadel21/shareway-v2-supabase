@@ -106,38 +106,47 @@ function RideChat() {
 
         initChat();
 
-        const channelId = `ride_chat_${rideId}`;
+        // 🛡️ FIX TIEMPO REAL: Usamos el chatId real para la suscripción
+        const activeChatId = chatId || ride?.chat?.id;
+        if (!activeChatId) return;
+
+        console.log("🛡️ [RideChat] Suscribiendo a tiempo real para chat:", activeChatId);
+
+        const channelId = `chat_${activeChatId}`;
         const channel = supabase.channel(channelId)
             .on('postgres_changes',
                 {
                     event: 'INSERT',
                     schema: 'public',
                     table: 'messages',
-                    filter: ride?.chat?.id ? `chat_id=eq.${ride.chat.id}` : undefined
+                    filter: `chat_id=eq.${activeChatId}`
                 },
                 async (payload) => {
                     if (!isMounted.current) return;
+                    console.log("📨 [RideChat] Nuevo mensaje recibido vía tiempo real");
 
                     try {
-                        // Si recibimos un mensaje de otro, marcar como leído automáticamente si estamos en la pantalla
+                        // Marcar como leído si no es mío
                         if (payload.new.sender_id !== currentUser?.id) {
-                            markChatAsRead(ride.chat.id);
+                            markChatAsRead(activeChatId);
                         }
 
-                        // Evitar duplicados locales
+                        // Evitar duplicados
                         setMessages(prev => {
                             if (prev.some(m => m.id === payload.new.id)) return prev;
 
-                            // Cargar perfil del remitente si no viene en el payload (en insert simple no viene)
+                            // Cargar perfil del remitente de forma asíncrona
                             const fetchSender = async () => {
                                 const { data: sender } = await supabase.from('profiles')
                                     .select('display_name, photo_url')
                                     .eq('id', payload.new.sender_id)
                                     .single();
 
-                                setMessages(current => current.map(msg =>
-                                    msg.id === payload.new.id ? { ...msg, sender } : msg
-                                ));
+                                if (isMounted.current) {
+                                    setMessages(current => current.map(msg =>
+                                        msg.id === payload.new.id ? { ...msg, sender } : msg
+                                    ));
+                                }
                             };
                             fetchSender();
 
@@ -153,7 +162,7 @@ function RideChat() {
                     event: 'UPDATE',
                     schema: 'public',
                     table: 'messages',
-                    filter: ride?.chat?.id ? `chat_id=eq.${ride.chat.id}` : undefined
+                    filter: `chat_id=eq.${activeChatId}`
                 },
                 (payload) => {
                     if (!isMounted.current) return;
@@ -163,15 +172,14 @@ function RideChat() {
                 }
             )
             .subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-
-                }
+                console.log(`🛡️ [RideChat] Estado suscripción (${activeChatId}):`, status);
             });
 
         return () => {
+            console.log("🛡️ [RideChat] Liberando canal:", channelId);
             supabase.removeChannel(channel);
         };
-    }, [rideId, currentUser?.id, ride?.chat?.id]);
+    }, [rideId, chatId, currentUser?.id, ride?.chat?.id]);
 
     useEffect(() => {
         if (messages.length > 0) {

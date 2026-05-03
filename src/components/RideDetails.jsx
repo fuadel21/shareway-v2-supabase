@@ -188,21 +188,33 @@ const RideDetails = () => {
     const handleVerifyPin = async (pin) => {
         setIsVerifying(true);
         try {
-            // USANDO RPC DE VERIFICACIÓN CIEGA
             const res = await verifyPassenger(rideId, pin, selectedPassenger?.id ?? null);
             
             if (!res.success) {
-                if (res.error?.includes('PIN_INCORRECTO')) {
+                // Manejo de errores específicos para una mejor UX
+                if (res.error === 'DEMASIADO_PRONTO' || res.message?.includes('antes de la salida')) {
+                    toast.error("¡Es demasiado pronto!", {
+                        description: "Solo puedes verificar el PIN del pasajero 15 minutos antes de la hora de salida programada.",
+                        duration: 5000
+                    });
+                    setIsPinDialogOpen(false);
+                    return;
+                }
+
+                if (res.error?.includes('PIN_INCORRECTO') || res.message?.includes('incorrecto')) {
                     throw new Error("El PIN introducido no coincide. Solicítalo de nuevo al pasajero.");
                 }
-                throw new Error(res.error || "Error al verificar");
+                throw new Error(res.error || res.message || "Error al verificar");
             }
 
-            toast.success(`¡${selectedPassenger?.displayName || 'Pasajero'} verificado!`);
+            toast.success(`¡${selectedPassenger?.displayName || 'Pasajero'} verificado!`, {
+                description: "Ya puede subir al vehículo.",
+                icon: <BadgeCheck className="text-emerald-500" />
+            });
             setIsPinDialogOpen(false);
-            await fetchRide(); // Refrescar datos del viaje
+            await fetchRide();
         } catch (error) {
-            toast.error(error.message);
+            toast.error("Error de verificación", { description: error.message });
         } finally {
             setIsVerifying(false);
         }
@@ -323,12 +335,9 @@ const RideDetails = () => {
     const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
+    const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled';
 
-    // PIN del pasajero actual
-    const myPassengerEntry = passengers.find(p => p.id?.toString().toLowerCase() === currentUserId);
-    const isRated = myPassengerEntry?.rated === true || myPassengerEntry?.rated === 'true';
-    const myPin = myPassengerEntry?.pin;
-
+    // LÓGICA DE TIEMPO
     const departureDate = new Date(ride.departure_time);
     const minutesToDeparture = differenceInMinutes(departureDate, currentTime);
 
@@ -336,7 +345,17 @@ const RideDetails = () => {
     const isTooLate = differenceInMinutes(currentTime, departureDate) > 120;
     const isDelayed = isBefore(departureDate, currentTime) && !isRideActive && !isRideCancelled;
 
+    // canStartRide: Para el botón grande de abajo (solo si el viaje aún no es activo)
     const canStartRide = (minutesToDeparture <= 15 || isBefore(departureDate, currentTime)) && !isRideActive && !isRideCancelled && !isTooLate;
+
+    // canVerifyPassenger: Para el botón de cada pasajero.
+    // Se habilita si el viaje ya está activo O si falta poco para salir.
+    const canVerifyPassenger = isRideActive || canStartRide;
+
+    // 🛡️ REPARACIÓN DE VARIABLES FALTANTES
+    const myPassengerEntry = passengers.find(p => p.id?.toString().toLowerCase() === currentUserId);
+    const isRated = myPassengerEntry?.rated === true || myPassengerEntry?.rated === 'true';
+    const myPin = myPassengerEntry?.pin;
 
     return (
         <div className="bg-[#F8FAFC] min-h-screen pb-96">
@@ -570,28 +589,21 @@ const RideDetails = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        {isDriver && (
+                                        {isDriver && !isRideClosed && (
                                             <>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
                                                     className="rounded-xl bg-slate-50 hover:bg-primary/10 hover:text-primary transition-colors h-10 w-10"
                                                     onClick={() => {
-                                                        const pickupLat = passenger.pickup_location?.lat || passenger.pickup_location?.latitude || ride.origin?.lat;
-                                                        const pickupLng = passenger.pickup_location?.lng || passenger.pickup_location?.longitude || ride.origin?.lng;
-                                                        const destLat = passenger.dropoff_location?.lat || passenger.dropoff_location?.latitude || ride.destination?.lat;
-                                                        const destLng = passenger.dropoff_location?.lng || passenger.dropoff_location?.longitude || ride.destination?.lng;
-
-
-                                                        // LÓGICA ELITE: Si el viaje no ha empezado, siempre ir a recogida.
-                                                        // Si ya empezó y está a bordo, ir a destino.
-                                                        const targetLat = (isRideActive && passenger.status === 'verified') ? destLat : pickupLat;
-                                                        const targetLng = (isRideActive && passenger.status === 'verified') ? destLng : pickupLng;
+                                                        // Prioridad absoluta al origen (Recogida) del pasajero o del viaje
+                                                        const targetLat = passenger.pickup_location?.lat || passenger.pickup_location?.latitude || ride.origin?.lat || (ride.origin?.coordinates?.lat);
+                                                        const targetLng = passenger.pickup_location?.lng || passenger.pickup_location?.longitude || ride.origin?.lng || (ride.origin?.coordinates?.lng);
 
                                                         const url = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}&travelmode=driving`;
                                                         window.open(url, '_blank');
                                                     }}
-                                                    title={(isRideActive && passenger.status === 'verified') ? "Navegar al Destino" : "Navegar a la Recogida"}
+                                                    title="Navegar al Origen"
                                                 >
                                                     <Navigation size={18} className={cn((isRideActive && passenger.status === 'verified') ? "text-emerald-500" : "text-primary")} />
                                                 </Button>
@@ -608,7 +620,7 @@ const RideDetails = () => {
                                                 )}
 
 
-                                                {passenger.status === 'confirmed' && (ride.status === 'active' || ride.status === 'in_progress') && (
+                                                {passenger.status === 'confirmed' && isRideActive && (
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -629,17 +641,25 @@ const RideDetails = () => {
                                         >
                                             <MessageCircle size={18} />
                                         </Button>
-                                        {isDriver && passenger.status !== 'verified' && (
-
-                                            <Button
-                                                onClick={() => {
-                                                    setSelectedPassenger(passenger);
-                                                    setIsPinDialogOpen(true);
-                                                }}
-                                                className="rounded-xl h-10 px-4 bg-primary text-white font-black uppercase italic tracking-tighter text-[10px] gap-2 shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all z-10"
-                                            >
-                                                <Fingerprint size={14} /> Verificar
-                                            </Button>
+                                        {isDriver && passenger.status === 'confirmed' && !isRideClosed && (
+                                            <div className="flex flex-col items-end gap-1">
+                                                <Button
+                                                    disabled={!canVerifyPassenger}
+                                                    onClick={() => {
+                                                        setSelectedPassenger(passenger);
+                                                        setIsPinDialogOpen(true);
+                                                    }}
+                                                    className={cn(
+                                                        "rounded-xl h-10 px-4 font-black uppercase italic tracking-tighter text-[10px] gap-2 shadow-lg transition-all z-10",
+                                                        canVerifyPassenger ? "bg-primary text-white shadow-primary/20 hover:scale-105 active:scale-95" : "bg-slate-100 text-slate-400 shadow-none cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    <Fingerprint size={14} /> Verificar
+                                                </Button>
+                                                {!canVerifyPassenger && (
+                                                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter mr-1">Disponible 15m antes</span>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </Card>

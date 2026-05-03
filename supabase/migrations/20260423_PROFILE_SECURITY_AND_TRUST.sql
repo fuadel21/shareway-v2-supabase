@@ -76,6 +76,7 @@ CREATE OR REPLACE FUNCTION public.update_trust_score()
 RETURNS TRIGGER AS $$
 DECLARE
     v_score INTEGER := 20; -- Base
+    v_diff INTEGER;
 BEGIN
     -- +20 por Email
     IF (NEW.verification->>'email_verified')::BOOLEAN THEN v_score := v_score + 20; END IF;
@@ -83,6 +84,19 @@ BEGIN
     IF (NEW.verification->>'phone_verified')::BOOLEAN THEN v_score := v_score + 20; END IF;
     -- +40 por DNI/Identidad
     IF (NEW.verification->>'identity_verified')::BOOLEAN THEN v_score := v_score + 40; END IF;
+
+    v_diff := v_score - OLD.trust_score;
+
+    IF v_diff != 0 THEN
+        -- Registrar cambio en historial
+        PERFORM public.log_reputation_change(
+            NEW.id,
+            'trust_score',
+            v_diff,
+            v_score,
+            'Actualización de verificaciones de identidad/contacto'
+        );
+    END IF;
 
     -- Los viajes y reviews se suman en otros triggers, aquí solo verificaciones base
     NEW.trust_score := v_score;

@@ -20,9 +20,9 @@ import { format, isBefore, startOfToday, addMinutes } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
 import MapComponent from './MapComponent.jsx';
-import { createSingleRide, RIDE_RULES, calculateRecommendedPrice } from '@/services/rideService';
+import { createSingleRide, RIDE_RULES, calculateRecommendedPrice, fetchRoute } from '@/services/rideService';
 import { validateRidePrice } from '@/utils/pricingRules';
-import { cn } from '@/lib/utils';
+import { cn, decodePolyline } from '@/lib/utils';
 import { globalPollingManager } from '@/utils/week1Optimizations';
 import { useTranslation } from 'react-i18next';
 
@@ -138,8 +138,9 @@ const CreateRide = () => {
             setIsCalculatingRoute(true);
             try {
                 const coords = `${origin.coordinates.lng},${origin.coordinates.lat};${destination.coordinates.lng},${destination.coordinates.lat}`;
-                const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=polyline`, { signal: controller.signal });
-                const data = await res.json();
+
+                // Usamos el proxy para evitar errores de CORS
+                const data = await fetchRoute(coords, 'full', 'polyline');
 
                 if (reqId !== routeReqIdRef.current) return;
 
@@ -147,6 +148,16 @@ const CreateRide = () => {
                     const route = data.routes[0];
                     const distanceKm = route.distance / 1000;
                     routeDataRef.current = { distance: distanceKm, polyline: route.geometry };
+
+                    // Actualizamos el estado para que el mapa muestre el trayecto
+                    setRouteInfo({
+                        path: route.geometry ? decodePolyline(route.geometry) : [
+                            [origin.coordinates.lat, origin.coordinates.lng],
+                            [destination.coordinates.lat, destination.coordinates.lng]
+                        ],
+                        distance: distanceKm,
+                        polyline: route.geometry
+                    });
 
                     // Bug Fix #3: solo auto-setear precio si el usuario no lo cambió manualmente
                     if (!isPriceManualRef.current) {
@@ -175,7 +186,8 @@ const CreateRide = () => {
 
         if (isCalculatingRoute) return toast.error("Calculando ruta...");
 
-        if (!routeDataRef.current?.polyline) {
+        // Permitimos continuar si tenemos distancia (aunque la polyline sea manual/fallback)
+        if (!routeDataRef.current?.distance) {
             return toast.error("No se pudo obtener la ruta. Por favor, reintenta.");
         }
 
