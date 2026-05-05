@@ -272,14 +272,13 @@ const CreateRide = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen pb-32 font-sans">
-            <header className="bg-white/80 backdrop-blur-xl px-6 border-b border-slate-100 sticky top-0 z-20 flex items-center gap-4"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: '1.5rem' }}>
+            <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20 flex items-center gap-4">
                 <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 size-12" onClick={() => navigate('/dashboard')}>
                     <ChevronLeft className="h-6 w-6 text-slate-900" />
                 </Button>
                 <div className="text-left">
-                    <h1 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('create_ride.title')}</h1>
-                    <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-1">{t('create_ride.subtitle')}</p>
+                    <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('create_ride.title')}</h1>
+                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{t('create_ride.subtitle')}</p>
                 </div>
             </header>
 
@@ -371,8 +370,7 @@ const CreateRide = () => {
                         <Textarea placeholder={t('create_ride.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
                     </Card>
 
-                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-20 rounded-[2.2rem] bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic"
-                            style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-20 rounded-[2.2rem] bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
                         {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{t('create_ride.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                     </Button>
                 </form>

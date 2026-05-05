@@ -334,9 +334,8 @@ const RideDetails = () => {
     const isPassenger = passengers.some(p => p.id?.toString()?.toLowerCase() === currentUserId);
     const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
-    const isRideExpired = ride.status === 'expired';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
-    const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled' || ride.status === 'expired';
+    const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled';
 
     // LÓGICA DE TIEMPO
     const departureDate = new Date(ride.departure_time);
@@ -381,16 +380,6 @@ const RideDetails = () => {
                         <div>
                             <p className="font-black uppercase italic leading-none">Viaje Cancelado</p>
                             <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">Este viaje ya no está disponible</p>
-                        </div>
-                    </div>
-                )}
-
-                {isRideExpired && (
-                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-amber-600">
-                        <Clock size={32} className="shrink-0" />
-                        <div>
-                            <p className="font-black uppercase italic leading-none">Viaje Expirado</p>
-                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">La hora de salida ha pasado sin iniciarse</p>
                         </div>
                     </div>
                 )}
@@ -680,10 +669,9 @@ const RideDetails = () => {
                 )}
             </main>
 
-            {/* BARRA DE ACCIÓN INFERIOR - Optimizada para Móvil Elite */}
-            <div className="fixed bottom-0 left-0 right-0 p-6 z-40 pointer-events-none"
-                 style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-                <div className="max-w-xl mx-auto flex gap-3 pointer-events-auto bg-white/60 backdrop-blur-xl p-4 rounded-[2.5rem] border border-white/40 shadow-elite-hover">
+            {/* BARRA DE ACCIÓN INFERIOR - Ajustada para no solapar con el menú global */}
+            <div className="fixed bottom-20 left-0 right-0 p-6 z-40 pointer-events-none">
+                <div className="max-w-xl mx-auto flex gap-3 pointer-events-auto">
                     {isDriver ? (
                         <>
                             {ride.status === 'scheduled' && (

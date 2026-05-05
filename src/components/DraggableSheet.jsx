@@ -32,10 +32,9 @@ export function DraggableSheet({ children, activeSnap }) {
 
     return (
         <div className={cn(
-            "fixed inset-x-0 z-[900] bg-white rounded-t-[2.5rem] shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 ease-out flex flex-col border-t border-slate-100 lg:hidden",
+            "fixed inset-x-0 bottom-0 z-[1000] bg-white rounded-t-[2.5rem] shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 ease-out flex flex-col border-t border-slate-100 lg:hidden",
             heights[snap]
-        )}
-        style={{ bottom: 'calc(80px + env(safe-area-inset-bottom))' }}>
+        )}>
             {/* DRAG HANDLE / HEADER - Tap to change snap state */}
             <div 
                 className="w-full h-12 flex flex-col items-center justify-center cursor-pointer active:bg-slate-50 rounded-t-[2.5rem] transition-colors shrink-0"

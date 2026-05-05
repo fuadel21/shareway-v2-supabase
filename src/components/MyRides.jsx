@@ -241,15 +241,14 @@ const MyRides = () => {
 
     return (
         <div className="bg-slate-50 min-h-screen pb-40 font-sans">
-            <header className="bg-white/80 backdrop-blur-xl px-6 border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between shadow-sm"
-                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: '1.5rem' }}>
+            <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 size-12 shadow-sm" onClick={() => navigate('/dashboard')}>
                         <ChevronLeft className="h-6 w-6 text-slate-900" />
                     </Button>
-                    <div className="text-left">
-                        <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Actividad</h1>
-                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mt-1">Tus Viajes</p>
+                    <div>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">Actividad</h1>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Tus Viajes</p>
                     </div>
                 </div>
                 <Button variant="ghost" size="icon" className="rounded-xl size-10 text-slate-300 hover:text-primary" onClick={() => userId && fetchRidesDirect(userId)}>

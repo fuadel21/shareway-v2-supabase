@@ -187,21 +187,11 @@ function RideChat() {
         }
     }, [messages]);
 
-    const isRideClosed = useMemo(() => {
-        if (!ride) return false;
-        return ['completed', 'cancelled', 'expired'].includes(ride.status);
-    }, [ride]);
-
     const handleSendMessage = async (e) => {
         if (e) e.preventDefault();
 
         // Obtenemos el ID del chat desde el estado local 'ride'
         const activeChatId = ride?.chat?.id;
-
-        if (isRideClosed) {
-            toast.error("Chat cerrado", { description: "No puedes enviar mensajes en un viaje finalizado o cancelado." });
-            return;
-        }
 
         if (!newMessage.trim() || !currentUser?.id || !activeChatId || isSending) {
             console.warn("🛡️ Chat: No se cumplen las condiciones para enviar", { activeChatId, userId: currentUser?.id });
@@ -371,65 +361,50 @@ function RideChat() {
             </main>
 
             <footer className="bg-white border-t border-slate-100 shrink-0 relative z-[60]">
-                {isRideClosed ? (
-                    <div className="p-6 bg-slate-50 flex flex-col items-center justify-center gap-2">
-                        <div className="flex items-center gap-2 text-slate-400">
-                            <Info size={16} />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Este chat está cerrado</span>
-                        </div>
-                        <p className="text-[9px] font-bold text-slate-400 text-center px-8">
-                            El viaje ha finalizado, expirado o ha sido cancelado. Ya no se pueden enviar nuevos mensajes.
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        {/* ⚡ Quick Messages - Más compactos */}
-                        <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-slate-50/50">
-                            {QUICK_MESSAGES.map((msg, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => {
-                                        setNewMessage(msg);
-                                        setTimeout(() => document.getElementById('chat-form-submit')?.click(), 50);
-                                    }}
-                                    className="shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[9px] font-black text-slate-500 hover:text-primary hover:border-primary/30 transition-all whitespace-nowrap uppercase tracking-widest active:scale-95 shadow-sm"
-                                >
-                                    {msg}
-                                </button>
-                            ))}
-                        </div>
+                {/* ⚡ Quick Messages - Más compactos */}
+                <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-slate-50/50">
+                    {QUICK_MESSAGES.map((msg, i) => (
+                        <button
+                            key={i}
+                            onClick={() => {
+                                setNewMessage(msg);
+                                setTimeout(() => document.getElementById('chat-form-submit')?.click(), 50);
+                            }}
+                            className="shrink-0 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[9px] font-black text-slate-500 hover:text-primary hover:border-primary/30 transition-all whitespace-nowrap uppercase tracking-widest active:scale-95 shadow-sm"
+                        >
+                            {msg}
+                        </button>
+                    ))}
+                </div>
 
-                        {/* Input Area - Ajustada para no colapsar la vista */}
-                        <div className="p-3 lg:p-4 bg-white"
-                             style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}>
-                            <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
-                                <div className="flex-1 relative">
-                                    <textarea
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSendMessage(e);
-                                            }
-                                        }}
-                                        placeholder="Escribe un mensaje..."
-                                        className="w-full bg-slate-50 border-none rounded-[1.8rem] px-6 py-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 transition-all resize-none max-h-24 min-h-[52px] shadow-inner no-scrollbar"
-                                        rows={1}
-                                    />
-                                </div>
-                                <Button
-                                    id="chat-form-submit"
-                                    type="submit"
-                                    disabled={!newMessage.trim() || isSending}
-                                    className="h-12 w-12 lg:h-14 lg:w-14 rounded-2xl bg-slate-900 hover:bg-primary text-white shadow-xl hover:scale-105 active:scale-95 transition-all group shrink-0"
-                                >
-                                    {isSending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5 lg:size-6" />}
-                                </Button>
-                            </form>
+                {/* Input Area - Ajustada para no colapsar la vista */}
+                <div className="p-3 lg:p-4 pb-6 lg:pb-8 bg-white">
+                    <form onSubmit={handleSendMessage} className="flex items-center gap-3 max-w-3xl mx-auto">
+                        <div className="flex-1 relative">
+                            <textarea
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage(e);
+                                    }
+                                }}
+                                placeholder="Escribe un mensaje..."
+                                className="w-full bg-slate-50 border-none rounded-[1.8rem] px-6 py-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 transition-all resize-none max-h-24 min-h-[52px] shadow-inner no-scrollbar"
+                                rows={1}
+                            />
                         </div>
-                    </>
-                )}
+                        <Button
+                            id="chat-form-submit"
+                            type="submit"
+                            disabled={!newMessage.trim() || isSending}
+                            className="h-12 w-12 lg:h-14 lg:w-14 rounded-2xl bg-slate-900 hover:bg-primary text-white shadow-xl hover:scale-105 active:scale-95 transition-all group shrink-0"
+                        >
+                            {isSending ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5 lg:size-6" />}
+                        </Button>
+                    </form>
+                </div>
             </footer>
         </div>
     );

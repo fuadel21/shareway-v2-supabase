@@ -7,9 +7,8 @@ const SubPageHeader = ({ title, actions, backTo }) => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/60 backdrop-blur-xl border-b border-slate-100"
-            style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))', paddingBottom: '1rem' }}>
-      <div className="max-w-xl md:max-w-5xl mx-auto flex items-center justify-between relative px-4">
+    <header className="sticky top-0 z-50 pt-4 pb-16 px-4 md:px-0">
+      <div className="max-w-xl md:max-w-5xl mx-auto flex items-center justify-between relative px-2">
         {/* Botón de Volver Elite */}
         <button
           onClick={() => backTo ? navigate(backTo) : navigate(-1)}

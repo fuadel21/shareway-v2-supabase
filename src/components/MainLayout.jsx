@@ -196,30 +196,6 @@ const MainLayout = (props) => {
 
   const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
 
-  // FASE ELITE: Rutas que ocultan el layout global para maximizar espacio en móvil
-  const hideChromeRoutes = [
-    '/ride/',
-    '/rides/',
-    '/chat/',
-    '/wallet',
-    '/publish',
-    '/request',
-    '/profile/',
-    '/settings/',
-    '/emergency/'
-  ];
-  const shouldHideChrome = hideChromeRoutes.some(route => location.pathname.startsWith(route));
-
-  if (shouldHideChrome) {
-    return (
-      <div className="h-screen w-screen bg-slate-50 overflow-hidden font-sans flex flex-col">
-        <main className="flex-1 relative overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <Outlet context={{ ...context, unreadNotifications: unreadCount }} />
-        </main>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative font-sans text-left">
       {/* HEADER COMPACTO */}
@@ -259,9 +235,7 @@ const MainLayout = (props) => {
       {/* ÁREA DE CONTENIDO CON SCROLL MEJORADO */}
       <main className={cn(
         "flex-1 relative",
-        isDashboard
-          ? "overflow-hidden pt-14 lg:pt-16 pb-[calc(80px+env(safe-area-inset-bottom))]"
-          : "pt-14 lg:pt-16 pb-24 lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
+        isDashboard ? "overflow-hidden" : "pt-14 lg:pt-16 pb-24 lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
       )}>
         <div className={cn("mx-auto h-full", !isDashboard && "max-w-7xl")}>
           <Outlet context={{ ...context, unreadNotifications: unreadCount }} />
