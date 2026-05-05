@@ -307,7 +307,7 @@ const MapComponent = ({
                     }
                     if (onMapClick) onMapClick(latlng);
                 }} />
-                <ZoomControl position="bottomright" />
+                <ZoomControl position="topright" />
 
                 {userLocation && (
                     <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon} />

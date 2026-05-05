@@ -207,8 +207,9 @@ const Wallet = () => {
                 onViewRide={handleViewRide}
             />
 
-            <header className="bg-white px-6 py-8 border-b border-slate-100 sticky top-0 z-20 shadow-sm">
-                <div className="max-w-xl mx-auto flex items-center gap-4">
+            <header className="bg-white/80 backdrop-blur-xl border-b border-slate-100 sticky top-0 z-20 shadow-sm"
+                    style={{ paddingTop: 'max(1.5rem, env(safe-area-inset-top))', paddingBottom: '1.5rem' }}>
+                <div className="max-w-xl mx-auto flex items-center gap-4 px-6">
                     <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} className="rounded-2xl bg-slate-50 size-12">
                         <ChevronLeft className="h-6 w-6 text-slate-900" />
                     </Button>

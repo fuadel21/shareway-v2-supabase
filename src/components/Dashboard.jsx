@@ -307,8 +307,8 @@ function Dashboard() {
     
     return (
         <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
-            {/* BADGE DE IMPACTO (Premium Look - Lateral Izquierdo Inferior) */}
-            <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2 animate-in fade-in zoom-in duration-1000">
+            {/* BADGE DE IMPACTO */}
+            <div className="absolute bottom-32 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2 animate-in fade-in zoom-in duration-1000">
                 <ImpactBadge profile={profile} />
             </div>
 
@@ -395,10 +395,10 @@ function Dashboard() {
                         ))}
                     </div>
                 </div>
-                {/* BOTÓN "CERCA DE TI" INTELIGENTE (LATERAL INFERIOR IZQUIERDO PARA EQUILIBRIO) */}
+                {/* BOTÓN "CERCA DE TI" INTELIGENTE */}
                 <Button 
                     onClick={handleLocateMe} 
-                    className="absolute bottom-40 left-4 z-[1000] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group"
+                    className="absolute bottom-6 left-4 z-[400] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group"
                 >
                     <div className="relative">
                         <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
@@ -410,9 +410,9 @@ function Dashboard() {
                     <span className="text-[10px] font-black uppercase tracking-widest pr-1">{t('dashboard.view_details').includes('Details') ? 'NEAR ME' : 'CERCA DE TI'}</span>
                 </Button>
                 
-                {/* BOTONES DE ACCIÓN EN EL MAPA (LATERAL DERECHO INFERIOR PARA ERGONOMÍA) */}
+                {/* BOTONES DE ACCIÓN EN EL MAPA */}
                 {isMobile && (
-                    <div className="absolute bottom-40 right-4 z-[1000] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
+                    <div className="absolute bottom-6 right-4 z-[400] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
                         <Button
                             onClick={() => navigate('/publish')}
                             className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
