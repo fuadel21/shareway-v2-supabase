@@ -1,6 +1,17 @@
 function LandingPage() {
   return (
     <main className="min-h-screen bg-white text-slate-950">
+      <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 px-6 py-4 backdrop-blur">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
+          <a href="/" className="text-xl font-black tracking-tight">ShareWay</a>
+          <nav className="flex items-center gap-3 text-sm font-black">
+            <a href="#como-funciona" className="hidden text-slate-600 hover:text-slate-950 sm:inline">Cómo funciona</a>
+            <a href="/login" className="rounded-full border px-4 py-2">Entrar</a>
+            <a href="/register" className="rounded-full bg-orange-500 px-4 py-2 text-white">Crear cuenta gratis</a>
+          </nav>
+        </div>
+      </header>
+
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <p className="mb-5 text-sm font-black uppercase tracking-widest text-orange-500">Taxi compartido y trayectos urbanos</p>
