@@ -83,6 +83,18 @@ function LandingPage() {
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-slate-100 px-6 py-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
+          <p>© ShareWay</p>
+          <nav className="flex flex-wrap gap-4">
+            <a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a>
+            <a href="/privacidad/" className="hover:text-slate-950">Privacidad</a>
+            <a href="/cookies/" className="hover:text-slate-950">Cookies</a>
+            <a href="/terminos/" className="hover:text-slate-950">Términos</a>
+          </nav>
+        </div>
+      </footer>
     </main>
   );
 }
