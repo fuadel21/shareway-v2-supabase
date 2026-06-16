@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 // --- Layouts & Pages ---
 import MainLayout from './components/MainLayout.jsx';
 import AdminLayout from './pages/Admin/AdminLayout.jsx';
+import LandingPage from './components/LandingPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
@@ -298,12 +299,12 @@ function App() {
                     }}
                 />
                 <Routes>
+                    <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
 
                     <Route path="/" element={<ProtectedLayout {...outletContext} />}>
-                        <Route index element={profile?.is_admin ? <Navigate to="/admin" replace /> : <Navigate to="/dashboard" replace />} />
                         <Route path="dashboard" element={<Dashboard />} />
                         <Route path="my-rides" element={<MyRides />} />
                         <Route path="my-requests" element={<MyRequests />} />
