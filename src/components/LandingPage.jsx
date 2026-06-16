@@ -57,6 +57,18 @@ function LandingPage() {
         </div>
       </section>
 
+      <section className="bg-slate-50 px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-3xl font-black tracking-tight">Rutas populares</h2>
+          <p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir taxi y trayectos en ciudades y destinos frecuentes.</p>
+          <div className="mt-8 grid gap-5 md:grid-cols-3">
+            <a href="/taxi-compartido-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Madrid</a>
+            <a href="/taxi-compartido-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Barcelona</a>
+            <a href="/compartir-taxi-aeropuerto-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Madrid</a>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-slate-950 px-6 py-16 text-white">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Seguridad y confianza</h2>
