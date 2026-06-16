@@ -7,7 +7,7 @@ function LandingPage() {
           <h1 className="text-5xl font-black tracking-tight">Comparte taxi y trayectos con ShareWay</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">ShareWay ayuda a conectar personas que quieren compartir ruta, ahorrar en sus desplazamientos y moverse de forma más eficiente.</p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <a href="/register" className="rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta</a>
+            <a href="/register" className="rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta gratis</a>
             <a href="/login" className="rounded-full border px-6 py-4 font-black">Iniciar sesión</a>
           </div>
         </div>
@@ -57,6 +57,34 @@ function LandingPage() {
         </div>
       </section>
 
+      <section className="bg-orange-50 px-6 py-16">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-3xl font-black tracking-tight">¿Por qué usar ShareWay?</h2>
+          <p className="mt-4 max-w-3xl leading-8 text-slate-700">ShareWay está pensado para personas que quieren moverse mejor, ahorrar y encontrar acompañantes con rutas compatibles sin complicarse.</p>
+          <div className="mt-8 grid gap-5 md:grid-cols-4">
+            <article className="rounded-3xl bg-white p-6 shadow-sm">
+              <h3 className="font-black">Ahorra compartiendo</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Divide gastos de taxi o trayecto con otros usuarios.</p>
+            </article>
+            <article className="rounded-3xl bg-white p-6 shadow-sm">
+              <h3 className="font-black">Encuentra rutas</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Conecta con personas que van hacia zonas parecidas.</p>
+            </article>
+            <article className="rounded-3xl bg-white p-6 shadow-sm">
+              <h3 className="font-black">Organiza mejor</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Publica, solicita y gestiona desplazamientos desde una sola plataforma.</p>
+            </article>
+            <article className="rounded-3xl bg-white p-6 shadow-sm">
+              <h3 className="font-black">Muévete con confianza</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">Usa perfiles y herramientas de seguridad para coordinar mejor cada viaje.</p>
+            </article>
+          </div>
+          <div className="mt-8">
+            <a href="/register" className="inline-flex rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta y empezar</a>
+          </div>
+        </div>
+      </section>
+
       <section className="bg-slate-50 px-6 py-16">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-3xl font-black tracking-tight">Rutas populares</h2>
@@ -95,6 +123,17 @@ function LandingPage() {
               <h3 className="text-xl font-black">¿Tengo que registrarme?</h3>
               <p className="mt-3 leading-7 text-slate-600">Sí. El registro permite gestionar perfiles, rutas y herramientas de seguridad.</p>
             </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="px-6 py-20">
+        <div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14">
+          <h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a>
+            <a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a>
           </div>
         </div>
       </section>
