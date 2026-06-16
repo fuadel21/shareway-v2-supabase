@@ -1,16 +1,21 @@
 {
   "short_name": "ShareWay",
-  "name": "ShareWay: Carpooling Elite",
+  "name": "ShareWay | Comparte taxi y trayectos",
+  "description": "Comparte taxi y trayectos con otros usuarios, ahorra en tus desplazamientos y muévete de forma más eficiente y segura.",
   "icons": [
     {
-      "src": "favicon.ico",
+      "src": "/favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
       "type": "image/x-icon"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "theme_color": "#0f172a",
   "background_color": "#ffffff",
-  "orientation": "portrait"
+  "orientation": "portrait",
+  "lang": "es-ES",
+  "dir": "ltr",
+  "categories": ["travel", "navigation", "transportation"]
 }
