@@ -38,6 +38,7 @@ function Register() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             display_name: formData.name,
             phone: formData.phone || '',
@@ -71,7 +72,7 @@ function Register() {
         });
       } else {
         toast.success(t('register.success_title'));
-        navigate('/');
+        navigate('/dashboard', { replace: true });
       }
 
     } catch (err) {
