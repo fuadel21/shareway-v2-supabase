@@ -6,132 +6,27 @@ function LandingPage() {
           <p className="mb-5 text-sm font-black uppercase tracking-widest text-orange-500">Taxi compartido y trayectos urbanos</p>
           <h1 className="text-5xl font-black tracking-tight">Comparte taxi y trayectos con ShareWay</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">ShareWay ayuda a conectar personas que quieren compartir ruta, ahorrar en sus desplazamientos y moverse de forma más eficiente.</p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a href="/register" className="rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta gratis</a>
-            <a href="/login" className="rounded-full border px-6 py-4 font-black">Iniciar sesión</a>
-          </div>
+          <div className="mt-8 flex flex-wrap gap-4"><a href="/register" className="rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta gratis</a><a href="/login" className="rounded-full border px-6 py-4 font-black">Iniciar sesión</a></div>
         </div>
       </section>
 
-      <section className="bg-slate-50 px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">Cómo funciona ShareWay</h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            <article className="rounded-3xl bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-black">1. Crea tu cuenta</h3>
-              <p className="mt-3 leading-7 text-slate-600">Regístrate para acceder a la comunidad y gestionar tus trayectos.</p>
-            </article>
-            <article className="rounded-3xl bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-black">2. Publica o solicita ruta</h3>
-              <p className="mt-3 leading-7 text-slate-600">Indica tu trayecto para encontrar personas con rutas compatibles.</p>
-            </article>
-            <article className="rounded-3xl bg-white p-6 shadow-sm">
-              <h3 className="text-xl font-black">3. Comparte el viaje</h3>
-              <p className="mt-3 leading-7 text-slate-600">Organiza el desplazamiento y reduce costes compartiendo trayecto.</p>
-            </article>
-          </div>
-        </div>
-      </section>
+      <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Cómo funciona ShareWay</h2><div className="mt-8 grid gap-5 md:grid-cols-3"><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">1. Crea tu cuenta</h3><p className="mt-3 leading-7 text-slate-600">Regístrate para acceder a la comunidad y gestionar tus trayectos.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">2. Publica o solicita ruta</h3><p className="mt-3 leading-7 text-slate-600">Indica tu trayecto para encontrar personas con rutas compatibles.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">3. Comparte el viaje</h3><p className="mt-3 leading-7 text-slate-600">Organiza el desplazamiento y reduce costes compartiendo trayecto.</p></article></div></div></section>
 
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">Ventajas de compartir trayecto</h2>
-          <div className="mt-8 grid gap-5 md:grid-cols-2">
-            <article className="rounded-3xl border p-6">
-              <h3 className="text-xl font-black">Ahorro en desplazamientos</h3>
-              <p className="mt-3 leading-7 text-slate-600">Compartir taxi o ruta permite dividir gastos y aprovechar mejor cada viaje.</p>
-            </article>
-            <article className="rounded-3xl border p-6">
-              <h3 className="text-xl font-black">Rutas compatibles</h3>
-              <p className="mt-3 leading-7 text-slate-600">Busca usuarios que se mueven hacia zonas cercanas o destinos similares.</p>
-            </article>
-            <article className="rounded-3xl border p-6">
-              <h3 className="text-xl font-black">Comunidad verificada</h3>
-              <p className="mt-3 leading-7 text-slate-600">ShareWay está pensado para crear confianza mediante perfiles y actividad.</p>
-            </article>
-            <article className="rounded-3xl border p-6">
-              <h3 className="text-xl font-black">Movilidad más eficiente</h3>
-              <p className="mt-3 leading-7 text-slate-600">Compartir trayectos reduce viajes duplicados y mejora la organización diaria.</p>
-            </article>
-          </div>
-        </div>
-      </section>
+      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Ventajas de compartir trayecto</h2><div className="mt-8 grid gap-5 md:grid-cols-2"><article className="rounded-3xl border p-6"><h3 className="text-xl font-black">Ahorro en desplazamientos</h3><p className="mt-3 leading-7 text-slate-600">Compartir taxi o ruta permite dividir gastos y aprovechar mejor cada viaje.</p></article><article className="rounded-3xl border p-6"><h3 className="text-xl font-black">Rutas compatibles</h3><p className="mt-3 leading-7 text-slate-600">Busca usuarios que se mueven hacia zonas cercanas o destinos similares.</p></article><article className="rounded-3xl border p-6"><h3 className="text-xl font-black">Comunidad verificada</h3><p className="mt-3 leading-7 text-slate-600">ShareWay está pensado para crear confianza mediante perfiles y actividad.</p></article><article className="rounded-3xl border p-6"><h3 className="text-xl font-black">Movilidad más eficiente</h3><p className="mt-3 leading-7 text-slate-600">Compartir trayectos reduce viajes duplicados y mejora la organización diaria.</p></article></div></div></section>
 
-      <section className="bg-orange-50 px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">¿Por qué usar ShareWay?</h2>
-          <p className="mt-4 max-w-3xl leading-8 text-slate-700">ShareWay está pensado para personas que quieren moverse mejor, ahorrar y encontrar acompañantes con rutas compatibles sin complicarse.</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-4">
-            <article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Ahorra compartiendo</h3><p className="mt-3 text-sm leading-6 text-slate-600">Divide gastos de taxi o trayecto con otros usuarios.</p></article>
-            <article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Encuentra rutas</h3><p className="mt-3 text-sm leading-6 text-slate-600">Conecta con personas que van hacia zonas parecidas.</p></article>
-            <article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Organiza mejor</h3><p className="mt-3 text-sm leading-6 text-slate-600">Publica, solicita y gestiona desplazamientos desde una sola plataforma.</p></article>
-            <article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Muévete con confianza</h3><p className="mt-3 text-sm leading-6 text-slate-600">Usa perfiles y herramientas de seguridad para coordinar mejor cada viaje.</p></article>
-          </div>
-          <div className="mt-8"><a href="/register" className="inline-flex rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta y empezar</a></div>
-        </div>
-      </section>
+      <section className="bg-orange-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">¿Por qué usar ShareWay?</h2><p className="mt-4 max-w-3xl leading-8 text-slate-700">ShareWay está pensado para personas que quieren moverse mejor, ahorrar y encontrar acompañantes con rutas compatibles sin complicarse.</p><div className="mt-8 grid gap-5 md:grid-cols-4"><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Ahorra compartiendo</h3><p className="mt-3 text-sm leading-6 text-slate-600">Divide gastos de taxi o trayecto con otros usuarios.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Encuentra rutas</h3><p className="mt-3 text-sm leading-6 text-slate-600">Conecta con personas que van hacia zonas parecidas.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Organiza mejor</h3><p className="mt-3 text-sm leading-6 text-slate-600">Publica, solicita y gestiona desplazamientos desde una sola plataforma.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="font-black">Muévete con confianza</h3><p className="mt-3 text-sm leading-6 text-slate-600">Usa perfiles y herramientas de seguridad para coordinar mejor cada viaje.</p></article></div><div className="mt-8"><a href="/register" className="inline-flex rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta y empezar</a></div></div></section>
 
-      <section className="bg-slate-50 px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">Rutas populares</h2>
-          <p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir taxi y trayectos en ciudades y destinos frecuentes.</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            <a href="/taxi-compartido-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Madrid</a>
-            <a href="/taxi-compartido-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Barcelona</a>
-            <a href="/taxi-compartido-valencia/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Valencia</a>
-            <a href="/taxi-compartido-sevilla/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Sevilla</a>
-            <a href="/compartir-taxi-aeropuerto-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Madrid</a>
-            <a href="/compartir-taxi-aeropuerto-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Barcelona</a>
-          </div>
-        </div>
-      </section>
+      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Para quién es ShareWay</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">ShareWay puede ayudar a distintos perfiles que repiten rutas, se mueven a diario o quieren dividir costes en trayectos concretos.</p><div className="mt-8 grid gap-5 md:grid-cols-4"><article className="rounded-3xl border p-6"><h3 className="font-black">Estudiantes</h3><p className="mt-3 text-sm leading-6 text-slate-600">Para compartir trayectos hacia universidades, academias o zonas de estudio.</p></article><article className="rounded-3xl border p-6"><h3 className="font-black">Trabajadores</h3><p className="mt-3 text-sm leading-6 text-slate-600">Para organizar desplazamientos recurrentes al trabajo o zonas empresariales.</p></article><article className="rounded-3xl border p-6"><h3 className="font-black">Viajeros al aeropuerto</h3><p className="mt-3 text-sm leading-6 text-slate-600">Para coordinar trayectos hacia aeropuertos y repartir gastos del viaje.</p></article><article className="rounded-3xl border p-6"><h3 className="font-black">Rutas repetidas</h3><p className="mt-3 text-sm leading-6 text-slate-600">Para personas que hacen recorridos similares cada semana o cada día.</p></article></div></div></section>
 
-      <section className="bg-slate-950 px-6 py-16 text-white">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">Confianza y uso responsable</h2>
-          <p className="mt-5 max-w-3xl leading-8 text-white/70">ShareWay está diseñado para facilitar conexiones entre usuarios de forma responsable, con información clara, perfiles y canales de contacto.</p>
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
-            <article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Perfiles de usuario</h3><p className="mt-3 text-sm leading-6 text-white/70">Ayudan a conocer mejor con quién se coordina cada trayecto.</p></article>
-            <article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Comunicación clara</h3><p className="mt-3 text-sm leading-6 text-white/70">Organiza horarios, puntos de encuentro y detalles antes de viajar.</p></article>
-            <article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Soporte y contacto</h3><p className="mt-3 text-sm leading-6 text-white/70">La página de contacto permite consultar dudas o comunicar incidencias.</p></article>
-          </div>
-        </div>
-      </section>
+      <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Rutas populares</h2><p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir taxi y trayectos en ciudades y destinos frecuentes.</p><div className="mt-8 grid gap-5 md:grid-cols-3"><a href="/taxi-compartido-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Madrid</a><a href="/taxi-compartido-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Barcelona</a><a href="/taxi-compartido-valencia/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Valencia</a><a href="/taxi-compartido-sevilla/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Sevilla</a><a href="/compartir-taxi-aeropuerto-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Madrid</a><a href="/compartir-taxi-aeropuerto-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Barcelona</a></div></div></section>
 
-      <section className="px-6 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h2 className="text-3xl font-black tracking-tight">Preguntas frecuentes</h2>
-          <div className="mt-8 space-y-5">
-            <article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Qué es ShareWay?</h3><p className="mt-3 leading-7 text-slate-600">Es una plataforma para compartir taxi y trayectos con usuarios que tienen rutas compatibles.</p></article>
-            <article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Puedo compartir un taxi?</h3><p className="mt-3 leading-7 text-slate-600">Sí. ShareWay está orientado a facilitar trayectos compartidos y desplazamientos urbanos.</p></article>
-            <article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Tengo que registrarme?</h3><p className="mt-3 leading-7 text-slate-600">Sí. El registro permite gestionar perfiles, rutas y herramientas de seguridad.</p></article>
-          </div>
-        </div>
-      </section>
+      <section className="bg-slate-950 px-6 py-16 text-white"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Confianza y uso responsable</h2><p className="mt-5 max-w-3xl leading-8 text-white/70">ShareWay está diseñado para facilitar conexiones entre usuarios de forma responsable, con información clara, perfiles y canales de contacto.</p><div className="mt-8 grid gap-5 md:grid-cols-3"><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Perfiles de usuario</h3><p className="mt-3 text-sm leading-6 text-white/70">Ayudan a conocer mejor con quién se coordina cada trayecto.</p></article><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Comunicación clara</h3><p className="mt-3 text-sm leading-6 text-white/70">Organiza horarios, puntos de encuentro y detalles antes de viajar.</p></article><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Soporte y contacto</h3><p className="mt-3 text-sm leading-6 text-white/70">La página de contacto permite consultar dudas o comunicar incidencias.</p></article></div></div></section>
 
-      <section className="px-6 py-20">
-        <div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14">
-          <h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p>
-          <div className="mt-8 flex flex-wrap gap-4">
-            <a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a>
-            <a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a>
-          </div>
-        </div>
-      </section>
+      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Preguntas frecuentes</h2><div className="mt-8 space-y-5"><article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Qué es ShareWay?</h3><p className="mt-3 leading-7 text-slate-600">Es una plataforma para compartir taxi y trayectos con usuarios que tienen rutas compatibles.</p></article><article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Puedo compartir un taxi?</h3><p className="mt-3 leading-7 text-slate-600">Sí. ShareWay está orientado a facilitar trayectos compartidos y desplazamientos urbanos.</p></article><article className="rounded-3xl bg-slate-50 p-6"><h3 className="text-xl font-black">¿Tengo que registrarme?</h3><p className="mt-3 leading-7 text-slate-600">Sí. El registro permite gestionar perfiles, rutas y herramientas de seguridad.</p></article></div></div></section>
 
-      <footer className="border-t border-slate-100 px-6 py-10">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-          <p>© ShareWay</p>
-          <nav className="flex flex-wrap gap-4">
-            <a href="/contacto/" className="hover:text-slate-950">Contacto</a>
-            <a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a>
-            <a href="/privacidad/" className="hover:text-slate-950">Privacidad</a>
-            <a href="/cookies/" className="hover:text-slate-950">Cookies</a>
-            <a href="/terminos/" className="hover:text-slate-950">Términos</a>
-          </nav>
-        </div>
-      </footer>
+      <section className="px-6 py-20"><div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14"><h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p><div className="mt-8 flex flex-wrap gap-4"><a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a><a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a></div></div></section>
+
+      <footer className="border-t border-slate-100 px-6 py-10"><div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between"><p>© ShareWay</p><nav className="flex flex-wrap gap-4"><a href="/contacto/" className="hover:text-slate-950">Contacto</a><a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a><a href="/privacidad/" className="hover:text-slate-950">Privacidad</a><a href="/cookies/" className="hover:text-slate-950">Cookies</a><a href="/terminos/" className="hover:text-slate-950">Términos</a></nav></div></footer>
     </main>
   );
 }
