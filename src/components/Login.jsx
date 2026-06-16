@@ -57,13 +57,7 @@ function Login() {
     setError('');
     setIsSubmitting(true);
     try {
-      // MEJORA ELITE: Detección dinámica de entorno para redirección OAuth
-      const isApp = window.location.origin.includes('localhost') && !window.location.port;
-      // En Capacitor, el origin suele ser localhost sin puerto o con esquema propio
-
-      const redirectTo = window.location.origin.includes('localhost') && window.location.port
-        ? `${window.location.origin}/` // Desarrollo Web
-        : 'https://shareway-v2.vercel.app/'; // Producción / App (Ajustar a la URL real de Supabase Auth)
+      const redirectTo = `${window.location.origin}/`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
