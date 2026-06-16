@@ -39,7 +39,7 @@ function Login() {
       });
 
       if (loginError) throw loginError;
-      navigate('/');
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       console.error("Login error:", err);
       let friendlyError = t('login.errors.generic');
@@ -57,7 +57,7 @@ function Login() {
     setError('');
     setIsSubmitting(true);
     try {
-      const redirectTo = `${window.location.origin}/`;
+      const redirectTo = `${window.location.origin}/dashboard`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
