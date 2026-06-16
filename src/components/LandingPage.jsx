@@ -64,7 +64,10 @@ function LandingPage() {
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             <a href="/taxi-compartido-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Madrid</a>
             <a href="/taxi-compartido-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Barcelona</a>
+            <a href="/taxi-compartido-valencia/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Valencia</a>
+            <a href="/taxi-compartido-sevilla/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Taxi compartido en Sevilla</a>
             <a href="/compartir-taxi-aeropuerto-madrid/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Madrid</a>
+            <a href="/compartir-taxi-aeropuerto-barcelona/" className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">Compartir taxi al aeropuerto de Barcelona</a>
           </div>
         </div>
       </section>
