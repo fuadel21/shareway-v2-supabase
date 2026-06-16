@@ -88,6 +88,7 @@ function LandingPage() {
         <div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
           <p>© ShareWay</p>
           <nav className="flex flex-wrap gap-4">
+            <a href="/contacto/" className="hover:text-slate-950">Contacto</a>
             <a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a>
             <a href="/privacidad/" className="hover:text-slate-950">Privacidad</a>
             <a href="/cookies/" className="hover:text-slate-950">Cookies</a>
