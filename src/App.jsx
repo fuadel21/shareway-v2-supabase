@@ -259,6 +259,9 @@ function App() {
     }, []);
 
     const isAdmin = useMemo(() => profile?.role === 'admin' || profile?.is_admin, [profile]);
+    const isAuthenticated = Boolean(session?.user);
+    const publicPageFallback = isLoading ? <FullScreenLoader text="Comprobando sesión..." /> : <LandingPage />;
+    const guestPageFallback = isLoading ? <FullScreenLoader text="Comprobando sesión..." /> : null;
 
     const outletContext = useMemo(() => ({
         user: session?.user,
@@ -299,9 +302,9 @@ function App() {
                     }}
                 />
                 <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Register />} />
+                    <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : publicPageFallback} />
+                    <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Login />)} />
+                    <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Register />)} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
 
                     <Route path="/" element={<ProtectedLayout {...outletContext} />}>
