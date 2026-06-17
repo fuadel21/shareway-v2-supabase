@@ -1,1 +1,36 @@
-<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.shareway.es/rutas/</loc></url><url><loc>https://www.shareway.es/carpooling/</loc></url><url><loc>https://www.shareway.es/taxi-compartido/</loc></url><url><loc>https://www.shareway.es/compartir-trayecto/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-barato/</loc></url><url><loc>https://www.shareway.es/ahorrar-compartiendo-taxi/</loc></url><url><loc>https://www.shareway.es/compartir-trayecto-trabajo/</loc></url><url><loc>https://www.shareway.es/compartir-trayecto-universidad/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-madrid/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-barcelona/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-valencia/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-sevilla/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-malaga/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-alicante/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-bilbao/</loc></url><url><loc>https://www.shareway.es/taxi-compartido-zaragoza/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-madrid/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-barcelona/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-valencia/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-sevilla/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-malaga/</loc></url><url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-alicante/</loc></url><url><loc>https://www.shareway.es/contacto/</loc></url><url><loc>https://www.shareway.es/aviso-legal/</loc></url><url><loc>https://www.shareway.es/privacidad/</loc></url><url><loc>https://www.shareway.es/cookies/</loc></url><url><loc>https://www.shareway.es/terminos/</loc></url></urlset>
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://www.shareway.es/rutas/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling-madrid/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling-barcelona/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling-valencia/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling-trabajo/</loc></url>
+  <url><loc>https://www.shareway.es/carpooling-universidad/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-trayecto/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-barato/</loc></url>
+  <url><loc>https://www.shareway.es/ahorrar-compartiendo-taxi/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-trayecto-trabajo/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-trayecto-universidad/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-madrid/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-barcelona/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-valencia/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-sevilla/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-malaga/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-alicante/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-bilbao/</loc></url>
+  <url><loc>https://www.shareway.es/taxi-compartido-zaragoza/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-madrid/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-barcelona/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-valencia/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-sevilla/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-malaga/</loc></url>
+  <url><loc>https://www.shareway.es/compartir-taxi-aeropuerto-alicante/</loc></url>
+  <url><loc>https://www.shareway.es/contacto/</loc></url>
+  <url><loc>https://www.shareway.es/aviso-legal/</loc></url>
+  <url><loc>https://www.shareway.es/privacidad/</loc></url>
+  <url><loc>https://www.shareway.es/cookies/</loc></url>
+  <url><loc>https://www.shareway.es/terminos/</loc></url>
+</urlset>
