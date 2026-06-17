@@ -54,6 +54,11 @@ function LandingPage() {
 
   const guides = [
     ['/carpooling/', 'Carpooling y trayectos compartidos'],
+    ['/carpooling-madrid/', 'Carpooling en Madrid'],
+    ['/carpooling-barcelona/', 'Carpooling en Barcelona'],
+    ['/carpooling-valencia/', 'Carpooling en Valencia'],
+    ['/carpooling-trabajo/', 'Carpooling al trabajo'],
+    ['/carpooling-universidad/', 'Carpooling para universidad'],
     ['/compartir-taxi-barato/', 'Compartir taxi barato'],
     ['/ahorrar-compartiendo-taxi/', 'Ahorrar compartiendo taxi'],
     ['/compartir-trayecto-trabajo/', 'Compartir trayecto al trabajo'],
@@ -142,7 +147,7 @@ function LandingPage() {
 
       <section className="bg-white px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Casos de uso frecuentes</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">ShareWay puede servir para organizar desplazamientos concretos del día a día y encontrar personas con necesidades parecidas.</p><div className="mt-8 grid gap-5 md:grid-cols-4">{useCases.map(([title, text]) => <article key={title} className="rounded-3xl bg-slate-50 p-6"><h3 className="font-black">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></div></section>
 
-      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Guías útiles para compartir trayectos</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Contenido orientado a búsquedas frecuentes sobre carpooling, ahorro, trabajo, universidad y taxi compartido barato.</p><div className="mt-8 grid gap-5 md:grid-cols-4">{guides.map(([href, label]) => <a key={href} href={href} className="rounded-3xl border p-6 font-black hover:bg-slate-50">{label}</a>)}</div></div></section>
+      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Guías útiles para carpooling y trayectos compartidos</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Contenido orientado a búsquedas frecuentes sobre carpooling, ahorro, trabajo, universidad y taxi compartido barato.</p><div className="mt-8 grid gap-5 md:grid-cols-5">{guides.map(([href, label]) => <a key={href} href={href} className="rounded-3xl border p-6 font-black hover:bg-slate-50">{label}</a>)}</div></div></section>
 
       <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Rutas populares</h2><p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir trayectos, taxi y carpooling en ciudades y destinos frecuentes.</p><div className="mt-8 grid gap-5 md:grid-cols-3">{[...cityRoutes, ...airportRoutes].map(([href, label]) => <a key={href} href={href} className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">{label}</a>)}</div><a href="/rutas/" className="mt-8 inline-flex rounded-full bg-slate-950 px-6 py-4 font-black text-white">Ver todas las rutas y guías</a></div></section>
 
