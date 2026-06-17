@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useOutletContext, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   MessageSquare, Car, Wallet, Settings as SettingsIcon,
-  LogOut, Bell, Sparkles, Star, CheckCircle2, LayoutDashboard
+  LogOut, Bell, Sparkles, Star, CheckCircle2, LayoutDashboard,
+  Plus, Megaphone
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
@@ -182,6 +183,7 @@ const MainLayout = (props) => {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
     { to: '/my-rides', icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
+    { to: '/my-requests', icon: CheckCircle2, label: 'Solicitudes', color: 'text-orange-600' },
     {
       to: '/chats',
       icon: MessageSquare,
@@ -205,6 +207,13 @@ const MainLayout = (props) => {
             <Sparkles className="text-primary h-3.5 w-3.5 lg:h-4 lg:w-4" />
           </div>
           <h1 className="text-base lg:text-lg font-black tracking-tighter text-slate-900 italic uppercase">SHAREWAY</h1>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-2">
+          <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />Ofrecer plaza</Button>
+          <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />Buscar plaza</Button>
+          <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />Mis viajes</Button>
+          <Button onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CheckCircle2 size={14} />Solicitudes</Button>
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
