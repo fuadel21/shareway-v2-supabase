@@ -4,6 +4,16 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import es from './locales/es.json';
 import en from './locales/en.json';
 import ar from './locales/ar.json';
+import settingsExtra from './settingsExtra';
+
+const mergeTranslations = (base, extra) => ({
+    ...base,
+    ...extra,
+    settings: {
+        ...(base.settings || {}),
+        ...(extra.settings || {})
+    }
+});
 
 const applyDocumentLanguage = (lng) => {
     const normalizedLanguage = lng?.startsWith('ar') ? 'ar' : lng?.startsWith('en') ? 'en' : 'es';
@@ -16,9 +26,9 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            es: { translation: es },
-            en: { translation: en },
-            ar: { translation: ar }
+            es: { translation: mergeTranslations(es, settingsExtra.es) },
+            en: { translation: mergeTranslations(en, settingsExtra.en) },
+            ar: { translation: mergeTranslations(ar, settingsExtra.ar) }
         },
         fallbackLng: 'es',
         supportedLngs: ['es', 'en', 'ar'],
