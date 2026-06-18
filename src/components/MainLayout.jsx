@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useOutletContext, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   MessageSquare, Car, Wallet, Settings as SettingsIcon,
-  LogOut, Bell, Sparkles, Star, CheckCircle2, LayoutDashboard,
+  Bell, Sparkles, Star, CheckCircle2, LayoutDashboard,
   Plus, Megaphone
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,15 +15,13 @@ import { useTranslation } from 'react-i18next';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
 
-
-// FASE 17: Audio Singleton para evitar NS_BINDING_ABORTED
 const AUDIO_ASSETS = {
   booking: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
   welcome: 'https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3',
   review: 'https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3',
   arrival: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-  chat: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3', // Sonito tipo burbuja/pop
-  sos: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3' // Alerta SOS (Sirena)
+  chat: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3',
+  sos: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3'
 };
 
 const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
@@ -69,7 +67,6 @@ const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpeci
 };
 
 const MainLayout = (props) => {
-  // Evitamos llamar a useOutletContext si ya tenemos el contexto por props (evita errores en jerarquías de rutas)
   const isDirectlyCalled = props && (props.user || props.profile);
   const outletContextFromHook = isDirectlyCalled ? null : useOutletContext();
   const context = isDirectlyCalled ? props : outletContextFromHook;
@@ -88,11 +85,10 @@ const MainLayout = (props) => {
     try {
       const audio = new Audio(AUDIO_ASSETS[type]);
       audio.volume = 0.4;
-      audio.play().catch(e => console.warn("Audio play blocked by browser policy"));
+      audio.play().catch(() => console.warn("Audio play blocked by browser policy"));
 
-      // FASE 18: Feedback háptico (Vibración) según prioridad
       if (type === 'sos') {
-        Haptics.vibrate({ duration: 1000 }); // Vibración larga para SOS
+        Haptics.vibrate({ duration: 1000 });
       } else {
         Haptics.impact({ style: ImpactStyle.Medium });
       }
@@ -103,7 +99,6 @@ const MainLayout = (props) => {
     if (!context?.user?.id) return;
 
     const fetchUnread = async () => {
-      // Notificaciones normales
       const { count: nCounter } = await supabase
         .from('notifications')
         .select('*', { count: 'exact', head: true })
@@ -111,7 +106,6 @@ const MainLayout = (props) => {
         .eq('read', false);
       setUnreadCount(nCounter || 0);
 
-      // Mensajes de chat no leídos (usando columna 'read')
       const { count: cCounter } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
@@ -122,7 +116,6 @@ const MainLayout = (props) => {
     };
     fetchUnread();
 
-    // Suscripción a Notificaciones
     const notificationChannel = supabase
       .channel(`global_notifications:${context.user.id}`)
       .on('postgres_changes', {
@@ -134,7 +127,6 @@ const MainLayout = (props) => {
         const notif = payload.new.payload || payload.new;
         setUnreadCount(prev => prev + 1);
 
-        // Sonido según tipo
         if (notif.type === 'booking') playSound('booking');
         else if (notif.type === 'payment') playSound('arrival');
         else if (notif.type === 'emergency_alert') playSound('sos');
@@ -144,7 +136,6 @@ const MainLayout = (props) => {
       })
       .subscribe();
 
-    // Suscripción a Mensajes (Estilo WhatsApp)
     const chatChannel = supabase
       .channel(`global_chats:${context.user.id}`)
       .on('postgres_changes', {
@@ -152,9 +143,7 @@ const MainLayout = (props) => {
         schema: 'public',
         table: 'messages'
       }, (payload) => {
-        // Solo si no soy yo el que envía
         if (payload.new.sender_id !== context.user.id) {
-          // No sonar ni contar si ya estoy en la página de ese chat
           if (!location.pathname.includes(payload.new.chat_id)) {
             setUnreadChats(prev => prev + 1);
             playSound('chat');
@@ -169,7 +158,6 @@ const MainLayout = (props) => {
     };
   }, [context?.user?.id, location.pathname, navigate]);
 
-  // Limpiar contador al entrar en chats
   useEffect(() => {
     if (location.pathname === '/chats' || location.pathname.includes('/chat/')) {
       setUnreadChats(0);
@@ -183,7 +171,7 @@ const MainLayout = (props) => {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
     { to: '/my-rides', icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
-    { to: '/my-requests', icon: CheckCircle2, label: 'Solicitudes', color: 'text-orange-600' },
+    { to: '/my-requests', icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600' },
     {
       to: '/chats',
       icon: MessageSquare,
@@ -200,7 +188,6 @@ const MainLayout = (props) => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative font-sans text-left">
-      {/* HEADER COMPACTO */}
       <header className="fixed top-0 left-0 right-0 h-14 lg:h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 lg:px-6 flex items-center justify-between">
         <div className="flex items-center gap-2 lg:gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
           <div className="size-8 lg:size-9 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
@@ -210,10 +197,10 @@ const MainLayout = (props) => {
         </div>
 
         <div className="hidden lg:flex items-center gap-2">
-          <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />Ofrecer plaza</Button>
-          <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />Buscar plaza</Button>
-          <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />Mis viajes</Button>
-          <Button onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CheckCircle2 size={14} />Solicitudes</Button>
+          <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
+          <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
+          <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
+          <Button onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CheckCircle2 size={14} />{t('dashboard.filter_requests')}</Button>
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
@@ -230,7 +217,6 @@ const MainLayout = (props) => {
               <AvatarImage src={profile?.photo_url || profile?.avatar_url} />
               <AvatarFallback className="bg-slate-100 text-slate-400 font-bold text-xs">{profile?.display_name?.[0]}</AvatarFallback>
             </Avatar>
-            {/* RATING FLOATING BADGE EN HEADER */}
             <div className="absolute -bottom-1 -right-1 bg-white border border-slate-100 rounded-full px-1 py-0.5 shadow-sm flex items-center gap-0.5 scale-90 lg:scale-100">
               <Star className="h-2 w-2 lg:h-2.5 lg:w-2.5 fill-amber-400 text-amber-400" />
               <span className="text-[7px] lg:text-[8px] font-black text-slate-900 leading-none">
@@ -241,7 +227,6 @@ const MainLayout = (props) => {
         </div>
       </header>
 
-      {/* ÁREA DE CONTENIDO CON SCROLL MEJORADO */}
       <main className={cn(
         "flex-1 relative",
         isDashboard ? "overflow-hidden" : "pt-14 lg:pt-16 pb-24 lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
@@ -251,7 +236,6 @@ const MainLayout = (props) => {
         </div>
       </main>
 
-      {/* NAVEGACIÓN ADAPTATIVA (BOTTOM BAR) + safe-area de iOS */}
       <nav className="fixed bottom-0 left-0 right-0 z-[1000] w-full bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]"
            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-xl mx-auto px-4 py-2 flex items-center justify-between gap-1 relative h-20">
