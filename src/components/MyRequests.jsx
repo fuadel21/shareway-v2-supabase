@@ -2,31 +2,138 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import SubPageHeader from './SubPageHeader';
-import { Card } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Loader2, Calendar, MapPin, Clock, AlertTriangle, CheckCircle, ArrowUpRight, Zap, Target } from 'lucide-react';
+import { Loader2, Calendar, Clock, ArrowUpRight, Zap, Target } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
-const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
-  const originName = request.origin?.name || request.origin?.address || 'Origen';
-  const destinationName = request.destination?.name || request.destination?.address || 'Destino';
-  const depTime = request.departure_time ? format(new Date(request.departure_time), "HH:mm", { locale: es }) : '—';
-  const dateLabel = request.departure_time ? format(new Date(request.departure_time), "dd MMM", { locale: es }) : '—';
+const copyByLanguage = {
+  es: {
+    title: 'Solicitudes',
+    origin: 'Origen',
+    destination: 'Destino',
+    budget: 'Presupuesto',
+    seats: 'Plazas',
+    cancelling: 'CANCELANDO...',
+    cancelRequest: 'CANCELAR SOLICITUD',
+    cancelledTitle: 'Solicitud cancelada',
+    cancelledDesc: 'Tu petición ha sido eliminada correctamente.',
+    cancelErrorTitle: 'Error al cancelar',
+    cancelErrorDesc: 'No se pudo cancelar la solicitud.',
+    technicalError: 'Error técnico',
+    technicalErrorDesc: 'Revisa tu conexión e inténtalo de nuevo.',
+    radarTitle: 'Radar Activo',
+    radarDesc: 'Aquí gestionas tus peticiones de viaje. Cuando un conductor te acepte, recibirás una notificación instantánea.',
+    all: 'TODAS',
+    expired: 'EXPIRADAS',
+    scanning: 'Escaneando radar...',
+    noRequests: 'Sin solicitudes',
+    noRequestsDesc: 'Lanza una petición al sistema',
+    newRequest: 'Nueva Petición',
+    status: {
+      pending: 'PENDIENTE',
+      accepted: 'ACEPTADA',
+      confirmed: 'PARA REALIZAR',
+      on_board: 'EN VIAJE',
+      completed: 'FINALIZADA',
+      cancelled: 'CANCELADA',
+      rejected: 'RECHAZADA',
+      expired: 'EXPIRADA'
+    }
+  },
+  en: {
+    title: 'Requests',
+    origin: 'Origin',
+    destination: 'Destination',
+    budget: 'Budget',
+    seats: 'Seats',
+    cancelling: 'CANCELLING...',
+    cancelRequest: 'CANCEL REQUEST',
+    cancelledTitle: 'Request cancelled',
+    cancelledDesc: 'Your request has been deleted successfully.',
+    cancelErrorTitle: 'Cancellation error',
+    cancelErrorDesc: 'Could not cancel the request.',
+    technicalError: 'Technical error',
+    technicalErrorDesc: 'Check your connection and try again.',
+    radarTitle: 'Active Radar',
+    radarDesc: 'Manage your ride requests here. When a driver accepts you, you will receive an instant notification.',
+    all: 'ALL',
+    expired: 'EXPIRED',
+    scanning: 'Scanning radar...',
+    noRequests: 'No requests',
+    noRequestsDesc: 'Send a request to the system',
+    newRequest: 'New Request',
+    status: {
+      pending: 'PENDING',
+      accepted: 'ACCEPTED',
+      confirmed: 'TO DO',
+      on_board: 'ON TRIP',
+      completed: 'COMPLETED',
+      cancelled: 'CANCELLED',
+      rejected: 'REJECTED',
+      expired: 'EXPIRED'
+    }
+  },
+  ar: {
+    title: 'الطلبات',
+    origin: 'نقطة الانطلاق',
+    destination: 'الوجهة',
+    budget: 'الميزانية',
+    seats: 'المقاعد',
+    cancelling: 'جارٍ الإلغاء...',
+    cancelRequest: 'إلغاء الطلب',
+    cancelledTitle: 'تم إلغاء الطلب',
+    cancelledDesc: 'تم حذف طلبك بنجاح.',
+    cancelErrorTitle: 'خطأ أثناء الإلغاء',
+    cancelErrorDesc: 'تعذر إلغاء الطلب.',
+    technicalError: 'خطأ تقني',
+    technicalErrorDesc: 'تحقق من اتصالك وحاول مرة أخرى.',
+    radarTitle: 'الرادار نشط',
+    radarDesc: 'هنا تدير طلبات رحلاتك. عندما يقبلك سائق، ستصلك إشعار فوري.',
+    all: 'الكل',
+    expired: 'المنتهية',
+    scanning: 'جارٍ فحص الرادار...',
+    noRequests: 'لا توجد طلبات',
+    noRequestsDesc: 'أنشئ طلب رحلة جديد',
+    newRequest: 'طلب جديد',
+    status: {
+      pending: 'قيد الانتظار',
+      accepted: 'مقبول',
+      confirmed: 'جاهز للتنفيذ',
+      on_board: 'في الرحلة',
+      completed: 'مكتمل',
+      cancelled: 'ملغى',
+      rejected: 'مرفوض',
+      expired: 'منتهي'
+    }
+  }
+};
+
+const getLanguage = (language) => {
+  if (language?.startsWith('ar')) return 'ar';
+  if (language?.startsWith('en')) return 'en';
+  return 'es';
+};
+
+const RequestCard = ({ request, onOpen, onCancel, cancellingId, index, copy }) => {
+  const originName = request.origin?.name || request.origin?.address || copy.origin;
+  const destinationName = request.destination?.name || request.destination?.address || copy.destination;
+  const depTime = request.departure_time ? format(new Date(request.departure_time), 'HH:mm', { locale: es }) : '—';
+  const dateLabel = request.departure_time ? format(new Date(request.departure_time), 'dd MMM', { locale: es }) : '—';
   const status = request.status;
-  const isExpired = status === 'expired';
 
   const STATUS_CONFIG = {
-    pending: { label: 'PENDIENTE', color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
-    accepted: { label: 'ACEPTADA', color: 'bg-amber-50 text-amber-600 border-amber-100', dot: 'bg-amber-500' },
-    confirmed: { label: 'PARA REALIZAR', color: 'bg-blue-50 text-blue-600 border-blue-100', dot: 'bg-blue-500' },
-    on_board: { label: 'EN VIAJE', color: 'bg-indigo-50 text-indigo-600 border-indigo-100', dot: 'bg-indigo-500' },
-    completed: { label: 'FINALIZADA', color: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500' },
-    cancelled: { label: 'CANCELADA', color: 'bg-red-50 text-red-400 border-red-100', dot: 'bg-red-400' },
-    rejected: { label: 'RECHAZADA', color: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' },
-    expired: { label: 'EXPIRADA', color: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' },
+    pending: { label: copy.status.pending, color: 'bg-slate-100 text-slate-600 border-slate-200', dot: 'bg-slate-400' },
+    accepted: { label: copy.status.accepted, color: 'bg-amber-50 text-amber-600 border-amber-100', dot: 'bg-amber-500' },
+    confirmed: { label: copy.status.confirmed, color: 'bg-blue-50 text-blue-600 border-blue-100', dot: 'bg-blue-500' },
+    on_board: { label: copy.status.on_board, color: 'bg-indigo-50 text-indigo-600 border-indigo-100', dot: 'bg-indigo-500' },
+    completed: { label: copy.status.completed, color: 'bg-emerald-50 text-emerald-600 border-emerald-100', dot: 'bg-emerald-500' },
+    cancelled: { label: copy.status.cancelled, color: 'bg-red-50 text-red-400 border-red-100', dot: 'bg-red-400' },
+    rejected: { label: copy.status.rejected, color: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' },
+    expired: { label: copy.status.expired, color: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' }
   };
 
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
@@ -43,8 +150,8 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
             <span className="text-2xl font-black italic leading-none">{dateLabel.split(' ')[0]}</span>
           </div>
           <div>
-            <div className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border mb-2", config.color)}>
-              <div className={cn("h-1.5 w-1.5 rounded-full", config.dot)} />
+            <div className={cn('px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-2 border mb-2', config.color)}>
+              <div className={cn('h-1.5 w-1.5 rounded-full', config.dot)} />
               {config.label}
             </div>
             <div className="flex items-center gap-2">
@@ -64,7 +171,7 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
         <div className="flex items-center gap-6 relative z-10">
           <div className="size-4 rounded-full bg-emerald-500 ring-8 ring-emerald-50 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Origen</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{copy.origin}</p>
             <p className="text-sm font-bold text-slate-600 truncate uppercase tracking-tight">{originName.split(',')[0]}</p>
           </div>
         </div>
@@ -72,7 +179,7 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
         <div className="flex items-center gap-6 relative z-10">
           <div className="size-4 rounded-full bg-primary ring-8 ring-primary/10 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Destino</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">{copy.destination}</p>
             <p className="text-sm font-black text-slate-900 truncate uppercase tracking-tight italic">{destinationName.split(',')[0]}</p>
           </div>
         </div>
@@ -82,14 +189,14 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
         <div className="flex-1 flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
           <Target className="size-4 text-slate-400" />
           <div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Presupuesto</p>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{copy.budget}</p>
             <p className="text-xs font-black text-slate-700">{request.suggested_price}€</p>
           </div>
         </div>
         <div className="flex-1 flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
           <Zap className="size-4 text-slate-400" />
           <div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Plazas</p>
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{copy.seats}</p>
             <p className="text-xs font-black text-slate-700">{request.seats_needed}</p>
           </div>
         </div>
@@ -102,7 +209,7 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
             disabled={cancellingId === request.id}
             className="w-full h-12 rounded-xl bg-red-500/10 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
           >
-            {cancellingId === request.id ? 'CANCELANDO...' : 'CANCELAR SOLICITUD'}
+            {cancellingId === request.id ? copy.cancelling : copy.cancelRequest}
           </button>
         </div>
       )}
@@ -113,6 +220,8 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index }) => {
 const MyRequests = () => {
   const navigate = useNavigate();
   const { profile } = useOutletContext();
+  const { i18n } = useTranslation();
+  const copy = copyByLanguage[getLanguage(i18n.language)];
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('todos');
@@ -160,24 +269,20 @@ const MyRequests = () => {
     try {
       setCancellingId(id);
       const { cancelRideRequest } = await import('@/lib/supabaseRPC');
-
-      // Llamada segura al RPC
       const result = await cancelRideRequest(id);
 
       if (result.success) {
-        toast.success('Solicitud cancelada', {
-          description: 'Tu petición ha sido eliminada correctamente.'
+        toast.success(copy.cancelledTitle, {
+          description: copy.cancelledDesc
         });
-        // Actualización optimista: quitamos de la lista local inmediatamente
         setRequests(prev => prev.filter(req => req.id !== id));
       } else {
-        // Si el error es conocido (ej: ya cancelada), informamos pero limpiamos
-        const errorMsg = result.error || 'No se pudo cancelar la solicitud.';
-        toast.error('Error al cancelar', { description: errorMsg });
+        const errorMsg = result.error || copy.cancelErrorDesc;
+        toast.error(copy.cancelErrorTitle, { description: errorMsg });
       }
     } catch (e) {
       console.error('Error en cancelación:', e);
-      toast.error('Error técnico', { description: 'Revisa tu conexión e inténtalo de nuevo.' });
+      toast.error(copy.technicalError, { description: copy.technicalErrorDesc });
     } finally {
       setCancellingId(null);
     }
@@ -185,19 +290,17 @@ const MyRequests = () => {
 
   return (
     <div className="bg-slate-50 min-h-screen pb-40 font-sans">
-      <SubPageHeader title="Solicitudes" />
+      <SubPageHeader title={copy.title} />
 
       <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8">
-
-        {/* INFO CARD */}
         <div className="bg-slate-900 rounded-[3rem] p-8 shadow-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
             <Target size={120} className="text-primary" />
           </div>
           <div className="relative z-10 space-y-4">
-            <h2 className="text-2xl font-black text-white tracking-tighter italic uppercase leading-none">Radar Activo</h2>
+            <h2 className="text-2xl font-black text-white tracking-tighter italic uppercase leading-none">{copy.radarTitle}</h2>
             <p className="text-xs font-medium text-white/50 leading-relaxed italic">
-              Aquí gestionas tus peticiones de viaje. Cuando un conductor te acepte, recibirás una notificación instantánea.
+              {copy.radarDesc}
             </p>
           </div>
         </div>
@@ -208,11 +311,11 @@ const MyRequests = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "flex-1 h-14 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 relative overflow-hidden group",
-                activeTab === tab ? "bg-slate-950 text-white shadow-2xl scale-[1.02]" : "text-slate-400 hover:text-slate-600"
+                'flex-1 h-14 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-500 relative overflow-hidden group',
+                activeTab === tab ? 'bg-slate-950 text-white shadow-2xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'
               )}
             >
-              <span className="relative z-10">{tab === 'todos' ? 'TODAS' : 'EXPIRADAS'}</span>
+              <span className="relative z-10">{tab === 'todos' ? copy.all : copy.expired}</span>
               {activeTab === tab && (
                 <div className="absolute inset-0 bg-gradient-to-r from-slate-900 to-slate-800 animate-pulse opacity-50" />
               )}
@@ -224,20 +327,20 @@ const MyRequests = () => {
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="animate-spin text-primary size-8" />
-              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">Escaneando radar...</p>
+              <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{copy.scanning}</p>
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-[3rem] border border-dashed border-slate-200 animate-in fade-in duration-700">
               <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Calendar className="h-10 w-10 text-slate-200" />
               </div>
-              <h3 className="text-sm font-black text-slate-900 uppercase italic mb-1">Sin solicitudes</h3>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lanza una petición al sistema</p>
+              <h3 className="text-sm font-black text-slate-900 uppercase italic mb-1">{copy.noRequests}</h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{copy.noRequestsDesc}</p>
               <Button
                 onClick={() => navigate('/create-request')}
                 className="mt-8 rounded-2xl bg-primary font-black text-[10px] uppercase h-12 px-8 shadow-lg shadow-primary/20"
               >
-                Nueva Petición
+                {copy.newRequest}
               </Button>
             </div>
           ) : (
@@ -250,6 +353,7 @@ const MyRequests = () => {
                   onCancel={handleCancel}
                   cancellingId={cancellingId}
                   index={idx}
+                  copy={copy}
                 />
               ))}
             </div>
