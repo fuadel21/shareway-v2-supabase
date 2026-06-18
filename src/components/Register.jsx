@@ -18,9 +18,15 @@ function Register() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'es' ? 'en' : 'es';
-    i18n.changeLanguage(newLang);
-    toast.success(newLang === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
+    const currentLang = i18n.language?.startsWith('ar') ? 'ar' : i18n.language?.startsWith('en') ? 'en' : 'es';
+    const nextLang = currentLang === 'es' ? 'en' : currentLang === 'en' ? 'ar' : 'es';
+    i18n.changeLanguage(nextLang);
+    const messages = {
+      es: 'Idioma cambiado a Español',
+      en: 'Language changed to English',
+      ar: 'تم تغيير اللغة إلى العربية'
+    };
+    toast.success(messages[nextLang]);
   };
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
