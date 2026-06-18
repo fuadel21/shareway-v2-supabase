@@ -1,15 +1,12 @@
-
 import React from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
-  Car, History, Map as MapIcon, Shield, Fingerprint,
-  Key, ChevronRight, LogOut, User, Bell, Palette,
-  CreditCard, ChevronLeft, ShieldCheck, Sparkles,
-  Landmark, Wallet as WalletIcon, Share2, Radio,
-  Smartphone, Eye, Leaf, Star
+  History, Map as MapIcon, Shield, Fingerprint,
+  ChevronRight, LogOut, User, Bell, Palette,
+  Landmark, Wallet as WalletIcon,
+  Smartphone, Leaf, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
-import { Card, CardContent } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -55,7 +52,7 @@ const Settings = () => {
       <header className="bg-white px-4 md:px-6 py-6 md:py-8 border-b border-slate-100 sticky top-0 z-20">
         <div className="max-w-xl mx-auto flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/account')} className="rounded-2xl bg-slate-50 size-10 md:size-12">
-            <ChevronLeft className="h-5 w-5 md:h-6 md:w-6 text-slate-900" />
+            <ChevronRight className="h-5 w-5 md:h-6 md:w-6 text-slate-900 rotate-180" />
           </Button>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{t('settings.title')}</h1>
@@ -65,36 +62,33 @@ const Settings = () => {
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12 text-left">
-        {/* CUENTA Y PERFIL */}
         <section>
           <SectionHeader title={t('settings.account_section')} icon={User} color="text-slate-900" />
           <div className="grid grid-cols-1 gap-4">
             <SettingItem
               icon={User}
-              label={profile?.display_name || 'Mi Perfil'}
+              label={profile?.display_name || t('settings.my_profile')}
               sublabel={t('settings.edit_profile')}
               color="bg-slate-900"
               onClick={() => navigate('/profile/edit')}
             />
-            {/* NUEVO: IMPACTO AMBIENTAL */}
             <SettingItem
               icon={Leaf}
-              label="Impacto Ambiental"
-              sublabel="Mira cuánto CO₂ has ahorrado"
+              label={t('settings.environmental_impact')}
+              sublabel={t('settings.environmental_impact_sub')}
               color="bg-emerald-600"
               onClick={() => navigate('/settings/impact')}
             />
             <SettingItem
               icon={Star}
-              label="Mis Valoraciones"
-              sublabel="Lo que otros dicen de ti"
+              label={t('settings.my_reviews')}
+              sublabel={t('settings.my_reviews_sub')}
               color="bg-amber-500"
               onClick={() => navigate(`/profile/${profile?.id}`)}
             />
           </div>
         </section>
 
-        {/* FINANZAS Y PAGOS */}
         <section>
           <SectionHeader title={t('wallet.title')} icon={WalletIcon} color="text-amber-500" />
           <div className="grid grid-cols-1 gap-4">
@@ -109,7 +103,6 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* PREFERENCIAS DE VIAJE */}
         <section>
           <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
           <div className="grid grid-cols-1 gap-4">
@@ -123,7 +116,6 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* SEGURIDAD Y TRUST */}
         <section>
           <SectionHeader title={t('settings.security_trust')} icon={Shield} color="text-orange-500" />
           <div className="grid grid-cols-1 gap-4">
@@ -144,7 +136,6 @@ const Settings = () => {
           </div>
         </section>
 
-        {/* CONFIGURACIÓN DE APP */}
         <section>
           <SectionHeader title={t('settings.app_prefs')} icon={Smartphone} color="text-indigo-500" />
           <div className="grid grid-cols-1 gap-4">
@@ -164,8 +155,8 @@ const Settings = () => {
             />
             <SettingItem
               icon={History}
-              label="Historial de Actividad"
-              sublabel="Gestiona tus notificaciones"
+              label={t('settings.activity_history')}
+              sublabel={t('settings.activity_history_sub')}
               color="bg-slate-900"
               onClick={() => navigate('/settings/activity')}
             />
