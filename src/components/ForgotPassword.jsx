@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Mail, ArrowLeft, Sparkles, Send } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const ForgotPassword = () => {
@@ -17,7 +17,7 @@ const ForgotPassword = () => {
     if (!email) return toast.error("Por favor, introduce tu email.");
 
     setIsLoading(true);
-    const toastId = toast.loading("Enviando correo de recuperación...");
+    const toastId = toast.loading("Enviando enlace de recuperación...");
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -59,7 +59,7 @@ const ForgotPassword = () => {
               Recuperar Acceso
             </CardTitle>
             <CardDescription className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[9px] max-w-[240px] mx-auto">
-              Te enviaremos un código seguro para recuperar tu contraseña.
+              Te enviaremos un enlace seguro para crear una nueva contraseña.
             </CardDescription>
           </div>
         </CardHeader>
@@ -89,7 +89,7 @@ const ForgotPassword = () => {
               disabled={isLoading || !email}
             >
               {isLoading ? <Loader2 className="animate-spin h-6 w-6" /> : (
-                <>Enviar Instrucciones <Send className="ml-3 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
+                <>Enviar enlace <Send className="ml-3 h-4 w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" /></>
               )}
             </Button>
 
