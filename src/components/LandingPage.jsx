@@ -54,20 +54,60 @@ function LandingPage() {
 
   const guides = [
     ['/carpooling/', 'Carpooling y trayectos compartidos'],
+    ['/compartir-coche/', 'Compartir coche'],
+    ['/viajes-compartidos/', 'Viajes compartidos'],
+    ['/rutas-compartidas/', 'Rutas compartidas'],
+    ['/carpooling-trabajo/', 'Carpooling al trabajo'],
+    ['/carpooling-universidad/', 'Carpooling para universidad'],
+    ['/compartir-coche-trabajo/', 'Compartir coche al trabajo'],
+    ['/compartir-coche-universidad/', 'Compartir coche a la universidad'],
+    ['/rutas-compartidas-trabajo/', 'Rutas compartidas al trabajo'],
+    ['/compartir-trayecto-trabajo/', 'Compartir trayecto al trabajo'],
+    ['/compartir-trayecto-universidad/', 'Compartir trayecto a la universidad'],
+    ['/compartir-taxi-barato/', 'Compartir taxi barato'],
+    ['/ahorrar-compartiendo-taxi/', 'Ahorrar compartiendo taxi'],
+  ];
+
+  const carpoolingRoutes = [
     ['/carpooling-madrid/', 'Carpooling en Madrid'],
     ['/carpooling-barcelona/', 'Carpooling en Barcelona'],
     ['/carpooling-valencia/', 'Carpooling en Valencia'],
-    ['/carpooling-trabajo/', 'Carpooling al trabajo'],
-    ['/carpooling-universidad/', 'Carpooling para universidad'],
-    ['/compartir-coche/', 'Compartir coche'],
+    ['/carpooling-alicante/', 'Carpooling en Alicante'],
+    ['/carpooling-bilbao/', 'Carpooling en Bilbao'],
+    ['/carpooling-zaragoza/', 'Carpooling en Zaragoza'],
+  ];
+
+  const sharedCarRoutes = [
     ['/compartir-coche-madrid/', 'Compartir coche en Madrid'],
     ['/compartir-coche-barcelona/', 'Compartir coche en Barcelona'],
-    ['/compartir-coche-trabajo/', 'Compartir coche al trabajo'],
-    ['/compartir-coche-universidad/', 'Compartir coche a la universidad'],
-    ['/compartir-taxi-barato/', 'Compartir taxi barato'],
-    ['/ahorrar-compartiendo-taxi/', 'Ahorrar compartiendo taxi'],
-    ['/compartir-trayecto-trabajo/', 'Compartir trayecto al trabajo'],
-    ['/compartir-trayecto-universidad/', 'Compartir trayecto a la universidad'],
+    ['/compartir-coche-valencia/', 'Compartir coche en Valencia'],
+    ['/compartir-coche-sevilla/', 'Compartir coche en Sevilla'],
+    ['/compartir-coche-malaga/', 'Compartir coche en Malaga'],
+    ['/compartir-coche-alicante/', 'Compartir coche en Alicante'],
+    ['/compartir-coche-bilbao/', 'Compartir coche en Bilbao'],
+    ['/compartir-coche-zaragoza/', 'Compartir coche en Zaragoza'],
+  ];
+
+  const sharedTripRoutes = [
+    ['/viajes-compartidos-madrid/', 'Viajes compartidos en Madrid'],
+    ['/viajes-compartidos-barcelona/', 'Viajes compartidos en Barcelona'],
+    ['/viajes-compartidos-valencia/', 'Viajes compartidos en Valencia'],
+    ['/viajes-compartidos-sevilla/', 'Viajes compartidos en Sevilla'],
+    ['/viajes-compartidos-malaga/', 'Viajes compartidos en Malaga'],
+    ['/viajes-compartidos-alicante/', 'Viajes compartidos en Alicante'],
+    ['/viajes-compartidos-bilbao/', 'Viajes compartidos en Bilbao'],
+    ['/viajes-compartidos-zaragoza/', 'Viajes compartidos en Zaragoza'],
+  ];
+
+  const sharedRoutePages = [
+    ['/rutas-compartidas-madrid/', 'Rutas compartidas en Madrid'],
+    ['/rutas-compartidas-barcelona/', 'Rutas compartidas en Barcelona'],
+    ['/rutas-compartidas-valencia/', 'Rutas compartidas en Valencia'],
+    ['/rutas-compartidas-sevilla/', 'Rutas compartidas en Sevilla'],
+    ['/rutas-compartidas-malaga/', 'Rutas compartidas en Malaga'],
+    ['/rutas-compartidas-alicante/', 'Rutas compartidas en Alicante'],
+    ['/rutas-compartidas-bilbao/', 'Rutas compartidas en Bilbao'],
+    ['/rutas-compartidas-zaragoza/', 'Rutas compartidas en Zaragoza'],
   ];
 
   const cityRoutes = [
@@ -116,7 +156,7 @@ function LandingPage() {
 
       <section className="px-6 py-20">
         <div className="mx-auto max-w-5xl">
-          <p className="mb-5 text-sm font-black uppercase tracking-widest text-orange-500">Carpooling, trayectos compartidos y taxi compartido</p>
+          <p className="mb-5 text-sm font-black uppercase tracking-widest text-orange-500">Carpooling, viajes compartidos y rutas compatibles</p>
           <h1 className="text-5xl font-black tracking-tight">Carpooling para compartir trayectos y ahorrar en cada viaje</h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">Encuentra personas con rutas compatibles, comparte coche, taxi o trayectos urbanos y reduce costes en aeropuertos, trabajo, universidad y rutas frecuentes.</p>
           <div className="mt-8 flex flex-wrap gap-4">
@@ -142,7 +182,7 @@ function LandingPage() {
 
       <section className="px-6 pb-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Qué puedes hacer en ShareWay</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Dentro de tu cuenta puedes ofrecer plazas, buscar plazas disponibles y gestionar tus trayectos desde el panel principal.</p><div className="mt-8 grid gap-5 md:grid-cols-3">{productActions.map(([title, text, cta], index) => <article key={title} className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm"><h3 className="text-xl font-black">{title}</h3><p className="mt-3 leading-7 text-slate-600">{text}</p><a href="/register" className={index === 0 ? "mt-5 inline-flex rounded-full bg-orange-500 px-5 py-3 text-sm font-black text-white" : index === 1 ? "mt-5 inline-flex rounded-full bg-slate-950 px-5 py-3 text-sm font-black text-white" : "mt-5 inline-flex rounded-full border px-5 py-3 text-sm font-black"}>{cta}</a></article>)}</div></div></section>
 
-      <section id="como-funciona" className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Cómo funciona ShareWay</h2><div className="mt-8 grid gap-5 md:grid-cols-3"><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">1. Crea tu cuenta</h3><p className="mt-3 leading-7 text-slate-600">Regístrate para acceder a la comunidad y gestionar tus trayectos.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">2. Publica o solicita ruta</h3><p className="mt-3 leading-7 text-slate-600">Indica tu trayecto para encontrar personas con rutas compatibles.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">3. Comparte el viaje</h3><p className="mt-3 leading-7 text-slate-600">Organiza el desplazamiento y reduce costes compartiendo trayecto.</p></article></div></div></section>
+      <section id="como-funciona" className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Cómo funciona ShareWay</h2><div className="mt-8 grid gap-5 md:grid-cols-3"><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">1. Crea tu cuenta</h3><p className="mt-3 leading-7 text-slate-600">Regístrate para acceder a la comunidad y gestionar tus trayectos.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">2. Publica o solicita ruta</h3><p className="mt-3 leading-7 text-slate-600">Indica tu trayecto para encontrar personas con ruta compatible.</p></article><article className="rounded-3xl bg-white p-6 shadow-sm"><h3 className="text-xl font-black">3. Coordina el viaje</h3><p className="mt-3 leading-7 text-slate-600">Habla con el usuario y acuerda detalles antes del desplazamiento.</p></article></div></div></section>
 
       <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Ventajas del carpooling</h2><div className="mt-8 grid gap-5 md:grid-cols-2">{advantages.map(([title, text]) => <article key={title} className="rounded-3xl border p-6"><h3 className="text-xl font-black">{title}</h3><p className="mt-3 leading-7 text-slate-600">{text}</p></article>)}</div></div></section>
 
@@ -152,9 +192,9 @@ function LandingPage() {
 
       <section className="bg-white px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Casos de uso frecuentes</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">ShareWay puede servir para organizar desplazamientos concretos del día a día y encontrar personas con necesidades parecidas.</p><div className="mt-8 grid gap-5 md:grid-cols-4">{useCases.map(([title, text]) => <article key={title} className="rounded-3xl bg-slate-50 p-6"><h3 className="font-black">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></div></section>
 
-      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Guías útiles para carpooling y compartir coche</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Contenido orientado a búsquedas frecuentes sobre carpooling, compartir coche, ahorro, trabajo, universidad y taxi compartido barato.</p><div className="mt-8 grid gap-5 md:grid-cols-5">{guides.map(([href, label]) => <a key={href} href={href} className="rounded-3xl border p-6 font-black hover:bg-slate-50">{label}</a>)}</div></div></section>
+      <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Guías útiles para compartir trayectos</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Contenido orientado a búsquedas frecuentes sobre carpooling, compartir coche, viajes compartidos, rutas compartidas, ahorro, trabajo y universidad.</p><div className="mt-8 grid gap-5 md:grid-cols-5">{guides.map(([href, label]) => <a key={href} href={href} className="rounded-3xl border p-6 font-black hover:bg-slate-50">{label}</a>)}</div></div></section>
 
-      <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Rutas populares</h2><p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir trayectos, taxi y carpooling en ciudades y destinos frecuentes.</p><div className="mt-8 grid gap-5 md:grid-cols-3">{[...cityRoutes, ...airportRoutes].map(([href, label]) => <a key={href} href={href} className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">{label}</a>)}</div><a href="/rutas/" className="mt-8 inline-flex rounded-full bg-slate-950 px-6 py-4 font-black text-white">Ver todas las rutas y guías</a></div></section>
+      <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Rutas populares</h2><p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir trayectos, coche, taxi y carpooling en ciudades y destinos frecuentes.</p><div className="mt-8 grid gap-5 md:grid-cols-3">{[...carpoolingRoutes, ...sharedCarRoutes, ...sharedTripRoutes, ...sharedRoutePages, ...cityRoutes, ...airportRoutes].map(([href, label]) => <a key={href} href={href} className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">{label}</a>)}</div><a href="/rutas/" className="mt-8 inline-flex rounded-full bg-slate-950 px-6 py-4 font-black text-white">Ver todas las rutas y guías</a></div></section>
 
       <section className="bg-slate-950 px-6 py-16 text-white"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Confianza y uso responsable</h2><p className="mt-5 max-w-3xl leading-8 text-white/70">ShareWay está diseñado para facilitar conexiones entre usuarios de forma responsable, con información clara, perfiles y canales de contacto.</p><div className="mt-8 grid gap-5 md:grid-cols-3"><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Perfiles de usuario</h3><p className="mt-3 text-sm leading-6 text-white/70">Ayudan a conocer mejor con quién se coordina cada trayecto.</p></article><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Comunicación clara</h3><p className="mt-3 text-sm leading-6 text-white/70">Organiza horarios, puntos de encuentro y detalles antes de viajar.</p></article><article className="rounded-3xl bg-white/10 p-6"><h3 className="font-black">Soporte y contacto</h3><p className="mt-3 text-sm leading-6 text-white/70">La página de contacto permite consultar dudas o comunicar incidencias.</p></article></div></div></section>
 
@@ -162,7 +202,7 @@ function LandingPage() {
 
       <section className="px-6 py-20"><div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14"><h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p><div className="mt-8 flex flex-wrap gap-4"><a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a><a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a></div></div></section>
 
-      <footer className="border-t border-slate-100 px-6 py-10"><div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between"><p>© ShareWay</p><nav className="flex flex-wrap gap-4"><a href="/carpooling/" className="hover:text-slate-950">Carpooling</a><a href="/rutas/" className="hover:text-slate-950">Rutas</a><a href="/contacto/" className="hover:text-slate-950">Contacto</a><a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a><a href="/privacidad/" className="hover:text-slate-950">Privacidad</a><a href="/cookies/" className="hover:text-slate-950">Cookies</a><a href="/terminos/" className="hover:text-slate-950">Términos</a></nav></div></footer>
+      <footer className="border-t border-slate-100 px-6 py-10"><div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between"><p>© ShareWay</p><nav className="flex flex-wrap gap-4"><a href="/carpooling/" className="hover:text-slate-950">Carpooling</a><a href="/viajes-compartidos/" className="hover:text-slate-950">Viajes compartidos</a><a href="/rutas-compartidas/" className="hover:text-slate-950">Rutas compartidas</a><a href="/rutas/" className="hover:text-slate-950">Rutas</a><a href="/contacto/" className="hover:text-slate-950">Contacto</a><a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a><a href="/privacidad/" className="hover:text-slate-950">Privacidad</a><a href="/cookies/" className="hover:text-slate-950">Cookies</a><a href="/terminos/" className="hover:text-slate-950">Términos</a></nav></div></footer>
     </main>
   );
 }
