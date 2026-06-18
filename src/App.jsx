@@ -17,6 +17,7 @@ import LandingPage from './components/LandingPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
+import ResetPassword from './components/ResetPassword.jsx';
 import Dashboard from './components/Dashboard.jsx';
 import CreateRide from './components/CreateRide.jsx';
 import CreateRequest from './components/CreateRequest.jsx';
@@ -306,6 +307,7 @@ function App() {
                     <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Login />)} />
                     <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Register />)} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
                     <Route path="/" element={<ProtectedLayout {...outletContext} />}>
                         <Route path="dashboard" element={<Dashboard />} />
