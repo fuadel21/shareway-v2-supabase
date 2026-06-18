@@ -4,25 +4,19 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Label } from '@/components/ui/label.jsx';
-import { Sparkles, ArrowRight, Loader2, Mail, Lock, Languages } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Mail, Lock } from 'lucide-react';
 import '../App.css';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
+import LanguageSwitcher from './LanguageSwitcher';
 
 function Login() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'es' ? 'en' : 'es';
-    i18n.changeLanguage(newLang);
-    toast.success(newLang === 'es' ? 'Idioma cambiado a Español' : 'Language changed to English');
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +27,7 @@ function Login() {
     }
     setIsSubmitting(true);
     try {
-      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+      const { error: loginError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -79,14 +73,7 @@ function Login() {
       
       {/* Botón Flotante de Idioma */}
       <div className="absolute top-6 right-6 z-50">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={toggleLanguage}
-          className="rounded-full h-11 w-11 bg-white/80 backdrop-blur-md border-slate-100 shadow-lg hover:text-primary transition-all active:scale-90 touch-action-manipulation"
-        >
-          <Languages size={20} />
-        </Button>
+        <LanguageSwitcher />
       </div>
 
       {/* Background Decor */}
