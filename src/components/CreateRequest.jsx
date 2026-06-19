@@ -46,7 +46,6 @@ const CreateRequest = () => {
 
     const routeAbortRef = useRef(null);
 
-    // FASE 3: Persistencia de Borrador
     useEffect(() => {
         const draft = localStorage.getItem(STORAGE_KEY);
         if (draft && !origin) {
@@ -73,7 +72,6 @@ const CreateRequest = () => {
         return () => clearTimeout(timer);
     }, [origin, destination, seats, note, isWomenOnly, price]);
 
-    // FASE 2: Blindaje de Ruta
     useEffect(() => {
         const getRoute = async () => {
             if (!origin?.coordinates || !destination?.coordinates) return;
@@ -86,7 +84,6 @@ const CreateRequest = () => {
             try {
                 const coords = `${origin.coordinates.lng},${origin.coordinates.lat};${destination.coordinates.lng},${destination.coordinates.lat}`;
 
-                // Usamos el proxy para evitar errores de CORS
                 const data = await fetchRoute(coords, 'full', 'polyline');
 
                 if (data.code === 'Ok' && data.routes[0]) {
@@ -116,23 +113,22 @@ const CreateRequest = () => {
         e.preventDefault();
         if (isSubmitting) return;
         if (!origin?.coordinates || !destination?.coordinates) {
-            return toast.error(t('dashboard.search_label'));
+            return toast.error(t('create_request_extra.valid_route'));
         }
 
         const [h, m] = time.split(':').map(Number);
         const departure = new Date(date);
         departure.setHours(h, m, 0, 0);
 
-        // SYNC CON RIDE_RULES
         if (isBefore(departure, addMinutes(new Date(), RIDE_RULES.MIN_ADVANCE_MINUTES))) {
             return toast.error(t('common.error'), {
-                description: `El viaje debe ser en al menos ${RIDE_RULES.MIN_ADVANCE_MINUTES} minutos.`
+                description: t('create_request_extra.min_advance', { minutes: RIDE_RULES.MIN_ADVANCE_MINUTES })
             });
         }
 
         const numPrice = parseFloat(price.toString().replace(',', '.'));
         if (isNaN(numPrice) || numPrice < RIDE_RULES.MIN_PRICE) {
-            return toast.error(`El precio sugerido mínimo es ${RIDE_RULES.MIN_PRICE}€`);
+            return toast.error(t('create_request_extra.min_price', { price: RIDE_RULES.MIN_PRICE }));
         }
 
         setIsSubmitting(true);
@@ -152,8 +148,7 @@ const CreateRequest = () => {
             });
 
             localStorage.removeItem(STORAGE_KEY);
-            // CORREGIDO: Mensaje correcto al publicar solicitud
-            toast.success("Solicitud publicada", { id: toastId });
+            toast.success(t('create_request_extra.published'), { id: toastId });
             navigate('/my-requests');
         } catch (error) {
             toast.error(t('common.error'), { id: toastId, description: error.message });
@@ -226,11 +221,11 @@ const CreateRequest = () => {
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="flex bg-slate-50 p-1.5 rounded-2xl gap-1">
                                 {[1, 2, 3, 4].map(n => (
-                                    <button key={n} 
-                                            type="button" 
-                                            onClick={() => setSeats(n)} 
+                                    <button key={n}
+                                            type="button"
+                                            onClick={() => setSeats(n)}
                                             className={cn(
-                                                "flex-1 h-11 rounded-xl text-xs font-black transition-all touch-action-manipulation active:scale-95", 
+                                                "flex-1 h-11 rounded-xl text-xs font-black transition-all touch-action-manipulation active:scale-95",
                                                 seats === n ? "bg-slate-900 text-white shadow-lg" : "text-slate-400"
                                             )}>
                                         {n}
@@ -247,10 +242,10 @@ const CreateRequest = () => {
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_request.section_shield')}</h3>
-                            <button type="button" 
-                                    onClick={() => setIsWomenOnly(!isWomenOnly)} 
+                            <button type="button"
+                                    onClick={() => setIsWomenOnly(!isWomenOnly)}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center", 
+                                        "flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center",
                                         isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm" : "bg-slate-50 border-transparent text-slate-400",
                                         "active:scale-95 touch-action-manipulation"
                                     )}>
@@ -268,7 +263,7 @@ const CreateRequest = () => {
                     </div>
                 </form>
             </main>
-        </div >
+        </div>
     );
 };
 
