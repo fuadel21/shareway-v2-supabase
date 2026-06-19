@@ -1,21 +1,60 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import * as rpc from '@/lib/supabaseRPC';
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button.jsx';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, ShieldCheck, AlertCircle, Lock, Euro } from 'lucide-react';
+import { Loader2, ShieldCheck, AlertCircle, Euro } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
+const copyByLanguage = {
+    es: {
+        balanceDelay: 'Pago recibido, pero el saldo tardará unos minutos en aparecer.',
+        completed: '¡Recarga completada!',
+        cancel: 'Cancelar',
+        pay: 'Pagar',
+        minAmount: 'Mínimo 5.00 €',
+        paymentUnavailable: 'Motor de pagos no disponible.',
+        title: 'Recarga',
+        continue: 'Continuar'
+    },
+    en: {
+        balanceDelay: 'Payment received, but the balance may take a few minutes to appear.',
+        completed: 'Top-up completed!',
+        cancel: 'Cancel',
+        pay: 'Pay',
+        minAmount: 'Minimum 5.00 €',
+        paymentUnavailable: 'Payment engine unavailable.',
+        title: 'Top Up',
+        continue: 'Continue'
+    },
+    ar: {
+        balanceDelay: 'تم استلام الدفع، لكن قد يستغرق ظهور الرصيد بضع دقائق.',
+        completed: 'تمت إعادة الشحن!',
+        cancel: 'إلغاء',
+        pay: 'دفع',
+        minAmount: 'الحد الأدنى 5.00 €',
+        paymentUnavailable: 'محرك الدفع غير متاح.',
+        title: 'شحن الرصيد',
+        continue: 'متابعة'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
+const CheckoutForm = ({ amount, onSuccessfulPayment, onClose, copy }) => {
     const stripe = useStripe();
     const elements = useElements();
     const { user } = useOutletContext();
@@ -50,9 +89,9 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
                     'credit_wallet_on_success'
                 );
 
-                if (!success) throw new Error("Pago recibido, pero el saldo tardará unos minutos en aparecer.");
+                if (!success) throw new Error(copy.balanceDelay);
 
-                toast.success("¡Recarga completada!");
+                toast.success(copy.completed);
                 onSuccessfulPayment();
             }
         } catch (err) {
@@ -76,9 +115,9 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
                 </div>
             )}
             <div className="flex gap-3">
-                <Button type="button" onClick={onClose} variant="ghost" disabled={isLoading} className="rounded-xl font-bold text-slate-400">Cancelar</Button>
+                <Button type="button" onClick={onClose} variant="ghost" disabled={isLoading} className="rounded-xl font-bold text-slate-400">{copy.cancel}</Button>
                 <Button type="submit" disabled={!stripe || isLoading} className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
-                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : `PAGAR ${amount.toFixed(2)}€`}
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : `${copy.pay} ${amount.toFixed(2)}€`}
                 </Button>
             </div>
         </form>
@@ -87,6 +126,8 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose }) => {
 
 const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
     const { user } = useOutletContext();
+    const { i18n } = useTranslation();
+    const copy = copyByLanguage[getLanguage(i18n.language)];
     const [amount, setAmount] = useState(20);
     const [step, setStep] = useState('amount');
     const [clientSecret, setClientSecret] = useState(null);
@@ -94,13 +135,13 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
 
     const handleContinue = async () => {
         const numAmount = parseFloat(amount);
-        if (isNaN(numAmount) || numAmount < 5) return toast.error("Mínimo 5.00 €");
+        if (isNaN(numAmount) || numAmount < 5) return toast.error(copy.minAmount);
         setIsPreparing(true);
         try {
             const { data, error } = await supabase.functions.invoke('create-payment-intent', {
                 body: { amount: numAmount, user_id: user.id },
             });
-            if (error || !data?.clientSecret) throw new Error("Motor de pagos no disponible.");
+            if (error || !data?.clientSecret) throw new Error(copy.paymentUnavailable);
             setClientSecret(data.clientSecret);
             setStep('payment');
         } catch (e) {
@@ -125,7 +166,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                             <ShieldCheck className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">Recarga</DialogTitle>
+                            <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">{copy.title}</DialogTitle>
                             <DialogDescription className="text-[9px] font-black uppercase tracking-[0.3em] text-primary">Trust Core™ Financial</DialogDescription>
                         </div>
                     </div>
@@ -144,18 +185,18 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                             {[10, 20, 50].map(val => (
-                                <button key={val} type="button" onClick={() => setAmount(val)} className={cn("rounded-2xl h-16 font-black text-sm transition-all border-2", Number(amount) === val ? "bg-primary border-primary text-white shadow-lg" : "bg-white border-slate-100 text-slate-400")}>{val}€</button>
+                                <button key={val} type="button" onClick={() => setAmount(val)} className={cn('rounded-2xl h-16 font-black text-sm transition-all border-2', Number(amount) === val ? 'bg-primary border-primary text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400')}>{val}€</button>
                             ))}
                         </div>
                         <Button onClick={handleContinue} disabled={isPreparing || !amount} className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-lg uppercase shadow-2xl active:scale-95 transition-all">
-                            {isPreparing ? <Loader2 className="size-6 animate-spin" /> : "CONTINUAR"}
+                            {isPreparing ? <Loader2 className="size-6 animate-spin" /> : copy.continue}
                         </Button>
                     </div>
                 ) : (
                     <div className="pt-4 overflow-hidden">
                         {clientSecret && (
                             <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
-                                <CheckoutForm amount={Number(amount)} onSuccessfulPayment={() => { onSuccess(); resetAndClose(); }} onClose={resetAndClose} />
+                                <CheckoutForm amount={Number(amount)} onSuccessfulPayment={() => { onSuccess(); resetAndClose(); }} onClose={resetAndClose} copy={copy} />
                             </Elements>
                         )}
                     </div>
