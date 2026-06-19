@@ -15,6 +15,7 @@ import MainLayout from './components/MainLayout.jsx';
 import AdminLayout from './pages/Admin/AdminLayout.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import SEOLandingPage from './components/SEOLandingPage.jsx';
+import LegalPage from './components/LegalPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
@@ -120,6 +121,8 @@ const seoLandingRoutes = [
     'compartir-taxi-aeropuerto-malaga',
     'compartir-taxi-aeropuerto-alicante'
 ];
+
+const legalPageRoutes = ['contacto', 'aviso-legal', 'privacidad', 'cookies', 'terminos'];
 
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
@@ -368,6 +371,9 @@ function App() {
                     <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : publicPageFallback} />
                     {seoLandingRoutes.map((route) => (
                         <Route key={route} path={`/${route}`} element={<SEOLandingPage />} />
+                    ))}
+                    {legalPageRoutes.map((route) => (
+                        <Route key={route} path={`/${route}`} element={<LegalPage />} />
                     ))}
                     <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Login />)} />
                     <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Register />)} />
