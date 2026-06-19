@@ -1,23 +1,127 @@
-
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
     Bell, CheckCheck, Info, AlertTriangle, CheckCircle2,
     XCircle, Loader2, Trash2, Handshake, MessageSquare,
-    Wallet, Car, ChevronLeft, MoreVertical,
-    Filter, Archive, Check
+    Wallet, Car, Check, Archive
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { getNotifications, markAsRead, markAllAsRead, deleteNotification, subscribeToNotifications } from '@/services/notificationService';
+import { getNotifications, markAsRead, markAllAsRead, deleteNotification } from '@/services/notificationService';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
+import { useTranslation } from 'react-i18next';
 
-const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick, selectionMode }) => {
+const copyByLanguage = {
+    es: {
+        title: 'Centro de Actividad',
+        activity: 'Actividad',
+        pending: 'Pendientes',
+        cancel: 'Cancelar',
+        all: 'Todo',
+        unread: 'Sin leer',
+        selected: 'Seleccionados',
+        read: 'Leídos',
+        delete: 'Borrar',
+        syncing: 'Sincronizando...',
+        emptyTitle: 'Bandeja Vacía',
+        emptyDescAll: 'No tienes notificaciones en este momento',
+        emptyDescUnread: 'No tienes notificaciones sin leer en este momento',
+        loadError: 'Error al cargar notificaciones',
+        allReadSuccess: 'Todas marcadas como leídas',
+        updateError: 'Error al actualizar',
+        bulkReadSuccess: '{{count}} marcadas como leídas',
+        bulkReadError: 'Error al marcar como leídas',
+        bulkDeleteSuccess: '{{count}} eliminadas',
+        bulkDeleteError: 'Error al eliminar',
+        relative: {
+            justNow: 'ahora',
+            minute: 'min',
+            hour: 'h',
+            day: 'd'
+        }
+    },
+    en: {
+        title: 'Activity Center',
+        activity: 'Activity',
+        pending: 'Pending',
+        cancel: 'Cancel',
+        all: 'All',
+        unread: 'Unread',
+        selected: 'Selected',
+        read: 'Read',
+        delete: 'Delete',
+        syncing: 'Syncing...',
+        emptyTitle: 'Empty Inbox',
+        emptyDescAll: 'You have no notifications right now',
+        emptyDescUnread: 'You have no unread notifications right now',
+        loadError: 'Error loading notifications',
+        allReadSuccess: 'All marked as read',
+        updateError: 'Update error',
+        bulkReadSuccess: '{{count}} marked as read',
+        bulkReadError: 'Error marking as read',
+        bulkDeleteSuccess: '{{count}} deleted',
+        bulkDeleteError: 'Error deleting',
+        relative: {
+            justNow: 'now',
+            minute: 'min',
+            hour: 'h',
+            day: 'd'
+        }
+    },
+    ar: {
+        title: 'مركز النشاط',
+        activity: 'النشاط',
+        pending: 'قيد الانتظار',
+        cancel: 'إلغاء',
+        all: 'الكل',
+        unread: 'غير مقروءة',
+        selected: 'محددة',
+        read: 'مقروءة',
+        delete: 'حذف',
+        syncing: 'جارٍ المزامنة...',
+        emptyTitle: 'الصندوق فارغ',
+        emptyDescAll: 'لا توجد لديك إشعارات في الوقت الحالي',
+        emptyDescUnread: 'لا توجد لديك إشعارات غير مقروءة في الوقت الحالي',
+        loadError: 'حدث خطأ أثناء تحميل الإشعارات',
+        allReadSuccess: 'تم تحديد الكل كمقروء',
+        updateError: 'حدث خطأ أثناء التحديث',
+        bulkReadSuccess: 'تم تحديد {{count}} كمقروءة',
+        bulkReadError: 'حدث خطأ أثناء تحديدها كمقروءة',
+        bulkDeleteSuccess: 'تم حذف {{count}}',
+        bulkDeleteError: 'حدث خطأ أثناء الحذف',
+        relative: {
+            justNow: 'الآن',
+            minute: 'د',
+            hour: 'س',
+            day: 'ي'
+        }
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
+const interpolate = (template, values) => Object.entries(values).reduce((text, [key, value]) => text.replace(`{{${key}}}`, value), template);
+
+const formatRelativeTime = (dateValue, copy) => {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return copy.relative.justNow;
+    const diffMs = Date.now() - date.getTime();
+    const minutes = Math.max(0, Math.floor(diffMs / 60000));
+    if (minutes < 1) return copy.relative.justNow;
+    if (minutes < 60) return `${minutes}${copy.relative.minute}`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}${copy.relative.hour}`;
+    const days = Math.floor(hours / 24);
+    return `${days}${copy.relative.day}`;
+};
+
+const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick, selectionMode, copy }) => {
     const icons = {
         info: Info,
         success: CheckCircle2,
@@ -47,11 +151,11 @@ const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick,
     return (
         <div
             className={cn(
-                "p-4 rounded-[2rem] border-2 transition-all duration-500 relative group cursor-pointer flex items-center gap-4",
+                'p-4 rounded-[2rem] border-2 transition-all duration-500 relative group cursor-pointer flex items-center gap-4',
                 isRead
-                    ? "bg-white/40 border-slate-100/50 opacity-75"
-                    : "bg-white border-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)]",
-                isSelected && "border-primary/30 bg-primary/5"
+                    ? 'bg-white/40 border-slate-100/50 opacity-75'
+                    : 'bg-white border-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)]',
+                isSelected && 'border-primary/30 bg-primary/5'
             )}
             onClick={() => {
                 if (selectionMode) {
@@ -73,7 +177,7 @@ const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick,
             )}
 
             <div className={cn(
-                "h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg bg-gradient-to-br text-white transition-transform group-hover:rotate-6",
+                'h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg bg-gradient-to-br text-white transition-transform group-hover:rotate-6',
                 gradient
             )}>
                 <Icon className="h-6 w-6 stroke-[2.5px]" />
@@ -82,13 +186,13 @@ const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick,
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-0.5">
                     <h4 className={cn(
-                        "text-[11px] font-black uppercase italic tracking-tighter leading-none",
-                        isRead ? "text-slate-500" : "text-slate-900"
+                        'text-[11px] font-black uppercase italic tracking-tighter leading-none',
+                        isRead ? 'text-slate-500' : 'text-slate-900'
                     )}>
                         {notification.title}
                     </h4>
                     <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest shrink-0 ml-2">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: false, locale: es })}
+                        {formatRelativeTime(notification.created_at, copy)}
                     </span>
                 </div>
                 <p className="text-[10px] font-bold text-slate-500 leading-tight line-clamp-2">
@@ -106,13 +210,15 @@ const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick,
 };
 
 const ActivityCenter = () => {
+    const { i18n } = useTranslation();
+    const copy = copyByLanguage[getLanguage(i18n.language)];
     const { user } = useOutletContext();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
-    const [filter, setFilter] = useState('all'); // all, unread
+    const [filter, setFilter] = useState('all');
 
     const fetchNotifications = async () => {
         if (!user) return;
@@ -121,8 +227,8 @@ const ActivityCenter = () => {
             const data = await getNotifications(user.id);
             setNotifications(data || []);
         } catch (error) {
-            console.error("Error fetching notifications:", error);
-            toast.error("Error al cargar notificaciones");
+            console.error('Error fetching notifications:', error);
+            toast.error(copy.loadError);
         } finally {
             setIsLoading(false);
         }
@@ -151,8 +257,8 @@ const ActivityCenter = () => {
         try {
             await markAllAsRead(user.id);
             setNotifications(prev => prev.map(n => ({ ...n, read: true, is_read: true })));
-            toast.success("Todas marcadas como leídas");
-        } catch (error) { toast.error("Error al actualizar"); }
+            toast.success(copy.allReadSuccess);
+        } catch (error) { toast.error(copy.updateError); }
     };
 
     const toggleSelect = (id) => {
@@ -166,11 +272,12 @@ const ActivityCenter = () => {
         try {
             await Promise.all(selectedIds.map(id => markAsRead(id)));
             setNotifications(prev => prev.map(n => selectedIds.includes(n.id) ? { ...n, read: true, is_read: true } : n));
+            const count = selectedIds.length;
             setSelectedIds([]);
             setSelectionMode(false);
-            toast.success(`${selectedIds.length} marcadas como leídas`);
+            toast.success(interpolate(copy.bulkReadSuccess, { count }));
         } catch (error) {
-            toast.error("Error al marcar como leídas");
+            toast.error(copy.bulkReadError);
         }
     };
 
@@ -178,12 +285,13 @@ const ActivityCenter = () => {
         if (selectedIds.length === 0) return;
         try {
             await Promise.all(selectedIds.map(id => deleteNotification(id)));
+            const count = selectedIds.length;
             setNotifications(prev => prev.filter(n => !selectedIds.includes(n.id)));
             setSelectedIds([]);
             setSelectionMode(false);
-            toast.success(`${selectedIds.length} eliminadas`);
+            toast.success(interpolate(copy.bulkDeleteSuccess, { count }));
         } catch (error) {
-            toast.error("Error al eliminar");
+            toast.error(copy.bulkDeleteError);
         }
     };
 
@@ -197,19 +305,18 @@ const ActivityCenter = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 pb-40">
-            <SubPageHeader title="Centro de Actividad" backTo="/settings" />
+            <SubPageHeader title={copy.title} backTo="/settings" />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
-                {/* Stats & Actions Card */}
                 <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between">
                     <div className="flex gap-4 items-center">
                         <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
                             <Bell className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Actividad</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{copy.activity}</p>
                             <h2 className="text-xl font-black text-slate-900 tracking-tighter italic uppercase leading-tight">
-                                {unreadCount} Pendientes
+                                {unreadCount} {copy.pending}
                             </h2>
                         </div>
                     </div>
@@ -245,26 +352,25 @@ const ActivityCenter = () => {
                                     setSelectedIds([]);
                                 }}
                             >
-                                Cancelar
+                                {copy.cancel}
                             </Button>
                         )}
                     </div>
                 </div>
 
-                {/* Filters */}
                 <div className="flex gap-2 px-2 overflow-x-auto pb-2 custom-scrollbar">
                     {[
-                        { id: 'all', label: 'Todo', icon: Bell },
-                        { id: 'unread', label: 'Sin leer', icon: Info },
+                        { id: 'all', label: copy.all, icon: Bell },
+                        { id: 'unread', label: copy.unread, icon: Info },
                     ].map(f => (
                         <button
                             key={f.id}
                             onClick={() => setFilter(f.id)}
                             className={cn(
-                                "flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2",
+                                'flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2',
                                 filter === f.id
-                                    ? "bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200 scale-105"
-                                    : "bg-white border-white text-slate-400 hover:border-slate-100"
+                                    ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200 scale-105'
+                                    : 'bg-white border-white text-slate-400 hover:border-slate-100'
                             )}
                         >
                             <f.icon className="size-3.5" />
@@ -273,11 +379,10 @@ const ActivityCenter = () => {
                     ))}
                 </div>
 
-                {/* Bulk Actions Floating Bar */}
                 {selectionMode && selectedIds.length > 0 && (
                     <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-slate-900 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10">
                         <p className="text-white text-[10px] font-black uppercase tracking-widest ml-4">
-                            {selectedIds.length} Seleccionados
+                            {selectedIds.length} {copy.selected}
                         </p>
                         <div className="flex gap-2">
                             <Button
@@ -286,7 +391,7 @@ const ActivityCenter = () => {
                                 onClick={handleBulkMarkRead}
                             >
                                 <Check className="size-4 mr-2" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Leídos</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">{copy.read}</span>
                             </Button>
                             <Button
                                 size="sm"
@@ -294,18 +399,17 @@ const ActivityCenter = () => {
                                 onClick={handleBulkDelete}
                             >
                                 <Trash2 className="size-4 mr-2" />
-                                <span className="text-[9px] font-black uppercase tracking-widest">Borrar</span>
+                                <span className="text-[9px] font-black uppercase tracking-widest">{copy.delete}</span>
                             </Button>
                         </div>
                     </div>
                 )}
 
-                {/* Notifications List */}
                 <div className="space-y-3">
                     {isLoading ? (
                         <div className="flex flex-col items-center justify-center py-20 gap-4">
                             <Loader2 className="size-10 text-primary animate-spin" />
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Sincronizando...</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">{copy.syncing}</p>
                         </div>
                     ) : filteredNotifications.length > 0 ? (
                         filteredNotifications.map((n, idx) => (
@@ -317,6 +421,7 @@ const ActivityCenter = () => {
                                     onSelect={toggleSelect}
                                     onRead={handleMarkAsRead}
                                     onClick={handleNotificationClick}
+                                    copy={copy}
                                 />
                             </div>
                         ))
@@ -326,9 +431,9 @@ const ActivityCenter = () => {
                                 <Bell className="size-10 text-slate-200" />
                             </div>
                             <div className="space-y-1">
-                                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tighter">Bandeja Vacía</h3>
+                                <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tighter">{copy.emptyTitle}</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                                    No tienes notificaciones {filter === 'unread' ? 'sin leer ' : ''}en este momento
+                                    {filter === 'unread' ? copy.emptyDescUnread : copy.emptyDescAll}
                                 </p>
                             </div>
                         </div>
