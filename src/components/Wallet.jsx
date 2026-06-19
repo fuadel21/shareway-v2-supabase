@@ -5,64 +5,91 @@ import AddFundsModal from './AddFundsModal';
 import TransactionDetailModal from './TransactionDetailModal';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
-import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import {
     Loader2,
     ArrowUpRight,
     ArrowDownLeft,
     Wallet as WalletIcon,
-    Plus,
     Sparkles,
     ShieldCheck,
     History,
     Zap,
-    TrendingUp,
     Clock,
     ChevronLeft,
     CreditCard,
     Eye,
     EyeOff
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
-import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
-const TransactionItem = ({ tx, index, onClick }) => {
+const copyByLanguage = {
+    es: {
+        recent: 'Reciente',
+        net: 'Neto (90%)',
+        locale: 'es-ES'
+    },
+    en: {
+        recent: 'Recent',
+        net: 'Net (90%)',
+        locale: 'en-US'
+    },
+    ar: {
+        recent: 'حديث',
+        net: 'الصافي (90%)',
+        locale: 'ar-SA'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
+const formatCurrency = (amount, language) => new Intl.NumberFormat(copyByLanguage[language].locale, {
+    style: 'currency',
+    currency: 'EUR'
+}).format(Math.abs(amount));
+
+const formatWalletDate = (dateValue, language, fallback) => {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) return fallback;
+    return new Intl.DateTimeFormat(copyByLanguage[language].locale, {
+        day: 'numeric',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+};
+
+const TransactionItem = ({ tx, onClick }) => {
     const { t, i18n } = useTranslation();
+    const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     if (!tx) return null;
 
     const isDeposit = tx.type === 'deposit_stripe' || tx.type === 'deposit' || tx.type === 'refund' || tx.amount > 0;
     const isHold = tx.type === 'hold';
     const amount = parseFloat(tx.amount || 0);
-    const dateObj = new Date(tx.created_at);
-    const safeDate = isValid(dateObj) ? format(dateObj, "d MMM, HH:mm", { locale: i18n.language === 'es' ? es : enUS }) : "Reciente";
-
-    // FALLO 111 ARREGLADO: Formateo de moneda localizado
-    const formattedAmount = new Intl.NumberFormat(i18n.language === 'es' ? 'es-ES' : 'en-US', {
-        style: 'currency',
-        currency: 'EUR'
-    }).format(Math.abs(amount));
+    const safeDate = formatWalletDate(tx.created_at, language, copy.recent);
+    const formattedAmount = formatCurrency(amount, language);
 
     const getDescription = (desc, type) => {
         if (!desc) return t('wallet.tx_types.generic');
 
-        // MEJORA ELITE: Si la descripción contiene una ruta, mostrarla directamente
-        // Las nuevas transacciones V16.4 guardan "Pago viaje: Calle A -> Calle B"
         if (desc.includes(' -> ')) {
             return desc.replace(/^(Pago viaje: |Cobro viaje: )/i, '');
         }
 
         const d = desc.toUpperCase();
 
-        // Prioridad por tipo de transacción (Enum DB)
         if (type === 'payout') return t('wallet.tx_types.payout');
         if (type === 'withdrawal') return t('wallet.tx_types.withdrawal');
         if (type === 'hold') return t('wallet.tx_types.ride_escrow');
         if (type === 'refund') return t('wallet.tx_types.refund');
 
-        // Fallback por descripción
         if (d.includes('RESERVA') || d.includes('ESCROW')) return t('wallet.tx_types.ride_escrow');
         if (d.includes('RECARGA') || d.includes('STRIPE')) return t('wallet.tx_types.stripe_deposit');
         if (d.includes('GANANCIA') || d.includes('INGRESO') || d.includes('LIQUIDACIÓN')) return t('wallet.tx_types.payout');
@@ -77,8 +104,8 @@ const TransactionItem = ({ tx, index, onClick }) => {
         >
             <div className="flex items-center gap-4 text-left">
                 <div className={cn(
-                    "h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm border transition-colors",
-                    isDeposit ? "bg-emerald-50 text-emerald-600 border-emerald-100" : isHold ? "bg-amber-50 text-amber-600 border-amber-100" : "bg-slate-50 text-slate-600 border-slate-100"
+                    'h-12 w-12 rounded-2xl flex items-center justify-center shadow-sm border transition-colors',
+                    isDeposit ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : isHold ? 'bg-amber-50 text-amber-600 border-amber-100' : 'bg-slate-50 text-slate-600 border-slate-100'
                 )}>
                     {isDeposit ? <ArrowUpRight size={20} /> : isHold ? <ShieldCheck size={20} /> : <ArrowDownLeft size={20} />}
                 </div>
@@ -92,11 +119,11 @@ const TransactionItem = ({ tx, index, onClick }) => {
                 </div>
             </div>
             <div className="text-right">
-                <p className={cn("font-black text-base tracking-tighter italic", isDeposit ? "text-emerald-600" : "text-slate-900")}>
+                <p className={cn('font-black text-base tracking-tighter italic', isDeposit ? 'text-emerald-600' : 'text-slate-900')}>
                     {isDeposit ? '+' : '-'}{formattedAmount}
                 </p>
                 {tx.type === 'payout' && (
-                    <p className="text-[8px] font-bold text-emerald-500/60 uppercase tracking-tighter">Neto (90%)</p>
+                    <p className="text-[8px] font-bold text-emerald-500/60 uppercase tracking-tighter">{copy.net}</p>
                 )}
             </div>
         </button>
@@ -107,14 +134,13 @@ const Wallet = () => {
     const { user } = useOutletContext();
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+    const language = getLanguage(i18n.language);
     const { wallet, loadingWallet, refreshWallet } = useWallet(user);
     const [transactions, setTransactions] = useState([]);
     const [isLoadingTxs, setIsLoadingTxs] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTx, setSelectedTx] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-    // FALLO 169 ARREGLADO: Modo Privacidad para ocultar saldo
     const [showBalance, setShowBalance] = useState(() => localStorage.getItem('wallet_privacy') !== 'true');
 
     const togglePrivacy = () => {
@@ -136,7 +162,7 @@ const Wallet = () => {
             if (error) throw error;
             setTransactions(data || []);
         } catch (e) {
-            console.error("Failed to fetch transactions:", e);
+            console.error('Failed to fetch transactions:', e);
         } finally {
             setIsLoadingTxs(false);
         }
@@ -147,7 +173,6 @@ const Wallet = () => {
 
         if (!user?.id) return;
 
-        // SUSCRIPCIÓN EN TIEMPO REAL: Actualizar saldo e historial automáticamente
         const walletChannel = supabase
             .channel(`wallet_sync_${user.id}`)
             .on('postgres_changes', {
@@ -181,12 +206,7 @@ const Wallet = () => {
 
     const balance = useMemo(() => parseFloat(wallet?.balance || 0), [wallet]);
     const heldBalance = useMemo(() => parseFloat(wallet?.heldBalance || 0), [wallet]);
-
-    // Formateo de moneda principal
-    const formattedBalance = new Intl.NumberFormat(i18n.language === 'es' ? 'es-ES' : 'en-US', {
-        style: 'currency',
-        currency: 'EUR'
-    }).format(balance);
+    const formattedBalance = formatCurrency(balance, language);
 
     if (loadingWallet && isLoadingTxs) {
         return (
@@ -229,13 +249,13 @@ const Wallet = () => {
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-2">
                                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t('wallet.available_balance')}</p>
-                                    <button onClick={togglePrivacy} 
+                                    <button onClick={togglePrivacy}
                                             className="text-slate-500 hover:text-white transition-colors h-10 w-10 flex items-center justify-center rounded-full active:bg-white/10 active:scale-90 touch-action-manipulation">
                                         {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
                                     </button>
                                 </div>
                                 <h2 className="text-5xl font-black tracking-tighter italic min-h-[60px]">
-                                    {showBalance ? formattedBalance : "••••••"}
+                                    {showBalance ? formattedBalance : '••••••'}
                                 </h2>
                             </div>
                             <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl"><WalletIcon className="h-6 w-6 text-white" /></div>
@@ -243,7 +263,7 @@ const Wallet = () => {
                         <div className="grid grid-cols-2 gap-4 mb-10">
                             <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
                                 <p className="text-[8px] text-slate-500 uppercase font-black tracking-[0.2em] mb-2">{t('wallet.in_guarantee')}</p>
-                                <p className="text-xl font-black italic">{showBalance ? `${heldBalance.toFixed(2)}€` : "•••"}</p>
+                                <p className="text-xl font-black italic">{showBalance ? `${heldBalance.toFixed(2)}€` : '•••'}</p>
                             </div>
                             <div className="bg-white/5 rounded-3xl p-5 border border-white/5 opacity-40">
                                 <p className="text-[8px] text-slate-500 uppercase font-black tracking-[0.2em] mb-2">{t('wallet.cashback')}</p>
@@ -251,12 +271,12 @@ const Wallet = () => {
                             </div>
                         </div>
                         <div className="flex gap-4">
-                            <Button onClick={() => setIsModalOpen(true)} 
+                            <Button onClick={() => setIsModalOpen(true)}
                                     className="flex-1 h-16 rounded-[1.5rem] bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
                                 {t('wallet.add_funds')}
                             </Button>
-                            <Button variant="outline" 
-                                    className="h-16 w-16 rounded-[1.5rem] bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all" 
+                            <Button variant="outline"
+                                    className="h-16 w-16 rounded-[1.5rem] bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
                                     onClick={() => navigate('/settings')}>
                                 <CreditCard className="h-6 w-6" />
                             </Button>
@@ -269,7 +289,7 @@ const Wallet = () => {
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic"><History className="h-4 w-4 text-primary" /> {t('wallet.activity')}</h3>
                     </div>
                     <div className="space-y-1">
-                        {transactions.length > 0 ? (transactions.map((tx, idx) => <TransactionItem key={tx.id} tx={tx} index={idx} onClick={handleTxClick} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
+                        {transactions.length > 0 ? (transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
                     </div>
                 </div>
             </main>
