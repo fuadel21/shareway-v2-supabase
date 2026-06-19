@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import {
-    Loader2, Landmark, ChevronLeft, TrendingUp, Clock,
+    Loader2, Landmark, TrendingUp, Clock,
     Banknote, History, ArrowUpRight, ShieldCheck,
-    BadgeCheck, ExternalLink, AlertCircle, Wallet
+    BadgeCheck, ExternalLink, Wallet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
@@ -17,6 +17,60 @@ import { cn } from '@/lib/utils';
 import { format, isValid } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+
+const copyByLanguage = {
+    es: {
+        stripeLinkError: 'No se pudo generar el enlace de Stripe.',
+        withdrawableBalance: 'Balance Retirable',
+        heldBalance: 'En Retención',
+        amountPrompt: 'Ingresa el monto a transferir',
+        transferNotice: 'Las transferencias suelen tardar entre 24h y 72h hábiles según tu entidad bancaria.',
+        transferButton: 'Transferir a mi banco',
+        manageStripe: 'Gestionar cuenta y datos bancarios en Stripe',
+        transactionHistory: 'Historial de Transacciones',
+        recent: 'Reciente',
+        tripCredit: 'Abono Viaje',
+        transferred: 'Transferido',
+        pending: 'Pendiente',
+        noTransactions: 'Sin transacciones registradas'
+    },
+    en: {
+        stripeLinkError: 'Could not generate the Stripe link.',
+        withdrawableBalance: 'Withdrawable Balance',
+        heldBalance: 'On Hold',
+        amountPrompt: 'Enter the amount to transfer',
+        transferNotice: 'Transfers usually take between 24 and 72 business hours depending on your bank.',
+        transferButton: 'Transfer to my bank',
+        manageStripe: 'Manage account and bank details in Stripe',
+        transactionHistory: 'Transaction History',
+        recent: 'Recent',
+        tripCredit: 'Ride Credit',
+        transferred: 'Transferred',
+        pending: 'Pending',
+        noTransactions: 'No transactions recorded'
+    },
+    ar: {
+        stripeLinkError: 'تعذر إنشاء رابط Stripe.',
+        withdrawableBalance: 'الرصيد القابل للسحب',
+        heldBalance: 'قيد الحجز',
+        amountPrompt: 'أدخل المبلغ المراد تحويله',
+        transferNotice: 'عادةً تستغرق التحويلات بين 24 و72 ساعة عمل حسب البنك.',
+        transferButton: 'تحويل إلى بنكي',
+        manageStripe: 'إدارة الحساب والبيانات البنكية في Stripe',
+        transactionHistory: 'سجل المعاملات',
+        recent: 'حديث',
+        tripCredit: 'رصيد الرحلة',
+        transferred: 'تم التحويل',
+        pending: 'قيد الانتظار',
+        noTransactions: 'لا توجد معاملات مسجلة'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
 
 const StatusCard = ({ isConnected, onConnect, isConnecting }) => {
     const { t } = useTranslation();
@@ -38,7 +92,7 @@ const StatusCard = ({ isConnected, onConnect, isConnecting }) => {
                 </div>
                 {!isConnected && (
                     <div className="space-y-4">
-                        <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">Vincula tu cuenta bancaria a través de la pasarela segura de Stripe para recibir tus ganancias.</p>
+                        <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">{t('payouts.description')}</p>
                         <Button onClick={onConnect} disabled={isConnecting} className="w-full h-12 rounded-xl bg-slate-950 text-white font-black text-[9px] uppercase tracking-[0.2em] shadow-lg active:scale-95 transition-all">
                             {isConnecting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ExternalLink className="mr-2 h-4 w-4" />} {t('payouts.setup_button')}
                         </Button>
@@ -52,6 +106,8 @@ const StatusCard = ({ isConnected, onConnect, isConnecting }) => {
 function PayoutSettings() {
     const { profile, user } = useOutletContext();
     const { t, i18n } = useTranslation();
+    const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     const { wallet, refreshWallet } = useWallet(user);
     const [isConnecting, setIsConnecting] = useState(false);
     const [transactions, setTransactions] = useState([]);
@@ -64,7 +120,6 @@ function PayoutSettings() {
     const fetchHistory = useCallback(async () => {
         if (!user) return;
         try {
-            // Obtenemos transacciones que sean abonos (ingresos por viajes) o retiros
             const { data } = await supabase
                 .from('transactions')
                 .select('*')
@@ -83,7 +138,7 @@ function PayoutSettings() {
         try {
             const res = await createStripeConnectOnboarding(window.location.href);
             if (res.success && res.data?.url) window.location.href = res.data.url;
-            else throw new Error(res.error || "No se pudo generar el enlace de Stripe.");
+            else throw new Error(res.error || copy.stripeLinkError);
         } catch (error) {
             toast.error(t('common.error'), { description: error.message });
             setIsConnecting(false);
@@ -104,7 +159,7 @@ function PayoutSettings() {
             toast.success(t('payouts.success_toast'), { id: toastId, description: t('payouts.success_description') });
             setAmount('');
             await refreshWallet();
-            await fetchPayouts();
+            await fetchHistory();
         } catch (error) {
             toast.error(t('common.error'), { id: toastId, description: error.message });
         } finally {
@@ -127,18 +182,18 @@ function PayoutSettings() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="text-left space-y-2 bg-slate-50 p-6 rounded-3xl border border-slate-100 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:scale-125 transition-transform"><TrendingUp size={40} /></div>
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none italic">Balance Retirable</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none italic">{copy.withdrawableBalance}</p>
                                     <h2 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter italic leading-none">{balance.toFixed(2)}€</h2>
                                 </div>
                                 <div className="text-left space-y-2 bg-emerald-50/30 p-6 rounded-3xl border border-emerald-100/50 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:scale-125 transition-transform"><Clock size={40} /></div>
-                                    <p className="text-[9px] font-black text-emerald-600/60 uppercase tracking-[0.3em] leading-none italic">En Retención</p>
+                                    <p className="text-[9px] font-black text-emerald-600/60 uppercase tracking-[0.3em] leading-none italic">{copy.heldBalance}</p>
                                     <h2 className="text-2xl md:text-4xl font-black text-emerald-600 tracking-tighter italic leading-none">{heldBalance.toFixed(2)}€</h2>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center italic">Ingresa el monto a transferir</p>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center italic">{copy.amountPrompt}</p>
                                 <div className="relative group">
                                     <Banknote className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 md:h-6 md:w-6 text-primary transition-transform group-focus-within:scale-110" />
                                     <Input
@@ -153,7 +208,7 @@ function PayoutSettings() {
                                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-start gap-3">
                                     <ShieldCheck className="size-4 text-blue-600 mt-0.5 shrink-0" />
                                     <p className="text-[9px] font-bold text-blue-800 leading-relaxed uppercase tracking-wide">
-                                        Las transferencias suelen tardar entre 24h y 72h hábiles según tu entidad bancaria.
+                                        {copy.transferNotice}
                                     </p>
                                 </div>
 
@@ -162,12 +217,11 @@ function PayoutSettings() {
                                     disabled={isRequesting || balance < 10 || !amount}
                                     className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2rem] bg-slate-900 text-white font-black text-base md:text-lg uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-30"
                                 >
-                                    {isRequesting ? <Loader2 className="animate-spin size-5 md:size-6" /> : "Transferir a mi banco"}
+                                    {isRequesting ? <Loader2 className="animate-spin size-5 md:size-6" /> : copy.transferButton}
                                 </Button>
                             </div>
                         </Card>
 
-                        {/* ACCIÓN STRIPE EXPRESS */}
                         <Button
                             variant="outline"
                             onClick={handleConnectAccount}
@@ -175,14 +229,14 @@ function PayoutSettings() {
                             className="w-full h-14 rounded-2xl border-2 border-slate-200 bg-white text-slate-500 font-black text-[10px] uppercase tracking-widest italic hover:bg-slate-50 transition-all gap-2"
                         >
                             {isConnecting ? <Loader2 className="animate-spin size-4" /> : <ExternalLink size={14} />}
-                            Gestionar cuenta y datos bancarios en Stripe
+                            {copy.manageStripe}
                         </Button>
                     </div>
                 )}
 
                 <div className="space-y-6">
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-4 flex items-center gap-2 italic">
-                        <History size={14} className="text-primary" /> Historial de Transacciones
+                        <History size={14} className="text-primary" /> {copy.transactionHistory}
                     </h3>
                     <div className="space-y-3">
                         {transactions.length > 0 ? transactions.map((t_item, idx) => {
@@ -203,21 +257,21 @@ function PayoutSettings() {
                                                 {isEarning ? '+' : ''}{parseFloat(t_item.amount).toFixed(2)}€
                                             </p>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1.5">
-                                                {isValid(date) ? format(date, 'd MMMM, HH:mm', { locale: i18n.language === 'es' ? es : enUS }) : 'Reciente'}
+                                                {isValid(date) ? format(date, 'd MMMM, HH:mm', { locale: language === 'es' ? es : enUS }) : copy.recent}
                                             </p>
                                         </div>
                                     </div>
                                     <span className={cn("px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-widest italic border",
                                         isEarning ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
                                         t_item.status === 'completed' ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-amber-50 text-amber-600 border-amber-100")}>
-                                        {isEarning ? 'Abono Viaje' : t_item.status === 'completed' ? 'Transferido' : 'Pendiente'}
+                                        {isEarning ? copy.tripCredit : t_item.status === 'completed' ? copy.transferred : copy.pending}
                                     </span>
                                 </div>
                             );
                         }) : (
                             <div className="py-24 flex flex-col items-center justify-center bg-white/50 rounded-[3rem] border-2 border-dashed border-slate-100">
                                 <Wallet className="size-12 text-slate-100 mb-4 opacity-20" />
-                                <p className="text-center text-slate-300 font-black text-[10px] uppercase tracking-[0.3em] italic">Sin transacciones registradas</p>
+                                <p className="text-center text-slate-300 font-black text-[10px] uppercase tracking-[0.3em] italic">{copy.noTransactions}</p>
                             </div>
                         )}
                     </div>
