@@ -4,20 +4,16 @@ import { supabase } from '@/lib/supabase';
 import {
     ChevronDown,
     HeartHandshake,
-    Share2,
     Mic,
-    ShieldQuestion,
     Trash2,
     Plus,
     Loader2,
-    ArrowLeft,
     Lock,
     ShieldCheck,
     AlertTriangle,
     BellRing,
     Key,
     UserPlus,
-    Phone,
     Shield,
     Navigation
 } from 'lucide-react';
@@ -29,9 +25,41 @@ import { cn } from '@/lib/utils';
 import SubPageHeader from './SubPageHeader';
 import { useTranslation } from 'react-i18next';
 
-// --- Sub-componente para Contactos de Emergencia (Versión Premium) ---
+const copyByLanguage = {
+    es: {
+        maxCapacity: 'Capacidad máxima alcanzada (5).',
+        guardianNamePlaceholder: 'Ej. Mi Padre',
+        enabled: 'habilitado',
+        disabled: 'deshabilitado',
+        settingChanged: '{{title}} se ha {{state}}.'
+    },
+    en: {
+        maxCapacity: 'Maximum capacity reached (5).',
+        guardianNamePlaceholder: 'Example: My father',
+        enabled: 'enabled',
+        disabled: 'disabled',
+        settingChanged: '{{title}} has been {{state}}.'
+    },
+    ar: {
+        maxCapacity: 'تم الوصول إلى الحد الأقصى (5).',
+        guardianNamePlaceholder: 'مثال: والدي',
+        enabled: 'مفعّل',
+        disabled: 'معطّل',
+        settingChanged: 'تم جعل {{title}} {{state}}.'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
+const interpolate = (template, values) => Object.entries(values).reduce((text, [key, value]) => text.replace(`{{${key}}}`, value), template);
+
 const EmergencyContactsManager = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const copy = copyByLanguage[getLanguage(i18n.language)];
     const { profile } = useOutletContext();
     const [contacts, setContacts] = useState([]);
     const [newName, setNewName] = useState('');
@@ -59,7 +87,7 @@ const EmergencyContactsManager = () => {
             return;
         }
         if (contacts.length >= 5) {
-            toast.error('Capacidad máxima alcanzada (5).');
+            toast.error(copy.maxCapacity);
             return;
         }
         setIsLoading(true);
@@ -137,7 +165,7 @@ const EmergencyContactsManager = () => {
                     <div className="space-y-2">
                         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">{t('security.alias_label')}</label>
                         <Input
-                            placeholder="Ej. Mi Padre"
+                            placeholder={copy.guardianNamePlaceholder}
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             className="rounded-2xl h-14 bg-white border-none shadow-inner font-bold"
@@ -169,9 +197,9 @@ const EmergencyContactsManager = () => {
     );
 };
 
-// --- Sub-componente Toggle Premium ---
 const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorClass }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const copy = copyByLanguage[getLanguage(i18n.language)];
     const { profile, refreshProfile } = useOutletContext();
     const isEnabled = profile?.security_settings?.[settingKey] || false;
 
@@ -184,14 +212,14 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
                 .eq('id', profile.id);
 
             if (error) throw error;
-            toast.success(value ? t('common.success') : t('common.success'), {
-                description: `${title} se ha ${value ? 'habilitado' : 'deshabilitado'}.`
+            toast.success(t('common.success'), {
+                description: interpolate(copy.settingChanged, { title, state: value ? copy.enabled : copy.disabled })
             });
             refreshProfile();
         } catch {
             toast.error(t('common.error'));
         }
-    }
+    };
 
     return (
         <div className="p-8 bg-white/50 space-y-6 text-left">
@@ -211,10 +239,10 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
                 <Switch checked={isEnabled} onCheckedChange={handleToggle} className="data-[state=checked]:bg-primary" />
             </div>
         </div>
-    )
-}
+    );
+};
 
-const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick, colorClass }) => (
+const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick }) => (
     <div className={cn(
         "rounded-[2rem] md:rounded-[2.5rem] border-none transition-all duration-500 overflow-hidden",
         isOpen ? "bg-white shadow-[0_30px_60px_rgba(0,0,0,0.1)] ring-2 ring-primary/5" : "bg-white/60 hover:bg-white hover:shadow-xl shadow-sm"
@@ -255,7 +283,6 @@ const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick
 
 function SecuritySettings() {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const { profile } = useOutletContext();
     const [openItem, setOpenItem] = useState('emergencyContacts');
 
@@ -270,8 +297,6 @@ function SecuritySettings() {
             <SubPageHeader title={t('security.title')} backTo="/settings" />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10 text-left">
-
-                {/* HERO: Safety Status */}
                 <div className="bg-navy rounded-[2.5rem] md:rounded-[3.5rem] p-8 md:p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
                     <div className="absolute top-0 right-0 p-10 opacity-10 blur-xl group-hover:blur-md transition-all">
                         <ShieldCheck className="h-24 w-24 md:h-32 md:w-32 text-white" />
@@ -306,7 +331,6 @@ function SecuritySettings() {
                     </div>
                 </div>
 
-                {/* FEATURE HUB */}
                 <div className="space-y-4">
                     <FeatureCard
                         id="emergencyContacts"
@@ -326,7 +350,6 @@ function SecuritySettings() {
                         description={t('security.gps_tracking_desc')}
                         isOpen={openItem === 'shareTrip'}
                         onClick={() => handleItemClick('shareTrip')}
-                        colorClass="text-blue-500"
                     >
                         <SecurityToggleItem
                             settingKey="share_trip_enabled"
@@ -344,7 +367,6 @@ function SecuritySettings() {
                         description={t('security.audio_blackbox_desc')}
                         isOpen={openItem === 'audioRecording'}
                         onClick={() => handleItemClick('audioRecording')}
-                        colorClass="text-purple-500"
                     >
                         <SecurityToggleItem
                             settingKey="audio_recording_enabled"
@@ -362,7 +384,6 @@ function SecuritySettings() {
                         description={t('security.pin_verification_desc')}
                         isOpen={openItem === 'pinVerification'}
                         onClick={() => handleItemClick('pinVerification')}
-                        colorClass="text-emerald-500"
                     >
                         <SecurityToggleItem
                             settingKey="pin_verification_enabled"
