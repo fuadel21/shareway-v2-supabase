@@ -6,14 +6,17 @@ import en from './locales/en.json';
 import ar from './locales/ar.json';
 import settingsExtra from './settingsExtra';
 
-const mergeTranslations = (base, extra) => ({
-    ...base,
-    ...extra,
-    settings: {
-        ...(base.settings || {}),
-        ...(extra.settings || {})
-    }
-});
+const deepMerge = (base = {}, extra = {}) => {
+    const result = { ...base };
+    Object.entries(extra).forEach(([key, value]) => {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+            result[key] = deepMerge(base[key] || {}, value);
+        } else {
+            result[key] = value;
+        }
+    });
+    return result;
+};
 
 const applyDocumentLanguage = (lng) => {
     const normalizedLanguage = lng?.startsWith('ar') ? 'ar' : lng?.startsWith('en') ? 'en' : 'es';
@@ -26,9 +29,9 @@ i18n
     .use(initReactI18next)
     .init({
         resources: {
-            es: { translation: mergeTranslations(es, settingsExtra.es) },
-            en: { translation: mergeTranslations(en, settingsExtra.en) },
-            ar: { translation: mergeTranslations(ar, settingsExtra.ar) }
+            es: { translation: deepMerge(es, settingsExtra.es) },
+            en: { translation: deepMerge(en, settingsExtra.en) },
+            ar: { translation: deepMerge(ar, settingsExtra.ar) }
         },
         fallbackLng: 'es',
         supportedLngs: ['es', 'en', 'ar'],
