@@ -1,33 +1,70 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { getUserChats } from '@/services/chatService';
-
-import { Card } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import { Button } from '@/components/ui/button.jsx';
-import { Check, CheckCheck, Loader2, MessageSquare, ChevronRight, Sparkles, ShieldCheck, ChevronLeft, User, Clock } from 'lucide-react';
-import { format, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { Check, CheckCheck, Loader2, MessageSquare, ChevronRight, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
+
+const copyByLanguage = {
+    es: {
+        user: 'Usuario',
+        startConversation: 'Inicia una conversación...',
+        grouping: 'Agrupando mensajes...',
+        title: 'Mensajes',
+        subtitle: 'Bandeja de entrada inteligente',
+        empty: 'Sin conversaciones'
+    },
+    en: {
+        user: 'User',
+        startConversation: 'Start a conversation...',
+        grouping: 'Grouping messages...',
+        title: 'Messages',
+        subtitle: 'Smart inbox',
+        empty: 'No conversations'
+    },
+    ar: {
+        user: 'مستخدم',
+        startConversation: 'ابدأ محادثة...',
+        grouping: 'جارٍ تجميع الرسائل...',
+        title: 'الرسائل',
+        subtitle: 'صندوق وارد ذكي',
+        empty: 'لا توجد محادثات'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
 
 const getInitials = (name) => {
     if (!name || typeof name !== 'string') return '?';
     return name.trim().split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().substring(0, 2);
 };
 
-const ChatItem = ({ chat, onClick, userId }) => {
-    const date = chat.updated_at ? new Date(chat.updated_at) : null;
-    const safeDate = (date && isValid(date)) ? format(date, "HH:mm", { locale: es }) : "";
+const formatChatTime = (dateValue, language) => {
+    const date = dateValue ? new Date(dateValue) : null;
+    if (!date || Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : language === 'en' ? 'en-US' : 'es-ES', {
+        hour: '2-digit',
+        minute: '2-digit'
+    }).format(date);
+};
+
+const ChatItem = ({ chat, onClick, userId, copy, language }) => {
+    const safeDate = formatChatTime(chat.updated_at, language);
     const isMeLast = chat.lastMessageSenderId === userId;
 
     return (
         <div
             onClick={() => onClick(chat)}
             className={cn(
-                "group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer relative",
-                chat.unreadCount > 0 ? "border-emerald-100 bg-emerald-50/5" : ""
+                'group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer relative',
+                chat.unreadCount > 0 ? 'border-emerald-100 bg-emerald-50/5' : ''
             )}
         >
             <div className="relative">
@@ -37,10 +74,9 @@ const ChatItem = ({ chat, onClick, userId }) => {
                         {getInitials(chat.otherUserName)}
                     </AvatarFallback>
                 </Avatar>
-                {/* Indicador de Actividad */}
                 <div className={cn(
-                    "absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm",
-                    chat.unreadCount > 0 ? "bg-emerald-500 animate-pulse" : "bg-slate-200"
+                    'absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-white shadow-sm',
+                    chat.unreadCount > 0 ? 'bg-emerald-500 animate-pulse' : 'bg-slate-200'
                 )} />
             </div>
 
@@ -49,17 +85,17 @@ const ChatItem = ({ chat, onClick, userId }) => {
                     <div className="flex flex-col text-left">
                         <div className="flex items-center gap-2">
                             <h3 className={cn(
-                                "font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate max-w-[150px]",
-                                chat.unreadCount > 0 ? "text-emerald-900" : ""
+                                'font-black text-slate-900 text-sm uppercase italic tracking-tighter truncate max-w-[150px]',
+                                chat.unreadCount > 0 ? 'text-emerald-900' : ''
                             )}>
-                                {chat.otherUserName || 'Usuario'}
+                                {chat.otherUserName || copy.user}
                             </h3>
                             {chat.isVerifiedUser && <ShieldCheck size={12} className="text-blue-500" />}
                         </div>
                     </div>
                     <span className={cn(
-                        "text-[9px] font-bold uppercase tracking-widest shrink-0 ml-2",
-                        chat.unreadCount > 0 ? "text-emerald-500" : "text-slate-400"
+                        'text-[9px] font-bold uppercase tracking-widest shrink-0 ml-2',
+                        chat.unreadCount > 0 ? 'text-emerald-500' : 'text-slate-400'
                     )}>
                         {safeDate}
                     </span>
@@ -72,10 +108,10 @@ const ChatItem = ({ chat, onClick, userId }) => {
                         <Check size={14} className="text-slate-400 shrink-0" />
                     )}
                     <p className={cn(
-                        "text-xs truncate font-medium leading-none",
-                        chat.unreadCount > 0 ? "text-slate-900 font-black" : "text-slate-500"
+                        'text-xs truncate font-medium leading-none',
+                        chat.unreadCount > 0 ? 'text-slate-900 font-black' : 'text-slate-500'
                     )}>
-                        {chat.lastMessagePreview || 'Inicia una conversación...'}
+                        {chat.lastMessagePreview || copy.startConversation}
                     </p>
                 </div>
             </div>
@@ -97,6 +133,9 @@ const ChatItem = ({ chat, onClick, userId }) => {
 const ChatList = () => {
     const { user } = useOutletContext();
     const navigate = useNavigate();
+    const { i18n } = useTranslation();
+    const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     const [rawChats, setChats] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -106,7 +145,7 @@ const ChatList = () => {
             const data = await getUserChats(user.id);
             setChats(data || []);
         } catch (e) {
-            console.error("🛡️ ChatList Error:", e);
+            console.error('🛡️ ChatList Error:', e);
         } finally {
             setLoading(false);
         }
@@ -117,7 +156,6 @@ const ChatList = () => {
 
         if (!user?.id) return;
 
-        // SUSCRIPCIÓN EN TIEMPO REAL: Refrescar bandeja cuando hay nuevos mensajes
         const chatChannel = supabase
             .channel(`chat_list_${user.id}`)
             .on('postgres_changes', {
@@ -137,12 +175,10 @@ const ChatList = () => {
         };
     }, [user?.id, fetchChats]);
 
-    // LÓGICA TIPO WHATSAPP: Agrupar por usuario único
     const groupedChats = useMemo(() => {
         const groups = {};
-        
+
         rawChats.forEach(chat => {
-            // Buscamos al otro participante
             const otherParticipantId = chat.participants.find(p => p !== user.id);
             if (!otherParticipantId) return;
 
@@ -164,7 +200,7 @@ const ChatList = () => {
         return (
             <div className="h-screen flex flex-col items-center justify-center bg-slate-50 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Agrupando mensajes...</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">{copy.grouping}</p>
             </div>
         );
     }
@@ -177,8 +213,8 @@ const ChatList = () => {
                         <ChevronLeft className="h-6 w-6 text-slate-900" />
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none text-left">Mensajes</h1>
-                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1 text-left">Bandeja de entrada inteligente</p>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none text-left">{copy.title}</h1>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1 text-left">{copy.subtitle}</p>
                     </div>
                 </div>
             </header>
@@ -190,6 +226,8 @@ const ChatList = () => {
                             key={chat.id}
                             chat={chat}
                             userId={user.id}
+                            copy={copy}
+                            language={language}
                             onClick={(c) => {
                                 if (c.ride_id) {
                                     navigate(`/ride-chat/${c.ride_id}`);
@@ -202,7 +240,7 @@ const ChatList = () => {
                 ) : (
                     <div className="py-24 text-center bg-white rounded-[3rem] border border-dashed border-slate-200">
                         <MessageSquare className="h-12 w-12 text-slate-100 mx-auto mb-4" />
-                        <h3 className="text-sm font-black text-slate-900 uppercase italic text-center">Sin conversaciones</h3>
+                        <h3 className="text-sm font-black text-slate-900 uppercase italic text-center">{copy.empty}</h3>
                     </div>
                 )}
             </main>
