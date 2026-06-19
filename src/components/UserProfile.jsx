@@ -1,26 +1,83 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useOutletContext, Link } from 'react-router-dom';
+import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
-import { Card, CardContent } from '@/components/ui/card.jsx';
+import { Card } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import {
-    Loader2, Star, Calendar, Pencil, Music, MessageCircle,
-    Car, ShieldCheck, MapPin, Share2, Info, ChevronRight,
-    Sparkles, UserCheck, ShieldClose, Leaf, Award, Sprout, Trees, Mountain,
-    ChevronLeft, TrendingUp, Zap, Heart, Navigation,
-    History as HistoryIcon
+    Loader2, Star, Pencil,
+    Car, ShieldCheck, Info,
+    Leaf, Sprout, Trees, Mountain,
+    ChevronLeft, TrendingUp, Navigation
 } from 'lucide-react';
-import { format, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import ReviewsList from './ReviewsList';
 import { getImpactEquivalency } from '@/utils/climateImpact';
 import { useTranslation } from 'react-i18next';
 
+const copyByLanguage = {
+    es: {
+        title: 'Perfil',
+        member: 'Miembro',
+        trips: 'viajes',
+        memberSince: 'Miembro desde',
+        statTrips: 'Viajes',
+        statLevel: 'Nivel',
+        biography: 'Biografía',
+        realImpact: 'Impacto Real',
+        gratefulPlanet: 'Planeta Agradecido',
+        avoidedCo2: 'Has evitado la emisión de',
+        vehicle: 'Vehículo',
+        premiumTransport: 'Transporte Premium',
+        standard: 'Estándar',
+        testimonials: 'Testimonios Corales',
+        locale: 'es-ES'
+    },
+    en: {
+        title: 'Profile',
+        member: 'Member',
+        trips: 'rides',
+        memberSince: 'Member since',
+        statTrips: 'Rides',
+        statLevel: 'Level',
+        biography: 'Biography',
+        realImpact: 'Real Impact',
+        gratefulPlanet: 'Grateful Planet',
+        avoidedCo2: 'You have avoided the emission of',
+        vehicle: 'Vehicle',
+        premiumTransport: 'Premium Transport',
+        standard: 'Standard',
+        testimonials: 'Community Testimonials',
+        locale: 'en-US'
+    },
+    ar: {
+        title: 'الملف الشخصي',
+        member: 'عضو',
+        trips: 'رحلات',
+        memberSince: 'عضو منذ',
+        statTrips: 'الرحلات',
+        statLevel: 'المستوى',
+        biography: 'نبذة شخصية',
+        realImpact: 'الأثر الحقيقي',
+        gratefulPlanet: 'الكوكب ممتن',
+        avoidedCo2: 'لقد تجنبت انبعاث',
+        vehicle: 'المركبة',
+        premiumTransport: 'نقل مميز',
+        standard: 'قياسي',
+        testimonials: 'آراء المجتمع',
+        locale: 'ar-SA'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
 const StatCard = ({ icon: Icon, value, label, color }) => (
     <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center text-center gap-1 transition-all hover:shadow-md">
-        <div className={cn("p-2 rounded-xl mb-1", color)}>
+        <div className={cn('p-2 rounded-xl mb-1', color)}>
             {Icon && <Icon className="h-4 w-4" />}
         </div>
         <p className="font-black text-lg text-slate-900 leading-none">{value}</p>
@@ -29,7 +86,7 @@ const StatCard = ({ icon: Icon, value, label, color }) => (
 );
 
 const DEFAULT_PROFILE = {
-    display_name: 'Miembro',
+    display_name: '',
     rating: '5.0',
     rides_count: 0,
     total_co2_saved: 0,
@@ -43,7 +100,9 @@ const DEFAULT_PROFILE = {
 };
 
 function UserProfile() {
-    const { t } = useTranslation();
+    const { i18n } = useTranslation();
+    const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     const { userId } = useParams();
     const navigate = useNavigate();
     const { profile: currentUser } = useOutletContext();
@@ -67,6 +126,7 @@ function UserProfile() {
                     setProfile({
                         ...DEFAULT_PROFILE,
                         ...pData,
+                        display_name: pData.display_name || copy.member,
                         rating: pData.rating ? parseFloat(pData.rating).toFixed(1) : '5.0',
                         vehicle: pData.vehicle || DEFAULT_PROFILE.vehicle
                     });
@@ -79,7 +139,7 @@ function UserProfile() {
                     if (isMounted) setAchievements(achs || []);
                 }
             } catch (e) {
-                console.error("⛔ CRITICAL: Profile Load Failure:", e);
+                console.error('⛔ CRITICAL: Profile Load Failure:', e);
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -87,13 +147,14 @@ function UserProfile() {
 
         fetchProfileData();
         return () => { isMounted = false; };
-    }, [userId]);
+    }, [userId, copy.member]);
 
     const memberDate = useMemo(() => {
         if (!profile?.created_at) return '...';
         const d = new Date(profile.created_at);
-        return isValid(d) ? format(d, "MMM yyyy", { locale: es }) : '...';
-    }, [profile?.created_at]);
+        if (Number.isNaN(d.getTime())) return '...';
+        return new Intl.DateTimeFormat(copy.locale, { month: 'short', year: 'numeric' }).format(d);
+    }, [profile?.created_at, copy.locale]);
 
     const ecoSystem = useMemo(() => {
         const tier = profile.eco_tier || 'Seed';
@@ -115,7 +176,7 @@ function UserProfile() {
                         <Button variant="ghost" size="icon" className="rounded-2xl bg-slate-50 size-12" onClick={() => navigate(-1)}>
                             <ChevronLeft className="h-6 w-6 text-slate-900" />
                         </Button>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">Perfil</h1>
+                        <h1 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase leading-none">{copy.title}</h1>
                     </div>
                     {isOwnProfile && (
                         <Button variant="outline" size="icon" className="rounded-2xl size-12 border-slate-100" onClick={() => navigate('/profile/edit')}>
@@ -133,11 +194,10 @@ function UserProfile() {
                             <AvatarFallback className="bg-slate-900 text-white text-3xl font-black">{profile.display_name?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
 
-                        {/* RATING PROMINENTE BAJO LA FOTO */}
                         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-white px-4 py-1.5 rounded-full shadow-xl border border-slate-100 flex items-center gap-1.5 animate-in zoom-in duration-700 delay-300">
                             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                             <span className="font-black text-slate-900 text-sm">{profile.rating}</span>
-                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest ml-1">{profile.rides_count} viajes</span>
+                            <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest ml-1">{profile.rides_count} {copy.trips}</span>
                         </div>
 
                         {profile.verification_status === 'verified' && (
@@ -149,22 +209,21 @@ function UserProfile() {
                     <div className="pt-4">
                         <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic truncate px-4">{profile.display_name}</h2>
                         <div className="flex items-center justify-center gap-2 mt-1">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Miembro desde {memberDate}</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">{copy.memberSince} {memberDate}</span>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-4 gap-2">
-                    <StatCard icon={TrendingUp} value={profile.rides_count} label="Viajes" color="bg-indigo-50 text-indigo-600" />
+                    <StatCard icon={TrendingUp} value={profile.rides_count} label={copy.statTrips} color="bg-indigo-50 text-indigo-600" />
                     <StatCard icon={Navigation} value={Math.round(profile.total_km_shared || 0)} label="KM" color="bg-blue-50 text-blue-600" />
                     <StatCard icon={Leaf} value={parseFloat(profile.total_co2_saved).toFixed(1)} label="kg CO2" color="bg-emerald-50 text-emerald-600" />
-                    <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label="Nivel" color={ecoSystem.color} />
+                    <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label={copy.statLevel} color={ecoSystem.color} />
                 </div>
 
-                {/* Bio con preservación de formato */}
                 {profile.bio && (
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={12} className="text-primary" /> Biografía</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={12} className="text-primary" /> {copy.biography}</p>
                         <p className="text-slate-600 font-medium italic whitespace-pre-line leading-relaxed">
                             "{profile.bio}"
                         </p>
@@ -182,12 +241,12 @@ function UserProfile() {
                                     <Leaf className="h-5 w-5" />
                                 </div>
                                 <div className="text-left">
-                                    <h3 className="font-black text-lg text-emerald-900 uppercase italic tracking-tighter leading-none">Impacto Real</h3>
-                                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Planeta Agradecido</p>
+                                    <h3 className="font-black text-lg text-emerald-900 uppercase italic tracking-tighter leading-none">{copy.realImpact}</h3>
+                                    <p className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">{copy.gratefulPlanet}</p>
                                 </div>
                             </div>
                             <p className="text-emerald-800 text-sm font-medium mb-3 leading-relaxed">
-                                Has evitado la emisión de <span className="font-black text-2xl align-middle mx-1">{parseFloat(profile.total_co2_saved).toFixed(1)} kg</span> de CO₂.
+                                {copy.avoidedCo2} <span className="font-black text-2xl align-middle mx-1">{parseFloat(profile.total_co2_saved).toFixed(1)} kg</span> CO₂.
                             </p>
                             <div className="bg-white/60 rounded-xl p-3 border border-emerald-100/50 backdrop-blur-sm">
                                 <p className="text-emerald-700 text-xs font-bold italic flex items-center gap-2">
@@ -205,17 +264,17 @@ function UserProfile() {
                         <div className="p-8 text-white relative z-10 text-left">
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-md"><Car className="h-6 w-6 text-primary" /></div>
-                                <div className="text-left"><h3 className="font-black text-lg uppercase tracking-tighter italic leading-none">Vehículo</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transporte Premium</p></div>
+                                <div className="text-left"><h3 className="font-black text-lg uppercase tracking-tighter italic leading-none">{copy.vehicle}</h3><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{copy.premiumTransport}</p></div>
                             </div>
                             <div className="flex flex-col md:flex-row md:items-center gap-6">
                                 {profile.vehicle.photoURL && (
                                     <div className="h-32 w-full md:w-48 rounded-2xl overflow-hidden border-2 border-white/10 shadow-2xl shrink-0">
-                                        <img src={profile.vehicle.photoURL} alt="Vehículo" className="w-full h-full object-cover" />
+                                        <img src={profile.vehicle.photoURL} alt={copy.vehicle} className="w-full h-full object-cover" />
                                     </div>
                                 )}
                                 <div className="text-left">
                                     <p className="text-2xl font-black tracking-tight uppercase italic leading-none">{profile.vehicle.make} {profile.vehicle.model}</p>
-                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{profile.vehicle.color || 'Estándar'}</p>
+                                    <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">{profile.vehicle.color || copy.standard}</p>
                                 </div>
                             </div>
                         </div>
@@ -223,7 +282,7 @@ function UserProfile() {
                 )}
 
                 <div className="space-y-4">
-                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-4 italic">Testimonios Corales</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-4 italic">{copy.testimonials}</h3>
                     <ReviewsList userId={userId} />
                 </div>
             </main>
