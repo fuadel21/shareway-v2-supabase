@@ -14,6 +14,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import MainLayout from './components/MainLayout.jsx';
 import AdminLayout from './pages/Admin/AdminLayout.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import SEOLandingPage from './components/SEOLandingPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import ForgotPassword from './components/ForgotPassword.jsx';
@@ -55,6 +56,70 @@ import VerificationCenter from './components/VerificationCenter.jsx';
 import ClimateImpact from './components/ClimateImpact.jsx';
 import MaintenanceMode from './components/MaintenanceMode.jsx';
 import { getPlatformSettings } from './lib/supabaseRPC';
+
+const seoLandingRoutes = [
+    'rutas',
+    'carpooling',
+    'carpooling-madrid',
+    'carpooling-barcelona',
+    'carpooling-valencia',
+    'carpooling-alicante',
+    'carpooling-bilbao',
+    'carpooling-zaragoza',
+    'carpooling-trabajo',
+    'carpooling-universidad',
+    'compartir-coche',
+    'compartir-coche-madrid',
+    'compartir-coche-barcelona',
+    'compartir-coche-valencia',
+    'compartir-coche-sevilla',
+    'compartir-coche-malaga',
+    'compartir-coche-alicante',
+    'compartir-coche-bilbao',
+    'compartir-coche-zaragoza',
+    'compartir-coche-trabajo',
+    'compartir-coche-universidad',
+    'viajes-compartidos',
+    'viajes-compartidos-madrid',
+    'viajes-compartidos-barcelona',
+    'viajes-compartidos-valencia',
+    'viajes-compartidos-sevilla',
+    'viajes-compartidos-malaga',
+    'viajes-compartidos-alicante',
+    'viajes-compartidos-bilbao',
+    'viajes-compartidos-zaragoza',
+    'rutas-compartidas',
+    'rutas-compartidas-madrid',
+    'rutas-compartidas-barcelona',
+    'rutas-compartidas-valencia',
+    'rutas-compartidas-sevilla',
+    'rutas-compartidas-malaga',
+    'rutas-compartidas-alicante',
+    'rutas-compartidas-bilbao',
+    'rutas-compartidas-zaragoza',
+    'rutas-compartidas-trabajo',
+    'taxi-compartido',
+    'compartir-trayecto',
+    'compartir-taxi-aeropuerto',
+    'compartir-taxi-barato',
+    'ahorrar-compartiendo-taxi',
+    'compartir-trayecto-trabajo',
+    'compartir-trayecto-universidad',
+    'taxi-compartido-madrid',
+    'taxi-compartido-barcelona',
+    'taxi-compartido-valencia',
+    'taxi-compartido-sevilla',
+    'taxi-compartido-malaga',
+    'taxi-compartido-alicante',
+    'taxi-compartido-bilbao',
+    'taxi-compartido-zaragoza',
+    'compartir-taxi-aeropuerto-madrid',
+    'compartir-taxi-aeropuerto-barcelona',
+    'compartir-taxi-aeropuerto-valencia',
+    'compartir-taxi-aeropuerto-sevilla',
+    'compartir-taxi-aeropuerto-malaga',
+    'compartir-taxi-aeropuerto-alicante'
+];
 
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
@@ -106,7 +171,6 @@ function App() {
 
     const refreshProfile = useCallback(() => setRefreshKey(prev => prev + 1), []);
 
-    // --- CHECK MAINTENANCE MODE (Realtime) ---
     useEffect(() => {
         const fetchInitialSettings = async () => {
             const { data, success } = await getPlatformSettings();
@@ -148,7 +212,6 @@ function App() {
     }, []);
 
     useEffect(() => {
-        // Solo configurar el botón de atrás si estamos en un entorno nativo (Capacitor)
         const isNative = window.hasOwnProperty('Capacitor');
 
         if (isNative) {
@@ -275,7 +338,6 @@ function App() {
         totalUnreadChats: 0
     }), [session?.user?.id, profile, isAdmin, userLocation, isLoading, refreshProfile, handleSignOut]);
 
-    // BLOQUEO DE MANTENIMIENTO
     if (maintenanceMode && !isAdmin && !isLoading) {
         return <MaintenanceMode />;
     }
@@ -304,6 +366,9 @@ function App() {
                 />
                 <Routes>
                     <Route path="/" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : publicPageFallback} />
+                    {seoLandingRoutes.map((route) => (
+                        <Route key={route} path={`/${route}`} element={<SEOLandingPage />} />
+                    ))}
                     <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Login />)} />
                     <Route path="/register" element={isAuthenticated ? <Navigate to="/dashboard" replace /> : (guestPageFallback || <Register />)} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
