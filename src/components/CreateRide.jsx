@@ -11,7 +11,7 @@ import { Card } from '@/components/ui/card.jsx';
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 import {
     Loader2, CalendarIcon, MapPin, Euro, Users, Car, Plus, X, Navigation,
     Sparkles, ShieldCheck, Clock, ChevronRight, Music, Baby, Dog, ChevronLeft, Heart
@@ -28,8 +28,48 @@ import { useTranslation } from 'react-i18next';
 
 const STORAGE_KEY = 'sw_ride_offer_draft';
 
+const copyByLanguage = {
+    es: {
+        validRoute: 'Selecciona puntos de ruta válidos',
+        calculatingRoute: 'Calculando ruta...',
+        routeUnavailable: 'No se pudo obtener la ruta. Por favor, reintenta.',
+        minPrice: 'El precio mínimo es {{price}}€',
+        distanceUnavailable: 'No se pudo calcular la distancia del trayecto. Por favor, reintenta.',
+        minAdvance: 'El viaje debe programarse con al menos {{minutes}} min de antelación.',
+        publishing: 'Publicando viaje...',
+        family: 'Familia'
+    },
+    en: {
+        validRoute: 'Select valid route points',
+        calculatingRoute: 'Calculating route...',
+        routeUnavailable: 'Could not get the route. Please try again.',
+        minPrice: 'The minimum price is {{price}}€',
+        distanceUnavailable: 'Could not calculate the trip distance. Please try again.',
+        minAdvance: 'The ride must be scheduled at least {{minutes}} min in advance.',
+        publishing: 'Publishing ride...',
+        family: 'Family'
+    },
+    ar: {
+        validRoute: 'اختر نقاط مسار صحيحة',
+        calculatingRoute: 'جارٍ حساب المسار...',
+        routeUnavailable: 'تعذر الحصول على المسار. يرجى المحاولة مرة أخرى.',
+        minPrice: 'الحد الأدنى للسعر هو {{price}}€',
+        distanceUnavailable: 'تعذر حساب مسافة الرحلة. يرجى المحاولة مرة أخرى.',
+        minAdvance: 'يجب جدولة الرحلة قبل {{minutes}} دقيقة على الأقل.',
+        publishing: 'جارٍ نشر الرحلة...',
+        family: 'العائلة'
+    }
+};
+
+const getLanguage = (language) => {
+    if (language?.startsWith('ar')) return 'ar';
+    if (language?.startsWith('en')) return 'en';
+    return 'es';
+};
+
+const interpolate = (template, values) => Object.entries(values).reduce((text, [key, value]) => text.replace(`{{${key}}}`, value), template);
+
 const getNextHalfHour = () => {
-    // Bug Fix #4: partimos de ahora+30min para garantizar la antelación mínima exigida
     const future = new Date(Date.now() + 30 * 60 * 1000);
     const mins = future.getMinutes();
     if (mins < 30) {
@@ -41,12 +81,12 @@ const getNextHalfHour = () => {
 };
 
 const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
-    <button type="button" 
-            onClick={onClick} 
+    <button type="button"
+            onClick={onClick}
             className={cn(
-                "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 flex-1 min-h-[80px]", 
-                active ? "border-primary bg-primary/5 text-primary shadow-sm" : "border-slate-50 text-slate-400 bg-slate-50/50",
-                "active:scale-95 touch-action-manipulation"
+                'flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all gap-2 flex-1 min-h-[80px]',
+                active ? 'border-primary bg-primary/5 text-primary shadow-sm' : 'border-slate-50 text-slate-400 bg-slate-50/50',
+                'active:scale-95 touch-action-manipulation'
             )}>
         <Icon className="h-6 w-6" />
         <span className="text-[10px] font-black uppercase tracking-tight">{label}</span>
@@ -55,6 +95,7 @@ const PreferenceToggle = ({ icon: Icon, label, active, onClick }) => (
 
 const CreateRide = () => {
     const { t, i18n } = useTranslation();
+    const copy = copyByLanguage[getLanguage(i18n.language)];
     const { profile: currentUserProfile, user } = useOutletContext();
     const navigate = useNavigate();
     const location = useLocation();
@@ -78,15 +119,13 @@ const CreateRide = () => {
     const routeDataRef = useRef(null);
     const routeAbortRef = useRef(null);
     const routeReqIdRef = useRef(0);
-    const isPriceManualRef = useRef(false); // Bug Fix #3: evita sobreescritura silenciosa del precio
+    const isPriceManualRef = useRef(false);
 
-    // PERSISTENCIA DE BORRADOR (UX RECOVERY)
     useEffect(() => {
         const draft = localStorage.getItem(STORAGE_KEY);
         if (draft && !origin && !destination) {
             try {
                 const data = JSON.parse(draft);
-                // Bug Fix #6: Descartar borradores con más de 24 horas (TTL)
                 if (data.savedAt && Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
                     localStorage.removeItem(STORAGE_KEY);
                     return;
@@ -98,7 +137,7 @@ const CreateRide = () => {
                 setDetails(data.details || '');
                 setIsWomenOnly(data.isWomenOnly || false);
                 setPreferences(data.preferences || { music: true, pets: false, kids: true });
-            } catch (e) { console.error("Error loading draft:", e); }
+            } catch (e) { console.error('Error loading draft:', e); }
         }
     }, []);
 
@@ -107,7 +146,7 @@ const CreateRide = () => {
             if (origin || destination || details) {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify({
                     origin, destination, seats, price, details, isWomenOnly, preferences,
-                    savedAt: Date.now() // Bug Fix #6: TTL para evitar restaurar borradores obsoletos
+                    savedAt: Date.now()
                 }));
             }
         }, 1500);
@@ -126,7 +165,7 @@ const CreateRide = () => {
             }
 
             routeDataRef.current = null;
-            isPriceManualRef.current = false; // Bug Fix #3: la ruta cambió, re-habilitar precio automático
+            isPriceManualRef.current = false;
             if (routeAbortRef.current) {
                 try { routeAbortRef.current.abort(); } catch (e) { }
             }
@@ -138,8 +177,6 @@ const CreateRide = () => {
             setIsCalculatingRoute(true);
             try {
                 const coords = `${origin.coordinates.lng},${origin.coordinates.lat};${destination.coordinates.lng},${destination.coordinates.lat}`;
-
-                // Usamos el proxy para evitar errores de CORS
                 const data = await fetchRoute(coords, 'full', 'polyline');
 
                 if (reqId !== routeReqIdRef.current) return;
@@ -149,7 +186,6 @@ const CreateRide = () => {
                     const distanceKm = route.distance / 1000;
                     routeDataRef.current = { distance: distanceKm, polyline: route.geometry };
 
-                    // Actualizamos el estado para que el mapa muestre el trayecto
                     setRouteInfo({
                         path: route.geometry ? decodePolyline(route.geometry) : [
                             [origin.coordinates.lat, origin.coordinates.lng],
@@ -159,14 +195,13 @@ const CreateRide = () => {
                         polyline: route.geometry
                     });
 
-                    // Bug Fix #3: solo auto-setear precio si el usuario no lo cambió manualmente
                     if (!isPriceManualRef.current) {
                         const suggested = calculateRecommendedPrice(route.distance);
                         setPrice(suggested.toString());
                     }
                 }
             } catch (e) {
-                if (e?.name !== 'AbortError') console.error("Route calculation error:", e);
+                if (e?.name !== 'AbortError') console.error('Route calculation error:', e);
             } finally {
                 if (reqId !== routeReqIdRef.current) return;
                 setIsCalculatingRoute(false);
@@ -182,24 +217,22 @@ const CreateRide = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!origin?.coordinates || !destination?.coordinates) return toast.error("Selecciona puntos de ruta válidos");
+        if (!origin?.coordinates || !destination?.coordinates) return toast.error(copy.validRoute);
 
-        if (isCalculatingRoute) return toast.error("Calculando ruta...");
+        if (isCalculatingRoute) return toast.error(copy.calculatingRoute);
 
-        // Permitimos continuar si tenemos distancia (aunque la polyline sea manual/fallback)
         if (!routeDataRef.current?.distance) {
-            return toast.error("No se pudo obtener la ruta. Por favor, reintenta.");
+            return toast.error(copy.routeUnavailable);
         }
 
         const numPrice = parseFloat(price.toString().replace(',', '.'));
         if (isNaN(numPrice) || numPrice < RIDE_RULES.MIN_PRICE) {
-            return toast.error(`El precio mínimo es ${RIDE_RULES.MIN_PRICE}€`);
+            return toast.error(interpolate(copy.minPrice, { price: RIDE_RULES.MIN_PRICE }));
         }
 
-        // Bug Fix #5: la distancia es obligatoria para validar el precio máximo
         const routeDistance = routeDataRef.current?.distance || 0;
         if (routeDistance <= 0) {
-            return toast.error("No se pudo calcular la distancia del trayecto. Por favor, reintenta.");
+            return toast.error(copy.distanceUnavailable);
         }
         const validation = validateRidePrice(numPrice, routeDistance);
         if (!validation.valid) {
@@ -213,7 +246,7 @@ const CreateRide = () => {
         departure.setHours(h, m, 0, 0);
 
         if (isBefore(departure, addMinutes(new Date(), RIDE_RULES.MIN_ADVANCE_MINUTES))) {
-            return toast.error(`El viaje debe programarse con al menos ${RIDE_RULES.MIN_ADVANCE_MINUTES} min de antelación.`);
+            return toast.error(interpolate(copy.minAdvance, { minutes: RIDE_RULES.MIN_ADVANCE_MINUTES }));
         }
 
         setIsConfirmOpen(true);
@@ -222,7 +255,7 @@ const CreateRide = () => {
     const handleConfirmPublish = async () => {
         if (isSubmitting) return;
         setIsSubmitting(true);
-        const toastId = toast.loading("Publicando viaje...");
+        const toastId = toast.loading(copy.publishing);
 
         try {
             const [h, m] = time.split(':').map(Number);
@@ -245,7 +278,6 @@ const CreateRide = () => {
             };
 
             const newRideId = await createSingleRide(rideData);
-
             localStorage.removeItem(STORAGE_KEY);
 
             if (user?.id) {
@@ -256,7 +288,6 @@ const CreateRide = () => {
             try { await Haptics.impact({ style: ImpactStyle.Heavy }); } catch (e) { }
             toast.success(t('create_ride.confirm_button'), { id: toastId });
 
-            // REDIRECCIÓN CRÍTICA: Usar el ID real devuelto por la DB
             if (newRideId) {
                 navigate(`/ride/${newRideId}`);
             } else {
@@ -292,11 +323,11 @@ const CreateRide = () => {
                         <div className="space-y-4">
                             <AddressAutocomplete label={t('create_ride.origin_label')} onSelect={setOrigin} defaultValue={origin?.address} icon={<div className="h-2 w-2 rounded-full bg-emerald-500" />} />
                             <AddressAutocomplete label={t('create_ride.destination_label')} onSelect={setDestination} defaultValue={destination?.address} icon={<div className="h-2 w-2 rounded-full bg-primary" />} />
-                            
+
                             {(origin && destination) && (
                                 <div className="h-44 w-full rounded-2xl overflow-hidden border mt-2 relative">
                                     <MapComponent
-                                        center={origin.coordinates}
+                                        center={{ lat: origin.coordinates.lat, lng: origin.coordinates.lng }}
                                         zoom={11}
                                         itemsToDisplay={[{ id: 'preview', type: 'ride', origin, destination, decodedPath: routeInfo.path }]}
                                     />
@@ -316,7 +347,7 @@ const CreateRide = () => {
                             <Popover>
                                 <PopoverTrigger asChild>
                                     <Button variant="outline" className="w-full h-14 rounded-2xl border-slate-100 bg-slate-50 font-black text-xs uppercase tracking-tighter">
-                                        {format(date, "dd MMM", { locale: i18n.language === 'es' ? es : enUS })}
+                                        {format(date, 'dd MMM', { locale: i18n.language === 'es' ? es : enUS })}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="p-0 border-none shadow-2xl rounded-3xl overflow-hidden">
@@ -329,14 +360,14 @@ const CreateRide = () => {
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl">
-                                <button type="button" 
-                                        onClick={() => setSeats(Math.max(1, seats - 1))} 
+                                <button type="button"
+                                        onClick={() => setSeats(Math.max(1, seats - 1))}
                                         className="w-12 h-12 flex items-center justify-center text-xl font-black text-slate-400 active:text-primary active:scale-90 transition-all">
                                     -
                                 </button>
                                 <div className="flex-1 text-center font-black text-2xl text-slate-900">{seats}</div>
-                                <button type="button" 
-                                        onClick={() => setSeats(Math.min(RIDE_RULES.MAX_SEATS, seats + 1))} 
+                                <button type="button"
+                                        onClick={() => setSeats(Math.min(RIDE_RULES.MAX_SEATS, seats + 1))}
                                         className="w-12 h-12 flex items-center justify-center text-xl font-black text-slate-400 active:text-primary active:scale-90 transition-all">
                                     +
                                 </button>
@@ -351,21 +382,21 @@ const CreateRide = () => {
                     <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_preferences')}</h3>
-                            <button type="button" 
-                                    onClick={() => setIsWomenOnly(!isWomenOnly)} 
+                            <button type="button"
+                                    onClick={() => setIsWomenOnly(!isWomenOnly)}
                                     className={cn(
-                                        "flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center", 
-                                        isWomenOnly ? "bg-pink-50 border-pink-200 text-pink-600 shadow-sm shadow-pink-100" : "bg-slate-50 border-transparent text-slate-400",
-                                        "active:scale-95 touch-action-manipulation"
+                                        'flex items-center gap-2 px-4 h-11 rounded-full border-2 transition-all min-w-[120px] justify-center',
+                                        isWomenOnly ? 'bg-pink-50 border-pink-200 text-pink-600 shadow-sm shadow-pink-100' : 'bg-slate-50 border-transparent text-slate-400',
+                                        'active:scale-95 touch-action-manipulation'
                                     )}>
-                                <Heart size={16} className={isWomenOnly ? "fill-pink-600" : ""} />
+                                <Heart size={16} className={isWomenOnly ? 'fill-pink-600' : ''} />
                                 <span className="text-xs font-black uppercase tracking-tight leading-none">{t('create_ride.women_only')}</span>
                             </button>
                         </div>
                         <div className="flex gap-3">
                             <PreferenceToggle icon={Music} label={t('edit_profile.pref_labels.music')} active={preferences.music} onClick={() => setPreferences(p => ({ ...p, music: !p.music }))} />
                             <PreferenceToggle icon={Dog} label={t('edit_profile.pref_labels.pets')} active={preferences.pets} onClick={() => setPreferences(p => ({ ...p, pets: !p.pets }))} />
-                            <PreferenceToggle icon={Baby} label="Family" active={preferences.kids} onClick={() => setPreferences(p => ({ ...p, kids: !p.kids }))} />
+                            <PreferenceToggle icon={Baby} label={copy.family} active={preferences.kids} onClick={() => setPreferences(p => ({ ...p, kids: !p.kids }))} />
                         </div>
                         <Textarea placeholder={t('create_ride.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
                     </Card>
