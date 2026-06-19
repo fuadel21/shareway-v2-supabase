@@ -5,6 +5,7 @@ import es from './locales/es.json';
 import en from './locales/en.json';
 import ar from './locales/ar.json';
 import settingsExtra from './settingsExtra';
+import applyRideDetailsRuntimePatch from './rideDetailsRuntimePatch';
 
 const deepMerge = (base = {}, extra = {}) => {
     const result = { ...base };
@@ -18,10 +19,18 @@ const deepMerge = (base = {}, extra = {}) => {
     return result;
 };
 
+const runRuntimePatches = (lng) => {
+    window.clearTimeout(window.__sharewayRuntimeI18nTimer);
+    window.__sharewayRuntimeI18nTimer = window.setTimeout(() => {
+        applyRideDetailsRuntimePatch(lng);
+    }, 50);
+};
+
 const applyDocumentLanguage = (lng) => {
     const normalizedLanguage = lng?.startsWith('ar') ? 'ar' : lng?.startsWith('en') ? 'en' : 'es';
     document.documentElement.lang = normalizedLanguage;
     document.documentElement.dir = normalizedLanguage === 'ar' ? 'rtl' : 'ltr';
+    runRuntimePatches(normalizedLanguage);
 };
 
 i18n
@@ -43,5 +52,10 @@ i18n
 
 applyDocumentLanguage(i18n.language);
 i18n.on('languageChanged', applyDocumentLanguage);
+
+if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(() => runRuntimePatches(i18n.language));
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+}
 
 export default i18n;
