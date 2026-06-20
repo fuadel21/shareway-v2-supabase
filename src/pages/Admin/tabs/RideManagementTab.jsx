@@ -11,8 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
  * RideManagementTab Component
  *
  * Provides an administrative overview of all rides on the platform.
- * Includes status-based filtering (scheduled, inprogress, completed, canceled)
- * and detailed route information for each ride.
+ * Includes status-based filtering and detailed route information for each ride.
  */
 const RideManagementTab = () => {
     const [rides, setRides] = useState([]);
@@ -20,9 +19,6 @@ const RideManagementTab = () => {
     const [statusFilter, setStatusFilter] = useState('all');
     const navigate = useNavigate();
 
-    /**
-     * Fetches rides from the backend using an RPC call, filtered by the current status selection.
-     */
     const fetchRides = async () => {
         setLoading(true);
         try {
@@ -42,22 +38,26 @@ const RideManagementTab = () => {
     }, [statusFilter]);
 
     const getStatusBadge = (status) => {
+        const normalizedStatus = status === 'canceled' ? 'cancelled' : status === 'inprogress' ? 'in_progress' : status;
         const variants = {
             scheduled: 'bg-blue-50 text-blue-600 border-blue-100',
-            inprogress: 'bg-yellow-50 text-yellow-600 border-yellow-100',
+            active: 'bg-yellow-50 text-yellow-600 border-yellow-100',
+            in_progress: 'bg-yellow-50 text-yellow-600 border-yellow-100',
             completed: 'bg-green-50 text-green-600 border-green-100',
-            canceled: 'bg-red-50 text-red-600 border-red-100',
+            cancelled: 'bg-red-50 text-red-600 border-red-100',
         };
         const labels = {
             scheduled: 'Programado',
-            inprogress: 'En Curso',
+            active: 'En Curso',
+            in_progress: 'En Curso',
             completed: 'Completado',
-            canceled: 'Cancelado'
+            cancelled: 'Cancelado'
         };
-        return <Badge variant="outline" className={`${variants[status] || 'bg-gray-50 text-gray-600 border-gray-100'} rounded-full px-3`}>{labels[status] || status}</Badge>;
-    }
+        return <Badge variant="outline" className={`${variants[normalizedStatus] || 'bg-gray-50 text-gray-600 border-gray-100'} rounded-full px-3`}>{labels[normalizedStatus] || status}</Badge>;
+    };
 
     const formatDate = (dateStr) => {
+        if (!dateStr) return 'Fecha pendiente';
         return new Date(dateStr).toLocaleString('es-ES', {
             day: '2-digit',
             month: 'short',
@@ -65,6 +65,8 @@ const RideManagementTab = () => {
             minute: '2-digit'
         });
     };
+
+    const getLocationLabel = (location, fallback) => location?.name || location?.address || location?.formatted_address || fallback;
 
     return (
         <div className="space-y-6">
@@ -80,9 +82,9 @@ const RideManagementTab = () => {
                     <SelectContent className="rounded-xl">
                         <SelectItem value="all">Todos los estados</SelectItem>
                         <SelectItem value="scheduled">Programados</SelectItem>
-                        <SelectItem value="inprogress">En curso</SelectItem>
+                        <SelectItem value="in_progress">En curso</SelectItem>
                         <SelectItem value="completed">Completados</SelectItem>
-                        <SelectItem value="canceled">Cancelados</SelectItem>
+                        <SelectItem value="cancelled">Cancelados</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -105,8 +107,8 @@ const RideManagementTab = () => {
                                                 <div className="w-2 h-2 rounded-full bg-yellow-500" />
                                             </div>
                                             <div className="space-y-2 text-left">
-                                                <p className="font-bold text-gray-900 leading-none">{ride.origin?.name || ride.origin?.address}</p>
-                                                <p className="font-bold text-gray-900 leading-none pt-1">{ride.destination?.name || ride.destination?.address}</p>
+                                                <p className="font-bold text-gray-900 leading-none">{getLocationLabel(ride.origin, 'Origen sin definir')}</p>
+                                                <p className="font-bold text-gray-900 leading-none pt-1">{getLocationLabel(ride.destination, 'Destino sin definir')}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
