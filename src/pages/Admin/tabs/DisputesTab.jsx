@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,6 +11,36 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { getDisputesList, resolveDispute } from '@/lib/supabaseRPC';
+
+const safeMoney = (value) => {
+    const amount = Number.parseFloat(value || 0);
+    return Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+};
+
+const safeDate = (value) => {
+    if (!value) return 'Sin fecha';
+    try {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return 'Fecha inválida';
+        return format(date, 'dd MMM HH:mm', { locale: es });
+    } catch {
+        return 'Fecha inválida';
+    }
+};
+
+const normalizeEvidenceUrls = (value) => {
+    if (!value) return [];
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (typeof value === 'string') {
+        try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) ? parsed.filter(Boolean) : [value].filter(Boolean);
+        } catch {
+            return [value].filter(Boolean);
+        }
+    }
+    return [];
+};
 
 const DisputesTab = () => {
     const [disputes, setDisputes] = useState([]);
@@ -37,22 +66,32 @@ const DisputesTab = () => {
         }
     };
 
+    const openDispute = (dispute) => {
+        setAdminNotes('');
+        setSelectedDispute(dispute);
+    };
+
+    const closeDispute = () => {
+        setSelectedDispute(null);
+        setAdminNotes('');
+    };
+
     const handleResolve = async (disputeId, status) => {
         if (!disputeId) return;
         setProcessing(true);
-        const toastId = toast.loading(status === 'approved' ? "Procesando reembolso..." : "Rechazando disputa...");
-        
+        const isApproval = status === 'approved';
+        const toastId = toast.loading(isApproval ? 'Procesando reembolso...' : 'Rechazando disputa...');
+
         try {
-            const { success, error } = await resolveDispute(disputeId, status, adminNotes);
+            const { success, error } = await resolveDispute(disputeId, status, adminNotes.trim() || null);
 
             if (!success) throw new Error(error);
 
-            toast.success(status === 'approved' ? '¡Reembolso emitido con éxito!' : 'Disputa rechazada correctamente', { id: toastId });
-            setSelectedDispute(null);
-            setAdminNotes('');
+            toast.success(isApproval ? '¡Reembolso emitido con éxito!' : 'Disputa rechazada correctamente', { id: toastId });
+            closeDispute();
             fetchDisputes();
         } catch (error) {
-            console.error("🚨 Resolve Dispute Error:", error);
+            console.error('🚨 Resolve Dispute Error:', error);
             toast.error('Error al resolver disputa', { id: toastId, description: error.message });
         } finally {
             setProcessing(false);
@@ -81,6 +120,8 @@ const DisputesTab = () => {
             </div>
         );
     }
+
+    const selectedEvidenceUrls = normalizeEvidenceUrls(selectedDispute?.evidence_urls);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -115,7 +156,7 @@ const DisputesTab = () => {
                                         <TableCell className="pl-8">
                                             <div className="flex flex-col text-left">
                                                 <span className="font-black text-slate-900 uppercase italic text-xs tracking-tighter">{dispute.user?.display_name || 'Usuario'}</span>
-                                                <span className="text-[9px] font-bold text-slate-400">{dispute.user?.email}</span>
+                                                <span className="text-[9px] font-bold text-slate-400">{dispute.user?.email || 'Sin correo'}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -125,11 +166,11 @@ const DisputesTab = () => {
                                         </TableCell>
                                         <TableCell className="text-center">
                                             <span className="font-black text-slate-900 italic tracking-tighter text-sm">
-                                                {parseFloat(dispute.refund_amount || 0).toFixed(2)}€
+                                                {safeMoney(dispute.refund_amount)}€
                                             </span>
                                         </TableCell>
                                         <TableCell className="text-[10px] font-bold text-slate-500 uppercase">
-                                            {format(new Date(dispute.created_at), 'dd MMM HH:mm', { locale: es })}
+                                            {safeDate(dispute.created_at)}
                                         </TableCell>
                                         <TableCell>{getStatusBadge(dispute.status)}</TableCell>
                                         <TableCell className="text-right pr-8">
@@ -137,7 +178,8 @@ const DisputesTab = () => {
                                                 size="icon"
                                                 variant="ghost"
                                                 className="h-10 w-10 rounded-xl hover:bg-white hover:shadow-md transition-all text-primary"
-                                                onClick={() => setSelectedDispute(dispute)}
+                                                onClick={() => openDispute(dispute)}
+                                                title="Ver caso"
                                             >
                                                 <Eye className="h-5 w-5" />
                                             </Button>
@@ -146,7 +188,7 @@ const DisputesTab = () => {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-20">
+                                    <TableCell colSpan={6} className="text-center py-20">
                                         <AlertCircle className="h-10 w-10 text-slate-100 mx-auto mb-4" />
                                         <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">No hay casos pendientes de revisión</p>
                                     </TableCell>
@@ -157,8 +199,7 @@ const DisputesTab = () => {
                 </CardContent>
             </Card>
 
-            {/* Dialog de Detalles */}
-            <Dialog open={!!selectedDispute} onOpenChange={() => setSelectedDispute(null)}>
+            <Dialog open={!!selectedDispute} onOpenChange={(open) => { if (!open) closeDispute(); }}>
                 <DialogContent className="max-w-2xl rounded-[2.5rem] border-none shadow-2xl p-8 bg-white overflow-hidden">
                     <DialogHeader className="space-y-2">
                         <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 flex items-center gap-3">
@@ -173,30 +214,30 @@ const DisputesTab = () => {
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Usuario Demandante</label>
-                                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{selectedDispute.user?.display_name}</p>
+                                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{selectedDispute.user?.display_name || 'Usuario'}</p>
                                 </div>
                                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                                     <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 block">Monto Solicitado</label>
-                                    <p className="text-xl font-black text-primary italic tracking-tighter">{parseFloat(selectedDispute.refund_amount || 0).toFixed(2)}€</p>
+                                    <p className="text-xl font-black text-primary italic tracking-tighter">{safeMoney(selectedDispute.refund_amount)}€</p>
                                 </div>
                             </div>
 
                             <div className="p-6 bg-slate-950 rounded-[2rem] text-white relative overflow-hidden group">
                                 <Gavel className="absolute -right-4 -bottom-4 size-24 opacity-5 group-hover:rotate-12 transition-transform duration-700" />
                                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Motivo de la Disputa</label>
-                                <p className="text-sm font-medium italic leading-relaxed text-slate-200">"{selectedDispute.reason}"</p>
+                                <p className="text-sm font-medium italic leading-relaxed text-slate-200">&quot;{selectedDispute.reason || 'Sin motivo detallado'}&quot;</p>
                             </div>
 
-                            {selectedDispute.evidence_urls && selectedDispute.evidence_urls.length > 0 && (
+                            {selectedEvidenceUrls.length > 0 && (
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 italic">Evidencia Adjunta</label>
                                     <div className="flex flex-wrap gap-3">
-                                        {selectedDispute.evidence_urls.map((url, idx) => (
+                                        {selectedEvidenceUrls.map((url, idx) => (
                                             <Button
-                                                key={idx}
+                                                key={`${url}-${idx}`}
                                                 variant="outline"
                                                 className="rounded-xl border-slate-100 font-bold text-[10px] uppercase tracking-widest gap-2 bg-slate-50 hover:bg-white shadow-sm"
-                                                onClick={() => window.open(url, '_blank')}
+                                                onClick={() => window.open(url, '_blank', 'noopener,noreferrer')}
                                             >
                                                 <FileText className="h-3 w-3 text-primary" /> Documento {idx + 1}
                                             </Button>
