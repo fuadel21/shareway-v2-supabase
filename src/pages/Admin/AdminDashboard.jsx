@@ -1,18 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Car, UserCheck, Users, Hourglass, DollarSign, BarChart, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Navigation, Activity, Clock, ArrowRight } from 'lucide-react';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card.jsx';
+import { Car, UserCheck, Users, DollarSign, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Activity, ArrowRight } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Skeleton } from '@/components/ui/skeleton.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getPlatformStats, requestPlatformPayout, getPlatformAuditLogs } from '@/lib/supabaseRPC';
 import { supabase } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import PendingVerificationsTab from './tabs/PendingVerificationsTab';
@@ -44,10 +40,6 @@ const StatCard = ({ title, value, icon, description, currency = '', loading = fa
     </Card>
 );
 
-/**
- * AdminDashboard Component
- * Central management hub for platform administrators.
- */
 function AdminDashboard() {
     const { tab = 'verifications' } = useParams();
     const navigate = useNavigate();
@@ -71,7 +63,7 @@ function AdminDashboard() {
                 setRecentActivity(auditRes.data || []);
             }
         } catch (error) {
-            toast.error("Error al sincronizar datos");
+            toast.error('Error al sincronizar datos');
         } finally {
             setLoading(false);
         }
@@ -80,7 +72,6 @@ function AdminDashboard() {
     useEffect(() => {
         fetchPlatformData();
 
-        // 📡 SUSCRIPCIÓN EN TIEMPO REAL AL RADAR
         const channel = supabase
             .channel('admin-radar')
             .on(
@@ -102,17 +93,18 @@ function AdminDashboard() {
         try {
             const result = await requestPlatformPayout();
             if (result?.success) {
-                toast.success("Retiro solicitado con éxito");
+                toast.success('Retiro solicitado con éxito');
                 await fetchPlatformData();
+            } else if (result?.error) {
+                toast.error('Error al retirar', { description: result.error });
             }
         } catch (error) {
-            toast.error("Error al retirar");
+            toast.error('Error al retirar');
         } finally {
             setIsPayoutLoading(false);
         }
     };
 
-    // Datos simulados para el gráfico de crecimiento (En producción vendrían de una RPC de series temporales)
     const chartData = [
         { name: 'Lun', profit: (stats?.platform_profit || 0) * 0.4 },
         { name: 'Mar', profit: (stats?.platform_profit || 0) * 0.5 },
@@ -125,7 +117,6 @@ function AdminDashboard() {
 
     return (
         <div className="space-y-8 text-left p-6 pb-20 max-w-[1600px] mx-auto animate-in fade-in duration-700">
-            {/* Cabecera y Radar en Vivo */}
             <div className="flex flex-col xl:flex-row justify-between items-start gap-8">
                 <div className="space-y-2">
                     <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-none text-slate-900">Centro de Mando</h1>
@@ -135,9 +126,7 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Radar de Actividad Pro */}
                 <div className="flex-1 max-w-3xl w-full bg-slate-900 rounded-[2.5rem] p-5 flex items-center gap-6 border border-white/10 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] relative overflow-hidden group">
-                    {/* Efecto de barrido de radar */}
                     <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0%,rgba(59,130,246,0.1)_50%,transparent_100%)] animate-[spin_4s_linear_infinite] pointer-events-none" />
 
                     <div className="relative size-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
@@ -157,14 +146,13 @@ function AdminDashboard() {
                         <div className="h-6 overflow-hidden">
                             {recentActivity.length > 0 ? (
                                 <div className="flex items-center gap-3 animate-in slide-in-from-bottom-full duration-500">
-                                    {/* Icono dinámico según acción */}
-                                    {recentActivity[0].action.includes('RIDE') ? <Car className="size-3 text-emerald-400" /> :
-                                     recentActivity[0].action.includes('USER') ? <UserCheck className="size-3 text-blue-400" /> :
+                                    {recentActivity[0].action?.includes('RIDE') ? <Car className="size-3 text-emerald-400" /> :
+                                     recentActivity[0].action?.includes('USER') ? <UserCheck className="size-3 text-blue-400" /> :
                                      <Activity className="size-3 text-amber-400" />}
 
                                     <p className="text-sm font-bold text-white truncate">
                                         <span className="text-primary italic mr-2">
-                                            {recentActivity[0].action.replace(/_/g, ' ')}
+                                            {(recentActivity[0].action || 'ACTIVITY').replace(/_/g, ' ')}
                                         </span>
                                         {recentActivity[0].new_value?.origin ? (
                                             <span className="text-slate-400 font-medium">de {recentActivity[0].new_value.origin.substring(0, 15)}...</span>
@@ -190,7 +178,6 @@ function AdminDashboard() {
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                {/* Card de Tesorería Destacada */}
                 <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-slate-900 text-white lg:col-span-1 xl:col-span-1 relative group">
                     <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
                         <DollarSign className="size-32" />
@@ -213,7 +200,6 @@ function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                {/* Gráfico de Crecimiento */}
                 <Card className="lg:col-span-2 xl:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden p-8">
                     <div className="flex items-center justify-between mb-8">
                         <div>
@@ -244,14 +230,12 @@ function AdminDashboard() {
                     </div>
                 </Card>
 
-                {/* Stats Secundarios */}
                 <div className="grid gap-4">
                     <StatCard title="Ecología" value={parseFloat(stats?.co2_saved_kg || 0).toFixed(1)} currency="kg" icon={<Leaf />} trend={5.2} loading={loading} />
                     <StatCard title="Comunidad" value={stats?.active_users || 0} icon={<Users />} trend={1.8} loading={loading} />
                 </div>
             </div>
 
-            {/* Navegación por Pestañas */}
             <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden min-h-[700px] bg-white">
                 <CardContent className="p-4 lg:p-8">
                     <Tabs value={tab} onValueChange={(v) => navigate(`/admin/${v}`)} className="w-full">
@@ -263,6 +247,7 @@ function AdminDashboard() {
                                 { val: 'finance', label: 'Finanzas', icon: DollarSign },
                                 { val: 'disputes', label: 'Disputas', icon: AlertCircle },
                                 { val: 'communities', label: 'Nodos', icon: Building2 },
+                                { val: 'climate', label: 'Clima', icon: Leaf },
                                 { val: 'maintenance', label: 'Soporte', icon: RefreshCw }
                             ].map((t) => (
                                 <TabsTrigger key={t.val} value={t.val} className="rounded-xl px-5 py-3 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all whitespace-nowrap flex-shrink-0 text-[10px] font-black uppercase tracking-widest gap-2 h-12 border border-transparent data-[state=active]:border-slate-100">
@@ -272,7 +257,6 @@ function AdminDashboard() {
                         </TabsList>
 
                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                            {/* ... Contenidos de las pestañas ... */}
                             <TabsContent value="verifications" className="mt-0 focus-visible:outline-none">
                                 <PendingVerificationsTab />
                             </TabsContent>
@@ -290,6 +274,9 @@ function AdminDashboard() {
                             </TabsContent>
                             <TabsContent value="communities" className="mt-0 focus-visible:outline-none">
                                 <CommunitiesTab />
+                            </TabsContent>
+                            <TabsContent value="climate" className="mt-0 focus-visible:outline-none">
+                                <ClimateTab />
                             </TabsContent>
                             <TabsContent value="maintenance" className="mt-0 focus-visible:outline-none">
                                 <MaintenanceTab />
