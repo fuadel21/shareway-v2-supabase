@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ShieldAlert, RefreshCw, Loader2, CheckCircle, AlertCircle, Clock, Settings2, Save, Gavel, DollarSign, Timer, ShieldCheck, ToggleLeft, ToggleRight, LayoutDashboard, History, User, Activity } from 'lucide-react';
+import { ShieldAlert, RefreshCw, Loader2, AlertCircle, Clock, Settings2, Save, Gavel, DollarSign, Timer, ShieldCheck, ToggleLeft, ToggleRight, LayoutDashboard, History, User, Activity } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
@@ -9,6 +9,34 @@ import { getAdminHealthDashboard, runManualMaintenanceTasks, getPlatformSettings
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+const stringifySettingValue = (value) => {
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+};
+
+const parseSettingValue = (key, value) => {
+    if (key === 'platform_maintenance_mode') return value === 'true';
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    if (value !== '' && !Number.isNaN(Number(value))) return Number(value);
+
+    try {
+        return JSON.parse(value);
+    } catch {
+        return value;
+    }
+};
+
+const formatLogDate = (date) => {
+    if (!date) return 'Sin fecha';
+    try {
+        return format(new Date(date), 'dd MMM HH:mm:ss', { locale: es });
+    } catch {
+        return 'Fecha inválida';
+    }
+};
 
 export default function MaintenanceTab() {
     const [health, setHealth] = useState(null);
@@ -22,29 +50,42 @@ export default function MaintenanceTab() {
 
     const fetchData = async () => {
         setLoading(true);
-        const [healthRes, settingsRes, auditRes] = await Promise.all([
-            getAdminHealthDashboard(),
-            getPlatformSettings(),
-            getPlatformAuditLogs(20)
-        ]);
-        if (healthRes.success) setHealth(healthRes.data);
-        if (settingsRes.success) setSettings(settingsRes.data || []);
-        if (auditRes.success) setAuditLogs(auditRes.data || []);
-        setLoading(false);
+        try {
+            const [healthRes, settingsRes, auditRes] = await Promise.all([
+                getAdminHealthDashboard(),
+                getPlatformSettings(),
+                getPlatformAuditLogs('all', 20)
+            ]);
+
+            if (healthRes.success) setHealth(healthRes.data);
+            if (settingsRes.success) setSettings(settingsRes.data || []);
+            if (auditRes.success) setAuditLogs(auditRes.data || []);
+        } catch (error) {
+            toast.error('Error al cargar mantenimiento', { description: error.message });
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
         fetchData();
     }, []);
 
+    const filteredAuditLogs = useMemo(() => {
+        return auditLogs.filter(log => {
+            const action = log?.action || '';
+            return auditFilter === 'all' || action.includes(auditFilter);
+        });
+    }, [auditLogs, auditFilter]);
+
     const categorizedSettings = useMemo(() => {
         const categories = {
-            'Sistema': { icon: LayoutDashboard, color: 'text-blue-500', bg: 'bg-blue-50' },
-            'Finanzas': { icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-            'Caducidad': { icon: Timer, color: 'text-amber-500', bg: 'bg-amber-50' },
-            'Seguridad': { icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-50' },
-            'Impacto': { icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50' },
-            'General': { icon: Settings2, color: 'text-slate-500', bg: 'bg-slate-50' }
+            Sistema: { icon: LayoutDashboard, color: 'text-blue-500', bg: 'bg-blue-50' },
+            Finanzas: { icon: DollarSign, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+            Caducidad: { icon: Timer, color: 'text-amber-500', bg: 'bg-amber-50' },
+            Seguridad: { icon: ShieldCheck, color: 'text-purple-500', bg: 'bg-purple-50' },
+            Impacto: { icon: Activity, color: 'text-orange-500', bg: 'bg-orange-50' },
+            General: { icon: Settings2, color: 'text-slate-500', bg: 'bg-slate-50' }
         };
 
         const grouped = settings.reduce((acc, curr) => {
@@ -55,31 +96,25 @@ export default function MaintenanceTab() {
         }, {});
 
         return Object.entries(grouped).map(([name, items]) => {
-            const config = categories[name] || categories['General'];
-            return {
-                name,
-                items,
-                icon: config.icon,
-                color: config.color,
-                bg: config.bg
-            };
+            const config = categories[name] || categories.General;
+            return { name, items, icon: config.icon, color: config.color, bg: config.bg };
         });
     }, [settings]);
 
     const handleRunMaintenance = async () => {
         setIsRunning(true);
-        const toastId = toast.loading("Ejecutando tareas de mantenimiento...");
+        const toastId = toast.loading('Ejecutando tareas de mantenimiento...');
         try {
             const { data, success, error } = await runManualMaintenanceTasks();
             if (success) {
-                toast.success("Mantenimiento completado", {
+                toast.success('Mantenimiento completado', {
                     id: toastId,
-                    description: `Notificaciones: ${data.notifications_cleaned}, Suspensiones: ${data.suspensions_lifted}`
+                    description: `Notificaciones: ${data?.notifications_cleaned ?? 0}, Suspensiones: ${data?.suspensions_lifted ?? 0}`
                 });
                 fetchData();
             } else throw new Error(error);
         } catch (err) {
-            toast.error("Error al ejecutar mantenimiento", { id: toastId, description: err.message });
+            toast.error('Error al ejecutar mantenimiento', { id: toastId, description: err.message });
         } finally {
             setIsRunning(false);
         }
@@ -88,14 +123,14 @@ export default function MaintenanceTab() {
     const handleUpdateSetting = async (key, newValue) => {
         setIsSaving(true);
         try {
-            const finalValue = (key === 'platform_maintenance_mode') ? (newValue === 'true') : newValue;
+            const finalValue = parseSettingValue(key, newValue);
             const { success, error } = await updatePlatformSetting(key, finalValue);
             if (success) {
-                toast.success("Configuración actualizada");
+                toast.success('Configuración actualizada');
                 fetchData();
             } else throw new Error(error);
         } catch (err) {
-            toast.error("Error al guardar", { description: err.message });
+            toast.error('Error al guardar', { description: err.message });
         } finally {
             setIsSaving(false);
         }
@@ -107,19 +142,17 @@ export default function MaintenanceTab() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500 text-left">
-
-            {/* TOP HEADER STATUS */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm">
                 <div className="flex items-center gap-4">
-                    <div className={cn("size-12 rounded-2xl flex items-center justify-center shadow-lg", maintenanceMode ? "bg-red-500 shadow-red-100" : "bg-emerald-500 shadow-emerald-100")}>
+                    <div className={cn('size-12 rounded-2xl flex items-center justify-center shadow-lg', maintenanceMode ? 'bg-red-500 shadow-red-100' : 'bg-emerald-500 shadow-emerald-100')}>
                         {maintenanceMode ? <AlertCircle className="text-white" /> : <ShieldCheck className="text-white" />}
                     </div>
                     <div>
                         <h2 className="text-xl font-black text-slate-900 uppercase italic tracking-tight">
-                            Estado Global: {maintenanceMode ? "Modo Mantenimiento" : "Operativo"}
+                            Estado Global: {maintenanceMode ? 'Modo Mantenimiento' : 'Operativo'}
                         </h2>
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">
-                            {maintenanceMode ? "Las acciones críticas están limitadas para usuarios." : "Todos los sistemas funcionando correctamente."}
+                            {maintenanceMode ? 'Las acciones críticas están limitadas para usuarios.' : 'Todos los sistemas funcionando correctamente.'}
                         </p>
                     </div>
                 </div>
@@ -127,19 +160,20 @@ export default function MaintenanceTab() {
                     <Button
                         variant="outline"
                         size="icon"
-                        className={cn("rounded-2xl h-14 w-14 transition-all", showAudit ? "bg-slate-900 text-white" : "bg-white text-slate-400")}
+                        className={cn('rounded-2xl h-14 w-14 transition-all', showAudit ? 'bg-slate-900 text-white' : 'bg-white text-slate-400')}
                         onClick={() => setShowAudit(!showAudit)}
+                        title="Ver auditoría"
                     >
                         <History className="h-5 w-5" />
                     </Button>
                     <Button
-                        variant={maintenanceMode ? "destructive" : "outline"}
+                        variant={maintenanceMode ? 'destructive' : 'outline'}
                         className="rounded-2xl h-14 px-8 font-black uppercase italic tracking-widest text-[10px]"
                         onClick={() => handleUpdateSetting('platform_maintenance_mode', maintenanceMode ? 'false' : 'true')}
                         disabled={isSaving}
                     >
                         {maintenanceMode ? <ToggleRight className="mr-2 h-5 w-5" /> : <ToggleLeft className="mr-2 h-5 w-5" />}
-                        {maintenanceMode ? "Desactivar Mantenimiento" : "Activar Mantenimiento"}
+                        {maintenanceMode ? 'Desactivar Mantenimiento' : 'Activar Mantenimiento'}
                     </Button>
                 </div>
             </div>
@@ -154,16 +188,13 @@ export default function MaintenanceTab() {
                                 </CardTitle>
                                 <CardDescription className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1">Caja negra del sistema ShareWay Elite.</CardDescription>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                                 {['all', 'update_setting', 'manual_maintenance', 'security'].map((f) => (
                                     <Button
                                         key={f}
                                         variant="ghost"
                                         size="sm"
-                                        className={cn(
-                                            "text-[9px] font-black uppercase tracking-widest rounded-xl h-9 px-4",
-                                            auditFilter === f ? "bg-primary text-white" : "bg-white/5 text-slate-400"
-                                        )}
+                                        className={cn('text-[9px] font-black uppercase tracking-widest rounded-xl h-9 px-4', auditFilter === f ? 'bg-primary text-white' : 'bg-white/5 text-slate-400')}
                                         onClick={() => setAuditFilter(f)}
                                     >
                                         {f.replace('_', ' ')}
@@ -175,37 +206,29 @@ export default function MaintenanceTab() {
                     </CardHeader>
                     <CardContent className="p-0 max-h-[600px] overflow-y-auto custom-scrollbar">
                         <div className="divide-y divide-white/5">
-                            {auditLogs
-                                .filter(log => auditFilter === 'all' || log.action.includes(auditFilter))
-                                .length === 0 ? (
+                            {filteredAuditLogs.length === 0 ? (
                                 <div className="p-16 text-center">
                                     <Activity className="size-12 text-slate-800 mx-auto mb-4 opacity-20" />
                                     <p className="text-slate-500 uppercase font-black text-xs tracking-widest">Sin registros en esta categoría</p>
                                 </div>
                             ) : (
-                                auditLogs
-                                    .filter(log => auditFilter === 'all' || log.action.includes(auditFilter))
-                                    .map((log) => (
-                                        <div key={log.id} className="p-6 flex items-start gap-4 hover:bg-white/5 transition-colors group">
-                                            <div className={cn(
-                                                "size-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5",
-                                                log.action.includes('update') ? "bg-blue-500/10 text-blue-400" : "bg-emerald-500/10 text-emerald-400"
-                                            )}>
+                                filteredAuditLogs.map((log) => {
+                                    const action = log?.action || 'sin_accion';
+                                    return (
+                                        <div key={log.id || `${action}-${log.created_at}`} className="p-6 flex items-start gap-4 hover:bg-white/5 transition-colors group">
+                                            <div className={cn('size-10 rounded-xl flex items-center justify-center shrink-0 border border-white/5', action.includes('update') ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400')}>
                                                 <Activity className="size-5" />
                                             </div>
-                                            <div className="flex-1 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-3">
-                                                        <p className="text-xs font-black uppercase italic tracking-tight text-white">{log.action.replace(/_/g, ' ')}</p>
-                                                        <Badge className={cn(
-                                                            "text-[7px] font-black uppercase px-2 h-4",
-                                                            log.action.includes('update') ? "bg-blue-500" : "bg-emerald-500"
-                                                        )}>
-                                                            {log.action.split('_')[0]}
+                                            <div className="flex-1 space-y-2 min-w-0">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <p className="text-xs font-black uppercase italic tracking-tight text-white truncate">{action.replace(/_/g, ' ')}</p>
+                                                        <Badge className={cn('text-[7px] font-black uppercase px-2 h-4', action.includes('update') ? 'bg-blue-500' : 'bg-emerald-500')}>
+                                                            {action.split('_')[0]}
                                                         </Badge>
                                                     </div>
-                                                    <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
-                                                        <Clock className="size-3" /> {format(new Date(log.created_at), "dd MMM HH:mm:ss", { locale: es })}
+                                                    <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1 shrink-0">
+                                                        <Clock className="size-3" /> {formatLogDate(log.created_at)}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
@@ -213,29 +236,29 @@ export default function MaintenanceTab() {
                                                         <User className="size-3 text-primary" />
                                                     </div>
                                                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{log.admin_name || 'Admin Sistema'}</p>
-                                                    <span className="text-[8px] text-slate-600 font-mono">ID: {log.admin_id?.split('-')[0]}...</span>
+                                                    <span className="text-[8px] text-slate-600 font-mono">ID: {log.admin_id?.split('-')[0] || 'sistema'}...</span>
                                                 </div>
-
                                                 {log.target_key && (
                                                     <div className="mt-3 text-[10px] bg-black/40 p-4 rounded-2xl border border-white/5 space-y-2 font-mono overflow-hidden">
                                                         <div className="flex items-center justify-between border-b border-white/5 pb-2">
                                                             <span className="text-primary font-black uppercase tracking-tighter">Parámetro: {log.target_key}</span>
                                                         </div>
                                                         <div className="grid grid-cols-2 gap-4 pt-1">
-                                                            <div className="space-y-1">
+                                                            <div className="space-y-1 min-w-0">
                                                                 <p className="text-[8px] text-slate-500 uppercase font-black">Antes</p>
                                                                 <p className="text-red-400/80 truncate">{JSON.stringify(log.old_value) || 'NULL'}</p>
                                                             </div>
-                                                            <div className="space-y-1">
+                                                            <div className="space-y-1 min-w-0">
                                                                 <p className="text-[8px] text-emerald-500 uppercase font-black">Después</p>
-                                                                <p className="text-emerald-400 font-bold truncate">{JSON.stringify(log.new_value)}</p>
+                                                                <p className="text-emerald-400 font-bold truncate">{JSON.stringify(log.new_value) || 'NULL'}</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-                                    ))
+                                    );
+                                })
                             )}
                         </div>
                     </CardContent>
@@ -255,8 +278,8 @@ export default function MaintenanceTab() {
                                     { label: 'Notificaciones antiguas', value: health?.notifications_to_clean, icon: Clock },
                                     { label: 'Usuarios suspendidos', value: health?.suspended_users, icon: ShieldAlert },
                                     { label: 'Disputas pendientes', value: health?.disputes_pending, icon: AlertCircle },
-                                ].map((stat, i) => (
-                                    <div key={i} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm group hover:scale-[1.02] transition-transform">
+                                ].map((stat) => (
+                                    <div key={stat.label} className="flex justify-between items-center p-4 bg-white rounded-2xl border border-slate-100 shadow-sm group hover:scale-[1.02] transition-transform">
                                         <div className="flex gap-3 items-center text-[10px] font-black uppercase tracking-widest text-slate-400">
                                             <stat.icon className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors" /> {stat.label}
                                         </div>
@@ -266,7 +289,7 @@ export default function MaintenanceTab() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-none shadow-sm rounded-2xl bg-indigo-50/30 overflow-hidden relative group">
+                        <Card className="border-none shadow-xl rounded-2xl bg-indigo-50 relative overflow-hidden group">
                             <CardHeader className="relative z-10">
                                 <CardTitle className="flex items-center gap-2 text-indigo-900 uppercase italic font-black text-sm">
                                     <RefreshCw className="h-5 w-5 text-indigo-500" /> Mantenimiento Maestro
@@ -292,13 +315,12 @@ export default function MaintenanceTab() {
                         </Card>
                     </div>
 
-                    {/* CATEGORIZED SETTINGS */}
                     <div className="space-y-8">
                         {categorizedSettings.map((category) => (
                             <div key={category.name} className="space-y-4">
                                 <div className="flex items-center gap-3 px-2">
-                                    <div className={cn("p-2 rounded-xl", category.bg)}>
-                                        <category.icon className={cn("size-5", category.color)} />
+                                    <div className={cn('p-2 rounded-xl', category.bg)}>
+                                        <category.icon className={cn('size-5', category.color)} />
                                     </div>
                                     <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-[0.2em]">{category.name}</h3>
                                     <div className="h-px flex-1 bg-slate-100" />
@@ -327,7 +349,7 @@ export default function MaintenanceTab() {
                                                     <div className="relative flex-1">
                                                         <Input
                                                             type="text"
-                                                            defaultValue={setting.value}
+                                                            defaultValue={stringifySettingValue(setting.value)}
                                                             id={`input-${setting.key}`}
                                                             className="h-12 rounded-2xl bg-white border-none shadow-inner font-black text-slate-900 focus-visible:ring-primary/20"
                                                         />
