@@ -124,6 +124,11 @@ const seoLandingRoutes = [
 
 const legalPageRoutes = ['contacto', 'aviso-legal', 'privacidad', 'cookies', 'terminos'];
 
+const hasAdminAccess = (profile) => {
+    const role = String(profile?.role || '').toLowerCase();
+    return profile?.is_admin === true || role === 'admin' || role === 'super_admin';
+};
+
 const FullScreenLoader = ({ text = 'Cargando Elite...' }) => (
     <div className="h-screen flex flex-col items-center justify-center bg-white gap-6 text-left animate-elite-in">
         <div className="relative">
@@ -155,7 +160,7 @@ const ProtectedLayout = ({ user, profile, isLoading, ...rest }) => {
 
 const AdminLayoutWrapper = ({ user, profile, isLoading, ...rest }) => {
     if (isLoading) return <FullScreenLoader text="Verificando Nivel Admin..." />;
-    if (!user || !profile || !profile.is_admin) return <Navigate to="/dashboard" replace />;
+    if (!user || !profile || !hasAdminAccess(profile)) return <Navigate to="/dashboard" replace />;
 
     return (
         <ErrorBoundary level="page">
@@ -325,7 +330,7 @@ function App() {
         }
     }, []);
 
-    const isAdmin = useMemo(() => profile?.role === 'admin' || profile?.is_admin, [profile]);
+    const isAdmin = useMemo(() => hasAdminAccess(profile), [profile]);
     const isAuthenticated = Boolean(session?.user);
     const publicPageFallback = isLoading ? <FullScreenLoader text="Comprobando sesión..." /> : <LandingPage />;
     const guestPageFallback = isLoading ? <FullScreenLoader text="Comprobando sesión..." /> : null;
