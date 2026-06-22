@@ -3,7 +3,7 @@ import { Outlet, useOutletContext, NavLink, useLocation, useNavigate } from 'rea
 import {
   MessageSquare, Car, Wallet, Settings as SettingsIcon,
   Bell, Sparkles, Star, CheckCircle2, LayoutDashboard,
-  Plus, Megaphone
+  Plus, Megaphone, ShieldCheck
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
@@ -22,6 +22,11 @@ const AUDIO_ASSETS = {
   arrival: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
   chat: 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3',
   sos: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3'
+};
+
+const hasAdminAccess = (profile) => {
+  const role = String(profile?.role || '').toLowerCase();
+  return profile?.is_admin === true || role === 'admin' || role === 'super_admin';
 };
 
 const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
@@ -167,6 +172,7 @@ const MainLayout = (props) => {
   if (!context || (context.isLoading && !context.profile)) return null;
 
   const { profile } = context;
+  const isAdmin = context.isAdmin || hasAdminAccess(profile);
 
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
@@ -197,6 +203,7 @@ const MainLayout = (props) => {
         </div>
 
         <div className="hidden lg:flex items-center gap-2">
+          {isAdmin && <Button onClick={() => navigate('/admin/verifications')} className="h-10 rounded-2xl bg-indigo-600 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><ShieldCheck size={14} />Admin</Button>}
           <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
           <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
           <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
@@ -204,6 +211,7 @@ const MainLayout = (props) => {
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
+          {isAdmin && <Button onClick={() => navigate('/admin/verifications')} size="icon" className="size-9 lg:size-11 rounded-xl lg:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" title="Panel admin"><ShieldCheck className="h-4 w-4 lg:h-5 lg:w-5" /></Button>}
           <NotificationCenter user={context.user}>
             <div className="size-9 lg:size-11 bg-white border border-slate-100 rounded-xl lg:rounded-2xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all group relative">
               <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600 group-hover:text-primary transition-colors" />
@@ -236,8 +244,7 @@ const MainLayout = (props) => {
         </div>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-[1000] w-full bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]"
-           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 z-[1000] w-full bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-xl mx-auto px-4 py-2 flex items-center justify-between gap-1 relative h-20">
           <div className="absolute inset-x-8 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-30" />
 
