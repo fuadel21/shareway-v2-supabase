@@ -20,13 +20,24 @@ import MaintenanceTab from './tabs/MaintenanceTab';
 import ClimateTab from './tabs/ClimateTab';
 import CommunitiesTab from './tabs/CommunitiesTab';
 
+const adminTabs = [
+    { val: 'verifications', label: 'DNI/KYC', shortLabel: 'KYC', icon: UserCheck },
+    { val: 'users', label: 'Usuarios', shortLabel: 'Usuarios', icon: Users },
+    { val: 'rides', label: 'Viajes', shortLabel: 'Viajes', icon: Car },
+    { val: 'finance', label: 'Finanzas', shortLabel: 'Finanzas', icon: DollarSign },
+    { val: 'disputes', label: 'Disputas', shortLabel: 'Disputas', icon: AlertCircle },
+    { val: 'communities', label: 'Nodos', shortLabel: 'Nodos', icon: Building2 },
+    { val: 'climate', label: 'Clima', shortLabel: 'Clima', icon: Leaf },
+    { val: 'maintenance', label: 'Soporte', shortLabel: 'Soporte', icon: RefreshCw }
+];
+
 const StatCard = ({ title, value, icon, description, currency = '', loading = false, trend = null }) => (
     <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left group hover:shadow-md transition-all">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">{title}</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between pb-2 p-5 sm:p-6">
+            <CardTitle className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">{title}</CardTitle>
             <div className="bg-primary/5 p-2 rounded-xl text-primary group-hover:scale-110 transition-transform">{icon}</div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-5 sm:px-6 pb-5 sm:pb-6">
             {loading ? (
                 <Skeleton className="h-8 w-3/4" />
             ) : (
@@ -115,100 +126,104 @@ function AdminDashboard() {
         { name: 'Dom', profit: stats?.platform_profit || 0 },
     ];
 
+    const currentTab = adminTabs.find(item => item.val === tab) || adminTabs[0];
+
     return (
-        <div className="space-y-8 text-left p-6 pb-20 max-w-[1600px] mx-auto animate-in fade-in duration-700">
-            <div className="flex flex-col xl:flex-row justify-between items-start gap-8">
-                <div className="space-y-2">
-                    <h1 className="text-4xl font-black tracking-tighter uppercase italic leading-none text-slate-900">Centro de Mando</h1>
-                    <div className="flex items-center gap-3">
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] px-3 py-1 animate-pulse">SISTEMA ONLINE</Badge>
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">ShareWay Elite v2.5</p>
+        <div className="space-y-5 sm:space-y-8 text-left px-3 py-4 sm:p-6 pb-20 max-w-[1600px] mx-auto animate-in fade-in duration-700">
+            <div className="flex flex-col xl:flex-row justify-between items-stretch xl:items-start gap-4 sm:gap-8">
+                <div className="space-y-2 min-w-0">
+                    <h1 className="text-3xl sm:text-4xl font-black tracking-tighter uppercase italic leading-none text-slate-900">Centro de Mando</h1>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[8px] sm:text-[9px] px-3 py-1 animate-pulse">SISTEMA ONLINE</Badge>
+                        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-slate-400">ShareWay Elite v2.5</p>
                     </div>
                 </div>
 
-                <div className="flex-1 max-w-3xl w-full bg-slate-900 rounded-[2.5rem] p-5 flex items-center gap-6 border border-white/10 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] relative overflow-hidden group">
+                <div className="flex-1 max-w-3xl w-full bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 border border-white/10 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] relative overflow-hidden group">
                     <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0%,rgba(59,130,246,0.1)_50%,transparent_100%)] animate-[spin_4s_linear_infinite] pointer-events-none" />
 
-                    <div className="relative size-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
-                        <Activity className="size-6 text-primary animate-pulse" />
-                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
-                        </span>
-                    </div>
-
-                    <div className="flex-1 overflow-hidden relative z-10">
-                        <div className="flex items-center gap-2 mb-1">
-                            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-primary italic">Live Elite Stream</p>
-                            <div className="h-[1px] flex-1 bg-gradient-to-r from-primary/50 to-transparent" />
+                    <div className="relative flex items-center gap-4 min-w-0 flex-1">
+                        <div className="size-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
+                            <Activity className="size-6 text-primary animate-pulse" />
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+                            </span>
                         </div>
 
-                        <div className="h-6 overflow-hidden">
-                            {recentActivity.length > 0 ? (
-                                <div className="flex items-center gap-3 animate-in slide-in-from-bottom-full duration-500">
-                                    {recentActivity[0].action?.includes('RIDE') ? <Car className="size-3 text-emerald-400" /> :
-                                     recentActivity[0].action?.includes('USER') ? <UserCheck className="size-3 text-blue-400" /> :
-                                     <Activity className="size-3 text-amber-400" />}
+                        <div className="min-w-0 flex-1 overflow-hidden relative z-10">
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-primary italic whitespace-nowrap">Live Elite Stream</p>
+                                <div className="h-[1px] flex-1 bg-gradient-to-r from-primary/50 to-transparent" />
+                            </div>
 
-                                    <p className="text-sm font-bold text-white truncate">
-                                        <span className="text-primary italic mr-2">
-                                            {(recentActivity[0].action || 'ACTIVITY').replace(/_/g, ' ')}
-                                        </span>
-                                        {recentActivity[0].new_value?.origin ? (
-                                            <span className="text-slate-400 font-medium">de {recentActivity[0].new_value.origin.substring(0, 15)}...</span>
-                                        ) : (
-                                            <span className="text-slate-400 font-medium italic">Ref: {(recentActivity[0].target_key || '').substring(0, 8)}</span>
-                                        )}
-                                    </p>
-                                </div>
-                            ) : (
-                                <p className="text-xs font-bold text-slate-500 italic animate-pulse">Escaneando red ShareWay...</p>
-                            )}
+                            <div className="min-h-6 overflow-hidden">
+                                {recentActivity.length > 0 ? (
+                                    <div className="flex items-center gap-3 animate-in slide-in-from-bottom-full duration-500 min-w-0">
+                                        {recentActivity[0].action?.includes('RIDE') ? <Car className="size-3 text-emerald-400 shrink-0" /> :
+                                         recentActivity[0].action?.includes('USER') ? <UserCheck className="size-3 text-blue-400 shrink-0" /> :
+                                         <Activity className="size-3 text-amber-400 shrink-0" />}
+
+                                        <p className="text-xs sm:text-sm font-bold text-white truncate">
+                                            <span className="text-primary italic mr-2">
+                                                {(recentActivity[0].action || 'ACTIVITY').replace(/_/g, ' ')}
+                                            </span>
+                                            {recentActivity[0].new_value?.origin ? (
+                                                <span className="text-slate-400 font-medium">de {recentActivity[0].new_value.origin.substring(0, 15)}...</span>
+                                            ) : (
+                                                <span className="text-slate-400 font-medium italic">Ref: {(recentActivity[0].target_key || '').substring(0, 8)}</span>
+                                            )}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs font-bold text-slate-500 italic animate-pulse">Escaneando red ShareWay...</p>
+                                )}
+                            </div>
                         </div>
                     </div>
 
                     <Button
                         variant="ghost"
                         onClick={() => navigate('/admin/maintenance')}
-                        className="relative z-10 text-white hover:bg-white/10 rounded-2xl px-6 h-12 font-black text-[11px] uppercase tracking-tighter gap-3 border border-white/5"
+                        className="relative z-10 w-full sm:w-auto justify-center text-white hover:bg-white/10 rounded-2xl px-6 h-11 sm:h-12 font-black text-[10px] sm:text-[11px] uppercase tracking-widest gap-3 border border-white/5"
                     >
                         Logs <ArrowRight className="size-4" />
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                <Card className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-slate-900 text-white lg:col-span-1 xl:col-span-1 relative group">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+                <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-slate-900 text-white lg:col-span-1 xl:col-span-1 relative group">
                     <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-125 transition-transform duration-700">
                         <DollarSign className="size-32" />
                     </div>
-                    <CardHeader className="p-8 pb-4">
+                    <CardHeader className="p-6 sm:p-8 pb-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tesorería Total</CardTitle>
-                        <div className="text-5xl font-black italic tracking-tighter mt-2 group-hover:text-primary transition-colors">
+                        <div className="text-4xl sm:text-5xl font-black italic tracking-tighter mt-2 group-hover:text-primary transition-colors">
                             {loading ? <Skeleton className="h-12 w-32 bg-slate-800" /> : (stats?.platform_profit || 0).toFixed(2)}<span className="text-2xl ml-1 text-slate-500">€</span>
                         </div>
                     </CardHeader>
-                    <CardContent className="px-8 pb-8">
+                    <CardContent className="px-6 sm:px-8 pb-6 sm:pb-8">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Comisiones por gestión de trayectos e integridad financiera.</p>
                         <Button
                             onClick={handlePayout}
                             disabled={isPayoutLoading || (stats?.platform_profit || 0) <= 0}
-                            className="w-full mt-6 h-14 rounded-2xl bg-white text-slate-900 hover:bg-primary hover:text-white font-black uppercase tracking-tight text-xs shadow-xl active:scale-95 transition-all gap-3"
+                            className="w-full mt-6 h-13 sm:h-14 rounded-2xl bg-white text-slate-900 hover:bg-primary hover:text-white font-black uppercase tracking-tight text-xs shadow-xl active:scale-95 transition-all gap-3"
                         >
                             {isPayoutLoading ? <Loader2 className="animate-spin" /> : <Banknote className="size-5" />} Liquidar Fondos
                         </Button>
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-2 xl:col-span-2 rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden p-8">
-                    <div className="flex items-center justify-between mb-8">
+                <Card className="lg:col-span-2 xl:col-span-2 rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden p-5 sm:p-8">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
                         <div>
-                            <CardTitle className="text-lg font-black italic uppercase tracking-tighter">Salud Financiera</CardTitle>
+                            <CardTitle className="text-base sm:text-lg font-black italic uppercase tracking-tighter">Salud Financiera</CardTitle>
                             <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Evolución de beneficios (Últimos 7 días)</CardDescription>
                         </div>
-                        <Badge className="bg-blue-50 text-blue-600 border-none font-black px-3">+12% vs sem. pasada</Badge>
+                        <Badge className="w-fit bg-blue-50 text-blue-600 border-none font-black px-3">+12% vs sem. pasada</Badge>
                     </div>
-                    <div className="h-[200px] w-full mt-4">
+                    <div className="h-[180px] sm:h-[200px] w-full mt-4">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
                                 <defs>
@@ -230,28 +245,28 @@ function AdminDashboard() {
                     </div>
                 </Card>
 
-                <div className="grid gap-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                     <StatCard title="Ecología" value={parseFloat(stats?.co2_saved_kg || 0).toFixed(1)} currency="kg" icon={<Leaf />} trend={5.2} loading={loading} />
                     <StatCard title="Comunidad" value={stats?.active_users || 0} icon={<Users />} trend={1.8} loading={loading} />
                 </div>
             </div>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden min-h-[700px] bg-white">
-                <CardContent className="p-4 lg:p-8">
+            <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-xl overflow-hidden min-h-[700px] bg-white">
+                <CardContent className="p-3 sm:p-4 lg:p-8">
                     <Tabs value={tab} onValueChange={(v) => navigate(`/admin/${v}`)} className="w-full">
-                        <TabsList className="flex w-full overflow-x-auto mb-10 bg-slate-50 p-1.5 rounded-[1.5rem] gap-1 no-scrollbar justify-start border border-slate-100/50">
-                            {[
-                                { val: 'verifications', label: 'DNI/KYC', icon: UserCheck },
-                                { val: 'users', label: 'Usuarios', icon: Users },
-                                { val: 'rides', label: 'Viajes', icon: Car },
-                                { val: 'finance', label: 'Finanzas', icon: DollarSign },
-                                { val: 'disputes', label: 'Disputas', icon: AlertCircle },
-                                { val: 'communities', label: 'Nodos', icon: Building2 },
-                                { val: 'climate', label: 'Clima', icon: Leaf },
-                                { val: 'maintenance', label: 'Soporte', icon: RefreshCw }
-                            ].map((t) => (
-                                <TabsTrigger key={t.val} value={t.val} className="rounded-xl px-5 py-3 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all whitespace-nowrap flex-shrink-0 text-[10px] font-black uppercase tracking-widest gap-2 h-12 border border-transparent data-[state=active]:border-slate-100">
-                                    <t.icon className="h-4 w-4" /> {t.label}
+                        <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3 px-1">
+                            <div className="min-w-0">
+                                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Módulo activo</p>
+                                <h2 className="text-lg font-black uppercase italic tracking-tighter text-slate-900 truncate">{currentTab.label}</h2>
+                            </div>
+                            <Badge className="shrink-0 bg-slate-900 text-white border-none font-black text-[8px] uppercase tracking-widest px-3 py-1">Admin</Badge>
+                        </div>
+
+                        <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 mb-8 sm:mb-10 bg-slate-50 p-1.5 sm:p-2 rounded-[1.5rem] gap-1.5 sm:gap-2 border border-slate-100/50">
+                            {adminTabs.map((t) => (
+                                <TabsTrigger key={t.val} value={t.val} className="min-h-[56px] sm:min-h-[60px] rounded-2xl px-2 sm:px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest gap-1.5 sm:gap-2 border border-transparent data-[state=active]:border-slate-100 flex flex-col sm:flex-row items-center justify-center leading-none">
+                                    <t.icon className="h-4 w-4 shrink-0" />
+                                    <span className="truncate max-w-full">{t.shortLabel}</span>
                                 </TabsTrigger>
                             ))}
                         </TabsList>
