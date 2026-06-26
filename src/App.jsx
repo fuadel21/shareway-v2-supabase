@@ -15,6 +15,7 @@ import MainLayout from './components/MainLayout.jsx';
 import AdminLayout from './pages/Admin/AdminLayout.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import SEOLandingPage from './components/SEOLandingPage.jsx';
+import GrowthSEOPage from './components/GrowthSEOPage.jsx';
 import LegalPage from './components/LegalPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
@@ -377,6 +378,9 @@ function App() {
                     {seoLandingRoutes.map((route) => (
                         <Route key={route} path={`/${route}`} element={<SEOLandingPage />} />
                     ))}
+                    <Route path="/ciudades/:slug" element={<GrowthSEOPage pageType="city" />} />
+                    <Route path="/rutas/:origin/:destination" element={<GrowthSEOPage pageType="route" />} />
+                    <Route path="/aeropuertos/:slug" element={<GrowthSEOPage pageType="airport" />} />
                     {legalPageRoutes.map((route) => (
                         <Route key={route} path={`/${route}`} element={<LegalPage />} />
                     ))}
