@@ -7,9 +7,9 @@ import {
   Smartphone, Leaf, Star
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import ReferralCard from '@/components/referrals/ReferralCard.jsx';
 
 const SettingItem = ({ icon: Icon, label, onClick, color, sublabel, badge }) => (
   <button
@@ -44,7 +44,7 @@ const SectionHeader = ({ title, icon: Icon, color }) => {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { profile, handleSignOut } = useOutletContext();
+  const { profile, user, handleSignOut } = useOutletContext();
   const { t } = useTranslation();
 
   return (
@@ -72,6 +72,7 @@ const Settings = () => {
               color="bg-slate-900"
               onClick={() => navigate('/profile/edit')}
             />
+            <ReferralCard profile={profile} user={user} />
             <SettingItem
               icon={Leaf}
               label={t('settings.environmental_impact')}
