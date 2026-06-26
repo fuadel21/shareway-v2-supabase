@@ -1,18 +1,26 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Label } from '@/components/ui/label.jsx';
-import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck, Languages } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck, Languages, Gift } from 'lucide-react';
 import '../App.css';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
+import { getPendingReferralCode, savePendingReferralCode } from '@/lib/referrals.js';
 
 function Register() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const referralCode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const code = params.get('ref') || getPendingReferralCode();
+    if (code) savePendingReferralCode(code);
+    return code ? String(code).toUpperCase() : '';
+  }, [location.search]);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +56,7 @@ function Register() {
           data: {
             display_name: formData.name,
             phone: formData.phone || '',
+            referral_code: referralCode || null,
           }
         }
       });
@@ -61,7 +70,8 @@ function Register() {
             record: {
               id: data.user?.id,
               email: formData.email,
-              display_name: formData.name
+              display_name: formData.name,
+              referral_code: referralCode || null
             }
           }
         });
@@ -87,7 +97,7 @@ function Register() {
     } finally {
       setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4 py-20">
@@ -126,6 +136,11 @@ function Register() {
               {t('register.subtitle')}
             </CardDescription>
           </div>
+          {referralCode && (
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-orange-600 border border-orange-100">
+              <Gift className="h-4 w-4" /> Invitación activa: {referralCode}
+            </div>
+          )}
         </CardHeader>
 
         <form onSubmit={handleSubmit}>
@@ -201,7 +216,7 @@ function Register() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
 
 export default Register;
