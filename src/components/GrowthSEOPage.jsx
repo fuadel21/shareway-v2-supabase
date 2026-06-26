@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { ArrowRight, Car, Leaf, MapPin, Plane, Route, ShieldCheck, Users, Wallet } from 'lucide-react';
-import { airportPages, cityToPath, findCity, findRoute, popularCities, popularRoutes, routeToPath, seoFaqs } from '@/data/growthSeoData';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowRight, Car, Copy, Leaf, MapPin, Plane, Route, Share2, ShieldCheck, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
+import { airportPages, cityToPath, findCity, findRoute, popularRoutes, routeToPath, seoFaqs } from '@/data/growthSeoData';
 
 const SITE_URL = 'https://www.shareway.es';
 
@@ -54,6 +55,7 @@ const getRoutePage = (originSlug, destinationSlug) => {
     canonicalPath: routeToPath(route),
     primaryCta: 'Buscar esta ruta',
     secondaryCta: 'Publicar viaje',
+    shareText: `Mira esta ruta para compartir coche de ${origin} a ${destination} en ShareWay`,
     stats: [
       ['Ruta', `${origin} → ${destination}`],
       ['Demanda', route.demand],
@@ -85,6 +87,7 @@ const getCityPage = (citySlug) => {
     canonicalPath: cityToPath({ slug: citySlug }),
     primaryCta: `Buscar viajes en ${name}`,
     secondaryCta: 'Publicar trayecto',
+    shareText: `Mira ShareWay para compartir coche en ${name}`,
     stats: [
       ['Ciudad', name],
       ['Zona', city?.region || 'España'],
@@ -115,6 +118,7 @@ const getAirportPage = (airportSlug) => {
     canonicalPath: `/aeropuertos/${airportSlug}/`,
     primaryCta: 'Buscar trayecto al aeropuerto',
     secondaryCta: 'Publicar salida',
+    shareText: `Mira esta página para compartir coche al ${name} con ShareWay`,
     stats: [
       ['Destino', name],
       ['Ciudad base', city],
@@ -132,7 +136,6 @@ const getAirportPage = (airportSlug) => {
 
 const GrowthSEOPage = ({ pageType }) => {
   const params = useParams();
-  const location = useLocation();
 
   const page = useMemo(() => {
     if (pageType === 'route') return getRoutePage(params.origin, params.destination);
@@ -142,6 +145,30 @@ const GrowthSEOPage = ({ pageType }) => {
 
   const canonicalUrl = `${SITE_URL}${page.canonicalPath}`;
   const Icon = page.icon;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(canonicalUrl);
+      toast.success('Enlace copiado');
+    } catch (error) {
+      toast.error('No se pudo copiar el enlace');
+    }
+  };
+
+  const handleNativeShare = async () => {
+    const payload = { title: page.title, text: page.shareText || page.description, url: canonicalUrl };
+    if (navigator.share) {
+      try {
+        await navigator.share(payload);
+      } catch (error) {
+        if (error?.name !== 'AbortError') toast.error('No se pudo compartir');
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
+
+  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(`${page.shareText || page.description}\n${canonicalUrl}`)}`;
 
   useEffect(() => {
     document.title = page.title;
@@ -223,6 +250,17 @@ const GrowthSEOPage = ({ pageType }) => {
               <Link to="/publish" className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 font-black uppercase tracking-widest text-white hover:bg-white/20">
                 {page.secondaryCta}
               </Link>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <button onClick={handleNativeShare} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white/10 px-4 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20">
+                <Share2 className="mr-2 h-4 w-4" /> Compartir
+              </button>
+              <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-500/20 px-4 text-xs font-black uppercase tracking-widest text-emerald-200 hover:bg-emerald-500/30">
+                WhatsApp
+              </a>
+              <button onClick={handleCopyLink} className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/15 px-4 text-xs font-black uppercase tracking-widest text-white hover:bg-white/10">
+                <Copy className="mr-2 h-4 w-4" /> Copiar enlace
+              </button>
             </div>
           </div>
 
