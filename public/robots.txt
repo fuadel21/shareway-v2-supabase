@@ -3,3 +3,6 @@ Allow: /
 
 Sitemap: https://www.shareway.es/sitemap.xml
 Sitemap: https://www.shareway.es/seo-sitemap.xml
+Sitemap: https://www.shareway.es/sitemap-growth-cities.xml
+Sitemap: https://www.shareway.es/sitemap-growth-routes.xml
+Sitemap: https://www.shareway.es/sitemap-growth-airports.xml
