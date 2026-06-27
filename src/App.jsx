@@ -17,6 +17,7 @@ import LandingPage from './components/LandingPage.jsx';
 import SEOLandingPage from './components/SEOLandingPage.jsx';
 import GrowthSEOPage from './components/GrowthSEOPage.jsx';
 import InviteLandingPage from './components/InviteLandingPage.jsx';
+import GrowthPageTracker from './components/analytics/GrowthPageTracker.jsx';
 import LegalPage from './components/LegalPage.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
@@ -355,6 +356,7 @@ function App() {
     return (
         <ErrorBoundary level="root">
             <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <GrowthPageTracker />
                 <Toaster
                     position="top-center"
                     closeButton
