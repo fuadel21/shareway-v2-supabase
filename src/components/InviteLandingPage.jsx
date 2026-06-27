@@ -2,12 +2,17 @@ import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowRight, Car, Gift, Leaf, ShieldCheck, Users } from 'lucide-react';
 import { savePendingReferralCode } from '@/lib/referrals.js';
+import { trackGrowthEvent } from '@/lib/growthAnalytics.js';
 
 const InviteLandingPage = () => {
   const { code } = useParams();
 
   useEffect(() => {
     savePendingReferralCode(code);
+    trackGrowthEvent('invite_landing_view', {
+      referralCode: code,
+      metadata: { page: 'invite_landing' }
+    });
     document.title = 'Invitación a ShareWay | Compartir coche y ahorrar';
     const description = 'Únete a ShareWay con una invitación y empieza a compartir coche, ahorrar en trayectos y reducir emisiones.';
     let meta = document.querySelector('meta[name="description"]');
