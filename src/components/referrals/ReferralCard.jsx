@@ -2,15 +2,23 @@ import React from 'react';
 import { Copy, Gift, Send, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
-import { getReferralMessage, getReferralUrl } from '@/lib/referrals.js';
+import { getReferralCode, getReferralMessage, getReferralUrl } from '@/lib/referrals.js';
+import { trackGrowthEvent } from '@/lib/growthAnalytics.js';
 
 const ReferralCard = ({ profile, user }) => {
+  const referralCode = getReferralCode(profile, user);
   const referralUrl = getReferralUrl(profile, user);
   const message = getReferralMessage(profile, user);
+
+  const trackShare = (method) => trackGrowthEvent('referral_link_shared', {
+    referralCode,
+    metadata: { method }
+  });
 
   const copyInvite = async () => {
     try {
       await navigator.clipboard.writeText(referralUrl);
+      await trackShare('copy_link');
       toast.success('Invitación copiada', { description: 'Comparte tu enlace para invitar usuarios.' });
     } catch (error) {
       toast.error('No se pudo copiar el enlace');
@@ -25,9 +33,11 @@ const ReferralCard = ({ profile, user }) => {
           text: message,
           url: referralUrl,
         });
+        await trackShare('native_share');
         return;
       }
       await navigator.clipboard.writeText(message);
+      await trackShare('copy_message');
       toast.success('Mensaje copiado', { description: 'Pégalo en WhatsApp, Telegram o redes.' });
     } catch (error) {
       if (error?.name !== 'AbortError') {
