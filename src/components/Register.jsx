@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { getPendingReferralCode, savePendingReferralCode } from '@/lib/referrals.js';
+import { trackGrowthEvent } from '@/lib/growthAnalytics.js';
 
 function Register() {
   const { t, i18n } = useTranslation();
@@ -63,6 +64,14 @@ function Register() {
 
       if (signUpError) throw signUpError;
 
+      await trackGrowthEvent('signup_completed', {
+        referralCode: referralCode || null,
+        metadata: {
+          has_referral: Boolean(referralCode),
+          email_domain: formData.email.split('@')[1] || null
+        }
+      });
+
       // Notificar al administrador (Esperamos el envío antes de navegar)
       try {
         await supabase.functions.invoke('notify-admin-new-user', {
@@ -101,8 +110,6 @@ function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background relative overflow-hidden px-4 py-20">
-      
-      {/* Botón Flotante de Idioma */}
       <div className="absolute top-6 right-6 z-50">
         <Button 
           variant="outline" 
@@ -114,7 +121,6 @@ function Register() {
         </Button>
       </div>
 
-      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/20 rounded-full blur-[120px] animate-pulse delay-700" />
