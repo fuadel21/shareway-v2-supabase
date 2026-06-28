@@ -4,7 +4,7 @@ import {
   History, Map as MapIcon, Shield, Fingerprint,
   ChevronRight, LogOut, User, Bell, Palette,
   Landmark, Wallet as WalletIcon,
-  Smartphone, Leaf, Star
+  Smartphone, Leaf, Star, FlaskConical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +44,7 @@ const SectionHeader = ({ title, icon: Icon, color }) => {
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { profile, user, handleSignOut } = useOutletContext();
+  const { profile, user, isAdmin, handleSignOut } = useOutletContext();
   const { t } = useTranslation();
 
   return (
@@ -163,6 +163,21 @@ const Settings = () => {
             />
           </div>
         </section>
+
+        {isAdmin && (
+          <section>
+            <SectionHeader title="Herramientas internas" icon={FlaskConical} color="text-cyan-500" />
+            <div className="grid grid-cols-1 gap-4">
+              <SettingItem
+                icon={FlaskConical}
+                label="Test de notificaciones"
+                sublabel="Validar RLS, Realtime y contador"
+                color="bg-cyan-600"
+                onClick={() => navigate('/settings/notification-test')}
+              />
+            </div>
+          </section>
+        )}
 
         <div className="pt-6 md:pt-10">
           <Button
