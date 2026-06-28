@@ -15,12 +15,11 @@ export default function NotificationCleanupActions() {
       toast.success('Notificaciones limpiadas', {
         description: `${deleted} notificación(es) leídas eliminadas.`,
       });
-      window.dispatchEvent(new CustomEvent('shareway:notifications-refresh'));
+      setTimeout(() => window.location.reload(), 650);
     } catch (error) {
       toast.error('No se pudieron limpiar', {
         description: error?.message || 'Revisa la función SQL en Supabase.',
       });
-    } finally {
       setLoading(false);
     }
   };
