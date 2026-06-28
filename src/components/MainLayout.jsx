@@ -3,7 +3,7 @@ import { Outlet, useOutletContext, NavLink, useLocation, useNavigate } from 'rea
 import {
   MessageSquare, Car, Wallet, Settings as SettingsIcon,
   Bell, Sparkles, Star, CheckCircle2, LayoutDashboard,
-  Plus, Megaphone, ShieldCheck
+  Plus, Megaphone, ShieldCheck, CalendarDays
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from '@/lib/utils';
@@ -35,9 +35,9 @@ const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpeci
 
   return (
     <NavLink to={to} className={cn(
-      "flex flex-col items-center justify-center min-w-[48px] min-h-[44px]",
+      "flex flex-col items-center justify-center min-w-[44px] min-h-[44px]",
       "transition-all duration-300 relative group",
-      isDesktop ? "px-3 lg:min-w-[84px]" : "px-2",
+      isDesktop ? "px-2 lg:min-w-[76px]" : "px-1.5",
       isActive ? activeColor : 'text-slate-400 hover:text-slate-600',
     )}>
       <div className={cn(
@@ -62,7 +62,7 @@ const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpeci
         )}
       </div>
       <span className={cn(
-        "text-[7px] lg:text-[8px] font-black tracking-[0.1em] uppercase mt-1.5 lg:mt-2 text-center w-full truncate",
+        "text-[7px] lg:text-[8px] font-black tracking-[0.08em] uppercase mt-1.5 lg:mt-2 text-center w-full truncate",
         isActive ? activeColor : (isSpecial && badge > 0) ? "text-emerald-600" : "text-slate-500"
       )}>
         {label}
@@ -177,6 +177,7 @@ const MainLayout = (props) => {
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
     { to: '/my-rides', icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
+    { to: '/calendar', icon: CalendarDays, label: 'Agenda', color: 'text-blue-600' },
     { to: '/my-requests', icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600' },
     {
       to: '/chats',
@@ -204,6 +205,7 @@ const MainLayout = (props) => {
 
         <div className="hidden lg:flex items-center gap-2">
           {isAdmin && <Button onClick={() => navigate('/admin/verifications')} className="h-10 rounded-2xl bg-indigo-600 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><ShieldCheck size={14} />Admin</Button>}
+          <Button onClick={() => navigate('/calendar')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CalendarDays size={14} />Agenda</Button>
           <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
           <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
           <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
@@ -245,7 +247,7 @@ const MainLayout = (props) => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-[1000] w-full bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="max-w-xl mx-auto px-4 py-2 flex items-center justify-between gap-1 relative h-20">
+        <div className="max-w-xl mx-auto px-3 py-2 flex items-center justify-between gap-0.5 relative h-20">
           <div className="absolute inset-x-8 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-30" />
 
           {navItems.map(item => (
