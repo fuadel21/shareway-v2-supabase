@@ -41,6 +41,7 @@ import ComingSoon from './components/ComingSoon.jsx';
 import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
 import ActivityCenter from './components/ActivityCenter.jsx';
+import NotificationsPage from './pages/NotificationsPage.jsx';
 import AdminStats from './pages/AdminStats.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import AdminUserProfile from './pages/Admin/AdminUserProfile.jsx';
@@ -399,6 +400,7 @@ function App() {
                         <Route path="my-requests" element={<MyRequests />} />
                         <Route path="chats" element={<ChatList />} />
                         <Route path="chat/:chatId" element={<Chat />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
 
                         <Route path="settings" element={<Settings />} />
                         <Route path="settings/vehicle" element={<ComingSoon title="Gestión de Vehículo" />} />
