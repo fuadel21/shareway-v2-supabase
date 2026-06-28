@@ -135,9 +135,9 @@ function NotificationRow({ notification, onOpen, onRead, onPin }) {
   );
 }
 
-export default function NotificationCenterPanel({ user, children }) {
+export default function NotificationCenterPanel({ user, children, fullPage = false }) {
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(fullPage);
   const [activeFilter, setActiveFilter] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -148,7 +148,7 @@ export default function NotificationCenterPanel({ user, children }) {
     readOne,
     readAll,
     pinOne,
-  } = useNotifications(user, { limit: 80, enableToasts: !open });
+  } = useNotifications(user, { limit: fullPage ? 200 : 80, enableToasts: !open && !fullPage });
 
   const filteredNotifications = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -176,97 +176,106 @@ export default function NotificationCenterPanel({ user, children }) {
     }
   };
 
-  return (
-    <div className="relative">
-      <button type="button" onClick={() => setOpen((value) => !value)} className="relative block" aria-label="Abrir notificaciones">
-        {children || (
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm">
-            <Bell className="h-5 w-5 text-slate-600" />
-          </span>
-        )}
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[10px] font-black text-white shadow-lg">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-12 z-[1200] w-[min(92vw,420px)] overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl shadow-slate-900/10">
-          <div className="border-b border-slate-100 bg-slate-50/80 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-black tracking-tight text-slate-900">Notificaciones</h2>
-                <p className="text-xs font-semibold text-slate-500">{unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                {unreadCount > 0 && (
-                  <Button type="button" variant="outline" size="sm" onClick={readAll} className="rounded-2xl text-[11px] font-black uppercase tracking-widest">
-                    Leer todo
-                  </Button>
-                )}
-                <Button type="button" variant="ghost" size="icon" onClick={() => setOpen(false)} className="rounded-2xl">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-3 py-2 shadow-sm">
-              <Search className="h-4 w-4 text-slate-400" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar aviso..."
-                className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-              />
-            </div>
-
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-              {FILTERS.map((filter) => (
-                <button
-                  key={filter.value}
-                  type="button"
-                  onClick={() => setActiveFilter(filter.value)}
-                  className={cn(
-                    'shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors',
-                    activeFilter === filter.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-100',
-                  )}
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
+  const panel = (
+    <div className={cn(
+      'overflow-hidden border border-slate-100 bg-white shadow-2xl shadow-slate-900/10',
+      fullPage ? 'relative w-full rounded-[2rem]' : 'absolute right-0 top-12 z-[1200] w-[min(92vw,420px)] rounded-3xl',
+    )}>
+      <div className="border-b border-slate-100 bg-slate-50/80 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-black tracking-tight text-slate-900">Notificaciones</h2>
+            <p className="text-xs font-semibold text-slate-500">{unreadCount > 0 ? `${unreadCount} sin leer` : 'Todo al día'}</p>
           </div>
-
-          <div className="max-h-[460px] space-y-2 overflow-y-auto p-3">
-            {loading && (
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">
-                Cargando notificaciones...
-              </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <Button type="button" variant="outline" size="sm" onClick={readAll} className="rounded-2xl text-[11px] font-black uppercase tracking-widest">
+                Leer todo
+              </Button>
             )}
-
-            {!loading && filteredNotifications.length === 0 && (
-              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
-                  <Bell className="h-5 w-5 text-slate-400" />
-                </div>
-                <h3 className="text-sm font-black text-slate-800">Sin notificaciones</h3>
-                <p className="mt-1 text-xs font-medium text-slate-500">Aquí aparecerán reservas, mensajes, avisos y recordatorios.</p>
-              </div>
+            {!fullPage && (
+              <Button type="button" variant="ghost" size="icon" onClick={() => setOpen(false)} className="rounded-2xl">
+                <X className="h-4 w-4" />
+              </Button>
             )}
-
-            {!loading && filteredNotifications.map((notification) => (
-              <NotificationRow
-                key={notification.id}
-                notification={notification}
-                onOpen={openNotification}
-                onRead={readOne}
-                onPin={pinOne}
-              />
-            ))}
           </div>
         </div>
+
+        <div className="mt-4 flex items-center gap-2 rounded-2xl border border-slate-100 bg-white px-3 py-2 shadow-sm">
+          <Search className="h-4 w-4 text-slate-400" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar aviso..."
+            className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+          />
+        </div>
+
+        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setActiveFilter(filter.value)}
+              className={cn(
+                'shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors',
+                activeFilter === filter.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-100',
+              )}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={cn('space-y-2 overflow-y-auto p-3', fullPage ? 'max-h-[calc(100vh-280px)]' : 'max-h-[460px]')}>
+        {loading && (
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 text-center text-sm font-bold text-slate-500">
+            Cargando notificaciones...
+          </div>
+        )}
+
+        {!loading && filteredNotifications.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm">
+              <Bell className="h-5 w-5 text-slate-400" />
+            </div>
+            <h3 className="text-sm font-black text-slate-800">Sin notificaciones</h3>
+            <p className="mt-1 text-xs font-medium text-slate-500">Aquí aparecerán reservas, mensajes, avisos y recordatorios.</p>
+          </div>
+        )}
+
+        {!loading && filteredNotifications.map((notification) => (
+          <NotificationRow
+            key={notification.id}
+            notification={notification}
+            onOpen={openNotification}
+            onRead={readOne}
+            onPin={pinOne}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative">
+      {!fullPage && (
+        <button type="button" onClick={() => setOpen((value) => !value)} className="relative block" aria-label="Abrir notificaciones">
+          {children || (
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-100 bg-white shadow-sm">
+              <Bell className="h-5 w-5 text-slate-600" />
+            </span>
+          )}
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[10px] font-black text-white shadow-lg">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
       )}
+
+      {(open || fullPage) && panel}
     </div>
   );
 }
