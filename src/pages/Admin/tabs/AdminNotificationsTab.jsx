@@ -16,7 +16,7 @@ const SEGMENTS = [
   { id: 'drivers', label: 'Conductores', description: 'Usuarios con perfil conductor', icon: BellRing },
   { id: 'passengers', label: 'Pasajeros', description: 'Usuarios pasajeros', icon: Megaphone },
   { id: 'city', label: 'Ciudad', description: 'Filtrar por ciudad', icon: MapPin },
-  { id: 'single', label: 'Usuario', description: 'Enviar por email concreto', icon: Mail },
+  { id: 'single', label: 'Usuario concreto', description: 'Enviar por email concreto', icon: Mail },
 ];
 
 const PRIORITIES = [
@@ -61,6 +61,7 @@ export default function AdminNotificationsTab() {
     if (!title.trim()) return toast.error('El título es obligatorio');
     if (!message.trim()) return toast.error('El mensaje es obligatorio');
     if (segment === 'city' && !city.trim()) return toast.error('Introduce una ciudad');
+    if (segment === 'single' && !email.trim()) return toast.error('Introduce el email del usuario');
 
     setIsSending(true);
     setLastResult(null);
@@ -76,12 +77,8 @@ export default function AdminNotificationsTab() {
           message: message.trim(),
           actionUrl: actionUrl.trim() || '/notifications',
           priority,
-          metadata: {
-            channel: 'admin_panel',
-            target_email: userProfile.email,
-          },
         });
-        setLastResult({ count: result ? 1 : 0, mode: 'single' });
+        setLastResult({ count: result?.length || 0, mode: 'usuario' });
       } else {
         result = await sendAdminNotificationBySegment({
           segment,
@@ -128,8 +125,19 @@ export default function AdminNotificationsTab() {
 
         <CardContent className="p-6 sm:p-8 space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Segmento</label>
-            <div className="grid gap-2 sm:grid-cols-5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Destinatario</label>
+
+            <select
+              value={segment}
+              onChange={(event) => setSegment(event.target.value)}
+              className="block sm:hidden w-full rounded-2xl border border-primary/20 bg-white px-4 py-4 text-sm font-black uppercase tracking-widest text-slate-900 outline-none shadow-sm focus:border-primary"
+            >
+              {SEGMENTS.map((item) => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+
+            <div className="hidden gap-2 sm:grid sm:grid-cols-5">
               {SEGMENTS.map((item) => {
                 const Icon = item.icon;
                 const active = segment === item.id;
@@ -149,6 +157,10 @@ export default function AdminNotificationsTab() {
                 );
               })}
             </div>
+
+            <p className="text-[10px] font-bold text-slate-400 leading-relaxed">
+              Seleccionado: <span className="text-primary font-black">{selectedSegment.label}</span> · {selectedSegment.description}
+            </p>
           </div>
 
           {segment === 'city' && (
@@ -164,14 +176,15 @@ export default function AdminNotificationsTab() {
           )}
 
           {segment === 'single' && (
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Email del usuario</label>
+            <div className="space-y-2 rounded-3xl border border-primary/10 bg-primary/5 p-4">
+              <label className="text-[10px] font-black uppercase tracking-widest text-primary">Email del usuario concreto</label>
               <input
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="usuario@email.com"
-                className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-bold outline-none focus:border-primary/30 focus:bg-white"
+                className="w-full rounded-2xl border border-primary/20 bg-white px-4 py-3 text-sm font-bold outline-none focus:border-primary"
               />
+              <p className="text-[10px] font-bold text-slate-500">El aviso se enviará solo al perfil asociado a este email.</p>
             </div>
           )}
 
