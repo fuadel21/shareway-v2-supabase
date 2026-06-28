@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { createNotification, NOTIFICATION_TYPES } from './notificationService.js';
 
 /**
  * Obtiene todos los chats del usuario actual enriquecidos.
@@ -135,11 +136,41 @@ export const getOrCreateChat = async (otherUserId, rideId = null) => {
     }
 };
 
+const notifyChatReceivers = async ({ chatId, senderId, content }) => {
+    const { data: chat, error } = await supabase
+        .from('chats')
+        .select('id, participants, ride_id')
+        .eq('id', chatId)
+        .single();
+
+    if (error || !chat?.participants?.length) return;
+
+    const receivers = chat.participants.filter(participantId => String(participantId) !== String(senderId));
+    if (receivers.length === 0) return;
+
+    await Promise.all(receivers.map(receiverId => createNotification({
+        userId: receiverId,
+        actorId: senderId,
+        type: NOTIFICATION_TYPES.CHAT_MESSAGE,
+        title: 'Nuevo mensaje',
+        message: content.length > 120 ? `${content.slice(0, 117)}...` : content,
+        actionUrl: `/chat/${chatId}`,
+        entityType: 'chat',
+        entityId: chatId,
+        priority: 'normal',
+        metadata: {
+            chat_id: chatId,
+            ride_id: chat.ride_id || null,
+        },
+    })));
+};
+
 /**
  * Envío de Mensaje con Validación de Red
  */
 export const sendMessage = async (chatId, senderId, content) => {
-    if (!content?.trim()) return null;
+    const cleanContent = content?.trim();
+    if (!cleanContent) return null;
 
     try {
         const { data, error } = await supabase
@@ -147,7 +178,7 @@ export const sendMessage = async (chatId, senderId, content) => {
             .insert({
                 chat_id: chatId,
                 sender_id: senderId,
-                content: content.trim()
+                content: cleanContent
             })
             .select()
             .single();
@@ -159,6 +190,10 @@ export const sendMessage = async (chatId, senderId, content) => {
             .update({ updated_at: new Date().toISOString() })
             .eq('id', chatId)
             .then(({ error }) => { if (error) console.warn("Timestamp update failed"); });
+
+        // Notificación in-app al resto de participantes. No bloquea el envío del mensaje.
+        notifyChatReceivers({ chatId, senderId, content: cleanContent })
+            .catch((notifyError) => console.warn("Chat notification failed", notifyError));
 
         return data;
     } catch (error) {
