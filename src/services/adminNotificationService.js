@@ -23,6 +23,15 @@ const callAdminAnnouncementRpc = async ({
   return Number(data || 0);
 };
 
+export const getAdminNotificationHistory = async (limit = 20) => {
+  const { data, error } = await supabase.rpc('sw_get_admin_announcement_history', {
+    p_limit: limit,
+  });
+
+  if (error) throw error;
+  return data || [];
+};
+
 export const sendAdminNotificationToUser = async ({
   userId,
   title,
