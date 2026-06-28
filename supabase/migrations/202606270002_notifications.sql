@@ -1,0 +1,123 @@
+-- ShareWay notifications v1
+-- In-app notifications with RLS and realtime-ready indexes.
+
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  actor_id uuid references auth.users(id) on delete set null,
+  type text not null default 'system',
+  title text not null,
+  message text,
+  action_url text,
+  entity_type text,
+  entity_id text,
+  is_read boolean not null default false,
+  read_at timestamptz,
+  is_pinned boolean not null default false,
+  priority text not null default 'normal' check (priority in ('low', 'normal', 'high', 'critical')),
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create index if not exists notifications_user_created_idx on public.notifications (user_id, created_at desc);
+create index if not exists notifications_user_unread_idx on public.notifications (user_id, is_read, created_at desc);
+create index if not exists notifications_user_type_idx on public.notifications (user_id, type, created_at desc);
+create index if not exists notifications_entity_idx on public.notifications (entity_type, entity_id) where entity_type is not null and entity_id is not null;
+
+alter table public.notifications enable row level security;
+
+-- Users can read their own notifications.
+drop policy if exists "Users can read own notifications" on public.notifications;
+create policy "Users can read own notifications"
+on public.notifications
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+-- Users can mark their own notifications as read/unread, but cannot reassign them.
+drop policy if exists "Users can update own notifications" on public.notifications;
+create policy "Users can update own notifications"
+on public.notifications
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+-- Admins can create notifications for any user.
+drop policy if exists "Admins can create notifications" on public.notifications;
+create policy "Admins can create notifications"
+on public.notifications
+for insert
+to authenticated
+with check (
+  exists (
+    select 1
+    from public.profiles admin_profile
+    where admin_profile.id = auth.uid()
+      and (
+        admin_profile.is_admin = true
+        or admin_profile.role in ('admin', 'super_admin')
+      )
+  )
+);
+
+-- Users can create notifications for another user only as themselves as actor.
+-- This allows app flows such as chat/request notifications without service-role exposure.
+drop policy if exists "Users can create actor notifications" on public.notifications;
+create policy "Users can create actor notifications"
+on public.notifications
+for insert
+to authenticated
+with check (actor_id = auth.uid() and user_id <> auth.uid());
+
+-- Admins can read all notifications for moderation/support.
+drop policy if exists "Admins can read all notifications" on public.notifications;
+create policy "Admins can read all notifications"
+on public.notifications
+for select
+to authenticated
+using (
+  auth.uid() = user_id
+  or exists (
+    select 1
+    from public.profiles admin_profile
+    where admin_profile.id = auth.uid()
+      and (
+        admin_profile.is_admin = true
+        or admin_profile.role in ('admin', 'super_admin')
+      )
+  )
+);
+
+create or replace function public.touch_notifications_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  if new.is_read = true and old.is_read = false and new.read_at is null then
+    new.read_at = now();
+  end if;
+  if new.is_read = false then
+    new.read_at = null;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists notifications_touch_updated_at on public.notifications;
+create trigger notifications_touch_updated_at
+before update on public.notifications
+for each row
+execute function public.touch_notifications_updated_at();
+
+-- Optional helper for admin dashboards.
+create or replace view public.notification_unread_counts as
+select
+  user_id,
+  count(*) filter (where is_read = false) as unread_count,
+  count(*) as total_count,
+  max(created_at) as latest_at
+from public.notifications
+group by user_id;
