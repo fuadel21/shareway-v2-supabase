@@ -14,6 +14,52 @@ export const NOTIFICATION_TYPES = {
   ADMIN_ANNOUNCEMENT: 'admin_announcement',
 };
 
+const DEFAULT_NOTIFICATION_SETTINGS = {
+  messages: true,
+  rideUpdates: true,
+  reminders: true,
+  reviews: true,
+  adminAnnouncements: true,
+  promotions: false,
+};
+
+const TYPE_TO_PREFERENCE = {
+  [NOTIFICATION_TYPES.CHAT_MESSAGE]: 'messages',
+  [NOTIFICATION_TYPES.RIDE_REQUEST]: 'rideUpdates',
+  [NOTIFICATION_TYPES.REQUEST_ACCEPTED]: 'rideUpdates',
+  [NOTIFICATION_TYPES.REQUEST_REJECTED]: 'rideUpdates',
+  [NOTIFICATION_TYPES.RIDE_CANCELLED]: 'rideUpdates',
+  [NOTIFICATION_TYPES.RIDE_REMINDER]: 'reminders',
+  [NOTIFICATION_TYPES.REVIEW]: 'reviews',
+  [NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT]: 'adminAnnouncements',
+};
+
+const shouldDeliverNotification = async ({ userId, type, priority }) => {
+  if (!userId) return false;
+  if (priority === 'critical') return true;
+
+  const preferenceKey = TYPE_TO_PREFERENCE[type];
+  if (!preferenceKey) return true;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('preferences')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('🛡️ [NotificationService] Preference check skipped:', error.message);
+    return true;
+  }
+
+  const settings = {
+    ...DEFAULT_NOTIFICATION_SETTINGS,
+    ...(data?.preferences?.notifications || {}),
+  };
+
+  return settings[preferenceKey] !== false;
+};
+
 export const createNotification = async ({
   userId,
   actorId = null,
@@ -28,9 +74,15 @@ export const createNotification = async ({
   isPinned = false,
   metadata = {},
   data = {},
+  ignorePreferences = false,
 }) => {
   try {
     if (!userId || !title) throw new Error('Missing userId or title');
+
+    if (!ignorePreferences) {
+      const canDeliver = await shouldDeliverNotification({ userId, type, priority });
+      if (!canDeliver) return null;
+    }
 
     const { data: result, error } = await supabase
       .from('notifications')
