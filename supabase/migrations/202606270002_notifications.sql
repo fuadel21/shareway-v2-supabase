@@ -35,7 +35,7 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
--- Users can mark their own notifications as read/unread, but cannot reassign them.
+-- Users can mark their own notifications as read/unread, pin/unpin them, and keep ownership unchanged.
 drop policy if exists "Users can update own notifications" on public.notifications;
 create policy "Users can update own notifications"
 on public.notifications
@@ -43,6 +43,14 @@ for update
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
+
+-- Users can remove notifications from their own inbox.
+drop policy if exists "Users can delete own notifications" on public.notifications;
+create policy "Users can delete own notifications"
+on public.notifications
+for delete
+to authenticated
+using (auth.uid() = user_id);
 
 -- Admins can create notifications for any user.
 drop policy if exists "Admins can create notifications" on public.notifications;
@@ -111,6 +119,15 @@ create trigger notifications_touch_updated_at
 before update on public.notifications
 for each row
 execute function public.touch_notifications_updated_at();
+
+-- Enable Supabase Realtime for notification inserts/updates/deletes.
+do $$
+begin
+  alter publication supabase_realtime add table public.notifications;
+exception
+  when duplicate_object then null;
+  when undefined_object then null;
+end $$;
 
 -- Optional helper for admin dashboards.
 create or replace view public.notification_unread_counts as
