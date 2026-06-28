@@ -16,11 +16,7 @@ export default function NotificationsPage() {
           </p>
         </div>
 
-        <div className="relative [&>div>button]:hidden [&>div>div]:static [&>div>div]:w-full [&>div>div]:rounded-[2rem] [&>div>div]:shadow-sm">
-          <NotificationCenterPanel user={user}>
-            <span />
-          </NotificationCenterPanel>
-        </div>
+        <NotificationCenterPanel user={user} fullPage />
       </div>
     </div>
   );
