@@ -5,12 +5,41 @@ import { Star, Loader2, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 import { toast } from 'sonner';
 import { cn } from '../lib/utils.js';
+import { createNotification, NOTIFICATION_TYPES } from '../services/notificationService.js';
 
-const RideRatingModal = ({ isOpen, onClose, rideId, driverName, onSuccess }) => {
+const RideRatingModal = ({ isOpen, onClose, rideId, driverId, driverName, onSuccess }) => {
     const [rating, setRating] = useState(0);
     const [hover, setHover] = useState(0);
     const [comment, setComment] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const notifyDriver = async () => {
+        try {
+            const { data: authData } = await supabase.auth.getUser();
+            const currentUser = authData?.user;
+
+            if (!driverId || !currentUser?.id || String(driverId) === String(currentUser.id)) return;
+
+            await createNotification({
+                userId: driverId,
+                actorId: currentUser.id,
+                type: NOTIFICATION_TYPES.REVIEW,
+                title: 'Nueva valoración recibida',
+                message: `Has recibido una valoración de ${rating} estrellas${comment ? `: ${comment.slice(0, 120)}` : '.'}`,
+                actionUrl: `/ride/${rideId}`,
+                entityType: 'ride',
+                entityId: rideId,
+                priority: 'normal',
+                metadata: {
+                    ride_id: rideId,
+                    rating,
+                    has_comment: Boolean(comment?.trim()),
+                },
+            });
+        } catch (error) {
+            console.warn('Review notification failed:', error.message);
+        }
+    };
 
     const handleSubmit = async () => {
         if (rating === 0) {
@@ -32,6 +61,7 @@ const RideRatingModal = ({ isOpen, onClose, rideId, driverName, onSuccess }) => 
             const result = Array.isArray(data) ? data[0] : data;
 
             if (result?.success) {
+                await notifyDriver();
                 toast.success("¡Gracias por tu valoración!");
                 // Pasamos los pasajeros actualizados al componente padre para consistencia inmediata
                 if (onSuccess) onSuccess(result.passengers);
