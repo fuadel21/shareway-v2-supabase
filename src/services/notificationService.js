@@ -60,6 +60,16 @@ const shouldDeliverNotification = async ({ userId, type, priority }) => {
   return settings[preferenceKey] !== false;
 };
 
+const enrichNotificationError = (error) => {
+  const message = error?.message || 'No se pudo crear la notificación';
+  const enriched = new Error(message);
+  enriched.code = error?.code;
+  enriched.details = error?.details;
+  enriched.hint = error?.hint;
+  enriched.status = error?.status;
+  return enriched;
+};
+
 export const createNotification = async ({
   userId,
   actorId = null,
@@ -75,13 +85,19 @@ export const createNotification = async ({
   metadata = {},
   data = {},
   ignorePreferences = false,
+  throwOnError = false,
 }) => {
   try {
     if (!userId || !title) throw new Error('Missing userId or title');
 
     if (!ignorePreferences) {
       const canDeliver = await shouldDeliverNotification({ userId, type, priority });
-      if (!canDeliver) return null;
+      if (!canDeliver) {
+        const preferenceError = new Error('La notificación está bloqueada por las preferencias del usuario');
+        preferenceError.code = 'NOTIFICATION_PREFERENCES_BLOCKED';
+        if (throwOnError) throw preferenceError;
+        return null;
+      }
     }
 
     const { data: result, error } = await supabase
@@ -102,10 +118,12 @@ export const createNotification = async ({
       .select('*')
       .single();
 
-    if (error) throw error;
+    if (error) throw enrichNotificationError(error);
     return result;
   } catch (error) {
-    console.error('🛡️ [NotificationService] Create error:', error.message);
+    const enriched = enrichNotificationError(error);
+    console.error('🛡️ [NotificationService] Create error:', enriched.message, enriched.code || '');
+    if (throwOnError) throw enriched;
     return null;
   }
 };
