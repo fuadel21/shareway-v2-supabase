@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx'
 import { Loader2, Star, MessageSquare, Send, Sparkles, UserCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { submitReview } from '../services/rideService.js';
+import { submitReviewAndNotify } from '../services/rideNotificationBridge.js';
 import SubPageHeader from './SubPageHeader';
 
 const getInitials = (name) => {
@@ -76,11 +76,15 @@ const LeaveReview = () => {
         const toastId = toast.loading("Guardando valoración y otorgando EcoPoints...");
 
         try {
-            await submitReview({
+            await submitReviewAndNotify({
                 rideId,
                 revieweeId,
                 rating: parseInt(rating),
                 comment: comment.trim().substring(0, 500),
+                reviewer: {
+                    id: user.id,
+                    display_name: currentUserProfile?.display_name || user.email?.split('@')[0] || 'Usuario ShareWay',
+                },
             });
 
             toast.success("¡Valoración guardada!", {
