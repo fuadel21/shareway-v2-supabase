@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase.js';
 import {
+  deleteNotification,
   getNotifications,
   getUnreadCount,
   markAllAsRead,
@@ -115,6 +116,15 @@ export const useNotifications = (userOrId, options = {}) => {
     });
   }, []);
 
+  const deleteOne = useCallback(async (id) => {
+    const current = notifications.find((item) => item.id === id);
+    await deleteNotification(id);
+    setNotifications((items) => items.filter((item) => item.id !== id));
+    if (current && !current.is_read) {
+      setUnreadCount((count) => Math.max(0, count - 1));
+    }
+  }, [notifications]);
+
   const unreadNotifications = useMemo(() => notifications.filter((item) => !item.is_read), [notifications]);
 
   return {
@@ -128,6 +138,7 @@ export const useNotifications = (userOrId, options = {}) => {
     unreadOne,
     readAll,
     pinOne,
+    deleteOne,
   };
 };
 
