@@ -42,6 +42,7 @@ import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
 import ActivityCenter from './components/ActivityCenter.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
+import TripCalendarPage from './pages/TripCalendarPage.jsx';
 import AdminStats from './pages/AdminStats.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
 import AdminUserProfile from './pages/Admin/AdminUserProfile.jsx';
@@ -231,7 +232,7 @@ function App() {
                 try {
                     const listener = await CapacitorApp.addListener('backButton', ({ canGoBack }) => {
                         const path = window.location.pathname;
-                        if (['/', '/login', '/dashboard', '/my-rides', '/chats', '/settings'].includes(path)) {
+                        if (['/', '/login', '/dashboard', '/my-rides', '/calendar', '/chats', '/settings'].includes(path)) {
                             CapacitorApp.exitApp();
                         } else {
                             window.history.back();
@@ -398,6 +399,7 @@ function App() {
                         <Route path="dashboard" element={<Dashboard />} />
                         <Route path="my-rides" element={<MyRides />} />
                         <Route path="my-requests" element={<MyRequests />} />
+                        <Route path="calendar" element={<TripCalendarPage />} />
                         <Route path="chats" element={<ChatList />} />
                         <Route path="chat/:chatId" element={<Chat />} />
                         <Route path="notifications" element={<NotificationsPage />} />
