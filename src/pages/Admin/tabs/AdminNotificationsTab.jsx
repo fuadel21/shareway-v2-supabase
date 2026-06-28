@@ -10,6 +10,7 @@ import {
   sendAdminNotificationToUser,
 } from '@/services/adminNotificationService.js';
 import { cn } from '@/lib/utils.js';
+import AdminAnnouncementHistoryCard from './AdminAnnouncementHistoryCard.jsx';
 
 const SEGMENTS = [
   { id: 'all', label: 'Todos', description: 'Toda la comunidad ShareWay', icon: Users },
@@ -78,7 +79,7 @@ export default function AdminNotificationsTab() {
           actionUrl: actionUrl.trim() || '/notifications',
           priority,
         });
-        setLastResult({ count: result?.length || 0, mode: 'usuario' });
+        setLastResult({ count: result?.length || 0, mode: 'usuario', at: Date.now() });
       } else {
         result = await sendAdminNotificationBySegment({
           segment,
@@ -89,7 +90,7 @@ export default function AdminNotificationsTab() {
           priority,
           limit: 1000,
         });
-        setLastResult({ count: result.length, mode: segment });
+        setLastResult({ count: result.length, mode: segment, at: Date.now() });
       }
 
       toast.success('Aviso enviado', {
@@ -278,6 +279,8 @@ export default function AdminNotificationsTab() {
             </CardContent>
           </Card>
         )}
+
+        <AdminAnnouncementHistoryCard refreshKey={lastResult?.at || 0} />
       </div>
     </div>
   );
