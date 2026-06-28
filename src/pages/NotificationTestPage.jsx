@@ -23,9 +23,15 @@ const formatDate = (value) => {
   }
 };
 
+const getErrorDescription = (err) => {
+  const parts = [err?.message, err?.code, err?.details, err?.hint].filter(Boolean);
+  return parts.join(' · ') || 'Revisa RLS, migraciones y sesión.';
+};
+
 const NotificationTestPage = () => {
   const { user, profile, isAdmin } = useOutletContext();
   const [sending, setSending] = useState(false);
+  const [lastError, setLastError] = useState(null);
   const {
     notifications,
     unreadCount,
@@ -48,6 +54,7 @@ const NotificationTestPage = () => {
     }
 
     setSending(true);
+    setLastError(null);
     const toastId = toast.loading('Creando notificación de prueba...');
 
     try {
@@ -61,6 +68,8 @@ const NotificationTestPage = () => {
         entityType: 'notification_test',
         entityId: crypto.randomUUID?.() || String(Date.now()),
         priority: 'normal',
+        ignorePreferences: true,
+        throwOnError: true,
         metadata: {
           source: 'NotificationTestPage',
           createdFromClient: true,
@@ -69,7 +78,7 @@ const NotificationTestPage = () => {
       });
 
       if (!created) {
-        throw new Error('La notificación no se creó. Revisa RLS, preferencias o sesión.');
+        throw new Error('La notificación no se creó y Supabase no devolvió detalle.');
       }
 
       toast.success('Notificación creada', {
@@ -79,10 +88,12 @@ const NotificationTestPage = () => {
 
       await refresh();
     } catch (err) {
+      const description = getErrorDescription(err);
       console.error('Notification test failed:', err);
+      setLastError(description);
       toast.error('No se pudo crear la prueba', {
         id: toastId,
-        description: err?.message || 'Revisa RLS, migraciones y sesión.',
+        description,
       });
     } finally {
       setSending(false);
@@ -136,6 +147,13 @@ const NotificationTestPage = () => {
           {error && (
             <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
               {error || 'Error cargando notificaciones'}
+            </div>
+          )}
+
+          {lastError && (
+            <div className="rounded-2xl bg-amber-50 p-4 text-xs font-bold leading-relaxed text-amber-700 break-words">
+              <span className="block text-[10px] uppercase tracking-widest text-amber-500 mb-1">Último error Supabase</span>
+              {lastError}
             </div>
           )}
 
