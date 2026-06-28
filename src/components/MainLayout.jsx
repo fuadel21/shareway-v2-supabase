@@ -12,7 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useTranslation } from 'react-i18next';
-import NotificationCenter from './NotificationCenter';
+import NotificationCenterPanel from './notifications/NotificationCenterPanel.jsx';
 import LanguageSwitcher from './LanguageSwitcher';
 
 const AUDIO_ASSETS = {
@@ -108,7 +108,7 @@ const MainLayout = (props) => {
         .from('notifications')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', context.user.id)
-        .eq('read', false);
+        .eq('is_read', false);
       setUnreadCount(nCounter || 0);
 
       const { count: cCounter } = await supabase
@@ -129,15 +129,15 @@ const MainLayout = (props) => {
         table: 'notifications',
         filter: `user_id=eq.${context.user.id}`
       }, (payload) => {
-        const notif = payload.new.payload || payload.new;
+        const notif = payload.new?.payload || payload.new;
         setUnreadCount(prev => prev + 1);
 
-        if (notif.type === 'booking') playSound('booking');
+        if (notif.type === 'booking' || notif.type === 'ride_request') playSound('booking');
         else if (notif.type === 'payment') playSound('arrival');
         else if (notif.type === 'emergency_alert') playSound('sos');
         else playSound('welcome');
 
-        toast(notif.title, { description: notif.content });
+        toast(notif.title, { description: notif.message || notif.content || notif.body });
       })
       .subscribe();
 
@@ -212,11 +212,11 @@ const MainLayout = (props) => {
 
         <div className="flex items-center gap-2 lg:gap-3">
           {isAdmin && <Button onClick={() => navigate('/admin/verifications')} size="icon" className="size-9 lg:size-11 rounded-xl lg:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" title="Panel admin"><ShieldCheck className="h-4 w-4 lg:h-5 lg:w-5" /></Button>}
-          <NotificationCenter user={context.user}>
+          <NotificationCenterPanel user={context.user}>
             <div className="size-9 lg:size-11 bg-white border border-slate-100 rounded-xl lg:rounded-2xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all group relative">
               <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600 group-hover:text-primary transition-colors" />
             </div>
-          </NotificationCenter>
+          </NotificationCenterPanel>
 
           <LanguageSwitcher />
 
