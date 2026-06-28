@@ -1,87 +1,90 @@
 import { supabase } from '@/lib/supabase.js';
-import { createNotification, NOTIFICATION_TYPES } from '@/services/notificationService.js';
 
-const getCurrentAdmin = async () => {
-  const { data: authData, error: authError } = await supabase.auth.getUser();
-  if (authError) throw authError;
-  const user = authData?.user;
-  if (!user?.id) throw new Error('No autenticado');
+const callAdminAnnouncementRpc = async ({
+  title,
+  message,
+  actionUrl = '/notifications',
+  target = 'all',
+  userId = null,
+  city = null,
+  priority = 'normal',
+}) => {
+  const { data, error } = await supabase.rpc('sw_send_admin_announcement_v2', {
+    p_title: title,
+    p_message: message,
+    p_action_url: actionUrl,
+    p_target: target,
+    p_user_id: userId,
+    p_city: city,
+    p_priority: priority,
+  });
 
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('id, is_admin, role')
-    .eq('id', user.id)
-    .single();
-
-  if (profileError) throw profileError;
-
-  const role = String(profile?.role || '').toLowerCase();
-  const isAdmin = profile?.is_admin === true || role === 'admin' || role === 'super_admin';
-  if (!isAdmin) throw new Error('No tienes permisos de administrador');
-
-  return user;
+  if (error) throw error;
+  return Number(data || 0);
 };
 
-export const sendAdminNotificationToUser = async ({ userId, title, message, actionUrl = '/notifications', priority = 'normal', metadata = {} }) => {
-  const admin = await getCurrentAdmin();
-
-  return createNotification({
-    userId,
-    actorId: admin.id,
-    type: NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT,
+export const sendAdminNotificationToUser = async ({
+  userId,
+  title,
+  message,
+  actionUrl = '/notifications',
+  priority = 'normal',
+}) => {
+  const count = await callAdminAnnouncementRpc({
     title,
     message,
     actionUrl,
-    entityType: 'admin_announcement',
-    entityId: crypto.randomUUID(),
+    target: 'single',
+    userId,
     priority,
-    isPinned: priority === 'critical',
-    metadata,
   });
+
+  return count > 0 ? [{ id: userId }] : [];
 };
 
-export const sendAdminNotificationToUsers = async ({ userIds = [], title, message, actionUrl = '/notifications', priority = 'normal', metadata = {} }) => {
+export const sendAdminNotificationToUsers = async ({
+  userIds = [],
+  title,
+  message,
+  actionUrl = '/notifications',
+  priority = 'normal',
+}) => {
+  const results = [];
   const uniqueUserIds = [...new Set(userIds.filter(Boolean))];
-  if (uniqueUserIds.length === 0) return [];
 
-  const admin = await getCurrentAdmin();
+  for (const userId of uniqueUserIds) {
+    const count = await callAdminAnnouncementRpc({
+      title,
+      message,
+      actionUrl,
+      target: 'single',
+      userId,
+      priority,
+    });
 
-  const payload = uniqueUserIds.map((userId) => ({
-    user_id: userId,
-    actor_id: admin.id,
-    type: NOTIFICATION_TYPES.ADMIN_ANNOUNCEMENT,
+    if (count > 0) results.push({ id: userId });
+  }
+
+  return results;
+};
+
+export const sendAdminNotificationBySegment = async ({
+  segment = 'all',
+  city = null,
+  title,
+  message,
+  actionUrl = '/notifications',
+  priority = 'normal',
+}) => {
+  const target = segment === 'single' ? 'all' : segment;
+  const count = await callAdminAnnouncementRpc({
     title,
     message,
-    action_url: actionUrl,
-    entity_type: 'admin_announcement',
-    entity_id: crypto.randomUUID(),
+    actionUrl,
+    target,
+    city,
     priority,
-    is_pinned: priority === 'critical',
-    metadata,
-  }));
+  });
 
-  const { data, error } = await supabase
-    .from('notifications')
-    .insert(payload)
-    .select('*');
-
-  if (error) throw error;
-  return data || [];
-};
-
-export const sendAdminNotificationBySegment = async ({ segment = 'all', city = null, title, message, actionUrl = '/notifications', priority = 'normal', limit = 500 }) => {
-  let query = supabase
-    .from('profiles')
-    .select('id, city, role, is_admin')
-    .limit(limit);
-
-  if (segment === 'city' && city) query = query.ilike('city', city);
-  if (segment === 'drivers') query = query.or('role.eq.driver,role.eq.conductor');
-  if (segment === 'passengers') query = query.or('role.eq.passenger,role.eq.pasajero');
-
-  const { data: profiles, error } = await query;
-  if (error) throw error;
-
-  const userIds = (profiles || []).map((profile) => profile.id);
-  return sendAdminNotificationToUsers({ userIds, title, message, actionUrl, priority, metadata: { segment, city } });
+  return Array.from({ length: count }, (_, index) => ({ id: `${target}-${index}` }));
 };
