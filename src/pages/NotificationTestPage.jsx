@@ -32,8 +32,8 @@ const NotificationTestPage = () => {
     loading,
     error,
     refresh,
-    markAllAsRead,
-  } = useNotifications({ limit: 12 });
+    readAll,
+  } = useNotifications(user, { limit: 12, enableToasts: false });
 
   const canRunTest = Boolean(user?.id);
   const testLabel = useMemo(() => {
@@ -51,7 +51,7 @@ const NotificationTestPage = () => {
     const toastId = toast.loading('Creando notificación de prueba...');
 
     try {
-      await createNotification({
+      const created = await createNotification({
         userId: user.id,
         actorId: user.id,
         type: NOTIFICATION_TYPES.SYSTEM,
@@ -67,6 +67,10 @@ const NotificationTestPage = () => {
           timestamp: new Date().toISOString(),
         },
       });
+
+      if (!created) {
+        throw new Error('La notificación no se creó. Revisa RLS, preferencias o sesión.');
+      }
 
       toast.success('Notificación creada', {
         id: toastId,
@@ -87,7 +91,7 @@ const NotificationTestPage = () => {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await markAllAsRead();
+      await readAll();
       toast.success('Notificaciones marcadas como leídas');
     } catch (err) {
       toast.error('No se pudieron marcar como leídas', {
@@ -131,7 +135,7 @@ const NotificationTestPage = () => {
 
           {error && (
             <div className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-600">
-              {error?.message || 'Error cargando notificaciones'}
+              {error || 'Error cargando notificaciones'}
             </div>
           )}
 
@@ -148,7 +152,7 @@ const NotificationTestPage = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={refresh}
+              onClick={() => refresh()}
               disabled={loading}
               className="h-12 rounded-2xl font-black uppercase tracking-tight"
             >
