@@ -42,6 +42,7 @@ import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
 import ActivityCenter from './components/ActivityCenter.jsx';
 import NotificationsPage from './pages/NotificationsPage.jsx';
+import NotificationTestPage from './pages/NotificationTestPage.jsx';
 import TripCalendarPage from './pages/TripCalendarPage.jsx';
 import AdminStats from './pages/AdminStats.jsx';
 import AdminDashboard from './pages/Admin/AdminDashboard.jsx';
@@ -413,6 +414,7 @@ function App() {
                         <Route path="edit-favorite-route/:id" element={<EditFavoriteRoute />} />
                         <Route path="settings/appearance" element={<AppearanceSettings />} />
                         <Route path="settings/notifications" element={<NotificationSettings />} />
+                        <Route path="settings/notification-test" element={<NotificationTestPage />} />
                         <Route path="settings/activity" element={<ActivityCenter />} />
                         <Route path="settings/emergency" element={<EmergencyContacts />} />
                         <Route path="settings/impact" element={<ClimateImpact />} />
