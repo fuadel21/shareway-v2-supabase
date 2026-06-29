@@ -2,6 +2,7 @@ import React from 'react';
 import { useOutletContext } from 'react-router-dom';
 import NotificationCenterPanel from '@/components/notifications/NotificationCenterPanel.jsx';
 import NotificationCleanupActions from '@/components/notifications/NotificationCleanupActions.jsx';
+import NotificationTypeSummary from '@/components/notifications/NotificationTypeSummary.jsx';
 
 export default function NotificationsPage() {
   const { user } = useOutletContext();
@@ -17,6 +18,7 @@ export default function NotificationsPage() {
           </p>
         </div>
 
+        <NotificationTypeSummary user={user} />
         <NotificationCleanupActions />
         <NotificationCenterPanel user={user} fullPage />
       </div>
