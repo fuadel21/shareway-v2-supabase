@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch.jsx';
 import { MessageSquare, Briefcase, Clock, Sparkles, Bell, BellOff, ShieldCheck, Zap, Star, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
+import BrowserAlertsCard from './BrowserAlertsCard';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -96,6 +97,8 @@ function NotificationSettings() {
                         <span className="text-[9px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-md">REALTIME</span>
                     </div>
                 </div>
+
+                <BrowserAlertsCard userId={profile?.id} />
 
                 <div className="space-y-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 italic">{t('notifications.channels_title', 'Canales activos')}</p>
