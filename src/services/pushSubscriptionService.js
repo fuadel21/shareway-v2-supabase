@@ -1,10 +1,22 @@
 import { supabase } from '@/lib/supabase.js';
 
+const normalizePublicKey = (value = '') => String(value)
+  .trim()
+  .replace(/^['"]|['"]$/g, '')
+  .replace(/\s/g, '');
+
 const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = `${base64String}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
+  const cleanKey = normalizePublicKey(base64String);
+  const padding = '='.repeat((4 - cleanKey.length % 4) % 4);
+  const base64 = `${cleanKey}${padding}`.replace(/-/g, '+').replace(/_/g, '/');
   const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  const output = Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+
+  if (output.length !== 65) {
+    throw new Error('La clave pública VAPID no es válida. Revisa VITE_VAPID_PUBLIC_KEY en Vercel.');
+  }
+
+  return output;
 };
 
 export const isPushSupported = () => (
@@ -23,7 +35,7 @@ export const registerPushSubscription = async (userId) => {
   if (!userId) throw new Error('Usuario no disponible.');
   if (!isPushSupported()) throw new Error('Este navegador no soporta notificaciones push.');
 
-  const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  const publicKey = normalizePublicKey(import.meta.env.VITE_VAPID_PUBLIC_KEY);
   if (!publicKey) throw new Error('Falta VITE_VAPID_PUBLIC_KEY en Vercel.');
 
   const permission = await Notification.requestPermission();
