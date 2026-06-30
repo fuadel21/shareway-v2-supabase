@@ -1,5 +1,6 @@
 -- ShareWay booking availability guard
 -- Prevents bookings/passenger joins on completed, cancelled, expired, finished or past rides.
+-- Adapted to current schema: ride_requests has ride_id; ride_passengers/bookings are optional.
 
 create or replace function public.sw_guard_ride_booking_availability()
 returns trigger
@@ -17,6 +18,7 @@ declare
 begin
   v_ride_id := coalesce(v_row->>'ride_id', v_row->>'trip_id');
 
+  -- Some ride_requests are standalone passenger requests and do not yet have a matched ride.
   if v_ride_id is null or trim(v_ride_id) = '' then
     return new;
   end if;
@@ -26,15 +28,15 @@ begin
 
   -- Allow cancellation/rejection/no-show updates even after the ride is no longer available.
   if tg_op = 'UPDATE'
-     and v_new_status in ('cancelled', 'canceled', 'rejected', 'declined', 'denied', 'no_show') then
+     and v_new_status in ('cancelled', 'canceled', 'rejected', 'declined', 'denied', 'no_show', 'expired') then
     return new;
   end if;
 
-  -- If an existing booking is being updated without changing ride or moving into an active booking state, do not block.
+  -- If an existing booking/request is being updated without changing ride or moving into an active booking state, do not block.
   if tg_op = 'UPDATE'
      and coalesce(v_old_row->>'ride_id', v_old_row->>'trip_id') = v_ride_id
      and v_new_status = v_old_status
-     and v_new_status not in ('', 'pending', 'requested', 'confirmed', 'accepted', 'approved', 'active') then
+     and v_new_status not in ('', 'pending', 'requested', 'confirmed', 'accepted', 'approved', 'active', 'matched') then
     return new;
   end if;
 
@@ -62,6 +64,17 @@ begin
   return new;
 end;
 $$;
+
+do $$
+begin
+  if to_regclass('public.ride_requests') is not null then
+    drop trigger if exists ride_requests_guard_available_ride on public.ride_requests;
+    create trigger ride_requests_guard_available_ride
+    before insert or update on public.ride_requests
+    for each row
+    execute function public.sw_guard_ride_booking_availability();
+  end if;
+end $$;
 
 do $$
 begin
