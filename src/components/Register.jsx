@@ -4,13 +4,29 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Label } from '@/components/ui/label.jsx';
-import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck, Languages, Gift } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Mail, Lock, User, Phone, ShieldCheck, Languages, Gift, Car, Users } from 'lucide-react';
 import '../App.css';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from 'react-i18next';
 import { getPendingReferralCode, savePendingReferralCode } from '@/lib/referrals.js';
 import { trackGrowthEvent } from '@/lib/growthAnalytics.js';
+import { cn } from '@/lib/utils';
+
+const ROLE_OPTIONS = [
+  {
+    id: 'passenger',
+    title: 'Pasajero',
+    description: 'Quiero buscar viajes y reservar plazas.',
+    icon: Users
+  },
+  {
+    id: 'driver',
+    title: 'Conductor',
+    description: 'Quiero publicar viajes y llevar pasajeros.',
+    icon: Car
+  }
+];
 
 function Register() {
   const { t, i18n } = useTranslation();
@@ -22,7 +38,14 @@ function Register() {
     if (code) savePendingReferralCode(code);
     return code ? String(code).toUpperCase() : '';
   }, [location.search]);
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    role: 'passenger'
+  });
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,6 +70,8 @@ function Register() {
     if (formData.password !== formData.confirmPassword) { setError(t('register.errors.mismatch')); return; }
     if (formData.password.length < 6) { setError(t('register.errors.too_short')); return; }
 
+    const selectedRole = formData.role === 'driver' ? 'driver' : 'passenger';
+
     setIsSubmitting(true);
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -58,6 +83,10 @@ function Register() {
             display_name: formData.name,
             phone: formData.phone || '',
             referral_code: referralCode || null,
+            role: selectedRole,
+            user_type: selectedRole,
+            is_driver: selectedRole === 'driver',
+            is_passenger: selectedRole === 'passenger'
           }
         }
       });
@@ -68,7 +97,8 @@ function Register() {
         referralCode: referralCode || null,
         metadata: {
           has_referral: Boolean(referralCode),
-          email_domain: formData.email.split('@')[1] || null
+          email_domain: formData.email.split('@')[1] || null,
+          role: selectedRole
         }
       });
 
@@ -80,13 +110,15 @@ function Register() {
               id: data.user?.id,
               email: formData.email,
               display_name: formData.name,
+              phone: formData.phone || '',
+              role: selectedRole,
               referral_code: referralCode || null
             }
           }
         });
-        console.log("[NOTIFY] Aviso enviado correctamente");
+        console.log('[NOTIFY] Aviso enviado correctamente');
       } catch (funcErr) {
-        console.warn("[NOTIFY] Error en notificación:", funcErr);
+        console.warn('[NOTIFY] Error en notificación:', funcErr);
       }
 
       if (data.user && !data.session) {
@@ -101,7 +133,7 @@ function Register() {
       }
 
     } catch (err) {
-      console.error("[REGISTER] Error:", err);
+      console.error('[REGISTER] Error:', err);
       setError(err.message || t('register.errors.generic'));
     } finally {
       setIsSubmitting(false);
@@ -156,6 +188,39 @@ function Register() {
                 {error}
               </div>
             )}
+
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">Tipo de cuenta</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {ROLE_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  const selected = formData.role === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, role: option.id })}
+                      className={cn(
+                        'rounded-3xl border-2 p-4 text-left transition-all active:scale-95 bg-white',
+                        selected
+                          ? 'border-primary shadow-xl shadow-primary/10 ring-4 ring-primary/10'
+                          : 'border-orange-50 hover:border-slate-200 shadow-sm'
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={cn('h-11 w-11 rounded-2xl flex items-center justify-center shrink-0', selected ? 'bg-primary text-white' : 'bg-slate-50 text-slate-400')}>
+                          <Icon size={20} />
+                        </div>
+                        <div>
+                          <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{option.title}</p>
+                          <p className="text-[10px] font-bold text-slate-400 leading-snug mt-1">{option.description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 gap-6">
               <div className="space-y-2">
