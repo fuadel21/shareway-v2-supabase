@@ -17,7 +17,9 @@ const ignoredPathPatterns = [
   /\.spec\.[jt]sx?$/
 ];
 
-const sensitiveTables = [
+// Tablas cuya escritura directa desde cliente puede afectar dinero, estado de viaje,
+// permisos de plataforma o administracion. Estas deben ir por RPC/Edge Function.
+const blockedDirectWriteTables = [
   'rides',
   'ride_requests',
   'bookings',
@@ -26,10 +28,16 @@ const sensitiveTables = [
   'wallet_transactions',
   'payout_requests',
   'platform_settings',
+  'disputes'
+];
+
+// Tablas con escrituras normales de usuario que pueden ser validas desde cliente
+// si RLS esta bien configurado: editar perfil propio, enviar mensajes, marcar
+// notificaciones leidas, etc. No se bloquean aqui, pero siguen en checklist RLS.
+const rlsReviewedTables = [
   'profiles',
   'notifications',
-  'messages',
-  'disputes'
+  'messages'
 ];
 
 const lifecycleRpcNames = [
@@ -81,6 +89,7 @@ const lineForIndex = (content, index) => content.slice(0, index).split(/\r?\n/).
 const lineText = (content, lineNumber) => content.split(/\r?\n/)[lineNumber - 1]?.trim() || '';
 
 const findings = [];
+const rlsNotes = [];
 
 for (const scanDir of scanDirs) {
   const files = walk(join(root, scanDir));
@@ -89,7 +98,7 @@ for (const scanDir of scanDirs) {
     const relativePath = relative(root, file).replaceAll('\\', '/');
     const content = readFileSync(file, 'utf8');
 
-    for (const table of sensitiveTables) {
+    for (const table of blockedDirectWriteTables) {
       const directWritePattern = new RegExp(
         `\\.from\\(\\s*['\"]${table}['\"]\\s*\\)[\\s\\S]{0,300}?\\.(insert|update|upsert|delete)\\s*\\(`,
         'g'
@@ -102,8 +111,20 @@ for (const scanDir of scanDirs) {
           file: relativePath,
           lineNumber,
           line: lineText(content, lineNumber),
-          message: `Escritura directa desde cliente sobre tabla sensible '${table}'. Usa RPC/RLS server-side.`
+          message: `Escritura directa desde cliente sobre tabla critica '${table}'. Usa RPC/Edge Function con validacion server-side.`
         });
+      }
+    }
+
+    for (const table of rlsReviewedTables) {
+      const directWritePattern = new RegExp(
+        `\\.from\\(\\s*['\"]${table}['\"]\\s*\\)[\\s\\S]{0,300}?\\.(insert|update|upsert|delete)\\s*\\(`,
+        'g'
+      );
+
+      for (const match of content.matchAll(directWritePattern)) {
+        const lineNumber = lineForIndex(content, match.index ?? 0);
+        rlsNotes.push({ file: relativePath, lineNumber, table });
       }
     }
 
@@ -138,6 +159,18 @@ if (findings.length > 0) {
 
   console.error('Solución: mover estas operaciones a RPCs seguros que validen auth.uid(), rol y permisos en Supabase.\n');
   process.exit(1);
+}
+
+if (rlsNotes.length > 0) {
+  console.warn('\n⚠️ RLS review notes: se han encontrado escrituras de usuario que dependen de RLS estricto:');
+  const uniqueNotes = new Map();
+  for (const note of rlsNotes) {
+    uniqueNotes.set(`${note.file}:${note.lineNumber}:${note.table}`, note);
+  }
+  for (const note of uniqueNotes.values()) {
+    console.warn(`- ${note.file}:${note.lineNumber} tabla '${note.table}'`);
+  }
+  console.warn('Estas escrituras no bloquean build, pero requieren policies RLS verificadas.\n');
 }
 
 console.log('✅ Sensitive client write check passed. No dangerous direct client writes found.');
