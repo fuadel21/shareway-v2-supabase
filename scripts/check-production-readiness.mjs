@@ -8,6 +8,17 @@ const root = process.cwd();
 const SCAN_DIRS = ['src'];
 const FILE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx']);
 
+const IGNORED_PATH_PATTERNS = [
+  /(^|\/)test(s)?\//,
+  /(^|\/)__tests__\//,
+  /(^|\/)__mocks__\//,
+  /(^|\/)fixtures\//,
+  /(^|\/)e2e\//,
+  /(^|\/)coverage\//,
+  /\.test\.[jt]sx?$/,
+  /\.spec\.[jt]sx?$/
+];
+
 const BLOCKED_PATTERNS = [
   {
     pattern: /Mocked for test/i,
@@ -48,6 +59,11 @@ const getExtension = (filePath) => {
   return match ? match[0] : '';
 };
 
+const shouldIgnorePath = (filePath) => {
+  const normalizedPath = relative(root, filePath).replaceAll('\\', '/');
+  return IGNORED_PATH_PATTERNS.some((pattern) => pattern.test(normalizedPath));
+};
+
 const walk = (dir, files = []) => {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
@@ -57,7 +73,7 @@ const walk = (dir, files = []) => {
 
     if (stat.isDirectory()) {
       walk(fullPath, files);
-    } else if (FILE_EXTENSIONS.has(getExtension(fullPath))) {
+    } else if (FILE_EXTENSIONS.has(getExtension(fullPath)) && !shouldIgnorePath(fullPath)) {
       files.push(fullPath);
     }
   }
@@ -85,7 +101,7 @@ for (const scanDir of SCAN_DIRS) {
       const line = lines[lineNumber - 1]?.trim() || '';
 
       findings.push({
-        file: relative(root, file),
+        file: relative(root, file).replaceAll('\\', '/'),
         lineNumber,
         line,
         reason
