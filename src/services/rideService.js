@@ -531,40 +531,8 @@ export const updateRideLocation = async (rideId, locationData) => {
     };
 };
 
-export const updateRideStatus = async (rideId, status, metadata = {}) => {
-    // Nota: El sistema usa RPCs específicos para cambios de estado (startRide, completeRide).
-    // Este método queda como compatibilidad interna y no debe usarse para saltar los RPCs de negocio.
-    const { data, error } = await supabase
-        .from('rides')
-        .update({ status, ...metadata })
-        .eq('id', rideId)
-        .select()
-        .single();
-
-    if (error) throw error;
-
-    await supabase.from('ride_status_logs').insert({
-        ride_id: rideId,
-        status: status,
-        metadata: metadata
-    });
-
-    let statusHistory = [];
-    try {
-        statusHistory = await getRideStatusHistory(rideId);
-    } catch (historyError) {
-        console.warn("🛡️ [Ride Service] status history unavailable:", historyError);
-    }
-
-    return {
-        success: true,
-        rideId,
-        previousStatus: metadata.previousStatus ?? metadata.previous_status ?? null,
-        newStatus: data?.status ?? status,
-        data,
-        metadata: metadata,
-        statusHistory
-    };
+export const updateRideStatus = async () => {
+    throw new Error('updateRideStatus está deshabilitado en producción. Usa startRide, completeRide, cancelRide o un RPC específico.');
 };
 
 export const getCurrentRides = async (userId) => {
@@ -616,13 +584,7 @@ export const getRideStatusHistory = async (rideId) => {
 
 export const emergencyStopRide = async (rideId, reason) => {
     try {
-        const { data, success, error } = await rpc.safeCall(
-            () => supabase.rpc('trigger_emergency_alert', {
-                p_ride_id: rideId,
-                p_details: reason
-            }),
-            'trigger_emergency_alert'
-        );
+        const { data, success, error } = await rpc.triggerEmergencyAlert(rideId, reason);
 
         if (!success) throw new Error(error);
 
