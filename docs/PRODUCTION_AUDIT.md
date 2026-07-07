@@ -50,6 +50,7 @@ Falta un workflow de GitHub Actions que ejecute:
 - `pnpm run lint`
 - `pnpm run test`
 - `pnpm run build`
+- `node scripts/check-production-readiness.mjs`
 
 No se debe desplegar a produccion si cualquiera de estos pasos falla.
 
@@ -60,6 +61,7 @@ No se debe desplegar a produccion si cualquiera de estos pasos falla.
 ## Checklist minimo antes de produccion
 
 - [ ] Eliminar todos los datos mock de servicios reales.
+- [ ] Ejecutar `node scripts/check-production-readiness.mjs` y corregir cualquier bloqueo.
 - [ ] Confirmar que todas las tablas sensibles tienen RLS activo.
 - [ ] Revisar policies de `profiles`, `rides`, `ride_requests`, `bookings`, `payments`, `wallets`, `messages`, `notifications`, `payout_requests` y `platform_settings`.
 - [ ] Confirmar que las RPC admin usan validacion server-side de admin.
@@ -72,6 +74,27 @@ No se debe desplegar a produccion si cualquiera de estos pasos falla.
 - [ ] Verificar Edge Functions desplegadas.
 - [ ] Verificar variables en Vercel.
 - [ ] Verificar textos legales: privacidad, terminos, cookies y aviso legal.
+
+## Script de auditoria añadido
+
+Se ha creado `scripts/check-production-readiness.mjs` para detectar mocks peligrosos dentro de codigo de aplicacion.
+
+Ejecutar manualmente:
+
+```bash
+node scripts/check-production-readiness.mjs
+```
+
+El script debe fallar mientras existan patrones como:
+
+- `Mocked for test`
+- `passenger-789`
+- `passenger-456`
+- `driverBalance: 125.50`
+- `escrowAmount: 25.50`
+- `driverPenalty: 5.00`
+- `actualDistance: 618.2`
+- `co2Saved: 45.6`
 
 ## Workflow recomendado
 
@@ -119,6 +142,9 @@ jobs:
 
       - name: Run unit tests
         run: pnpm run test
+
+      - name: Run production audit
+        run: node scripts/check-production-readiness.mjs
 
       - name: Build production bundle
         run: pnpm run build
