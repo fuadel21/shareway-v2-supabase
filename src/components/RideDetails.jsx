@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams, useOutletContext, Link } from 'react-router-dom';
+import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format, differenceInMinutes, isBefore } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -19,8 +19,8 @@ import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar.jsx';
 import {
     Loader2, Users, Calendar, Clock, MapPin,
     ShieldCheck, Star, Car, Heart, Music,
-    ChevronRight, BadgeCheck, MessageCircle, Phone, Lock,
-    Share2, Zap, Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint,
+    ChevronRight, BadgeCheck, MessageCircle, Lock,
+    Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint,
     ShieldAlert, UserX
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
@@ -34,6 +34,12 @@ const formatMoney = (value) => {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue)) return null;
     return `${numericValue.toFixed(2)}€`;
+};
+
+const formatRating = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) return 'Nuevo';
+    return numericValue.toFixed(1);
 };
 
 const RideDetails = () => {
@@ -54,7 +60,6 @@ const RideDetails = () => {
     // Estados para la verificación de PIN
     const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
     const [selectedPassenger, setSelectedPassenger] = useState(null);
-    const [showRatingModal, setShowRatingModal] = useState(false);
     const [isVerifying, setIsVerifying] = useState(false);
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
     // Nuevo estado para la ubicación de recogida seleccionada en el mapa
@@ -176,7 +181,7 @@ const RideDetails = () => {
 
             // DISPARAR RATING AUTOMÁTICAMENTE
             setTimeout(() => {
-                setShowRatingModal(true);
+                setIsRatingModalOpen(true);
             }, 1000);
 
             fetchRide();
@@ -464,7 +469,7 @@ const RideDetails = () => {
                                 <Users size={12} /> Plazas
                             </p>
                             <p className="text-sm font-bold text-slate-700">
-                                {ride.seats_available} disponibles <span className="text-slate-300 font-normal">/ {ride.total_seats || 4}</span>
+                                {ride.seats_available} disponibles <span className="text-slate-300 font-normal">/ {ride.total_seats ?? '—'}</span>
                             </p>
                         </div>
                         <div className="space-y-1 bg-slate-50 p-4 rounded-3xl border border-slate-100">
@@ -519,10 +524,10 @@ const RideDetails = () => {
                                         </h3>
                                         <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg border border-amber-100 shrink-0">
                                             <Star size={10} className="fill-current" />
-                                            <span className="text-[10px] font-bold">{ride.driver?.rating || '4.9'}</span>
+                                            <span className="text-[10px] font-bold">{formatRating(ride.driver?.rating)}</span>
                                         </div>
                                     </div>
-                                    <p className="text-slate-500 text-xs font-medium tracking-tight truncate">Viene de {ride.driver?.city || 'Valencia'}</p>
+                                    <p className="text-slate-500 text-xs font-medium tracking-tight truncate">Viene de {ride.driver?.city || 'Ciudad no indicada'}</p>
                                 </div>
 
                                 <div className="flex gap-2">
@@ -547,7 +552,7 @@ const RideDetails = () => {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-tighter leading-none">Vehículo</p>
-                                <p className="text-xs font-bold text-slate-700">{ride.vehicle_model || 'Tesla Model 3'}</p>
+                                <p className="text-xs font-bold text-slate-700">{ride.vehicle_model || 'Vehículo no indicado'}</p>
                             </div>
                         </div>
                         <div className="text-right">
