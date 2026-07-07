@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useOutletContext, Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,15 +10,15 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import MapComponent from './MapComponent';
-import BookingPaymentModal from './BookingPaymentModal'; 
+import BookingPaymentModal from './BookingPaymentModal';
 import PinVerificationDialog from './PinVerificationDialog.jsx';
 import RideRatingModal from './RideRatingModal.jsx';
 import { Button } from './ui/button.jsx';
 import { Card } from './ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar.jsx';
-import { 
-    Loader2, Users, Calendar, Clock, MapPin, 
-    ShieldCheck, Star, Car, Heart, Music, 
+import {
+    Loader2, Users, Calendar, Clock, MapPin,
+    ShieldCheck, Star, Car, Heart, Music,
     ChevronRight, BadgeCheck, MessageCircle, Phone, Lock,
     Share2, Zap, Play, CheckCircle2, AlertCircle, XCircle, Navigation, Fingerprint,
     ShieldAlert, UserX
@@ -27,9 +26,15 @@ import {
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
 import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
-import { cancelRide, cancelBooking } from '../services/rideService.js';
+import { cancelRide, cancelBooking, completeRide as completeRideService } from '../services/rideService.js';
 
 import { triggerSOS } from '../services/safetyService.js';
+
+const formatMoney = (value) => {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return null;
+    return `${numericValue.toFixed(2)}€`;
+};
 
 const RideDetails = () => {
     const { id: rideId } = useParams();
@@ -134,38 +139,38 @@ const RideDetails = () => {
     const handleCompleteRide = async () => {
         setIsCompleting(true);
         try {
-            // Se han eliminado las versiones duplicadas de complete_ride en la DB.
-            // Invocamos solo con el ID del viaje.
-            const { data: response, error: rpcError } = await supabase.rpc('complete_ride', {
-                p_ride_id: rideId
-            });
-
-            if (rpcError) throw rpcError;
-
-            // Normalizar respuesta (Supabase puede devolver objeto directo o array)
-            const result = response?.success !== undefined ? response : response?.[0];
-
+            const result = await completeRideService(rideId);
             if (!result?.success) {
-                throw new Error(result?.error || "Error inesperado al finalizar");
+                throw new Error(result?.error || result?.message || "Error inesperado al finalizar");
             }
 
-            const payoutNeto = result.payout || 0;
-            const platformFee = payoutNeto / 0.9 * 0.1;
-            const totalGross = payoutNeto + platformFee;
+            const payoutLabel = formatMoney(result.payout);
+            const platformFeeLabel = formatMoney(result.platformFee);
+            const totalGrossLabel = result.payout != null && result.platformFee != null
+                ? formatMoney(Number(result.payout) + Number(result.platformFee))
+                : null;
 
             toast.success("¡Viaje finalizado con éxito!", {
-                description: (
+                description: payoutLabel ? (
                     <div className="mt-2 space-y-1 border-t border-emerald-100 pt-2">
-                        <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                            <span>Total Bruto:</span>
-                            <span>{totalGross.toFixed(2)}€</span>
-                        </div>
+                        {totalGrossLabel && (
+                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                <span>Total Bruto:</span>
+                                <span>{totalGrossLabel}</span>
+                            </div>
+                        )}
+                        {platformFeeLabel && (
+                            <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                                <span>Comisión Plataforma:</span>
+                                <span>{platformFeeLabel}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between text-xs font-black uppercase italic text-emerald-600 pt-1 border-t border-dashed border-emerald-100">
                             <span>Tu Ganancia Neta:</span>
-                            <span>{payoutNeto.toFixed(2)}€</span>
+                            <span>{payoutLabel}</span>
                         </div>
                     </div>
-                ),
+                ) : "La liquidación se actualizará cuando el servidor confirme los importes.",
                 duration: 6000,
             });
 
@@ -189,7 +194,7 @@ const RideDetails = () => {
         setIsVerifying(true);
         try {
             const res = await verifyPassenger(rideId, pin, selectedPassenger?.id ?? null);
-            
+
             if (!res.success) {
                 // Manejo de errores específicos para una mejor UX
                 if (res.error === 'DEMASIADO_PRONTO' || res.message?.includes('antes de la salida')) {
@@ -279,8 +284,9 @@ const RideDetails = () => {
         try {
             const res = await handlePassengerNoShow(rideId, passenger.id);
             if (res.success) {
+                const payoutLabel = formatMoney(res.data?.payout);
                 toast.success("No-Show registrado", {
-                    description: `Se ha procesado tu compensación de ${res.data.payout.toFixed(2)}€`
+                    description: payoutLabel ? `Se ha procesado tu compensación de ${payoutLabel}` : 'El servidor ha registrado la incidencia.'
                 });
                 fetchRide();
             } else {
@@ -738,7 +744,7 @@ const RideDetails = () => {
                                         if (window.confirm("¿Seguro que quieres cancelar tu reserva?")) {
                                             try {
                                                 const res = await cancelBooking(rideId);
-                                                if (res.success) {
+                                                if (res === true || res?.success) {
                                                     toast.success("Reserva cancelada");
                                                     fetchRide();
                                                 }
