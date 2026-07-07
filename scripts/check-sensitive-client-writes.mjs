@@ -7,6 +7,16 @@ const root = process.cwd();
 const scanDirs = ['src'];
 const extensions = new Set(['.js', '.jsx', '.ts', '.tsx']);
 
+const ignoredPathPatterns = [
+  /(^|\/)test(s)?\//,
+  /(^|\/)__tests__\//,
+  /(^|\/)__mocks__\//,
+  /(^|\/)e2e\//,
+  /(^|\/)coverage\//,
+  /\.test\.[jt]sx?$/,
+  /\.spec\.[jt]sx?$/
+];
+
 const sensitiveTables = [
   'rides',
   'ride_requests',
@@ -45,6 +55,11 @@ const getExtension = (filePath) => {
   return match ? match[0] : '';
 };
 
+const shouldIgnorePath = (filePath) => {
+  const normalizedPath = relative(root, filePath).replaceAll('\\', '/');
+  return ignoredPathPatterns.some((pattern) => pattern.test(normalizedPath));
+};
+
 const walk = (dir, files = []) => {
   for (const entry of readdirSync(dir)) {
     if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
@@ -54,7 +69,7 @@ const walk = (dir, files = []) => {
 
     if (stat.isDirectory()) {
       walk(fullPath, files);
-    } else if (extensions.has(getExtension(fullPath))) {
+    } else if (extensions.has(getExtension(fullPath)) && !shouldIgnorePath(fullPath)) {
       files.push(fullPath);
     }
   }
@@ -71,7 +86,7 @@ for (const scanDir of scanDirs) {
   const files = walk(join(root, scanDir));
 
   for (const file of files) {
-    const relativePath = relative(root, file).replaceAll('\\\\', '/');
+    const relativePath = relative(root, file).replaceAll('\\', '/');
     const content = readFileSync(file, 'utf8');
 
     for (const table of sensitiveTables) {
