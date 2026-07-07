@@ -4,7 +4,7 @@ import { supabase } from './supabase';
  * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout
  */
 export const safeCall = async (rpcCall, functionName, retries = 2) => {
-    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund'];
+    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund', 'trigger_emergency_alert'];
     const TIMEOUT_MS = CRITICAL_FUNCTIONS.includes(functionName) ? 25000 : 15000;
 
     const executeCall = async (attempt) => {
@@ -59,6 +59,12 @@ export const completeRide = (rideId) =>
  */
 export const cancelRide = (rideId) =>
     safeCall(() => supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
+
+export const triggerEmergencyAlert = (rideId, details) =>
+    safeCall(() => supabase.rpc('trigger_emergency_alert', {
+        p_ride_id: rideId,
+        p_details: details
+    }), 'trigger_emergency_alert');
 
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
@@ -283,9 +289,9 @@ export const cancelRideRequest = (requestId) =>
     safeCall(() => supabase.rpc('cancel_ride_request', { p_request_id: requestId }), 'cancel_ride_request');
 
 export const handlePassengerNoShow = (rideId, passengerId) =>
-    safeCall(() => supabase.rpc('handle_passenger_no_show', { 
-        p_ride_id: rideId, 
-        p_passenger_id: passengerId 
+    safeCall(() => supabase.rpc('handle_passenger_no_show', {
+        p_ride_id: rideId,
+        p_passenger_id: passengerId
     }), 'handle_passenger_no_show');
 
 // --- EXTERNAL INTEGRATIONS ---
