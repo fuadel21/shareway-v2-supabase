@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
+
+const root = process.cwd();
+
+const SCAN_DIRS = ['src'];
+const FILE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx']);
+
+const BLOCKED_PATTERNS = [
+  {
+    pattern: /Mocked for test/i,
+    reason: 'Comentario o dato mock dentro de codigo de aplicacion.'
+  },
+  {
+    pattern: /passenger-(789|456)/i,
+    reason: 'ID de pasajero simulado expuesto en flujo real.'
+  },
+  {
+    pattern: /driverBalance\s*:\s*125\.50/i,
+    reason: 'Saldo de conductor simulado.'
+  },
+  {
+    pattern: /escrowAmount\s*:\s*25\.50/i,
+    reason: 'Importe escrow simulado.'
+  },
+  {
+    pattern: /driverPenalty\s*:\s*5\.00/i,
+    reason: 'Penalizacion simulada.'
+  },
+  {
+    pattern: /actualDistance\s*:\s*618\.2/i,
+    reason: 'Distancia real simulada.'
+  },
+  {
+    pattern: /co2Saved\s*:\s*45\.6/i,
+    reason: 'Impacto CO2 simulado.'
+  },
+  {
+    pattern: /refundAmounts\s*:\s*{[^}]*passenger-/is,
+    reason: 'Mapa de reembolsos con pasajeros simulados.'
+  }
+];
+
+const getExtension = (filePath) => {
+  const match = filePath.match(/\.[^.]+$/);
+  return match ? match[0] : '';
+};
+
+const walk = (dir, files = []) => {
+  for (const entry of readdirSync(dir)) {
+    if (entry === 'node_modules' || entry === 'dist' || entry === '.git') continue;
+
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+
+    if (stat.isDirectory()) {
+      walk(fullPath, files);
+    } else if (FILE_EXTENSIONS.has(getExtension(fullPath))) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+};
+
+const findings = [];
+
+for (const scanDir of SCAN_DIRS) {
+  const fullScanDir = join(root, scanDir);
+  const files = walk(fullScanDir);
+
+  for (const file of files) {
+    const content = readFileSync(file, 'utf8');
+    const lines = content.split(/\r?\n/);
+
+    for (const { pattern, reason } of BLOCKED_PATTERNS) {
+      const match = content.match(pattern);
+      if (!match) continue;
+
+      const matchedIndex = match.index ?? 0;
+      const beforeMatch = content.slice(0, matchedIndex);
+      const lineNumber = beforeMatch.split(/\r?\n/).length;
+      const line = lines[lineNumber - 1]?.trim() || '';
+
+      findings.push({
+        file: relative(root, file),
+        lineNumber,
+        line,
+        reason
+      });
+    }
+  }
+}
+
+if (findings.length > 0) {
+  console.error('\n🚫 Production readiness check failed.');
+  console.error('Se han detectado mocks/datos simulados dentro del codigo de aplicacion:\n');
+
+  for (const finding of findings) {
+    console.error(`- ${finding.file}:${finding.lineNumber}`);
+    console.error(`  Motivo: ${finding.reason}`);
+    console.error(`  Linea: ${finding.line}\n`);
+  }
+
+  console.error('Solucion: elimina estos datos simulados o muevelos a tests/fixtures antes de produccion.\n');
+  process.exit(1);
+}
+
+console.log('✅ Production readiness check passed. No dangerous production mocks found.');
