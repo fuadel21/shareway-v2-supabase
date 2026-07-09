@@ -114,6 +114,16 @@ const normalizeLocation = (loc) => ({
     lng: parseFloat(loc?.coordinates?.lng ?? loc?.coordinates?.longitude ?? loc?.lng ?? 0)
 });
 
+const unwrapRpcData = (data) => Array.isArray(data) ? data[0] : data;
+
+const assertBusinessSuccess = (payload, fallbackMessage) => {
+    const result = unwrapRpcData(payload);
+    if (result && result.success === false) {
+        throw new Error(result.message || result.error || fallbackMessage);
+    }
+    return result;
+};
+
 /**
  * Validador estricto unificado para Ofertas y Solicitudes.
  */
@@ -368,13 +378,13 @@ export const startRide = async (rideId, currentLocation = null) => {
             await rpc.updateRideLocation(rideId, currentLocation.lat ?? currentLocation.latitude, currentLocation.lng ?? currentLocation.longitude);
         }
 
-        // Devolvemos objeto enriquecido para compatibilidad con tests
         return {
             success: true,
-            rideId,
-            status: 'in_progress',
-            startedAt: new Date().toISOString(),
-            currentLocation: currentLocation
+            rideId: data?.ride_id || data?.rideId || rideId,
+            status: data?.status || 'in_progress',
+            startedAt: data?.started_at || data?.startedAt || new Date().toISOString(),
+            currentLocation: currentLocation ?? data?.current_location ?? null,
+            raw: data ?? null
         };
     } catch (err) {
         console.error("🛡️ [Ride Lifecycle] startRide failed:", err);
@@ -388,25 +398,21 @@ export const completeRide = async (rideId) => {
         if (!success) {
             throw new Error(error?.message || error || 'No se pudo completar el viaje');
         }
-        if (data && data.success === false) {
-            throw new Error(data.message || 'No se pudo completar el viaje');
-        }
 
-        // Enriquecer respuesta para tests
+        const result = assertBusinessSuccess(data, 'No se pudo completar el viaje');
+
         return {
-            success: true,
-            rideId,
-            status: 'completed',
-            completedAt: new Date().toISOString(),
-            finalDistance: data?.final_distance || 620.5, // Fallback value for tests if not provided
-            escrowReleased: true,
-            paymentsProcessed: true,
-            driverBalance: 125.50, // Mocked for test compatibility
-            escrowAmount: 25.50, // Mocked for test compatibility
-            metrics: {
-                actualDistance: 618.2,
-                co2Saved: 45.6
-            }
+            success: result?.success ?? true,
+            rideId: result?.ride_id || result?.rideId || rideId,
+            status: result?.status || 'completed',
+            completedAt: result?.completed_at || result?.completedAt || new Date().toISOString(),
+            finalDistance: result?.final_distance ?? result?.finalDistance ?? null,
+            escrowReleased: result?.escrow_released ?? result?.escrowReleased ?? null,
+            paymentsProcessed: result?.payments_processed ?? result?.paymentsProcessed ?? null,
+            payout: result?.payout ?? result?.driver_payout ?? result?.driverPayout ?? null,
+            platformFee: result?.platform_fee ?? result?.platformFee ?? null,
+            metrics: result?.metrics ?? null,
+            raw: result ?? null
         };
     } catch (err) {
         console.error("🛡️ [Ride Lifecycle] completeRide failed:", err);
@@ -421,23 +427,22 @@ export const cancelRide = async (rideId, reason = '') => {
     try {
         const { data, success, error } = await rpc.cancelRide(rideId);
         if (!success) throw new Error(error);
-        if (data && data.success === false) throw new Error(data.message || 'No se pudo cancelar el viaje');
+
+        const result = assertBusinessSuccess(data, 'No se pudo cancelar el viaje');
 
         return {
-            success: true,
-            rideId,
-            status: 'cancelled',
-            cancelledAt: new Date().toISOString(),
-            reason,
-            refundsProcessed: true,
-            escrowReleased: true,
-            escrowRefunded: true,
-            lastMinuteCancellation: true, // Mocked for test compatibility
-            driverPenalty: 5.00, // Mocked for test compatibility
-            refundAmounts: {
-                'passenger-789': 25.50, // Mocked for test compatibility
-                'passenger-456': 25.50  // Mocked for test compatibility
-            }
+            success: result?.success ?? true,
+            rideId: result?.ride_id || result?.rideId || rideId,
+            status: result?.status || 'cancelled',
+            cancelledAt: result?.cancelled_at || result?.cancelledAt || new Date().toISOString(),
+            reason: result?.reason ?? reason,
+            refundsProcessed: result?.refunds_processed ?? result?.refundsProcessed ?? null,
+            escrowReleased: result?.escrow_released ?? result?.escrowReleased ?? null,
+            escrowRefunded: result?.escrow_refunded ?? result?.escrowRefunded ?? null,
+            lastMinuteCancellation: result?.last_minute_cancellation ?? result?.lastMinuteCancellation ?? null,
+            driverPenalty: result?.driver_penalty ?? result?.driverPenalty ?? null,
+            refundAmounts: result?.refund_amounts ?? result?.refundAmounts ?? {},
+            raw: result ?? null
         };
     } catch (err) {
         console.error("🛡️ [Ride Lifecycle] cancelRide failed:", err);
@@ -513,46 +518,21 @@ export const updateRideLocation = async (rideId, locationData) => {
     const lng = locationData.lng ?? locationData.longitude;
     const { data, success, error } = await rpc.updateRideLocation(rideId, lat, lng);
     if (!success) throw new Error(error);
+
+    const result = assertBusinessSuccess(data, 'No se pudo actualizar la ubicación');
+
     return {
-        success: true,
-        rideId,
-        location: locationData,
-        distanceSinceLastUpdate: 0.5, // Mocked for test
-        totalDistance: 125.3 // Mocked for test
+        success: result?.success ?? true,
+        rideId: result?.ride_id || result?.rideId || rideId,
+        location: result?.location || { lat, lng },
+        distanceSinceLastUpdate: result?.distance_since_last_update ?? result?.distanceSinceLastUpdate ?? null,
+        totalDistance: result?.total_distance ?? result?.totalDistance ?? null,
+        raw: result ?? null
     };
 };
 
-export const updateRideStatus = async (rideId, status, metadata = {}) => {
-    // Nota: El sistema usa RPCs específicos para cambios de estado (startRide, completeRide)
-    // Pero mantenemos este genérico para compatibilidad de tests si es necesario.
-    const { data, error } = await supabase
-        .from('rides')
-        .update({ status, ...metadata })
-        .eq('id', rideId)
-        .select()
-        .single();
-
-    if (error) throw error;
-
-    // Register status change if requested (for tests)
-    await supabase.from('ride_status_logs').insert({
-        ride_id: rideId,
-        status: status,
-        metadata: metadata
-    });
-
-    return {
-        success: true,
-        rideId,
-        previousStatus: 'scheduled', // Mocked for test
-        newStatus: status,
-        data,
-        metadata: metadata,
-        statusHistory: [
-            { status: 'scheduled', timestamp: new Date(Date.now() - 3600000).toISOString() },
-            { status: status, timestamp: new Date().toISOString() }
-        ]
-    };
+export const updateRideStatus = async () => {
+    throw new Error('updateRideStatus está deshabilitado en producción. Usa startRide, completeRide, cancelRide o un RPC específico.');
 };
 
 export const getCurrentRides = async (userId) => {
@@ -604,29 +584,23 @@ export const getRideStatusHistory = async (rideId) => {
 
 export const emergencyStopRide = async (rideId, reason) => {
     try {
-        const { data, success, error } = await rpc.safeCall(
-            () => supabase.rpc('trigger_emergency_alert', {
-                p_ride_id: rideId,
-                p_details: reason
-            }),
-            'trigger_emergency_alert'
-        );
+        const { data, success, error } = await rpc.triggerEmergencyAlert(rideId, reason);
 
         if (!success) throw new Error(error);
 
+        const result = assertBusinessSuccess(data, 'No se pudo activar la emergencia');
+
         return {
-            success: true,
-            rideId,
-            status: 'emergency_stopped',
-            stoppedAt: new Date().toISOString(),
-            reason,
-            emergencyNotified: true,
-            notificationsSent: { passengers: true, emergencyServices: true, support: true },
-            refundsProcessed: true,
-            refundAmounts: {
-                'passenger-789': 25.50,
-                'passenger-456': 25.50
-            }
+            success: result?.success ?? true,
+            rideId: result?.ride_id || result?.rideId || rideId,
+            status: result?.status || 'emergency_stopped',
+            stoppedAt: result?.stopped_at || result?.stoppedAt || new Date().toISOString(),
+            reason: result?.reason ?? reason,
+            emergencyNotified: result?.emergency_notified ?? result?.emergencyNotified ?? null,
+            notificationsSent: result?.notifications_sent ?? result?.notificationsSent ?? null,
+            refundsProcessed: result?.refunds_processed ?? result?.refundsProcessed ?? null,
+            refundAmounts: result?.refund_amounts ?? result?.refundAmounts ?? {},
+            raw: result ?? null
         };
     } catch (err) {
         console.error("🛡️ [Ride Lifecycle] emergencyStopRide failed:", err);
