@@ -130,11 +130,44 @@ function LandingPage() {
     ['/compartir-taxi-aeropuerto-alicante/', 'Compartir taxi al aeropuerto de Alicante'],
   ];
 
+  const localRouteLinks = [
+    ['/rutas/pineda-de-mar/barcelona/', 'Pineda de Mar → Barcelona', 'Maresme norte'],
+    ['/rutas/malgrat-de-mar/barcelona/', 'Malgrat de Mar → Barcelona', 'Maresme norte'],
+    ['/rutas/calella/barcelona/', 'Calella → Barcelona', 'Maresme'],
+    ['/rutas/mataro/barcelona/', 'Mataró → Barcelona', 'Maresme diario'],
+    ['/rutas/girona/barcelona/', 'Girona → Barcelona', 'Girona y Barcelona'],
+    ['/rutas/barcelona/girona/', 'Barcelona → Girona', 'Ruta interurbana'],
+    ['/rutas/barcelona/tarragona/', 'Barcelona → Tarragona', 'Costa Daurada'],
+    ['/rutas/lloret-de-mar/barcelona/', 'Lloret de Mar → Barcelona', 'Costa Brava'],
+    ['/rutas/blanes/barcelona/', 'Blanes → Barcelona', 'Costa Brava sur'],
+  ];
+
+  const localCityLinks = [
+    ['/ciudades/barcelona/', 'Barcelona'],
+    ['/ciudades/girona/', 'Girona'],
+    ['/ciudades/mataro/', 'Mataró'],
+    ['/ciudades/pineda-de-mar/', 'Pineda de Mar'],
+    ['/ciudades/malgrat-de-mar/', 'Malgrat de Mar'],
+    ['/ciudades/calella/', 'Calella'],
+    ['/ciudades/blanes/', 'Blanes'],
+    ['/ciudades/lloret-de-mar/', 'Lloret de Mar'],
+    ['/ciudades/sabadell/', 'Sabadell'],
+    ['/ciudades/terrassa/', 'Terrassa'],
+    ['/ciudades/tarragona/', 'Tarragona'],
+    ['/ciudades/reus/', 'Reus'],
+  ];
+
+  const localAirportLinks = [
+    ['/aeropuertos/aeropuerto-barcelona-el-prat/', 'Aeropuerto Barcelona-El Prat'],
+    ['/aeropuertos/aeropuerto-girona-costa-brava/', 'Aeropuerto Girona-Costa Brava'],
+    ['/aeropuertos/aeropuerto-reus/', 'Aeropuerto de Reus'],
+  ];
+
   const faqs = [
     ['¿Qué es ShareWay?', 'ShareWay es una plataforma de carpooling para compartir coche, taxi o trayectos con usuarios que tienen rutas compatibles.'],
     ['¿Es gratis crear una cuenta?', 'Sí, el registro está planteado para que puedas empezar a crear tu perfil y explorar trayectos.'],
     ['¿Puedo usar ShareWay para ir al aeropuerto?', 'Sí. Puedes buscar o publicar trayectos hacia aeropuertos para compartir gastos con personas con horarios compatibles.'],
-    ['¿En qué ciudades funciona?', 'ShareWay está pensado para funcionar en distintas ciudades y rutas. Ya tenemos páginas específicas para Madrid, Barcelona, Valencia, Sevilla, Málaga, Alicante, Bilbao y Zaragoza.'],
+    ['¿En qué ciudades funciona?', 'ShareWay está pensado para funcionar en distintas ciudades y rutas. Ya tenemos páginas específicas para Barcelona, Girona, Mataró, Pineda de Mar, Malgrat de Mar, Lloret de Mar, Madrid, Valencia, Sevilla, Málaga, Alicante, Bilbao y Zaragoza.'],
     ['¿Puedo compartir trayectos al trabajo o a la universidad?', 'Sí. ShareWay permite organizar trayectos compatibles para trabajo, universidad, aeropuertos, eventos y rutas frecuentes.'],
     ['¿ShareWay es una empresa de taxi?', 'No. ShareWay es una plataforma de carpooling para conectar usuarios que quieren compartir trayectos o coordinar desplazamientos compatibles.'],
   ];
@@ -192,6 +225,38 @@ function LandingPage() {
 
       <section className="bg-white px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Casos de uso frecuentes</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">ShareWay puede servir para organizar desplazamientos concretos del día a día y encontrar personas con necesidades parecidas.</p><div className="mt-8 grid gap-5 md:grid-cols-4">{useCases.map(([title, text]) => <article key={title} className="rounded-3xl bg-slate-50 p-6"><h3 className="font-black">{title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{text}</p></article>)}</div></div></section>
 
+      <section className="bg-slate-950 px-6 py-16 text-white">
+        <div className="mx-auto max-w-5xl">
+          <p className="text-sm font-black uppercase tracking-widest text-orange-300">Rutas reales para empezar</p>
+          <h2 className="mt-3 text-3xl font-black tracking-tight">Rutas populares para compartir coche en Catalunya</h2>
+          <p className="mt-4 max-w-3xl leading-8 text-white/70">Empieza por las páginas más buscadas de Barcelona, Maresme, Girona, Costa Brava y Tarragona. Estos enlaces ayudan a los usuarios y también refuerzan la indexación SEO.</p>
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {localRouteLinks.map(([href, label, zone]) => (
+              <a key={href} href={href} className="rounded-3xl border border-white/10 bg-white/10 p-6 font-black text-white hover:bg-white/15">
+                <span className="block text-xs uppercase tracking-widest text-orange-300">{zone}</span>
+                <span className="mt-2 block text-lg">{label}</span>
+              </a>
+            ))}
+          </div>
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div className="rounded-[2rem] bg-white p-6 text-slate-950">
+              <h3 className="text-xl font-black">Ciudades para compartir coche</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Páginas locales para captar búsquedas de carpooling y viajes compartidos por ciudad.</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {localCityLinks.map(([href, label]) => <a key={href} href={href} className="rounded-full border px-4 py-2 text-sm font-black hover:bg-slate-50">{label}</a>)}
+              </div>
+            </div>
+            <div className="rounded-[2rem] bg-orange-500 p-6 text-white">
+              <h3 className="text-xl font-black">Aeropuertos y trayectos frecuentes</h3>
+              <p className="mt-2 text-sm leading-6 text-white/80">Enlaces a páginas de aeropuertos para captar usuarios con horarios compatibles y viajes puntuales.</p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {localAirportLinks.map(([href, label]) => <a key={href} href={href} className="rounded-full bg-white px-4 py-2 text-sm font-black text-orange-600 hover:bg-orange-50">{label}</a>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Guías útiles para compartir trayectos</h2><p className="mt-4 max-w-3xl leading-8 text-slate-600">Contenido orientado a búsquedas frecuentes sobre carpooling, compartir coche, viajes compartidos, rutas compartidas, ahorro, trabajo y universidad.</p><div className="mt-8 grid gap-5 md:grid-cols-5">{guides.map(([href, label]) => <a key={href} href={href} className="rounded-3xl border p-6 font-black hover:bg-slate-50">{label}</a>)}</div></div></section>
 
       <section className="bg-slate-50 px-6 py-16"><div className="mx-auto max-w-5xl"><h2 className="text-3xl font-black tracking-tight">Rutas populares</h2><p className="mt-4 max-w-2xl leading-7 text-slate-600">Consulta páginas específicas para compartir trayectos, coche, taxi y carpooling en ciudades y destinos frecuentes.</p><div className="mt-8 grid gap-5 md:grid-cols-3">{[...carpoolingRoutes, ...sharedCarRoutes, ...sharedTripRoutes, ...sharedRoutePages, ...cityRoutes, ...airportRoutes].map(([href, label]) => <a key={href} href={href} className="rounded-3xl bg-white p-6 font-black shadow-sm hover:shadow-md">{label}</a>)}</div><a href="/rutas/" className="mt-8 inline-flex rounded-full bg-slate-950 px-6 py-4 font-black text-white">Ver todas las rutas y guías</a></div></section>
@@ -202,7 +267,7 @@ function LandingPage() {
 
       <section className="px-6 py-20"><div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14"><h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p><div className="mt-8 flex flex-wrap gap-4"><a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a><a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a></div></div></section>
 
-      <footer className="border-t border-slate-100 px-6 py-10"><div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between"><p>© ShareWay</p><nav className="flex flex-wrap gap-4"><a href="/carpooling/" className="hover:text-slate-950">Carpooling</a><a href="/viajes-compartidos/" className="hover:text-slate-950">Viajes compartidos</a><a href="/rutas-compartidas/" className="hover:text-slate-950">Rutas compartidas</a><a href="/rutas/" className="hover:text-slate-950">Rutas</a><a href="/contacto/" className="hover:text-slate-950">Contacto</a><a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a><a href="/privacidad/" className="hover:text-slate-950">Privacidad</a><a href="/cookies/" className="hover:text-slate-950">Cookies</a><a href="/terminos/" className="hover:text-slate-950">Términos</a></nav></div></footer>
+      <footer className="border-t border-slate-100 px-6 py-10"><div className="mx-auto flex max-w-5xl flex-col gap-4 text-sm text-slate-500 md:flex-row md:items-center md:justify-between"><p>© ShareWay</p><nav className="flex flex-wrap gap-4"><a href="/carpooling/" className="hover:text-slate-950">Carpooling</a><a href="/viajes-compartidos/" className="hover:text-slate-950">Viajes compartidos</a><a href="/rutas-compartidas/" className="hover:text-slate-950">Rutas compartidas</a><a href="/rutas/" className="hover:text-slate-950">Rutas</a><a href="/ciudades/barcelona/" className="hover:text-slate-950">Barcelona</a><a href="/rutas/pineda-de-mar/barcelona/" className="hover:text-slate-950">Pineda - Barcelona</a><a href="/rutas/girona/barcelona/" className="hover:text-slate-950">Girona - Barcelona</a><a href="/contacto/" className="hover:text-slate-950">Contacto</a><a href="/aviso-legal/" className="hover:text-slate-950">Aviso Legal</a><a href="/privacidad/" className="hover:text-slate-950">Privacidad</a><a href="/cookies/" className="hover:text-slate-950">Cookies</a><a href="/terminos/" className="hover:text-slate-950">Términos</a></nav></div></footer>
     </main>
   );
 }
