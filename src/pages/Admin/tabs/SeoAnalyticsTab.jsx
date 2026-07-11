@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, ExternalLink, Loader2, MousePointerClick, RefreshCw, Route, Search, UserPlus } from 'lucide-react';
+import { BarChart3, Download, ExternalLink, Loader2, MousePointerClick, RefreshCw, Route, Search, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
 import { supabase } from '@/lib/supabase.js';
 
-const DAYS_BACK = 30;
-const EVENTS_LIMIT = 2000;
+const EVENTS_LIMIT = 5000;
+const RANGE_OPTIONS = [7, 30, 90];
 
 const formatNumber = (value) => new Intl.NumberFormat('es-ES').format(value || 0);
 
@@ -19,6 +19,23 @@ const getPageTypeLabel = (pageType) => ({
   seo_landing: 'Landing SEO',
   app: 'App',
 }[pageType] || pageType || 'Sin tipo');
+
+const csvEscape = (value) => {
+  if (value === null || value === undefined) return '""';
+  return `"${String(value).replace(/"/g, '""')}"`;
+};
+
+const downloadCsv = (filename, rows) => {
+  const blob = new Blob([rows], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 
 const aggregateRows = (items, keyGetter, valueBuilder) => {
   const map = new Map();
@@ -62,11 +79,16 @@ const EmptyState = ({ text = 'Sin datos todavía' }) => (
   </div>
 );
 
-const SimpleTable = ({ title, description, rows, columns }) => (
+const SimpleTable = ({ title, description, rows, columns, limit = 10 }) => (
   <Card className="rounded-[2rem] border-none shadow-sm">
     <CardHeader className="p-5 pb-3">
-      <CardTitle className="text-base font-black uppercase tracking-tight text-slate-900">{title}</CardTitle>
-      {description && <CardDescription className="text-xs font-bold text-slate-400">{description}</CardDescription>}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <CardTitle className="text-base font-black uppercase tracking-tight text-slate-900">{title}</CardTitle>
+          {description && <CardDescription className="text-xs font-bold text-slate-400">{description}</CardDescription>}
+        </div>
+        {rows.length > 0 && <Badge className="w-fit rounded-full bg-slate-100 text-slate-600 hover:bg-slate-100">Top {Math.min(limit, rows.length)}</Badge>}
+      </div>
     </CardHeader>
     <CardContent className="p-5 pt-0">
       {rows.length === 0 ? (
@@ -82,7 +104,7 @@ const SimpleTable = ({ title, description, rows, columns }) => (
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {rows.slice(0, 10).map((row, index) => (
+              {rows.slice(0, limit).map((row, index) => (
                 <tr key={`${title}-${index}`} className="hover:bg-slate-50/80">
                   {columns.map((column) => (
                     <td key={column.key} className="px-4 py-3 align-top">
@@ -112,6 +134,7 @@ const PathLink = ({ path }) => {
 
 function SeoAnalyticsTab() {
   const [events, setEvents] = useState([]);
+  const [dayRange, setDayRange] = useState(30);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -119,7 +142,7 @@ function SeoAnalyticsTab() {
     setLoading(true);
     setError(null);
 
-    const since = new Date(Date.now() - DAYS_BACK * 24 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - dayRange * 24 * 60 * 60 * 1000).toISOString();
 
     const { data, error: fetchError } = await supabase
       .from('growth_events')
@@ -140,7 +163,7 @@ function SeoAnalyticsTab() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+  }, [dayRange]);
 
   const analytics = useMemo(() => {
     const pageViews = events.filter((event) => event.event_name === 'page_view');
@@ -201,6 +224,35 @@ function SeoAnalyticsTab() {
     };
   }, [events]);
 
+  const handleExportCsv = () => {
+    const header = [
+      'created_at',
+      'event_name',
+      'path',
+      'page_type',
+      'source_path',
+      'source_page_type',
+      'target_path',
+      'target_text',
+      'metadata',
+    ];
+
+    const rows = events.map((event) => [
+      event.created_at,
+      event.event_name,
+      event.path,
+      event.metadata?.pageType,
+      event.metadata?.sourcePath,
+      event.metadata?.sourcePageType,
+      event.metadata?.targetPath,
+      event.metadata?.targetText,
+      JSON.stringify(event.metadata || {}),
+    ].map(csvEscape).join(','));
+
+    const csv = [header.map(csvEscape).join(','), ...rows].join('\n');
+    downloadCsv(`shareway-seo-events-${dayRange}d.csv`, csv);
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[420px] items-center justify-center rounded-[2rem] bg-slate-50">
@@ -214,15 +266,32 @@ function SeoAnalyticsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-[2rem] bg-slate-950 p-6 text-white md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-[2rem] bg-slate-950 p-6 text-white xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-300">SEO Analytics</p>
-          <h3 className="mt-2 text-2xl font-black tracking-tight">Rendimiento SEO de los últimos {DAYS_BACK} días</h3>
+          <h3 className="mt-2 text-2xl font-black tracking-tight">Rendimiento SEO de los últimos {dayRange} días</h3>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-white/60">Mide visitas, clics internos, guías que empujan hacia rutas y páginas que generan intención de registro.</p>
         </div>
-        <Button onClick={fetchEvents} variant="secondary" className="rounded-2xl font-black uppercase tracking-widest">
-          <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
-        </Button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+          <div className="grid grid-cols-3 gap-2 rounded-2xl bg-white/10 p-1.5">
+            {RANGE_OPTIONS.map((days) => (
+              <button
+                key={days}
+                type="button"
+                onClick={() => setDayRange(days)}
+                className={days === dayRange ? 'rounded-xl bg-white px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-950' : 'rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest text-white/70 hover:bg-white/10'}
+              >
+                {days}d
+              </button>
+            ))}
+          </div>
+          <Button onClick={fetchEvents} variant="secondary" className="rounded-2xl font-black uppercase tracking-widest">
+            <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
+          </Button>
+          <Button onClick={handleExportCsv} disabled={events.length === 0} className="rounded-2xl bg-orange-500 font-black uppercase tracking-widest text-white hover:bg-orange-600">
+            <Download className="mr-2 h-4 w-4" /> CSV
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -232,7 +301,7 @@ function SeoAnalyticsTab() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Page views" value={analytics.pageViews.length} description="Visitas públicas y app" icon={<BarChart3 className="h-5 w-5" />} />
+        <MetricCard title="Page views" value={analytics.pageViews.length} description={`Visitas últimos ${dayRange} días`} icon={<BarChart3 className="h-5 w-5" />} />
         <MetricCard title="Clics SEO" value={analytics.seoClicks.length} description="Clics internos medidos" icon={<MousePointerClick className="h-5 w-5" />} />
         <MetricCard title="Guía → Ruta" value={analytics.guideToRoute.reduce((sum, row) => sum + row.count, 0)} description="Clics desde guías" icon={<Route className="h-5 w-5" />} />
         <MetricCard title="Registro/Login" value={analytics.registrationClicks.reduce((sum, row) => sum + row.count, 0)} description="Intención de conversión" icon={<UserPlus className="h-5 w-5" />} />
@@ -293,7 +362,7 @@ function SeoAnalyticsTab() {
             <Search className="mt-1 h-5 w-5 shrink-0 text-orange-500" />
             <div>
               <h4 className="font-black text-slate-950">Cómo usar estos datos</h4>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Si una guía tiene visitas pero pocos clics a ruta, hay que mejorar el CTA. Si una ruta tiene muchos clics a registro, conviene crear más guías alrededor de esa ruta. Cruza estos datos con Search Console cada semana.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Usa 7 días para ver cambios recientes, 30 días para tomar decisiones normales y 90 días para detectar tendencias. Si una guía tiene visitas pero pocos clics a ruta, mejora el CTA. Si una ruta tiene muchos clics a registro, crea más guías alrededor de esa ruta.</p>
             </div>
           </div>
         </CardContent>
