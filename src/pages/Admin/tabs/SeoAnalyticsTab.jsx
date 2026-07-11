@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Download, ExternalLink, Loader2, MousePointerClick, RefreshCw, Route, Search, UserPlus } from 'lucide-react';
+import { BarChart3, Download, ExternalLink, Lightbulb, Loader2, MousePointerClick, RefreshCw, Route, Search, TrendingUp, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -60,6 +60,137 @@ const aggregateRows = (items, keyGetter, valueBuilder) => {
   return Array.from(map.values()).sort((a, b) => b.count - a.count || String(b.lastSeen).localeCompare(String(a.lastSeen)));
 };
 
+const sumBy = (rows, key) => rows.reduce((map, row) => {
+  const value = row[key];
+  if (!value) return map;
+  map.set(value, (map.get(value) || 0) + (row.count || 0));
+  return map;
+}, new Map());
+
+const uniquePush = (items, nextItem) => {
+  const key = `${nextItem.type}|${nextItem.path || ''}|${nextItem.action || ''}`;
+  if (items.some((item) => `${item.type}|${item.path || ''}|${item.action || ''}` === key)) return;
+  items.push(nextItem);
+};
+
+const buildOpportunities = ({ topPages, topClicks, guideToRoute, registrationClicks }) => {
+  const opportunities = [];
+  const routeClicksByGuide = sumBy(guideToRoute, 'guide');
+  const allClicksBySource = sumBy(topClicks, 'sourcePath');
+  const registrationClicksBySource = sumBy(registrationClicks, 'sourcePath');
+
+  topPages
+    .filter((row) => row.pageType === 'guide')
+    .slice(0, 8)
+    .forEach((guide) => {
+      const routeClicks = routeClicksByGuide.get(guide.path) || 0;
+      const rate = routeClicks / Math.max(guide.count, 1);
+
+      if (guide.count >= 1 && routeClicks === 0) {
+        uniquePush(opportunities, {
+          type: 'guide_low_route_clicks',
+          severity: 'alta',
+          title: 'Guía con visitas pero sin clics a ruta',
+          description: `${guide.path} tiene ${formatNumber(guide.count)} visitas y todavía no empuja usuarios hacia una ruta.`,
+          action: 'Añadir CTA visible arriba, repetir botón “Ver ruta” a mitad del artículo y enlazar una ruta concreta.',
+          path: guide.path,
+          metric: `${formatNumber(guide.count)} visitas · 0 clics a ruta`,
+        });
+      } else if (guide.count >= 3 && rate < 0.25) {
+        uniquePush(opportunities, {
+          type: 'guide_low_route_rate',
+          severity: 'media',
+          title: 'Guía con bajo paso hacia ruta',
+          description: `${guide.path} recibe visitas, pero solo convierte el ${Math.round(rate * 100)}% hacia rutas.`,
+          action: 'Mejorar el texto del botón, poner comparativa de ahorro y acercar la ruta recomendada al primer bloque.',
+          path: guide.path,
+          metric: `${formatNumber(routeClicks)} clics / ${formatNumber(guide.count)} visitas`,
+        });
+      }
+    });
+
+  registrationClicks
+    .filter((row) => row.sourcePageType === 'route')
+    .slice(0, 8)
+    .forEach((routeRow) => {
+      uniquePush(opportunities, {
+        type: 'route_converts_registration',
+        severity: 'alta',
+        title: 'Ruta con intención de registro',
+        description: `${routeRow.sourcePath} está enviando usuarios hacia registro/login.`,
+        action: 'Crear más guías alrededor de esta ruta y añadir enlaces desde home, ciudad y guías relacionadas.',
+        path: routeRow.sourcePath,
+        metric: `${formatNumber(routeRow.count)} clics a registro/login`,
+      });
+    });
+
+  topPages
+    .filter((row) => ['route', 'city', 'airport', 'seo_landing'].includes(row.pageType))
+    .slice(0, 10)
+    .forEach((page) => {
+      const seoClicks = allClicksBySource.get(page.path) || 0;
+      const registerClicks = registrationClicksBySource.get(page.path) || 0;
+
+      if (page.count >= 2 && seoClicks === 0) {
+        uniquePush(opportunities, {
+          type: 'page_needs_internal_links',
+          severity: 'media',
+          title: 'Página visitada con pocos enlaces accionados',
+          description: `${page.path} tiene visitas, pero no registra clics internos SEO.`,
+          action: 'Añadir enlaces visibles hacia rutas, guías relacionadas y botón de registro más claro.',
+          path: page.path,
+          metric: `${formatNumber(page.count)} visitas · 0 clics`,
+        });
+      }
+
+      if (page.pageType === 'route' && page.count >= 1 && registerClicks === 0) {
+        uniquePush(opportunities, {
+          type: 'route_needs_register_cta',
+          severity: 'baja',
+          title: 'Ruta con visitas pero sin registro',
+          description: `${page.path} recibe visitas, pero todavía no genera clics hacia registro/login.`,
+          action: 'Reforzar el CTA con “Buscar esta ruta”, ahorro estimado y confianza antes del botón.',
+          path: page.path,
+          metric: `${formatNumber(page.count)} visitas · 0 clics a registro`,
+        });
+      }
+    });
+
+  if (guideToRoute.length > 0) {
+    guideToRoute.slice(0, 3).forEach((row) => {
+      uniquePush(opportunities, {
+        type: 'guide_route_growth',
+        severity: 'baja',
+        title: 'Guía que ya empuja hacia ruta',
+        description: `${row.guide} ya manda usuarios hacia ${row.route}.`,
+        action: 'Crear 2 o 3 guías similares con variaciones de origen, destino, barato, diario y aeropuerto.',
+        path: row.guide,
+        metric: `${formatNumber(row.count)} clics guía → ruta`,
+      });
+    });
+  }
+
+  if (opportunities.length === 0) {
+    opportunities.push({
+      type: 'collect_more_data',
+      severity: 'baja',
+      title: 'Aún faltan más datos para decidir',
+      description: 'El sistema ya mide eventos, pero todavía hay poco volumen para detectar oportunidades fuertes.',
+      action: 'Seguir generando visitas desde Search Console, probar guías nuevas y revisar este panel en 7 días.',
+      path: '/admin/seo',
+      metric: 'Sin oportunidad crítica todavía',
+    });
+  }
+
+  return opportunities.slice(0, 8);
+};
+
+const getOpportunityClasses = (severity) => ({
+  alta: 'bg-red-50 text-red-700 border-red-100',
+  media: 'bg-amber-50 text-amber-700 border-amber-100',
+  baja: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+}[severity] || 'bg-slate-50 text-slate-700 border-slate-100');
+
 const MetricCard = ({ title, value, description, icon }) => (
   <Card className="rounded-[2rem] border-none bg-white shadow-sm">
     <CardContent className="flex items-center justify-between gap-4 p-5">
@@ -71,6 +202,28 @@ const MetricCard = ({ title, value, description, icon }) => (
       <div className="rounded-2xl bg-orange-50 p-3 text-orange-500">{icon}</div>
     </CardContent>
   </Card>
+);
+
+const OpportunityCard = ({ opportunity }) => (
+  <article className="rounded-[1.75rem] border border-slate-100 bg-white p-5 shadow-sm">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <Badge className={`rounded-full border font-black uppercase tracking-widest hover:bg-inherit ${getOpportunityClasses(opportunity.severity)}`}>
+        {opportunity.severity}
+      </Badge>
+      <span className="rounded-full bg-slate-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500">{opportunity.metric}</span>
+    </div>
+    <h4 className="mt-4 text-base font-black text-slate-950">{opportunity.title}</h4>
+    <p className="mt-2 text-sm leading-6 text-slate-600">{opportunity.description}</p>
+    <div className="mt-4 rounded-2xl bg-slate-50 p-4">
+      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Acción recomendada</p>
+      <p className="mt-2 text-sm font-bold leading-6 text-slate-700">{opportunity.action}</p>
+    </div>
+    {opportunity.path && (
+      <div className="mt-4">
+        <PathLink path={opportunity.path} />
+      </div>
+    )}
+  </article>
 );
 
 const EmptyState = ({ text = 'Sin datos todavía' }) => (
@@ -211,6 +364,13 @@ function SeoAnalyticsTab() {
       })
     );
 
+    const opportunities = buildOpportunities({
+      topPages,
+      topClicks,
+      guideToRoute,
+      registrationClicks,
+    });
+
     return {
       pageViews,
       seoClicks,
@@ -221,6 +381,7 @@ function SeoAnalyticsTab() {
       topClicks,
       guideToRoute,
       registrationClicks,
+      opportunities,
     };
   }, [events]);
 
@@ -306,6 +467,32 @@ function SeoAnalyticsTab() {
         <MetricCard title="Guía → Ruta" value={analytics.guideToRoute.reduce((sum, row) => sum + row.count, 0)} description="Clics desde guías" icon={<Route className="h-5 w-5" />} />
         <MetricCard title="Registro/Login" value={analytics.registrationClicks.reduce((sum, row) => sum + row.count, 0)} description="Intención de conversión" icon={<UserPlus className="h-5 w-5" />} />
       </div>
+
+      <Card className="rounded-[2rem] border-none bg-slate-950 text-white shadow-sm">
+        <CardHeader className="p-6 pb-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Lightbulb className="h-5 w-5 text-orange-300" />
+                <CardTitle className="text-xl font-black uppercase tracking-tight">Oportunidades SEO automáticas</CardTitle>
+              </div>
+              <CardDescription className="mt-2 max-w-3xl text-sm font-bold leading-6 text-white/60">
+                Recomendaciones calculadas con las visitas, clics internos, pasos guía → ruta y clics hacia registro.
+              </CardDescription>
+            </div>
+            <Badge className="w-fit rounded-full bg-orange-500 text-white hover:bg-orange-500">
+              <TrendingUp className="mr-1 h-3.5 w-3.5" /> {analytics.opportunities.length} señales
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-3">
+          <div className="grid gap-4 lg:grid-cols-2">
+            {analytics.opportunities.map((opportunity, index) => (
+              <OpportunityCard key={`${opportunity.type}-${opportunity.path}-${index}`} opportunity={opportunity} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <SimpleTable
         title="Top páginas visitadas"
