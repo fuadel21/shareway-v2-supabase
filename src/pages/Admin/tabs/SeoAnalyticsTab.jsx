@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Download, ExternalLink, Lightbulb, Loader2, MousePointerClick, RefreshCw, Route, Search, TrendingUp, UserPlus } from 'lucide-react';
+import { BarChart3, Download, ExternalLink, FileText, Lightbulb, Loader2, MousePointerClick, RefreshCw, Route, Search, Sparkles, TrendingUp, UserPlus } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Badge } from '@/components/ui/badge.jsx';
@@ -71,6 +71,130 @@ const uniquePush = (items, nextItem) => {
   const key = `${nextItem.type}|${nextItem.path || ''}|${nextItem.action || ''}`;
   if (items.some((item) => `${item.type}|${item.path || ''}|${item.action || ''}` === key)) return;
   items.push(nextItem);
+};
+
+const normalizeSlugText = (value) => String(value || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
+
+const humanizeSlug = (slug) => String(slug || '')
+  .split('-')
+  .filter(Boolean)
+  .map((word) => {
+    if (['de', 'del', 'la', 'las', 'el', 'los', 'a', 'y'].includes(word)) return word;
+    return word.charAt(0).toUpperCase() + word.slice(1);
+  })
+  .join(' ')
+  .replace(/Barcelona El Prat/g, 'Barcelona-El Prat')
+  .replace(/Girona Costa Brava/g, 'Girona-Costa Brava');
+
+const parseRoutePath = (path) => {
+  const match = String(path || '').match(/^\/rutas\/([^/]+)\/([^/]+)\/?$/);
+  if (!match) return null;
+
+  return {
+    originSlug: match[1],
+    destinationSlug: match[2],
+    origin: humanizeSlug(match[1]),
+    destination: humanizeSlug(match[2]),
+    path: `/rutas/${match[1]}/${match[2]}/`,
+  };
+};
+
+const buildGuideIdeas = ({ topPages, topClicks, guideToRoute, registrationClicks }) => {
+  const routeSignals = new Map();
+
+  const addRouteSignal = (routePath, score, reason) => {
+    const route = parseRoutePath(routePath);
+    if (!route) return;
+
+    const existing = routeSignals.get(route.path) || {
+      ...route,
+      score: 0,
+      reasons: new Set(),
+    };
+
+    existing.score += score;
+    existing.reasons.add(reason);
+    routeSignals.set(route.path, existing);
+  };
+
+  registrationClicks
+    .filter((row) => row.sourcePageType === 'route')
+    .forEach((row) => addRouteSignal(row.sourcePath, (row.count || 1) * 5, 'La ruta genera clics hacia registro/login'));
+
+  guideToRoute.forEach((row) => addRouteSignal(row.route, (row.count || 1) * 4, 'Una guía ya está enviando usuarios hacia esta ruta'));
+
+  topPages
+    .filter((row) => row.pageType === 'route')
+    .forEach((row) => addRouteSignal(row.path, (row.count || 1) * 2, 'La ruta recibe visitas'));
+
+  topClicks.forEach((row) => {
+    addRouteSignal(row.targetPath, (row.count || 1) * 3, 'Recibe clics internos desde otras páginas SEO');
+    addRouteSignal(row.sourcePath, (row.count || 1), 'Genera navegación interna SEO');
+  });
+
+  if (routeSignals.size === 0) {
+    [
+      '/rutas/pineda-de-mar/barcelona/',
+      '/rutas/malgrat-de-mar/barcelona/',
+      '/rutas/mataro/barcelona/',
+      '/rutas/girona/barcelona/',
+      '/rutas/lloret-de-mar/barcelona/',
+      '/rutas/blanes/barcelona/',
+    ].forEach((path) => addRouteSignal(path, 1, 'Ruta prioritaria inicial para captar búsquedas locales'));
+  }
+
+  const templates = [
+    {
+      kind: 'ahorro',
+      title: ({ origin, destination }) => `Cómo ir de ${origin} a ${destination} barato`,
+      intent: 'Búsqueda informativa de ahorro',
+      angle: 'Comparar opciones y presentar compartir coche como alternativa económica.',
+    },
+    {
+      kind: 'compartir-coche',
+      title: ({ origin, destination }) => `Compartir coche de ${origin} a ${destination}`,
+      intent: 'Búsqueda directa de carpooling',
+      angle: 'Explicar cómo encontrar o publicar una plaza para esa ruta.',
+    },
+    {
+      kind: 'viajes-compartidos',
+      title: ({ origin, destination }) => `Viajes compartidos de ${origin} a ${destination}`,
+      intent: 'Búsqueda recurrente de movilidad',
+      angle: 'Enfocar en trayectos diarios, trabajo, estudios y horarios compatibles.',
+    },
+  ];
+
+  const seen = new Set();
+
+  return Array.from(routeSignals.values())
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6)
+    .flatMap((route) => templates.map((template, templateIndex) => {
+      const title = template.title(route);
+      const slug = normalizeSlugText(title);
+      const key = `${route.path}|${slug}`;
+      if (seen.has(key)) return null;
+      seen.add(key);
+
+      return {
+        title,
+        slug,
+        routePath: route.path,
+        routeLabel: `${route.origin} → ${route.destination}`,
+        priority: templateIndex === 0 && route.score >= 5 ? 'alta' : templateIndex === 1 ? 'media' : 'baja',
+        intent: template.intent,
+        angle: template.angle,
+        signal: Array.from(route.reasons).join(' · '),
+        score: route.score,
+      };
+    }))
+    .filter(Boolean)
+    .slice(0, 12);
 };
 
 const buildOpportunities = ({ topPages, topClicks, guideToRoute, registrationClicks }) => {
@@ -226,6 +350,37 @@ const OpportunityCard = ({ opportunity }) => (
   </article>
 );
 
+const GuideIdeaCard = ({ idea }) => (
+  <article className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <Badge className={`rounded-full border font-black uppercase tracking-widest hover:bg-inherit ${getOpportunityClasses(idea.priority)}`}>
+        {idea.priority}
+      </Badge>
+      <span className="rounded-full bg-orange-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-orange-600">Score {formatNumber(idea.score)}</span>
+    </div>
+    <h4 className="mt-4 text-base font-black text-slate-950">{idea.title}</h4>
+    <p className="mt-2 text-xs font-black uppercase tracking-widest text-slate-400">/{idea.slug}/</p>
+    <div className="mt-4 space-y-3 rounded-2xl bg-slate-50 p-4">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ruta base</p>
+        <p className="mt-1 text-sm font-bold text-slate-700">{idea.routeLabel}</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Intención</p>
+        <p className="mt-1 text-sm font-bold text-slate-700">{idea.intent}</p>
+      </div>
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Enfoque recomendado</p>
+        <p className="mt-1 text-sm font-bold leading-6 text-slate-700">{idea.angle}</p>
+      </div>
+    </div>
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <PathLink path={idea.routePath} />
+      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{idea.signal}</span>
+    </div>
+  </article>
+);
+
 const EmptyState = ({ text = 'Sin datos todavía' }) => (
   <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
     <p className="text-xs font-black uppercase tracking-widest text-slate-400">{text}</p>
@@ -371,6 +526,13 @@ function SeoAnalyticsTab() {
       registrationClicks,
     });
 
+    const guideIdeas = buildGuideIdeas({
+      topPages,
+      topClicks,
+      guideToRoute,
+      registrationClicks,
+    });
+
     return {
       pageViews,
       seoClicks,
@@ -382,6 +544,7 @@ function SeoAnalyticsTab() {
       guideToRoute,
       registrationClicks,
       opportunities,
+      guideIdeas,
     };
   }, [events]);
 
@@ -491,6 +654,36 @@ function SeoAnalyticsTab() {
               <OpportunityCard key={`${opportunity.type}-${opportunity.path}-${index}`} opportunity={opportunity} />
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-[2rem] border-none bg-orange-50 shadow-sm">
+        <CardHeader className="p-6 pb-3">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-orange-500" />
+                <CardTitle className="text-xl font-black uppercase tracking-tight text-slate-950">Ideas de nuevas guías SEO</CardTitle>
+              </div>
+              <CardDescription className="mt-2 max-w-3xl text-sm font-bold leading-6 text-slate-600">
+                Títulos sugeridos a partir de rutas con visitas, clics a registro, clics guía → ruta y navegación interna.
+              </CardDescription>
+            </div>
+            <Badge className="w-fit rounded-full bg-slate-950 text-white hover:bg-slate-950">
+              <FileText className="mr-1 h-3.5 w-3.5" /> {analytics.guideIdeas.length} ideas
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-3">
+          {analytics.guideIdeas.length === 0 ? (
+            <EmptyState text="Sin ideas todavía" />
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-2">
+              {analytics.guideIdeas.map((idea) => (
+                <GuideIdeaCard key={`${idea.routePath}-${idea.slug}`} idea={idea} />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
