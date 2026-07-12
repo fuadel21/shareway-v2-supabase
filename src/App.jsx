@@ -35,10 +35,10 @@ import UserProfile from './components/UserProfile.jsx';
 import EditProfile from './components/EditProfile.jsx';
 import Settings from './components/Settings.jsx';
 import Wallet from './components/Wallet.jsx';
+import VehicleSettings from './components/VehicleSettings.jsx';
 import VerificationSettings from './components/VerificationSettings.jsx';
 import SecuritySettings from './components/SecuritySettings.jsx';
 import Achievements from './components/Achievements.jsx';
-import ComingSoon from './components/ComingSoon.jsx';
 import NotificationSettings from './components/NotificationSettings.jsx';
 import AppearanceSettings from './components/AppearanceSettings.jsx';
 import ActivityCenter from './components/ActivityCenter.jsx';
@@ -408,7 +408,7 @@ function App() {
                         <Route path="notifications" element={<NotificationsPage />} />
 
                         <Route path="settings" element={<Settings />} />
-                        <Route path="settings/vehicle" element={<ComingSoon title="Gestión de Vehículo" />} />
+                        <Route path="settings/vehicle" element={<VehicleSettings />} />
                         <Route path="settings/security" element={<SecuritySettings />} />
                         <Route path="settings/verification" element={<VerificationSettings />} />
                         <Route path="settings/payout" element={<PayoutSettings />} />
