@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getRideManagementList } from '@/lib/supabaseRPC';
-import { Car, MapPin, Loader2 } from 'lucide-react';
+import { expireStaleRides } from '@/services/rideExpirationService.js';
+import { Car, MapPin, Loader2, RefreshCw, Clock3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,26 +17,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const RideManagementTab = () => {
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isExpiring, setIsExpiring] = useState(false);
+    const [lastExpiredCount, setLastExpiredCount] = useState(null);
     const [statusFilter, setStatusFilter] = useState('all');
     const navigate = useNavigate();
 
-    const fetchRides = async () => {
+    const fetchRides = async ({ runExpiration = false } = {}) => {
         setLoading(true);
         try {
+            if (runExpiration) {
+                try {
+                    const result = await expireStaleRides();
+                    setLastExpiredCount(result.expiredCount);
+                } catch (expirationError) {
+                    console.warn('Could not auto-expire stale rides:', expirationError);
+                }
+            }
+
             const { data, success, error } = await getRideManagementList(statusFilter);
             if (!success) throw new Error(error);
             setRides(data || []);
         } catch (error) {
-            console.error("Error fetching rides:", error);
-            toast.error("Error al cargar los viajes.");
+            console.error('Error fetching rides:', error);
+            toast.error('Error al cargar los viajes.');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchRides();
+        fetchRides({ runExpiration: true });
     }, [statusFilter]);
+
+    const handleExpireNow = async () => {
+        setIsExpiring(true);
+        const toastId = toast.loading('Revisando viajes antiguos...');
+        try {
+            const result = await expireStaleRides();
+            setLastExpiredCount(result.expiredCount);
+            toast.success('Limpieza completada', {
+                id: toastId,
+                description: result.expiredCount === 1
+                    ? '1 viaje antiguo marcado como expirado.'
+                    : `${result.expiredCount} viajes antiguos marcados como expirados.`,
+            });
+            await fetchRides();
+        } catch (error) {
+            toast.error('No se pudo expirar viajes antiguos', {
+                id: toastId,
+                description: error.message || 'Revisa la migración de Supabase.',
+            });
+        } finally {
+            setIsExpiring(false);
+        }
+    };
 
     const getStatusBadge = (status) => {
         const normalizedStatus = status === 'canceled' ? 'cancelled' : status === 'inprogress' ? 'in_progress' : status;
@@ -45,13 +80,15 @@ const RideManagementTab = () => {
             in_progress: 'bg-yellow-50 text-yellow-600 border-yellow-100',
             completed: 'bg-green-50 text-green-600 border-green-100',
             cancelled: 'bg-red-50 text-red-600 border-red-100',
+            expired: 'bg-slate-100 text-slate-600 border-slate-200',
         };
         const labels = {
             scheduled: 'Programado',
             active: 'En Curso',
             in_progress: 'En Curso',
             completed: 'Completado',
-            cancelled: 'Cancelado'
+            cancelled: 'Cancelado',
+            expired: 'Expirado',
         };
         return <Badge variant="outline" className={`${variants[normalizedStatus] || 'bg-gray-50 text-gray-600 border-gray-100'} rounded-full px-3`}>{labels[normalizedStatus] || status}</Badge>;
     };
@@ -70,23 +107,45 @@ const RideManagementTab = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-50 shadow-sm">
-                <div className="flex items-center gap-2">
-                    <Car className="h-5 w-5 text-primary" />
-                    <span className="font-semibold text-gray-700">Filtrar Viajes</span>
+            <div className="flex flex-col gap-4 bg-white p-4 rounded-2xl border border-gray-50 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                        <Car className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <span className="font-semibold text-gray-700">Filtrar Viajes</span>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            {lastExpiredCount === null ? 'Auto-limpieza activa al abrir el módulo' : `Última limpieza: ${lastExpiredCount} expirados`}
+                        </p>
+                    </div>
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[200px] rounded-xl border-gray-100">
-                        <SelectValue placeholder="Estado del viaje" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">Todos los estados</SelectItem>
-                        <SelectItem value="scheduled">Programados</SelectItem>
-                        <SelectItem value="in_progress">En curso</SelectItem>
-                        <SelectItem value="completed">Completados</SelectItem>
-                        <SelectItem value="cancelled">Cancelados</SelectItem>
-                    </SelectContent>
-                </Select>
+
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleExpireNow}
+                        disabled={isExpiring || loading}
+                        className="h-11 rounded-xl border-slate-100 font-black uppercase tracking-widest text-[10px] gap-2"
+                    >
+                        {isExpiring ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                        Expirar antiguos
+                    </Button>
+
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-full rounded-xl border-gray-100 sm:w-[200px]">
+                            <SelectValue placeholder="Estado del viaje" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                            <SelectItem value="all">Todos los estados</SelectItem>
+                            <SelectItem value="scheduled">Programados</SelectItem>
+                            <SelectItem value="in_progress">En curso</SelectItem>
+                            <SelectItem value="completed">Completados</SelectItem>
+                            <SelectItem value="cancelled">Cancelados</SelectItem>
+                            <SelectItem value="expired">Expirados</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
             {loading ? (
@@ -111,8 +170,8 @@ const RideManagementTab = () => {
                                                 <p className="font-bold text-gray-900 leading-none pt-1">{getLocationLabel(ride.destination, 'Destino sin definir')}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                            <span className="bg-gray-50 px-3 py-1 rounded-full font-medium">{formatDate(ride.departure_time)}</span>
+                                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                                            <span className="bg-gray-50 px-3 py-1 rounded-full font-medium flex items-center gap-1.5"><Clock3 className="h-3 w-3" /> {formatDate(ride.departure_time)}</span>
                                             <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> Conductor: {ride.profiles?.display_name || 'Desconocido'}</span>
                                         </div>
                                     </div>
