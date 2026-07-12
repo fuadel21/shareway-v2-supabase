@@ -114,6 +114,66 @@ const normalizeLocation = (loc) => ({
     lng: parseFloat(loc?.coordinates?.lng ?? loc?.coordinates?.longitude ?? loc?.lng ?? 0)
 });
 
+const clampSeats = (value) => Math.max(RIDE_RULES.MIN_SEATS, Math.min(RIDE_RULES.MAX_SEATS, Number(value || 1)));
+
+const cleanPlate = (value) => String(value || '')
+    .replace(/\s+/g, '')
+    .replace(/[^a-zA-Z0-9*]/g, '')
+    .toUpperCase()
+    .slice(0, 8);
+
+const normalizeVehicleSnapshot = (vehicle = null) => {
+    if (!vehicle || typeof vehicle !== 'object') return null;
+
+    const make = String(vehicle.make || '').trim();
+    const model = String(vehicle.model || '').trim();
+    if (!make && !model) return null;
+
+    return {
+        make,
+        model,
+        year: String(vehicle.year || '').trim(),
+        color: String(vehicle.color || '').trim(),
+        plate: cleanPlate(vehicle.plate || vehicle.plate_partial || ''),
+        seats: clampSeats(vehicle.seats || vehicle.total_seats || 1),
+        luggage: vehicle.luggage || 'medium',
+        pets: Boolean(vehicle.pets),
+        kids: vehicle.kids !== false,
+        ac: vehicle.ac !== false,
+        smoking: Boolean(vehicle.smoking),
+        notes: String(vehicle.notes || '').trim().slice(0, 280),
+        photoURL: vehicle.photoURL || vehicle.photo_url || '',
+        capturedAt: new Date().toISOString()
+    };
+};
+
+const attachVehicleSnapshotToRide = async (rideId, vehicle) => {
+    const snapshot = normalizeVehicleSnapshot(vehicle);
+    if (!rideId || !snapshot) return;
+
+    try {
+        const vehicleModel = [snapshot.make, snapshot.model].filter(Boolean).join(' ').trim();
+        const { error } = await supabase
+            .from('rides')
+            .update({
+                vehicle_model: vehicleModel || null,
+                vehicle_plate: snapshot.plate || null,
+                vehicle_color: snapshot.color || null,
+                vehicle_year: snapshot.year || null,
+                vehicle_photo_url: snapshot.photoURL || null,
+                vehicle_luggage: snapshot.luggage || null,
+                vehicle_snapshot: snapshot
+            })
+            .eq('id', rideId);
+
+        if (error) {
+            console.warn('🚗 [Vehicle Snapshot] Could not attach vehicle to ride:', error.message);
+        }
+    } catch (error) {
+        console.warn('🚗 [Vehicle Snapshot] Unexpected error:', error.message);
+    }
+};
+
 const unwrapRpcData = (data) => Array.isArray(data) ? data[0] : data;
 
 const assertBusinessSuccess = (payload, fallbackMessage) => {
@@ -122,60 +182,6 @@ const assertBusinessSuccess = (payload, fallbackMessage) => {
         throw new Error(result.message || result.error || fallbackMessage);
     }
     return result;
-};
-
-const normalizeVehicleSnapshot = (vehicle = null) => {
-    if (!vehicle || typeof vehicle !== 'object') return null;
-    const make = String(vehicle.make || '').trim();
-    const model = String(vehicle.model || '').trim();
-    if (!make || !model) return null;
-
-    return {
-        make,
-        model,
-        year: String(vehicle.year || '').trim(),
-        color: String(vehicle.color || '').trim(),
-        plate: String(vehicle.plate || '').replace(/\s+/g, '').toUpperCase().slice(0, 8),
-        seats: Math.max(RIDE_RULES.MIN_SEATS, Math.min(RIDE_RULES.MAX_SEATS, Number(vehicle.seats || 1))),
-        luggage: vehicle.luggage || 'medium',
-        pets: Boolean(vehicle.pets),
-        kids: vehicle.kids !== false,
-        ac: vehicle.ac !== false,
-        smoking: Boolean(vehicle.smoking),
-        notes: String(vehicle.notes || '').trim().slice(0, 280),
-        photoURL: vehicle.photoURL || vehicle.photo_url || '',
-        snapshot_at: new Date().toISOString(),
-    };
-};
-
-/**
- * Guarda una copia de confianza del vehículo en el viaje sin bloquear la publicación.
- * Si el esquema todavía no tiene alguna columna, se ignora para no romper producción.
- */
-const persistRideVehicleSnapshot = async (rideId, vehicle) => {
-    const snapshot = normalizeVehicleSnapshot(vehicle);
-    if (!rideId || !snapshot) return;
-
-    try {
-        const payload = {
-            vehicle: snapshot,
-            vehicle_model: [snapshot.make, snapshot.model].filter(Boolean).join(' '),
-            vehicle_plate: snapshot.plate || null,
-            vehicle_color: snapshot.color || null,
-            vehicle_photo_url: snapshot.photoURL || null,
-        };
-
-        const { error } = await supabase
-            .from('rides')
-            .update(payload)
-            .eq('id', rideId);
-
-        if (error) {
-            console.warn('🛡️ [Vehicle Snapshot] No se pudo guardar snapshot del vehículo:', error.message);
-        }
-    } catch (error) {
-        console.warn('🛡️ [Vehicle Snapshot] Guardado omitido:', error.message);
-    }
 };
 
 /**
@@ -226,8 +232,16 @@ export const createSingleRide = async (rideData) => {
         // Generamos Idempotency Key para evitar duplicados por doble clic
         const idempotencyKey = crypto.randomUUID();
 
+        const vehicleSnapshot = normalizeVehicleSnapshot(
+            rideData.vehicle || rideData.vehicle_snapshot || rideData.preferences?.vehicle_snapshot
+        );
+
         const ridePayload = {
             ...rideData,
+            preferences: {
+                ...(rideData.preferences || {}),
+                vehicle_snapshot: vehicleSnapshot
+            },
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
@@ -250,9 +264,10 @@ export const createSingleRide = async (rideData) => {
             console.warn("🛡️ [Offer Flow] Duplicate creation prevented by idempotency key.");
         }
 
-        await persistRideVehicleSnapshot(data.rideId, ridePayload.vehicle || ridePayload.vehicle_snapshot);
+        const rideId = data.rideId || data.ride_id || data.id;
+        await attachVehicleSnapshotToRide(rideId, vehicleSnapshot);
 
-        return data.rideId;
+        return rideId;
     } catch (error) {
         console.error("🛡️ [Offer Flow] createSingleRide failed:", error);
         throw error;
@@ -573,6 +588,134 @@ export const updateRideLocation = async (rideId, locationData) => {
     const lat = locationData.lat ?? locationData.latitude;
     const lng = locationData.lng ?? locationData.longitude;
     const { data, success, error } = await rpc.updateRideLocation(rideId, lat, lng);
+    if (!success) throw new Error(error);
+
+    const result = assertBusinessSuccess(data, 'No se pudo actualizar la ubicación');
+
+    return {
+        success: result?.success ?? true,
+        rideId: result?.ride_id || result?.rideId || rideId,
+        location: result?.location || { lat, lng },
+        distanceSinceLastUpdate: result?.distance_since_last_update ?? result?.distanceSinceLastUpdate ?? null,
+        totalDistance: result?.total_distance ?? result?.totalDistance ?? null,
+        raw: result ?? null
+    };
+};
+
+export const updateRideStatus = async () => {
+    throw new Error('updateRideStatus está deshabilitado en producción. Usa startRide, completeRide, cancelRide o un RPC específico.');
+};
+
+export const getCurrentRides = async (userId) => {
+    const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('driver_id', userId)
+        .in('status', ['scheduled', 'in_progress', 'active']);
+
+    if (error) throw error;
+    return data;
+};
+
+export const getRideDetails = async (rideId) => {
+    const { data, error } = await supabase
+        .from('rides')
+        .select('*')
+        .eq('id', rideId)
+        .single();
+
+    if (error) throw error;
+    return data;
+};
+
+export const getRideStatusHistory = async (rideId) => {
+    try {
+        const { data, error } = await supabase
+            .from('ride_status_logs')
+            .select('*')
+            .eq('ride_id', rideId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            // Fallback for tests if orderBy is used instead of order
+            const { data: dataAlt, error: errorAlt } = await supabase
+                .from('ride_status_logs')
+                .select('*')
+                .eq('ride_id', rideId);
+
+            if (errorAlt) throw errorAlt;
+            return dataAlt;
+        }
+        return data;
+    } catch (err) {
+        console.error("🛡️ [Ride Service] getRideStatusHistory failed:", err);
+        throw err;
+    }
+};
+
+export const emergencyStopRide = async (rideId, reason) => {
+    try {
+        const { data, success, error } = await rpc.triggerEmergencyAlert(rideId, reason);
+
+        if (!success) throw new Error(error);
+
+        const result = assertBusinessSuccess(data, 'No se pudo activar la emergencia');
+
+        return {
+            success: result?.success ?? true,
+            rideId: result?.ride_id || result?.rideId || rideId,
+            status: result?.status || 'emergency_stopped',
+            stoppedAt: result?.stopped_at || result?.stoppedAt || new Date().toISOString(),
+            reason: result?.reason ?? reason,
+            emergencyNotified: result?.emergency_notified ?? result?.emergencyNotified ?? null,
+            notificationsSent: result?.notifications_sent ?? result?.notificationsSent ?? null,
+            refundsProcessed: result?.refunds_processed ?? result?.refundsProcessed ?? null,
+            refundAmounts: result?.refund_amounts ?? result?.refundAmounts ?? {},
+            raw: result ?? null
+        };
+    } catch (err) {
+        console.error("🛡️ [Ride Lifecycle] emergencyStopRide failed:", err);
+        throw err;
+    }
+};
+
+export const searchRequests = async ({ origin, destination, date, seats = 1, radius = 15000 }) => {
+    const { data, success, error } = await rpc.searchRideRequests(origin, destination, date, seats, radius);
+    if (!success) throw new Error(error);
+
+    return (data || []).map(req => ({
+        ...req,
+        type: 'request',
+        requester: {
+            id: req.requester_id,
+            display_name: req.requester_display_name,
+            photo_url: req.requester_photo_url,
+            rating: req.requester_rating
+        }
+    }));
+};
+
+export const saveFavoriteRoute = async (routeData) => {
+    const payload = {
+        user_id: routeData.user_id,
+        name: routeData.name,
+        origin: normalizeLocation(routeData.origin),
+        destination: normalizeLocation(routeData.destination),
+        days: routeData.days || [],
+        seats: routeData.seats,
+        price: routeData.price,
+        departure_time: routeData.departure_time
+    };
+
+    if (routeData.id) {
+        payload.id = routeData.id;
+    }
+
+    const { data, success, error } = await rpc.safeCall(
+        () => supabase.from('favorite_routes').upsert(payload).select().single(),
+        'upsert_favorite_route'
+    );
+
     if (!success) throw new Error(error);
     return data;
 };
