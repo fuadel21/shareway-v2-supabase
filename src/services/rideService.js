@@ -114,6 +114,66 @@ const normalizeLocation = (loc) => ({
     lng: parseFloat(loc?.coordinates?.lng ?? loc?.coordinates?.longitude ?? loc?.lng ?? 0)
 });
 
+const clampSeats = (value) => Math.max(RIDE_RULES.MIN_SEATS, Math.min(RIDE_RULES.MAX_SEATS, Number(value || 1)));
+
+const cleanPlate = (value) => String(value || '')
+    .replace(/\s+/g, '')
+    .replace(/[^a-zA-Z0-9*]/g, '')
+    .toUpperCase()
+    .slice(0, 8);
+
+const normalizeVehicleSnapshot = (vehicle = null) => {
+    if (!vehicle || typeof vehicle !== 'object') return null;
+
+    const make = String(vehicle.make || '').trim();
+    const model = String(vehicle.model || '').trim();
+    if (!make && !model) return null;
+
+    return {
+        make,
+        model,
+        year: String(vehicle.year || '').trim(),
+        color: String(vehicle.color || '').trim(),
+        plate: cleanPlate(vehicle.plate || vehicle.plate_partial || ''),
+        seats: clampSeats(vehicle.seats || vehicle.total_seats || 1),
+        luggage: vehicle.luggage || 'medium',
+        pets: Boolean(vehicle.pets),
+        kids: vehicle.kids !== false,
+        ac: vehicle.ac !== false,
+        smoking: Boolean(vehicle.smoking),
+        notes: String(vehicle.notes || '').trim().slice(0, 280),
+        photoURL: vehicle.photoURL || vehicle.photo_url || '',
+        capturedAt: new Date().toISOString()
+    };
+};
+
+const attachVehicleSnapshotToRide = async (rideId, vehicle) => {
+    const snapshot = normalizeVehicleSnapshot(vehicle);
+    if (!rideId || !snapshot) return;
+
+    try {
+        const vehicleModel = [snapshot.make, snapshot.model].filter(Boolean).join(' ').trim();
+        const { error } = await supabase
+            .from('rides')
+            .update({
+                vehicle_model: vehicleModel || null,
+                vehicle_plate: snapshot.plate || null,
+                vehicle_color: snapshot.color || null,
+                vehicle_year: snapshot.year || null,
+                vehicle_photo_url: snapshot.photoURL || null,
+                vehicle_luggage: snapshot.luggage || null,
+                vehicle_snapshot: snapshot
+            })
+            .eq('id', rideId);
+
+        if (error) {
+            console.warn('🚗 [Vehicle Snapshot] Could not attach vehicle to ride:', error.message);
+        }
+    } catch (error) {
+        console.warn('🚗 [Vehicle Snapshot] Unexpected error:', error.message);
+    }
+};
+
 const unwrapRpcData = (data) => Array.isArray(data) ? data[0] : data;
 
 const assertBusinessSuccess = (payload, fallbackMessage) => {
@@ -172,8 +232,16 @@ export const createSingleRide = async (rideData) => {
         // Generamos Idempotency Key para evitar duplicados por doble clic
         const idempotencyKey = crypto.randomUUID();
 
+        const vehicleSnapshot = normalizeVehicleSnapshot(
+            rideData.vehicle || rideData.vehicle_snapshot || rideData.preferences?.vehicle_snapshot
+        );
+
         const ridePayload = {
             ...rideData,
+            preferences: {
+                ...(rideData.preferences || {}),
+                vehicle_snapshot: vehicleSnapshot
+            },
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
@@ -196,7 +264,10 @@ export const createSingleRide = async (rideData) => {
             console.warn("🛡️ [Offer Flow] Duplicate creation prevented by idempotency key.");
         }
 
-        return data.rideId;
+        const rideId = data.rideId || data.ride_id || data.id;
+        await attachVehicleSnapshotToRide(rideId, vehicleSnapshot);
+
+        return rideId;
     } catch (error) {
         console.error("🛡️ [Offer Flow] createSingleRide failed:", error);
         throw error;
