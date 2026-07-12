@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -62,7 +62,11 @@ const copyByLanguage = {
         confirmWithBalance: 'Confirmar con Saldo',
         insufficientWallet: 'No tienes saldo suficiente en tu billetera.',
         useCreditCard: 'Usar Tarjeta de Crédito',
-        linkingStripe: 'Enlazando con Stripe...'
+        linkingStripe: 'Enlazando con Stripe...',
+        recalculatingPayment: 'Actualizando pago seguro...',
+        lockedAmount: 'Importe protegido',
+        lockedAmountDesc: 'Si cambias plazas, origen o destino, se recalcula el pago antes de confirmar.',
+        completeTripFirst: 'Selecciona recogida, destino y plazas para preparar el pago.'
     },
     en: {
         bookingConfirmed: 'Booking confirmed!',
@@ -105,7 +109,11 @@ const copyByLanguage = {
         confirmWithBalance: 'Confirm with Balance',
         insufficientWallet: 'You do not have enough balance in your wallet.',
         useCreditCard: 'Use Credit Card',
-        linkingStripe: 'Connecting to Stripe...'
+        linkingStripe: 'Connecting to Stripe...',
+        recalculatingPayment: 'Updating secure payment...',
+        lockedAmount: 'Protected amount',
+        lockedAmountDesc: 'If you change seats, pickup or destination, payment is recalculated before confirmation.',
+        completeTripFirst: 'Select pickup, destination and seats to prepare payment.'
     },
     ar: {
         bookingConfirmed: 'تم تأكيد الحجز!',
@@ -148,7 +156,11 @@ const copyByLanguage = {
         confirmWithBalance: 'تأكيد بالرصيد',
         insufficientWallet: 'ليس لديك رصيد كافٍ في محفظتك.',
         useCreditCard: 'استخدام بطاقة ائتمان',
-        linkingStripe: 'جارٍ الاتصال بـ Stripe...'
+        linkingStripe: 'جارٍ الاتصال بـ Stripe...',
+        recalculatingPayment: 'جارٍ تحديث الدفع الآمن...',
+        lockedAmount: 'المبلغ محمي',
+        lockedAmountDesc: 'إذا غيرت المقاعد أو نقطة الانطلاق أو الوجهة، سيتم تحديث الدفع قبل التأكيد.',
+        completeTripFirst: 'اختر نقطة الانطلاق والوجهة والمقاعد لتحضير الدفع.'
     }
 };
 
@@ -157,6 +169,23 @@ const getLanguage = (language) => {
     if (language?.startsWith('en')) return 'en';
     return 'es';
 };
+
+const getLat = (loc) => Number(loc?.lat ?? loc?.latitude ?? loc?.coordinates?.lat ?? loc?.coordinates?.latitude);
+const getLng = (loc) => Number(loc?.lng ?? loc?.longitude ?? loc?.coordinates?.lng ?? loc?.coordinates?.longitude);
+const isValidLocation = (loc) => Number.isFinite(getLat(loc)) && Number.isFinite(getLng(loc));
+const normalizeMapLocation = (loc) => {
+    if (!loc) return null;
+    const lat = getLat(loc);
+    const lng = getLng(loc);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { ...loc, lat, lng };
+};
+const locationSignature = (loc) => {
+    const normalized = normalizeMapLocation(loc);
+    if (!normalized) return 'none';
+    return `${normalized.lat.toFixed(5)},${normalized.lng.toFixed(5)}`;
+};
+const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
 
 const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
     const stripe = useStripe();
@@ -205,7 +234,7 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (!stripe || !elements || !user || isLoading || !isReady) return;
+        if (!stripe || !elements || !user || isLoading || !isReady || roundMoney(amount) <= 0) return;
 
         setIsLoading(true);
         setErrorMessage(null);
@@ -230,7 +259,17 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in duration-300">
+        <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in zoom-in duration-300 relative">
+            <div className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-left">
+                <div className="flex items-start gap-3">
+                    <ShieldCheck className="mt-0.5 size-4 shrink-0 text-emerald-600" />
+                    <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700">{copy.lockedAmount}</p>
+                        <p className="mt-1 text-[11px] font-bold leading-relaxed text-emerald-700/80">{copy.lockedAmountDesc}</p>
+                    </div>
+                </div>
+            </div>
+
             <div className="p-4 bg-white rounded-3xl border border-slate-100 shadow-inner min-h-[200px] flex flex-col justify-center">
                 {!isReady && (
                     <div className="flex flex-col items-center gap-2 text-slate-400 py-10">
@@ -253,7 +292,7 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
 
             <div className="flex gap-3">
                 <Button type="button" variant="ghost" onClick={onClose} disabled={isLoading || isProcessingServer} className="flex-1 h-14 rounded-2xl font-bold text-slate-400">{copy.cancel}</Button>
-                <Button type="submit" disabled={!stripe || isLoading || isProcessingServer || !isReady} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
+                <Button type="submit" disabled={!stripe || isLoading || isProcessingServer || !isReady || roundMoney(amount) <= 0} className="flex-[2] h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
                     {(isLoading || isProcessingServer) ? <Loader2 className="h-5 w-5 animate-spin" /> : (
                         <span className="flex items-center gap-2">
                             <Lock className="h-4 w-4" /> {isProcessingServer ? copy.processing : copy.confirmPayment}
@@ -280,6 +319,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const { wallet, refreshWallet } = useWallet(user);
     const [paymentMethod, setPaymentMethod] = useState('wallet');
     const [clientSecret, setClientSecret] = useState(null);
+    const [paymentSignature, setPaymentSignature] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
     const [isProcessingWallet, setIsProcessingWallet] = useState(false);
 
@@ -299,13 +339,17 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     useEffect(() => {
         if (isOpen) {
             if (!pickupLocation) {
-                if (userLocation) setPickupLocation(userLocation);
-                else if (initialPickupLocation) setPickupLocation(initialPickupLocation);
-                else if (ride?.origin) setPickupLocation(ride.origin);
+                if (userLocation) setPickupLocation(normalizeMapLocation(userLocation));
+                else if (initialPickupLocation) setPickupLocation(normalizeMapLocation(initialPickupLocation));
+                else if (ride?.origin) setPickupLocation(normalizeMapLocation(ride.origin));
             }
             if (!dropoffLocation && ride?.destination) {
-                setDropoffLocation(ride.destination);
+                setDropoffLocation(normalizeMapLocation(ride.destination));
             }
+        } else {
+            setClientSecret(null);
+            setPaymentSignature(null);
+            setIsPreparing(false);
         }
     }, [isOpen, userLocation, initialPickupLocation, ride?.origin, ride?.destination, pickupLocation, dropoffLocation]);
 
@@ -313,16 +357,22 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         const updatePrice = async () => {
             if (!pickupLocation || !dropoffLocation || !ride) return;
 
+            const pickup = normalizeMapLocation(pickupLocation);
+            const dropoff = normalizeMapLocation(dropoffLocation);
+            const rideOrigin = normalizeMapLocation(ride.origin);
+
+            if (!pickup || !dropoff) return;
+
             setIsCalculatingDistance(true);
             try {
-                const coords = `${pickupLocation.lng},${pickupLocation.lat};${dropoffLocation.lng},${dropoffLocation.lat}`;
+                const coords = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
                 const data = await fetchRoute(coords, 'false');
 
                 let distanceKm;
                 if (data.code === 'Ok' && data.routes[0]) {
                     distanceKm = data.routes[0].distance / 1000;
                 } else {
-                    distanceKm = calculateDistance(pickupLocation.lat, pickupLocation.lng, dropoffLocation.lat, dropoffLocation.lng);
+                    distanceKm = calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
                 }
 
                 setTripDistance(distanceKm);
@@ -331,10 +381,9 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 const driverPricePerKm = Number(ride.price) / Math.max(rideTotalDistance, 1);
                 const passengerBasePrice = driverPricePerKm * distanceKm;
 
-                const detourDistance = calculateDistance(
-                    ride.origin.lat, ride.origin.lng,
-                    pickupLocation.lat, pickupLocation.lng
-                );
+                const detourDistance = rideOrigin
+                    ? calculateDistance(rideOrigin.lat, rideOrigin.lng, pickup.lat, pickup.lng)
+                    : 0;
 
                 const detourThreshold = 3.0;
                 const supplement = detourDistance > detourThreshold ? RIDE_RULES.PICKUP_SUPPLEMENT : 0;
@@ -342,7 +391,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                 const finalPricePerSeat = passengerBasePrice + supplement;
                 const totalAmount = finalPricePerSeat * numSeats;
-                setDynamicAmount(parseFloat(totalAmount.toFixed(2)));
+                setDynamicAmount(roundMoney(totalAmount));
             } catch (error) {
                 console.error('Error updating price:', error);
             } finally {
@@ -354,6 +403,25 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     }, [pickupLocation, dropoffLocation, ride, numSeats]);
 
     const hasBalance = wallet?.balance >= dynamicAmount;
+    const displayAmount = dynamicAmount;
+
+    const bookingSignature = useMemo(() => JSON.stringify({
+        rideId,
+        amount: roundMoney(dynamicAmount).toFixed(2),
+        seats: Number(numSeats),
+        pickup: locationSignature(pickupLocation),
+        dropoff: locationSignature(dropoffLocation),
+    }), [rideId, dynamicAmount, numSeats, pickupLocation, dropoffLocation]);
+
+    const isPaymentContextReady = Boolean(
+        rideId &&
+        user &&
+        isValidLocation(pickupLocation) &&
+        isValidLocation(dropoffLocation) &&
+        Number(numSeats) > 0 &&
+        roundMoney(dynamicAmount) > 0 &&
+        !isCalculatingDistance
+    );
 
     useEffect(() => {
         if (isOpen && wallet) {
@@ -361,56 +429,91 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         }
     }, [isOpen, wallet, dynamicAmount]);
 
+    useEffect(() => {
+        if (!isOpen || !clientSecret || !paymentSignature) return;
+        if (paymentSignature !== bookingSignature) {
+            setClientSecret(null);
+            setPaymentSignature(null);
+        }
+    }, [bookingSignature, clientSecret, isOpen, paymentSignature]);
+
     const handleLocationSelect = (loc) => {
-        setPickupLocation({ lat: loc.lat, lng: loc.lng });
-        if (loc.address) setPickupAddress(loc.address);
+        setPickupLocation(normalizeMapLocation(loc));
+        setPickupAddress(loc?.address || '');
     };
 
     const handleDropoffSelect = (loc) => {
-        setDropoffLocation({ lat: loc.lat, lng: loc.lng });
-        if (loc.address) setDropoffAddress(loc.address);
+        setDropoffLocation(normalizeMapLocation(loc));
+        setDropoffAddress(loc?.address || '');
     };
-
-    const displayAmount = dynamicAmount;
 
     useEffect(() => {
         const prepareStripe = async () => {
-            if (isOpen && paymentMethod === 'card' && !clientSecret && rideId && user) {
-                setIsPreparing(true);
-                try {
-                    const { data, error } = await supabase.functions.invoke('create-booking-payment-intent', {
-                        body: { rideId, pickupLocation, pickupAddress, totalAmount: dynamicAmount },
-                    });
-                    if (error || !data?.clientSecret) throw new Error(data?.error?.message || copy.stripeUnavailable);
-                    setClientSecret(data.clientSecret);
-                } catch (e) {
-                    toast.error(copy.stripeError, { description: e.message });
-                    setPaymentMethod('wallet');
-                } finally {
-                    setIsPreparing(false);
-                }
+            if (!isOpen || paymentMethod !== 'card' || clientSecret || !isPaymentContextReady) return;
+
+            setIsPreparing(true);
+            try {
+                const cleanTotal = roundMoney(dynamicAmount);
+                const { data, error } = await supabase.functions.invoke('create-booking-payment-intent', {
+                    body: {
+                        rideId,
+                        pickupLocation: normalizeMapLocation(pickupLocation),
+                        pickupAddress,
+                        dropoffLocation: normalizeMapLocation(dropoffLocation),
+                        dropoffAddress,
+                        totalAmount: cleanTotal,
+                        pricePerSeat: roundMoney(cleanTotal / Math.max(Number(numSeats), 1)),
+                        numSeats: Number(numSeats),
+                        bookingSignature,
+                    },
+                });
+                if (error || !data?.clientSecret) throw new Error(data?.error?.message || copy.stripeUnavailable);
+                setClientSecret(data.clientSecret);
+                setPaymentSignature(bookingSignature);
+            } catch (e) {
+                toast.error(copy.stripeError, { description: e.message });
+                setPaymentMethod('wallet');
+                setClientSecret(null);
+                setPaymentSignature(null);
+            } finally {
+                setIsPreparing(false);
             }
         };
+
         prepareStripe();
-    }, [isOpen, paymentMethod, rideId, user, dynamicAmount, clientSecret, pickupLocation, pickupAddress, copy.stripeUnavailable, copy.stripeError]);
+    }, [
+        isOpen,
+        paymentMethod,
+        clientSecret,
+        isPaymentContextReady,
+        rideId,
+        pickupLocation,
+        pickupAddress,
+        dropoffLocation,
+        dropoffAddress,
+        dynamicAmount,
+        numSeats,
+        bookingSignature,
+        copy.stripeUnavailable,
+        copy.stripeError,
+    ]);
 
     const handleWalletPayment = async () => {
         setIsProcessingWallet(true);
         try {
             const numericPrice = Number(dynamicAmount);
-            if (isNaN(numericPrice)) throw new Error(copy.invalidPrice);
+            if (isNaN(numericPrice) || numericPrice <= 0) throw new Error(copy.invalidPrice);
+            if (!isPaymentContextReady) throw new Error(copy.completeTripFirst);
 
-            const cleanPrice = parseFloat(numericPrice.toFixed(2));
-
-            console.log('💳 Intentando pago con wallet:', { rideId, price: cleanPrice });
+            const cleanPrice = roundMoney(numericPrice);
 
             const { success, error, data } = await confirmTripAndPay(rideId, null, {
-                pickupLocation: pickupLocation ?? null,
+                pickupLocation: normalizeMapLocation(pickupLocation) ?? null,
                 pickupAddress: pickupAddress ?? null,
-                dropoffLocation: dropoffLocation ?? null,
+                dropoffLocation: normalizeMapLocation(dropoffLocation) ?? null,
                 dropoffAddress: dropoffAddress ?? null,
-                price: cleanPrice / numSeats,
-                numSeats: numSeats
+                price: roundMoney(cleanPrice / Math.max(Number(numSeats), 1)),
+                numSeats: Number(numSeats)
             });
 
             if (!success) {
@@ -429,7 +532,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     if (onSuccess) onSuccess();
                     onClose();
                 }, 1500);
-
             } else {
                 const msg = result?.message || result?.error || copy.bookingProcessError;
                 toast.error(copy.bookingDenied, {
@@ -444,6 +546,8 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             setIsProcessingWallet(false);
         }
     };
+
+    const paymentControlsDisabled = isPreparing || isProcessingWallet;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -525,7 +629,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     return (
                                         <button key={n}
                                             type="button"
-                                            disabled={!isAvailable}
+                                            disabled={!isAvailable || paymentControlsDisabled}
                                             onClick={() => setNumSeats(n)}
                                             className={cn(
                                                 'flex-1 h-12 rounded-2xl text-xs font-black transition-all touch-action-manipulation active:scale-95 flex flex-col items-center justify-center leading-none',
@@ -582,9 +686,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                             <div className="grid grid-cols-2 gap-3">
                                 <button
+                                    type="button"
+                                    disabled={paymentControlsDisabled}
                                     onClick={() => setPaymentMethod('wallet')}
                                     className={cn(
-                                        'flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all',
+                                        'flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all disabled:opacity-60',
                                         paymentMethod === 'wallet'
                                             ? 'bg-white border-primary shadow-lg ring-1 ring-primary/20'
                                             : 'bg-slate-100/50 border-transparent text-slate-400 hover:bg-white'
@@ -594,9 +700,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <span className="text-[10px] font-black uppercase tracking-widest">{copy.wallet}</span>
                                 </button>
                                 <button
+                                    type="button"
+                                    disabled={paymentControlsDisabled || !isPaymentContextReady}
                                     onClick={() => setPaymentMethod('card')}
                                     className={cn(
-                                        'flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all',
+                                        'flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border-2 transition-all disabled:opacity-60',
                                         paymentMethod === 'card'
                                             ? 'bg-white border-primary shadow-lg ring-1 ring-primary/20'
                                             : 'bg-slate-100/50 border-transparent text-slate-400 hover:bg-white'
@@ -606,6 +714,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <span className="text-[10px] font-black uppercase tracking-widest">{copy.card}</span>
                                 </button>
                             </div>
+
+                            {!isPaymentContextReady && (
+                                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-center text-[10px] font-black uppercase tracking-widest text-amber-700">
+                                    {copy.completeTripFirst}
+                                </div>
+                            )}
 
                             <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                                 {paymentMethod === 'wallet' ? (
@@ -626,7 +740,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                         {hasBalance ? (
                                             <Button
                                                 onClick={handleWalletPayment}
-                                                disabled={isProcessingWallet}
+                                                disabled={isProcessingWallet || isCalculatingDistance || !isPaymentContextReady}
                                                 className="w-full h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest shadow-xl shadow-emerald-200"
                                             >
                                                 {isProcessingWallet ? <Loader2 className="animate-spin" /> : <>{copy.confirmWithBalance} <ChevronRight className="ml-2" size={18} /></>}
@@ -636,6 +750,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                                 <p className="text-[10px] text-red-600 font-bold text-center italic">{copy.insufficientWallet}</p>
                                                 <Button
                                                     onClick={() => setPaymentMethod('card')}
+                                                    disabled={!isPaymentContextReady}
                                                     variant="outline"
                                                     className="w-full h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest"
                                                 >
@@ -649,10 +764,10 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                         {isPreparing ? (
                                             <div className="flex flex-col items-center justify-center py-10 gap-3">
                                                 <Loader2 className="animate-spin text-primary opacity-20" size={30} />
-                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.linkingStripe}</p>
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.recalculatingPayment}</p>
                                             </div>
                                         ) : clientSecret ? (
-                                            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
+                                            <Elements key={paymentSignature || clientSecret} stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'flat' } }}>
                                                 <CheckoutForm
                                                     rideId={rideId}
                                                     amount={dynamicAmount}
@@ -661,7 +776,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                                     copy={copy}
                                                 />
                                             </Elements>
-                                        ) : null}
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center py-10 gap-3">
+                                                <Loader2 className="animate-spin text-primary opacity-20" size={30} />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.linkingStripe}</p>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </div>
