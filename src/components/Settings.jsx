@@ -4,7 +4,7 @@ import {
   History, Map as MapIcon, Shield, Fingerprint,
   ChevronRight, LogOut, User, Bell, Palette,
   Landmark, Wallet as WalletIcon,
-  Smartphone, Leaf, Star, FlaskConical
+  Smartphone, Leaf, Star, FlaskConical, Car
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useTranslation } from 'react-i18next';
@@ -46,6 +46,8 @@ const Settings = () => {
   const navigate = useNavigate();
   const { profile, user, isAdmin, handleSignOut } = useOutletContext();
   const { t } = useTranslation();
+  const vehicle = profile?.vehicle || {};
+  const hasVehicle = Boolean(vehicle.make && vehicle.model);
 
   return (
     <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
@@ -107,6 +109,14 @@ const Settings = () => {
         <section>
           <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
           <div className="grid grid-cols-1 gap-4">
+            <SettingItem
+              icon={Car}
+              label={hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Mi vehículo'}
+              sublabel={hasVehicle ? 'Editar coche, plazas y normas' : 'Añade coche, plazas, equipaje y normas'}
+              color="bg-slate-900"
+              badge={!hasVehicle}
+              onClick={() => navigate('/settings/vehicle')}
+            />
             <SettingItem
               icon={MapIcon}
               label={t('settings.routes')}
