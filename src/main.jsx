@@ -4,6 +4,7 @@ import "./index.css";
 import './i18n/rtl.css';
 import './i18n/config';
 import App from "./App.jsx";
+import RideEmergencyQuickAction from "./components/RideEmergencyQuickAction.jsx";
 
 // Importar estilos de Leaflet globalmente
 import 'leaflet/dist/leaflet.css';
@@ -16,5 +17,6 @@ const root = createRoot(container);
 root.render(
   <React.StrictMode>
     <App />
+    <RideEmergencyQuickAction />
   </React.StrictMode>
 );
