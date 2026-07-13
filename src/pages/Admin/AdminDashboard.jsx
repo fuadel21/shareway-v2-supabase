@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, UserCheck, Users, DollarSign, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Activity, ArrowRight, BellRing, BarChart3 } from 'lucide-react';
+import { Car, UserCheck, Users, DollarSign, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Activity, ArrowRight, BellRing, BarChart3, CalendarClock, TimerReset } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getPlatformStats, requestPlatformPayout, getPlatformAuditLogs } from '@/lib/supabaseRPC';
 import { supabase } from '@/lib/supabase';
+import { getRealAdminMetrics } from '@/services/adminMetricsService.js';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 import PendingVerificationsTab from './tabs/PendingVerificationsTab';
@@ -35,6 +36,14 @@ const adminTabs = [
     { val: 'maintenance', label: 'Soporte', shortLabel: 'Soporte', icon: RefreshCw }
 ];
 
+const emptyChartData = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'].map((name) => ({
+    name,
+    profit: 0,
+    rides: 0,
+    bookings: 0,
+    users: 0,
+}));
+
 const StatCard = ({ title, value, icon, description, currency = '', loading = false, trend = null }) => (
     <Card className="rounded-2xl border-none shadow-sm overflow-hidden text-left group hover:shadow-md transition-all">
         <CardHeader className="flex flex-row items-center justify-between pb-2 p-5 sm:p-6">
@@ -59,6 +68,7 @@ function AdminDashboard() {
     const { tab = 'verifications' } = useParams();
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
+    const [realMetrics, setRealMetrics] = useState(null);
     const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPayoutLoading, setIsPayoutLoading] = useState(false);
@@ -66,9 +76,10 @@ function AdminDashboard() {
     const fetchPlatformData = async () => {
         setLoading(true);
         try {
-            const [statsRes, auditRes] = await Promise.all([
+            const [statsRes, auditRes, metricsRes] = await Promise.all([
                 getPlatformStats(),
-                getPlatformAuditLogs('all', 5)
+                getPlatformAuditLogs('all', 5),
+                getRealAdminMetrics({ days: 7 })
             ]);
 
             if (statsRes?.success) {
@@ -77,7 +88,9 @@ function AdminDashboard() {
             if (auditRes?.success) {
                 setRecentActivity(auditRes.data || []);
             }
+            setRealMetrics(metricsRes);
         } catch (error) {
+            console.error('Admin dashboard sync error:', error);
             toast.error('Error al sincronizar datos');
         } finally {
             setLoading(false);
@@ -120,16 +133,9 @@ function AdminDashboard() {
         }
     };
 
-    const chartData = [
-        { name: 'Lun', profit: (stats?.platform_profit || 0) * 0.4 },
-        { name: 'Mar', profit: (stats?.platform_profit || 0) * 0.5 },
-        { name: 'Mie', profit: (stats?.platform_profit || 0) * 0.7 },
-        { name: 'Jue', profit: (stats?.platform_profit || 0) * 0.6 },
-        { name: 'Vie', profit: (stats?.platform_profit || 0) * 0.9 },
-        { name: 'Sab', profit: (stats?.platform_profit || 0) * 1.1 },
-        { name: 'Dom', profit: stats?.platform_profit || 0 },
-    ];
-
+    const chartData = realMetrics?.chartData?.length ? realMetrics.chartData : emptyChartData;
+    const metricTotals = realMetrics?.totals || {};
+    const treasuryTotal = Number(stats?.platform_profit ?? metricTotals.realProfitLastDays ?? 0);
     const currentTab = adminTabs.find(item => item.val === tab) || adminTabs[0];
 
     return (
@@ -204,14 +210,14 @@ function AdminDashboard() {
                     <CardHeader className="p-6 sm:p-8 pb-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tesorería Total</CardTitle>
                         <div className="text-4xl sm:text-5xl font-black italic tracking-tighter mt-2 group-hover:text-primary transition-colors">
-                            {loading ? <Skeleton className="h-12 w-32 bg-slate-800" /> : (stats?.platform_profit || 0).toFixed(2)}<span className="text-2xl ml-1 text-slate-500">€</span>
+                            {loading ? <Skeleton className="h-12 w-32 bg-slate-800" /> : treasuryTotal.toFixed(2)}<span className="text-2xl ml-1 text-slate-500">€</span>
                         </div>
                     </CardHeader>
                     <CardContent className="px-6 sm:px-8 pb-6 sm:pb-8">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">Comisiones por gestión de trayectos e integridad financiera.</p>
                         <Button
                             onClick={handlePayout}
-                            disabled={isPayoutLoading || (stats?.platform_profit || 0) <= 0}
+                            disabled={isPayoutLoading || treasuryTotal <= 0}
                             className="w-full mt-6 h-13 sm:h-14 rounded-2xl bg-white text-slate-900 hover:bg-primary hover:text-white font-black uppercase tracking-tight text-xs shadow-xl active:scale-95 transition-all gap-3"
                         >
                             {isPayoutLoading ? <Loader2 className="animate-spin" /> : <Banknote className="size-5" />} Liquidar Fondos
@@ -223,9 +229,11 @@ function AdminDashboard() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 sm:mb-8">
                         <div>
                             <CardTitle className="text-base sm:text-lg font-black italic uppercase tracking-tighter">Salud Financiera</CardTitle>
-                            <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Evolución de beneficios (Últimos 7 días)</CardDescription>
+                            <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">Beneficio real por día · últimos 7 días</CardDescription>
                         </div>
-                        <Badge className="w-fit bg-blue-50 text-blue-600 border-none font-black px-3">+12% vs sem. pasada</Badge>
+                        <Badge className="w-fit bg-emerald-50 text-emerald-600 border-none font-black px-3">
+                            {metricTotals.usedEstimatedProfit ? 'Estimado si no hay comisiones' : 'Datos reales'}
+                        </Badge>
                     </div>
                     <div className="h-[180px] sm:h-[200px] w-full mt-4">
                         <ResponsiveContainer width="100%" height="100%">
@@ -241,7 +249,10 @@ function AdminDashboard() {
                                 <YAxis hide />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px', fontWeight: 'bold' }}
-                                    formatter={(value) => [`${value.toFixed(2)}€`, 'Beneficio']}
+                                    formatter={(value, name) => {
+                                        if (name === 'profit') return [`${Number(value || 0).toFixed(2)}€`, 'Beneficio'];
+                                        return [value, name];
+                                    }}
                                 />
                                 <Area type="monotone" dataKey="profit" stroke="#3b82f6" strokeWidth={4} fillOpacity={1} fill="url(#colorProfit)" />
                             </AreaChart>
@@ -250,8 +261,10 @@ function AdminDashboard() {
                 </Card>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                    <StatCard title="Ecología" value={parseFloat(stats?.co2_saved_kg || 0).toFixed(1)} currency="kg" icon={<Leaf />} trend={5.2} loading={loading} />
-                    <StatCard title="Comunidad" value={stats?.active_users || 0} icon={<Users />} trend={1.8} loading={loading} />
+                    <StatCard title="Ecología" value={parseFloat(stats?.co2_saved_kg || 0).toFixed(1)} currency="kg" icon={<Leaf />} loading={loading} description="CO₂ reportado" />
+                    <StatCard title="Comunidad" value={stats?.active_users || metricTotals.newUsers || 0} icon={<Users />} loading={loading} description={`${metricTotals.newUsers || 0} nuevos · 7d`} />
+                    <StatCard title="Viajes activos" value={metricTotals.activeRides || 0} icon={<CalendarClock />} loading={loading} description={`${metricTotals.scheduledRides || 0} programados`} />
+                    <StatCard title="Expirados" value={metricTotals.expiredRides || 0} icon={<TimerReset />} loading={loading} description={`${metricTotals.completedRides || 0} completados · 7d`} />
                 </div>
             </div>
 
