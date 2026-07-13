@@ -95,7 +95,7 @@ const EmergencyAlertsTab = () => {
 
     const [profilesRes, ridesRes] = await Promise.all([
       userIds.length
-        ? supabase.from('profiles').select('id, display_name, email, photo_url').in('id', userIds)
+        ? supabase.from('profiles').select('id, display_name, email').in('id', userIds)
         : Promise.resolve({ data: [] }),
       rideIds.length
         ? supabase.from('rides').select('id, origin, destination, departure_time, driver_id, status').in('id', rideIds)
