@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   Loader2,
   MapPin,
   MessageCircle,
@@ -87,7 +88,12 @@ const EmergencyAlertsTab = () => {
     return alerts.filter((alert) => alert.status === statusFilter);
   }, [alerts, statusFilter]);
 
-  const activeCount = useMemo(() => alerts.filter((alert) => alert.status === 'active').length, [alerts]);
+  const statusStats = useMemo(() => ({
+    total: alerts.length,
+    active: alerts.filter((alert) => alert.status === 'active').length,
+    acknowledged: alerts.filter((alert) => alert.status === 'acknowledged').length,
+    resolved: alerts.filter((alert) => alert.status === 'resolved').length,
+  }), [alerts]);
 
   const hydrateRelatedData = async (rows) => {
     const userIds = [...new Set(rows.map((item) => item.user_id).filter(Boolean))];
@@ -187,6 +193,13 @@ const EmergencyAlertsTab = () => {
     return <Badge variant="outline" className={cn('rounded-full px-3 font-black uppercase tracking-widest text-[9px]', copy.className)}>{copy.label}</Badge>;
   };
 
+  const statCards = [
+    { label: 'Total', value: statusStats.total, className: 'bg-slate-900 text-white' },
+    { label: 'Activas', value: statusStats.active, className: 'bg-red-50 text-red-700' },
+    { label: 'Reconocidas', value: statusStats.acknowledged, className: 'bg-amber-50 text-amber-700' },
+    { label: 'Resueltas', value: statusStats.resolved, className: 'bg-emerald-50 text-emerald-700' },
+  ];
+
   return (
     <div className="space-y-6 text-left">
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
@@ -204,7 +217,7 @@ const EmergencyAlertsTab = () => {
               <div className="rounded-[2rem] border border-red-400/20 bg-red-500/10 p-5 min-w-[180px]">
                 <p className="text-[10px] font-black uppercase tracking-widest text-red-200">Activas</p>
                 <div className="mt-2 flex items-end gap-2">
-                  <span className="text-5xl font-black italic leading-none">{activeCount}</span>
+                  <span className="text-5xl font-black italic leading-none">{statusStats.active}</span>
                   <AlertTriangle className="mb-1 size-7 text-red-300" />
                 </div>
               </div>
@@ -236,6 +249,15 @@ const EmergencyAlertsTab = () => {
             </Button>
           </CardContent>
         </Card>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map((item) => (
+          <div key={item.label} className={cn('rounded-[1.5rem] p-4 shadow-sm', item.className)}>
+            <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{item.label}</p>
+            <p className="mt-1 text-3xl font-black italic leading-none">{item.value}</p>
+          </div>
+        ))}
       </div>
 
       {loading ? (
@@ -319,6 +341,15 @@ const EmergencyAlertsTab = () => {
                           <MapPin className="size-4" /> Sin GPS
                         </div>
                       )}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 rounded-2xl border-slate-100 text-[10px] font-black uppercase tracking-widest gap-2"
+                        onClick={() => window.open(`/ride/${alert.ride_id}`, '_blank')}
+                      >
+                        <ExternalLink className="size-4" /> Ver viaje
+                      </Button>
 
                       {alert.chat_id && (
                         <Button
