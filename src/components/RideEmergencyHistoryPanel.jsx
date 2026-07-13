@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  AlertTriangle,
   ChevronDown,
   ChevronUp,
   Clock3,
@@ -37,7 +36,7 @@ const severityCopy = {
 };
 
 const getPoint = (alert) => {
-  const location = alert.current_location || alert.location || alert.metadata?.current_location || null;
+  const location = alert.current_location || alert.metadata?.current_location || null;
   if (!location || typeof location !== 'object') return null;
 
   const lat = Number(location.lat ?? location.latitude);
@@ -125,7 +124,7 @@ export default function RideEmergencyHistoryPanel() {
     try {
       const { data, error } = await supabase
         .from('emergency_alerts')
-        .select('id, ride_id, user_id, chat_id, status, severity, current_location, location, metadata, acknowledged_at, resolved_at, created_at, updated_at')
+        .select('id, ride_id, user_id, chat_id, status, severity, current_location, metadata, acknowledged_at, resolved_at, created_at, updated_at')
         .eq('ride_id', rideId)
         .order('created_at', { ascending: false })
         .limit(20);
