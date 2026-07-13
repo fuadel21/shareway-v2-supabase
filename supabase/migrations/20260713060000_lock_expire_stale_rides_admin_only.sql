@@ -11,15 +11,18 @@ declare
   v_grace_minutes integer := greatest(coalesce(p_grace_minutes, 120), 0);
   v_expired_count integer := 0;
   v_is_admin boolean := false;
+  v_is_service_role boolean := coalesce(auth.role(), '') = 'service_role';
 begin
-  select exists (
-    select 1
-    from public.profiles p
-    where p.id = auth.uid()
-      and coalesce(p.role, '') = 'admin'
-  ) into v_is_admin;
+  if not v_is_service_role then
+    select exists (
+      select 1
+      from public.profiles p
+      where p.id = auth.uid()
+        and coalesce(p.role, '') = 'admin'
+    ) into v_is_admin;
+  end if;
 
-  if not v_is_admin then
+  if not (v_is_admin or v_is_service_role) then
     raise exception 'ADMIN_ONLY: Solo un administrador puede expirar viajes antiguos.'
       using errcode = 'P0001';
   end if;
@@ -43,7 +46,7 @@ end;
 $$;
 
 comment on function public.expire_stale_rides(integer)
-is 'Admin-only maintenance RPC. Marks scheduled rides as expired when departure_time is older than the supplied grace period.';
+is 'Admin/service-role maintenance RPC. Marks scheduled rides as expired when departure_time is older than the supplied grace period.';
 
 revoke all on function public.expire_stale_rides(integer) from public;
 revoke all on function public.expire_stale_rides(integer) from anon;
