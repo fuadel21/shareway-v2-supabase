@@ -11,7 +11,8 @@ import {
     AlertCircle,
     MapPin,
     Radio,
-    Users
+    Users,
+    Mic
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -39,7 +40,6 @@ const EmergencyChat = () => {
 
         const initEmergencyChat = async () => {
             try {
-                // 1. Buscar el chat de tipo 'emergency' para este viaje
                 const { data: chatData, error: chatError } = await supabase
                     .from('chats')
                     .select('id')
@@ -50,7 +50,6 @@ const EmergencyChat = () => {
                 if (chatError) throw chatError;
                 setChatId(chatData.id);
 
-                // 2. Cargar mensajes
                 const { data: msgs, error: msgsError } = await supabase
                     .from('messages')
                     .select('*')
@@ -60,7 +59,6 @@ const EmergencyChat = () => {
                 if (msgsError) throw msgsError;
                 setMessages(msgs || []);
 
-                // 3. Suscripción Realtime
                 const channel = supabase.channel(`emergency:${chatData.id}`)
                     .on('postgres_changes', {
                         event: 'INSERT',
@@ -81,11 +79,10 @@ const EmergencyChat = () => {
             } catch (error) {
                 console.error("🛡️ [Safety] Error loading emergency chat:", error);
                 toast.error("No se pudo conectar con el canal de seguridad.");
-                // Si falla, al menos mostramos un mensaje de sistema
                 setMessages([{
                     id: 'fallback',
                     sender_id: 'system',
-                    content: 'Alerta registrada. Estamos monitorizando tu señal.',
+                    content: 'Alerta registrada. Mantén el canal abierto y llama al 112 si hay peligro inmediato.',
                     created_at: new Date().toISOString()
                 }]);
             } finally {
@@ -111,7 +108,7 @@ const EmergencyChat = () => {
         try {
             const { error } = await supabase.from('messages').insert({
                 sender_id: user.id,
-                content: `⚠️ AUXILIO: ${text}`,
+                content: `SOS: ${text}`,
                 chat_id: chatId
             });
 
@@ -129,7 +126,6 @@ const EmergencyChat = () => {
 
     return (
         <div className="h-screen flex flex-col bg-white overflow-hidden font-sans">
-            {/* CABECERA DE ALERTA MÁXIMA */}
             <header className="bg-red-600 p-6 text-white flex items-center gap-4 shadow-2xl z-20">
                 <Button
                     variant="ghost"
@@ -163,7 +159,6 @@ const EmergencyChat = () => {
                 </Button>
             </header>
 
-            {/* AVISO DE PROTOCOLO */}
             {showBlackbox ? (
                 <div className="p-6 bg-slate-50 border-b border-slate-100 animate-in slide-in-from-top duration-300">
                     <AudioRecording rideId={rideId} onRecordingComplete={() => setShowBlackbox(false)} />
@@ -172,12 +167,11 @@ const EmergencyChat = () => {
                 <div className="bg-red-50 p-4 border-b border-red-100 flex items-start gap-3">
                     <AlertCircle className="text-red-600 size-5 shrink-0 mt-0.5" />
                     <p className="text-[10px] text-red-800 font-bold leading-relaxed uppercase tracking-widest">
-                        TU UBICACIÓN ESTÁ SIENDO COMPARTIDA CON LAS AUTORIDADES Y TUS CONTACTOS DE EMERGENCIA EN TIEMPO REAL.
+                        Canal SOS activo. Comparte detalles de tu situación y llama al 112 si hay peligro inmediato.
                     </p>
                 </div>
             )}
 
-            {/* CHAT DE EMERGENCIA */}
             <main className="flex-1 overflow-y-auto p-6 space-y-6 bg-slate-50/30">
                 {messages.map((msg) => {
                     const isSystem = msg.sender_id === 'system';
@@ -207,7 +201,6 @@ const EmergencyChat = () => {
                 <div ref={messagesEndRef} />
             </main>
 
-            {/* INPUT DE EMERGENCIA */}
             <footer className="p-6 pb-10 bg-white border-t border-slate-100">
                 <form onSubmit={handleSendMessage} className="max-w-2xl mx-auto flex items-center gap-4">
                     <div className="flex-1 relative">
