@@ -6,17 +6,41 @@ import { supabase } from '../lib/supabase';
 import * as rpc from '@/lib/supabaseRPC';
 import { addMinutes, isBefore } from 'date-fns';
 import { RIDE_PRICING_CONFIG } from '../utils/pricingRules';
+import { expireStaleRides } from './rideExpirationService.js';
 
 // REGLAS DE NEGOCIO CENTRALIZADAS
 export const RIDE_RULES = {
-    MIN_ADVANCE_MINUTES: 20, // Bug Fix #1: sincronizado con el RPC create_ride de PostgreSQL (20 min)
+    MIN_ADVANCE_MINUTES: 20,
     MAX_PRICE: 300,
     MIN_PRICE: 0.50,
     MAX_SEATS: 8,
     MIN_SEATS: 1,
-    PICKUP_SUPPLEMENT: 1.50 // Suplemento fijo por recogida personalizada
+    PICKUP_SUPPLEMENT: 1.50
 };
 
+const BOOKABLE_RIDE_STATUSES = new Set(['scheduled']);
+
+export const isRideBookable = (ride, now = new Date()) => {
+    if (!ride || !BOOKABLE_RIDE_STATUSES.has(ride.status)) return false;
+    const departure = new Date(ride.departure_time || ride.departureTime);
+    if (Number.isNaN(departure.getTime())) return false;
+    if (departure <= now) return false;
+    if (Number(ride.seats_available ?? ride.available_seats ?? 1) <= 0) return false;
+    return true;
+};
+
+export const filterBookableRides = (rides = []) => {
+    const now = new Date();
+    return (rides || []).filter((ride) => isRideBookable(ride, now));
+};
+
+const runExpirationBestEffort = async () => {
+    try {
+        await expireStaleRides();
+    } catch (error) {
+        console.warn('🧹 [Ride Expiration] best-effort cleanup skipped:', error?.message || error);
+    }
+};
 
 export { RIDE_PRICING_CONFIG };
 
@@ -45,9 +69,6 @@ export const calculateRecommendedPrice = (distanceInMeters) => {
     return Math.max(RIDE_RULES.MIN_PRICE, Math.min(RIDE_RULES.MAX_PRICE, parseFloat(totalPrice.toFixed(2))));
 };
 
-/**
- * Calcula el desvío y precio dinámico usando el Edge Function.
- */
 export const calculateRideDetour = async (rideId, paxOrigin, paxDestination) => {
     try {
         const { data, error } = await supabase.functions.invoke('calculate-ride-detour', {
@@ -61,28 +82,19 @@ export const calculateRideDetour = async (rideId, paxOrigin, paxDestination) => 
     }
 };
 
-/**
- * Obtiene la ruta de OSRM a través de múltiples canales para máxima fiabilidad.
- * Si todo falla, devuelve una estimación por línea recta para no bloquear el flujo.
- */
 export const fetchRoute = async (coordinates, overview = 'full', geometries = 'polyline') => {
-    const osrmParams = `${coordinates}?overview=${overview}&geometries=${geometries}`;
-
-    // 1. Intento rápido vía Supabase Proxy
     try {
         const { data, error } = await supabase.functions.invoke('osrm-proxy', {
             body: { coords: coordinates, overview, geometries }
         });
         if (data && !error && data.code === 'Ok') return data;
-    } catch (e) { /* Fallback silencioso */ }
+    } catch (e) { }
 
-    // 2. FALLBACK DE EMERGENCIA: Línea Recta (Haversine)
-    // Se activa si los servidores de mapas externos están caídos.
     const [start, end] = coordinates.split(';');
     const [startLng, startLat] = start.split(',').map(Number);
     const [endLng, endLat] = end.split(',').map(Number);
 
-    const R = 6371e3; // metros
+    const R = 6371e3;
     const φ1 = startLat * Math.PI/180;
     const φ2 = endLat * Math.PI/180;
     const Δφ = (endLat-startLat) * Math.PI/180;
@@ -94,8 +106,8 @@ export const fetchRoute = async (coordinates, overview = 'full', geometries = 'p
     return {
         code: 'Ok',
         routes: [{
-            distance: distance * 1.3, // +30% para simular curvas reales
-            duration: (distance / 13.8) * 1.3, // ~50km/h
+            distance: distance * 1.3,
+            duration: (distance / 13.8) * 1.3,
             geometry: '',
             weight: distance
         }],
@@ -104,9 +116,6 @@ export const fetchRoute = async (coordinates, overview = 'full', geometries = 'p
     };
 };
 
-/**
- * Normaliza objetos de ubicación para evitar errores de esquema en Postgres
- */
 const normalizeLocation = (loc) => ({
     address: loc?.address || '',
     name: loc?.name || loc?.address?.split(',')[0] || 'Ubicación',
@@ -166,9 +175,7 @@ const attachVehicleSnapshotToRide = async (rideId, vehicle) => {
             })
             .eq('id', rideId);
 
-        if (error) {
-            console.warn('🚗 [Vehicle Snapshot] Could not attach vehicle to ride:', error.message);
-        }
+        if (error) console.warn('🚗 [Vehicle Snapshot] Could not attach vehicle to ride:', error.message);
     } catch (error) {
         console.warn('🚗 [Vehicle Snapshot] Unexpected error:', error.message);
     }
@@ -184,9 +191,6 @@ const assertBusinessSuccess = (payload, fallbackMessage) => {
     return result;
 };
 
-/**
- * Validador estricto unificado para Ofertas y Solicitudes.
- */
 const validateRidePayload = (data) => {
     const oLat = parseFloat(data.origin?.lat ?? data.origin?.coordinates?.lat ?? data.origin?.coordinates?.latitude);
     const oLng = parseFloat(data.origin?.lng ?? data.origin?.coordinates?.lng ?? data.origin?.coordinates?.longitude);
@@ -199,7 +203,6 @@ const validateRidePayload = (data) => {
 
     const tripDate = new Date(data.dateTime || data.departure_time);
     if (isNaN(tripDate.getTime())) throw new Error("Fecha de viaje inválida.");
-    // Bug Fix #1: eliminado el off-by-one (-1). Umbral exacto = MIN_ADVANCE_MINUTES
     if (isBefore(tripDate, addMinutes(new Date(), RIDE_RULES.MIN_ADVANCE_MINUTES))) {
         throw new Error(`El viaje debe programarse con al menos ${RIDE_RULES.MIN_ADVANCE_MINUTES} minutos de antelación.`);
     }
@@ -222,16 +225,10 @@ const validateRidePayload = (data) => {
     }
 };
 
-/**
- * Crea un nuevo viaje oficial (CONDUCTOR)
- */
 export const createSingleRide = async (rideData) => {
     try {
         validateRidePayload(rideData);
-
-        // Generamos Idempotency Key para evitar duplicados por doble clic
         const idempotencyKey = crypto.randomUUID();
-
         const vehicleSnapshot = normalizeVehicleSnapshot(
             rideData.vehicle || rideData.vehicle_snapshot || rideData.preferences?.vehicle_snapshot
         );
@@ -245,28 +242,16 @@ export const createSingleRide = async (rideData) => {
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
-            dateTime: rideData.dateTime instanceof Date
-                ? rideData.dateTime
-                : new Date(rideData.dateTime || rideData.departure_time),
+            dateTime: rideData.dateTime instanceof Date ? rideData.dateTime : new Date(rideData.dateTime || rideData.departure_time),
             idempotency_key: idempotencyKey
         };
 
         const { data, success, error } = await rpc.createRide(ridePayload);
         if (!success) throw new Error(error);
-
-        // Bug Fix #2: verificar la respuesta de negocio del RPC (safeCall puede ser exitoso
-        // aunque el JSON devuelto contenga { success: false, error: '...' })
-        if (!data?.success) {
-            throw new Error(data?.message || data?.error || 'El servidor rechazó la creación del viaje.');
-        }
-
-        if (data?.note === 'duplicate_prevented') {
-            console.warn("🛡️ [Offer Flow] Duplicate creation prevented by idempotency key.");
-        }
+        if (!data?.success) throw new Error(data?.message || data?.error || 'El servidor rechazó la creación del viaje.');
 
         const rideId = data.rideId || data.ride_id || data.id;
         await attachVehicleSnapshotToRide(rideId, vehicleSnapshot);
-
         return rideId;
     } catch (error) {
         console.error("🛡️ [Offer Flow] createSingleRide failed:", error);
@@ -274,9 +259,6 @@ export const createSingleRide = async (rideData) => {
     }
 };
 
-/**
- * Crea una solicitud de viaje (PASAJERO)
- */
 export const createRideRequest = async (requestData) => {
     try {
         validateRidePayload({
@@ -314,7 +296,6 @@ export const createRideRequest = async (requestData) => {
 
         if (!success) throw new Error(error);
         if (!data) throw new Error('No se recibió confirmación de la solicitud');
-
         return data;
     } catch (error) {
         console.error("🛡️ [Request Flow] createRideRequest failed:", error);
@@ -322,19 +303,13 @@ export const createRideRequest = async (requestData) => {
     }
 };
 
-// Alias para compatibilidad con tests y requestService
 export const createSingleRequest = createRideRequest;
 
-/**
- * Envía una reseña a la base de datos usando el nuevo RPC hardened.
- */
 export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
     try {
         const { data: authData } = await supabase.auth.getUser();
         const user = authData?.user;
-        if (user?.id && revieweeId === user.id) {
-            throw new Error('No puedes valorarte a ti mismo');
-        }
+        if (user?.id && revieweeId === user.id) throw new Error('No puedes valorarte a ti mismo');
         const { success, error } = await rpc.safeCall(
             () => supabase.rpc('submit_review_v2', {
                 p_ride_id: rideId,
@@ -344,7 +319,6 @@ export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
             }),
             'submit_review_v2'
         );
-
         if (!success) throw new Error(error);
         return true;
     } catch (error) {
@@ -353,28 +327,24 @@ export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
     }
 };
 
-/**
- * Obtiene viajes disponibles (Legacy radio-based)
- */
 export const getAvailableRides = async () => {
     try {
+        await runExpirationBestEffort();
         const { data, success, error } = await rpc.safeCall(
             () => supabase.rpc('get_available_rides_v2'),
             'get_available_rides_v2'
         );
         if (!success) throw new Error(error);
-        return data || [];
+        return filterBookableRides(data || []);
     } catch (error) {
         console.error("🛡️ stability: getAvailableRides failed:", error);
         return [];
     }
 };
 
-/**
- * Busca viajes usando el MOTOR DE CORREDOR (Inteligente)
- */
 export const searchRides = async ({ origin, destination, date, maxDetour = 2500 }) => {
     try {
+        await runExpirationBestEffort();
         const oCoords = origin.coordinates || origin;
         const dCoords = destination.coordinates || destination;
 
@@ -392,7 +362,7 @@ export const searchRides = async ({ origin, destination, date, maxDetour = 2500 
 
         if (!success) throw new Error(error);
 
-        return (data || []).map(ride => ({
+        return filterBookableRides(data || []).map(ride => ({
             ...ride,
             type: 'ride',
             driver: {
@@ -415,7 +385,6 @@ export const fulfillRequest = async (request, customPrice, totalSeats = null) =>
         origin: request.origin,
         destination: request.destination,
         dateTime: new Date(request.departure_time),
-        // Si el conductor no especifica, usamos el máximo entre lo pedido y 4 (estándar berlina)
         seats: totalSeats || Math.max(request.requested_seats || request.seats_needed || 1, 4),
         price: customPrice || request.suggested_price,
         details: `Aceptado desde solicitud de pasajero`,
@@ -425,12 +394,9 @@ export const fulfillRequest = async (request, customPrice, totalSeats = null) =>
     };
 
     validateRidePayload(rideData);
-
     const { data, success, error } = await rpc.fulfillRideRequest(rideData);
     if (!success) {
-        if (error?.includes('no está disponible')) {
-            throw new Error('Esta solicitud ya fue aceptada por otro conductor.');
-        }
+        if (error?.includes('no está disponible')) throw new Error('Esta solicitud ya fue aceptada por otro conductor.');
         throw new Error(error || 'No se pudo aceptar la solicitud.');
     }
     return data.rideId;
@@ -440,15 +406,11 @@ export const startRide = async (rideId, currentLocation = null) => {
     try {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData?.user) throw new Error('No autenticado');
-
         const { data, success, error } = await rpc.startRide(rideId, userData.user.id);
         if (!success) throw new Error(error);
-
-        // Si se proporciona ubicación inicial, la actualizamos
         if (currentLocation) {
             await rpc.updateRideLocation(rideId, currentLocation.lat ?? currentLocation.latitude, currentLocation.lng ?? currentLocation.longitude);
         }
-
         return {
             success: true,
             rideId: data?.ride_id || data?.rideId || rideId,
@@ -466,12 +428,8 @@ export const startRide = async (rideId, currentLocation = null) => {
 export const completeRide = async (rideId) => {
     try {
         const { data, success, error } = await rpc.completeRide(rideId);
-        if (!success) {
-            throw new Error(error?.message || error || 'No se pudo completar el viaje');
-        }
-
+        if (!success) throw new Error(error?.message || error || 'No se pudo completar el viaje');
         const result = assertBusinessSuccess(data, 'No se pudo completar el viaje');
-
         return {
             success: result?.success ?? true,
             rideId: result?.ride_id || result?.rideId || rideId,
@@ -491,16 +449,11 @@ export const completeRide = async (rideId) => {
     }
 };
 
-/**
- * Conductor cancela viaje. Usa el rpc unificado.
- */
 export const cancelRide = async (rideId, reason = '') => {
     try {
         const { data, success, error } = await rpc.cancelRide(rideId);
         if (!success) throw new Error(error);
-
         const result = assertBusinessSuccess(data, 'No se pudo cancelar el viaje');
-
         return {
             success: result?.success ?? true,
             rideId: result?.ride_id || result?.rideId || rideId,
@@ -521,9 +474,6 @@ export const cancelRide = async (rideId, reason = '') => {
     }
 };
 
-/**
- * Pasajero cancela su reserva.
- */
 export const cancelBooking = async (rideId) => {
     const { data, success, error } = await rpc.cancelBookingAndRefund(rideId);
     if (!success) throw new Error(error);
@@ -589,9 +539,7 @@ export const updateRideLocation = async (rideId, locationData) => {
     const lng = locationData.lng ?? locationData.longitude;
     const { data, success, error } = await rpc.updateRideLocation(rideId, lat, lng);
     if (!success) throw new Error(error);
-
     const result = assertBusinessSuccess(data, 'No se pudo actualizar la ubicación');
-
     return {
         success: result?.success ?? true,
         rideId: result?.ride_id || result?.rideId || rideId,
@@ -637,12 +585,10 @@ export const getRideStatusHistory = async (rideId) => {
             .order('created_at', { ascending: true });
 
         if (error) {
-            // Fallback for tests if orderBy is used instead of order
             const { data: dataAlt, error: errorAlt } = await supabase
                 .from('ride_status_logs')
                 .select('*')
                 .eq('ride_id', rideId);
-
             if (errorAlt) throw errorAlt;
             return dataAlt;
         }
@@ -656,11 +602,8 @@ export const getRideStatusHistory = async (rideId) => {
 export const emergencyStopRide = async (rideId, reason) => {
     try {
         const { data, success, error } = await rpc.triggerEmergencyAlert(rideId, reason);
-
         if (!success) throw new Error(error);
-
         const result = assertBusinessSuccess(data, 'No se pudo activar la emergencia');
-
         return {
             success: result?.success ?? true,
             rideId: result?.ride_id || result?.rideId || rideId,
@@ -682,7 +625,6 @@ export const emergencyStopRide = async (rideId, reason) => {
 export const searchRequests = async ({ origin, destination, date, seats = 1, radius = 15000 }) => {
     const { data, success, error } = await rpc.searchRideRequests(origin, destination, date, seats, radius);
     if (!success) throw new Error(error);
-
     return (data || []).map(req => ({
         ...req,
         type: 'request',
@@ -707,9 +649,7 @@ export const saveFavoriteRoute = async (routeData) => {
         departure_time: routeData.departure_time
     };
 
-    if (routeData.id) {
-        payload.id = routeData.id;
-    }
+    if (routeData.id) payload.id = routeData.id;
 
     const { data, success, error } = await rpc.safeCall(
         () => supabase.from('favorite_routes').upsert(payload).select().single(),
