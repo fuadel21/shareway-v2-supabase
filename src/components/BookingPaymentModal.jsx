@@ -37,9 +37,9 @@ const copyByLanguage = {
         invalidPrice: 'Precio no válido',
         connectionError: 'Error de conexión con el servidor.',
         walletConfirmedDesc: 'Se ha descontado el importe de tu saldo ShareWay.',
-        bookingDenied: 'Reserva denegada',
+        bookingDenied: 'Reserva no disponible',
         bookingProcessError: 'No se pudo procesar la reserva.',
-        criticalError: 'Error crítico',
+        criticalError: 'No se pudo reservar',
         title: 'Finalizar Reserva',
         subtitle: 'Selecciona tu método de pago seguro',
         pickupQuestion: '¿Dónde te recogemos?',
@@ -66,7 +66,12 @@ const copyByLanguage = {
         recalculatingPayment: 'Actualizando pago seguro...',
         lockedAmount: 'Importe protegido',
         lockedAmountDesc: 'Si cambias plazas, origen o destino, se recalcula el pago antes de confirmar.',
-        completeTripFirst: 'Selecciona recogida, destino y plazas para preparar el pago.'
+        completeTripFirst: 'Selecciona recogida, destino y plazas para preparar el pago.',
+        reservationBlockedTitle: 'Viaje no reservable',
+        bookingUnavailable: 'Este viaje ya no está disponible para reservar.',
+        tripAlreadyDeparted: 'Este viaje ya ha salido o ha expirado.',
+        noSeatsLeft: 'No quedan plazas disponibles en este viaje.',
+        refreshAndClose: 'Cerrar y actualizar'
     },
     en: {
         bookingConfirmed: 'Booking confirmed!',
@@ -84,9 +89,9 @@ const copyByLanguage = {
         invalidPrice: 'Invalid price',
         connectionError: 'Server connection error.',
         walletConfirmedDesc: 'The amount has been deducted from your ShareWay balance.',
-        bookingDenied: 'Booking denied',
+        bookingDenied: 'Booking unavailable',
         bookingProcessError: 'Could not process the booking.',
-        criticalError: 'Critical error',
+        criticalError: 'Could not book',
         title: 'Complete Booking',
         subtitle: 'Select your secure payment method',
         pickupQuestion: 'Where should we pick you up?',
@@ -113,7 +118,12 @@ const copyByLanguage = {
         recalculatingPayment: 'Updating secure payment...',
         lockedAmount: 'Protected amount',
         lockedAmountDesc: 'If you change seats, pickup or destination, payment is recalculated before confirmation.',
-        completeTripFirst: 'Select pickup, destination and seats to prepare payment.'
+        completeTripFirst: 'Select pickup, destination and seats to prepare payment.',
+        reservationBlockedTitle: 'Ride not bookable',
+        bookingUnavailable: 'This ride is no longer available for booking.',
+        tripAlreadyDeparted: 'This ride has already departed or expired.',
+        noSeatsLeft: 'There are no seats left on this ride.',
+        refreshAndClose: 'Close and refresh'
     },
     ar: {
         bookingConfirmed: 'تم تأكيد الحجز!',
@@ -131,9 +141,9 @@ const copyByLanguage = {
         invalidPrice: 'السعر غير صالح',
         connectionError: 'خطأ في الاتصال بالخادم.',
         walletConfirmedDesc: 'تم خصم المبلغ من رصيدك في ShareWay.',
-        bookingDenied: 'تم رفض الحجز',
+        bookingDenied: 'الحجز غير متاح',
         bookingProcessError: 'تعذر معالجة الحجز.',
-        criticalError: 'خطأ حرج',
+        criticalError: 'تعذر الحجز',
         title: 'إتمام الحجز',
         subtitle: 'اختر طريقة الدفع الآمنة',
         pickupQuestion: 'أين نلتقي بك؟',
@@ -160,7 +170,12 @@ const copyByLanguage = {
         recalculatingPayment: 'جارٍ تحديث الدفع الآمن...',
         lockedAmount: 'المبلغ محمي',
         lockedAmountDesc: 'إذا غيرت المقاعد أو نقطة الانطلاق أو الوجهة، سيتم تحديث الدفع قبل التأكيد.',
-        completeTripFirst: 'اختر نقطة الانطلاق والوجهة والمقاعد لتحضير الدفع.'
+        completeTripFirst: 'اختر نقطة الانطلاق والوجهة والمقاعد لتحضير الدفع.',
+        reservationBlockedTitle: 'الرحلة غير قابلة للحجز',
+        bookingUnavailable: 'هذه الرحلة لم تعد متاحة للحجز.',
+        tripAlreadyDeparted: 'هذه الرحلة انطلقت أو انتهت صلاحيتها.',
+        noSeatsLeft: 'لا توجد مقاعد متاحة في هذه الرحلة.',
+        refreshAndClose: 'إغلاق وتحديث'
     }
 };
 
@@ -187,6 +202,33 @@ const locationSignature = (loc) => {
 };
 const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
 
+const getBookingBlockedMessage = (ride, copy) => {
+    if (!ride) return null;
+    const departureDate = new Date(ride.departure_time || ride.departureTime);
+    const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
+
+    if (ride.status && ride.status !== 'scheduled') return copy.bookingUnavailable;
+    if (Number.isFinite(departureDate.getTime()) && departureDate <= new Date()) return copy.tripAlreadyDeparted;
+    if (seatsAvailable <= 0) return copy.noSeatsLeft;
+    return null;
+};
+
+const friendlyBookingError = (error, copy) => {
+    const raw = String(error?.message || error || '').trim();
+    const text = raw.toLowerCase();
+
+    if (text.includes('no quedan plazas') || text.includes('no seats') || text.includes('seats_available')) {
+        return copy.noSeatsLeft;
+    }
+    if (text.includes('ha salido') || text.includes('expirado') || text.includes('expired') || text.includes('departed')) {
+        return copy.tripAlreadyDeparted;
+    }
+    if (text.includes('booking_not_allowed') || text.includes('no está disponible') || text.includes('not available')) {
+        return copy.bookingUnavailable;
+    }
+    return raw || copy.bookingProcessError;
+};
+
 const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
     const stripe = useStripe();
     const elements = useElements();
@@ -205,9 +247,16 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
         const checkBooking = async () => {
             try {
                 const { data: ride } = await supabase.from('rides')
-                    .select('participant_ids')
+                    .select('participant_ids,status,seats_available,departure_time')
                     .eq('id', rideId)
                     .single();
+
+                const blockedMessage = getBookingBlockedMessage(ride, copy);
+                if (blockedMessage) {
+                    setErrorMessage(blockedMessage);
+                    setIsProcessingServer(false);
+                    return;
+                }
 
                 if (ride?.participant_ids?.includes(user?.id)) {
                     toast.success(copy.bookingConfirmed, {
@@ -247,12 +296,12 @@ const CheckoutForm = ({ rideId, amount, onSuccess, onClose, copy }) => {
             });
 
             if (confirmError) {
-                setErrorMessage(confirmError.message);
+                setErrorMessage(friendlyBookingError(confirmError, copy));
             } else if (paymentIntent.status === 'succeeded') {
                 await handlePostPayment();
             }
         } catch (err) {
-            setErrorMessage(err.message || copy.unexpectedError);
+            setErrorMessage(friendlyBookingError(err, copy));
         } finally {
             setIsLoading(false);
         }
@@ -336,6 +385,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [appliedSupplement, setAppliedSupplement] = useState(0);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
 
+    const bookingBlockedMessage = useMemo(
+        () => getBookingBlockedMessage(ride, copy),
+        [ride?.status, ride?.departure_time, ride?.departureTime, ride?.seats_available, ride?.available_seats, copy]
+    );
+
     useEffect(() => {
         if (isOpen) {
             if (!pickupLocation) {
@@ -354,8 +408,15 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     }, [isOpen, userLocation, initialPickupLocation, ride?.origin, ride?.destination, pickupLocation, dropoffLocation]);
 
     useEffect(() => {
+        if (!bookingBlockedMessage) return;
+        setClientSecret(null);
+        setPaymentSignature(null);
+        setIsPreparing(false);
+    }, [bookingBlockedMessage]);
+
+    useEffect(() => {
         const updatePrice = async () => {
-            if (!pickupLocation || !dropoffLocation || !ride) return;
+            if (!pickupLocation || !dropoffLocation || !ride || bookingBlockedMessage) return;
 
             const pickup = normalizeMapLocation(pickupLocation);
             const dropoff = normalizeMapLocation(dropoffLocation);
@@ -400,10 +461,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         };
 
         updatePrice();
-    }, [pickupLocation, dropoffLocation, ride, numSeats]);
+    }, [pickupLocation, dropoffLocation, ride, numSeats, bookingBlockedMessage]);
 
     const hasBalance = wallet?.balance >= dynamicAmount;
     const displayAmount = dynamicAmount;
+    const seatsAvailable = Number(ride?.seats_available ?? ride?.available_seats ?? 0);
 
     const bookingSignature = useMemo(() => JSON.stringify({
         rideId,
@@ -416,18 +478,20 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const isPaymentContextReady = Boolean(
         rideId &&
         user &&
+        !bookingBlockedMessage &&
         isValidLocation(pickupLocation) &&
         isValidLocation(dropoffLocation) &&
         Number(numSeats) > 0 &&
+        Number(numSeats) <= seatsAvailable &&
         roundMoney(dynamicAmount) > 0 &&
         !isCalculatingDistance
     );
 
     useEffect(() => {
-        if (isOpen && wallet) {
+        if (isOpen && wallet && !bookingBlockedMessage) {
             setPaymentMethod(wallet.balance >= dynamicAmount ? 'wallet' : 'card');
         }
-    }, [isOpen, wallet, dynamicAmount]);
+    }, [isOpen, wallet, dynamicAmount, bookingBlockedMessage]);
 
     useEffect(() => {
         if (!isOpen || !clientSecret || !paymentSignature) return;
@@ -467,11 +531,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                         bookingSignature,
                     },
                 });
-                if (error || !data?.clientSecret) throw new Error(data?.error?.message || copy.stripeUnavailable);
+                if (error || !data?.clientSecret) throw new Error(data?.error?.message || error?.message || copy.stripeUnavailable);
                 setClientSecret(data.clientSecret);
                 setPaymentSignature(bookingSignature);
             } catch (e) {
-                toast.error(copy.stripeError, { description: e.message });
+                const friendlyMessage = friendlyBookingError(e, copy);
+                toast.error(copy.stripeError, { description: friendlyMessage });
                 setPaymentMethod('wallet');
                 setClientSecret(null);
                 setPaymentSignature(null);
@@ -494,13 +559,14 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         dynamicAmount,
         numSeats,
         bookingSignature,
-        copy.stripeUnavailable,
-        copy.stripeError,
+        copy,
     ]);
 
     const handleWalletPayment = async () => {
         setIsProcessingWallet(true);
         try {
+            if (bookingBlockedMessage) throw new Error(bookingBlockedMessage);
+
             const numericPrice = Number(dynamicAmount);
             if (isNaN(numericPrice) || numericPrice <= 0) throw new Error(copy.invalidPrice);
             if (!isPaymentContextReady) throw new Error(copy.completeTripFirst);
@@ -533,21 +599,22 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     onClose();
                 }, 1500);
             } else {
-                const msg = result?.message || result?.error || copy.bookingProcessError;
+                const msg = friendlyBookingError(result?.message || result?.error || copy.bookingProcessError, copy);
                 toast.error(copy.bookingDenied, {
                     description: msg,
                     duration: 5000
                 });
             }
         } catch (e) {
+            const msg = friendlyBookingError(e, copy);
             console.error('❌ Error en handleWalletPayment:', e);
-            toast.error(copy.criticalError, { description: e.message });
+            toast.error(copy.bookingDenied, { description: msg, duration: 5000 });
         } finally {
             setIsProcessingWallet(false);
         }
     };
 
-    const paymentControlsDisabled = isPreparing || isProcessingWallet;
+    const paymentControlsDisabled = isPreparing || isProcessingWallet || Boolean(bookingBlockedMessage);
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -569,6 +636,21 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                     <div className="flex-1 overflow-y-auto px-8 pb-32 no-scrollbar">
                         <div className="space-y-6 text-left">
+                            {bookingBlockedMessage && (
+                                <div className="rounded-3xl border-2 border-red-100 bg-red-50 p-5 text-red-700 shadow-sm">
+                                    <div className="flex items-start gap-3">
+                                        <AlertCircle className="mt-0.5 size-5 shrink-0" />
+                                        <div className="space-y-2">
+                                            <p className="text-[10px] font-black uppercase tracking-widest">{copy.reservationBlockedTitle}</p>
+                                            <p className="text-sm font-bold leading-relaxed">{bookingBlockedMessage}</p>
+                                            <Button type="button" onClick={onClose} variant="outline" className="h-10 rounded-2xl border-red-100 bg-white text-red-600 font-black uppercase tracking-widest text-[9px]">
+                                                {copy.refreshAndClose}
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                                     <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">1</span>
@@ -578,7 +660,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <MapComponent
                                         center={pickupLocation}
                                         zoom={15}
-                                        onLocationSelect={handleLocationSelect}
+                                        onLocationSelect={paymentControlsDisabled ? undefined : handleLocationSelect}
                                         showSearch={false}
                                         height="100%"
                                     />
@@ -603,7 +685,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <MapComponent
                                         center={dropoffLocation || ride?.destination}
                                         zoom={15}
-                                        onLocationSelect={handleDropoffSelect}
+                                        onLocationSelect={paymentControlsDisabled ? undefined : handleDropoffSelect}
                                         showSearch={false}
                                         height="100%"
                                     />
@@ -625,7 +707,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                             </p>
                             <div className="flex bg-white p-1.5 rounded-3xl border-2 border-slate-100 gap-1 shadow-sm">
                                 {[1, 2, 3, 4].map(n => {
-                                    const isAvailable = n <= (ride?.seats_available || 0);
+                                    const isAvailable = n <= seatsAvailable;
                                     return (
                                         <button key={n}
                                             type="button"
@@ -715,7 +797,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 </button>
                             </div>
 
-                            {!isPaymentContextReady && (
+                            {!isPaymentContextReady && !bookingBlockedMessage && (
                                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-center text-[10px] font-black uppercase tracking-widest text-amber-700">
                                     {copy.completeTripFirst}
                                 </div>
@@ -740,7 +822,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                         {hasBalance ? (
                                             <Button
                                                 onClick={handleWalletPayment}
-                                                disabled={isProcessingWallet || isCalculatingDistance || !isPaymentContextReady}
+                                                disabled={isProcessingWallet || isCalculatingDistance || !isPaymentContextReady || Boolean(bookingBlockedMessage)}
                                                 className="w-full h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest shadow-xl shadow-emerald-200"
                                             >
                                                 {isProcessingWallet ? <Loader2 className="animate-spin" /> : <>{copy.confirmWithBalance} <ChevronRight className="ml-2" size={18} /></>}
@@ -750,7 +832,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                                 <p className="text-[10px] text-red-600 font-bold text-center italic">{copy.insufficientWallet}</p>
                                                 <Button
                                                     onClick={() => setPaymentMethod('card')}
-                                                    disabled={!isPaymentContextReady}
+                                                    disabled={!isPaymentContextReady || Boolean(bookingBlockedMessage)}
                                                     variant="outline"
                                                     className="w-full h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase tracking-widest"
                                                 >
