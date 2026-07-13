@@ -5,6 +5,7 @@ import './i18n/rtl.css';
 import './i18n/config';
 import App from "./App.jsx";
 import RideEmergencyQuickAction from "./components/RideEmergencyQuickAction.jsx";
+import RideEmergencyHistoryPanel from "./components/RideEmergencyHistoryPanel.jsx";
 
 // Importar estilos de Leaflet globalmente
 import 'leaflet/dist/leaflet.css';
@@ -18,5 +19,6 @@ root.render(
   <React.StrictMode>
     <App />
     <RideEmergencyQuickAction />
+    <RideEmergencyHistoryPanel />
   </React.StrictMode>
 );
