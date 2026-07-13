@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, UserCheck, Users, DollarSign, Banknote, Loader2, AlertCircle, RefreshCw, Leaf, Building2, Activity, ArrowRight, BellRing, BarChart3, CalendarClock, TimerReset } from 'lucide-react';
+import { Car, UserCheck, Users, DollarSign, Banknote, Loader2, AlertCircle, AlertTriangle, RefreshCw, Leaf, Building2, Activity, ArrowRight, BellRing, BarChart3, CalendarClock, TimerReset } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card.jsx';
 import { Button } from '@/components/ui/button.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
@@ -22,11 +22,13 @@ import ClimateTab from './tabs/ClimateTab';
 import CommunitiesTab from './tabs/CommunitiesTab';
 import AdminNotificationsTab from './tabs/AdminNotificationsTab.jsx';
 import SeoAnalyticsTab from './tabs/SeoAnalyticsTab.jsx';
+import EmergencyAlertsTab from './tabs/EmergencyAlertsTab.jsx';
 
 const adminTabs = [
     { val: 'verifications', label: 'DNI/KYC', shortLabel: 'KYC', icon: UserCheck },
     { val: 'users', label: 'Usuarios', shortLabel: 'Usuarios', icon: Users },
     { val: 'rides', label: 'Viajes', shortLabel: 'Viajes', icon: Car },
+    { val: 'sos', label: 'Alertas SOS', shortLabel: 'SOS', icon: AlertTriangle },
     { val: 'notifications', label: 'Avisos', shortLabel: 'Avisos', icon: BellRing },
     { val: 'seo', label: 'SEO Analytics', shortLabel: 'SEO', icon: BarChart3 },
     { val: 'finance', label: 'Finanzas', shortLabel: 'Finanzas', icon: DollarSign },
@@ -279,7 +281,7 @@ function AdminDashboard() {
                             <Badge className="shrink-0 bg-slate-900 text-white border-none font-black text-[8px] uppercase tracking-widest px-3 py-1">Admin</Badge>
                         </div>
 
-                        <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 mb-8 sm:mb-10 bg-slate-50 p-1.5 sm:p-2 rounded-[1.5rem] gap-1.5 sm:gap-2 border border-slate-100/50">
+                        <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-11 mb-8 sm:mb-10 bg-slate-50 p-1.5 sm:p-2 rounded-[1.5rem] gap-1.5 sm:gap-2 border border-slate-100/50">
                             {adminTabs.map((t) => (
                                 <TabsTrigger key={t.val} value={t.val} className="min-h-[56px] sm:min-h-[60px] rounded-2xl px-2 sm:px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary transition-all text-[9px] sm:text-[10px] font-black uppercase tracking-widest gap-1.5 sm:gap-2 border border-transparent data-[state=active]:border-slate-100 flex flex-col sm:flex-row items-center justify-center leading-none">
                                     <t.icon className="h-4 w-4 shrink-0" />
@@ -297,6 +299,9 @@ function AdminDashboard() {
                             </TabsContent>
                             <TabsContent value="rides" className="mt-0 focus-visible:outline-none">
                                 <RideManagementTab />
+                            </TabsContent>
+                            <TabsContent value="sos" className="mt-0 focus-visible:outline-none">
+                                <EmergencyAlertsTab />
                             </TabsContent>
                             <TabsContent value="notifications" className="mt-0 focus-visible:outline-none">
                                 <AdminNotificationsTab />
