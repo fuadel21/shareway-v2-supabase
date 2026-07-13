@@ -1,13 +1,15 @@
 -- Ride financial ledger.
 -- Creates a per-ride financial audit trail without changing existing payment flows.
 -- Existing wallet transactions are mirrored best-effort only when a ride_id can be detected.
+-- This migration intentionally avoids foreign keys to wallet_transactions.id because older
+-- production schemas may use a different primary key name for wallet transactions.
 
 create table if not exists public.ride_financial_ledger (
   id uuid primary key default gen_random_uuid(),
-  ride_id uuid references public.rides(id) on delete set null,
-  actor_user_id uuid references public.profiles(id) on delete set null,
-  wallet_id uuid references public.wallets(id) on delete set null,
-  source_transaction_id uuid unique references public.wallet_transactions(id) on delete set null,
+  ride_id uuid,
+  actor_user_id uuid,
+  wallet_id uuid,
+  source_transaction_id uuid unique,
   event_type text not null default 'wallet_transaction',
   status text not null default 'recorded',
   currency text not null default 'EUR',
@@ -24,7 +26,7 @@ create table if not exists public.ride_financial_ledger (
 
 comment on table public.ride_financial_ledger is 'Per-ride financial audit trail for gross amounts, platform fees, driver amounts, refunds and wallet transaction mirrors.';
 comment on column public.ride_financial_ledger.event_type is 'Examples: booking_paid, platform_fee, driver_payout, refund, cancellation, no_show, wallet_transaction.';
-comment on column public.ride_financial_ledger.source_transaction_id is 'Wallet transaction mirrored into the ride ledger, when available.';
+comment on column public.ride_financial_ledger.source_transaction_id is 'Wallet transaction id mirrored into the ride ledger when available.';
 
 create index if not exists ride_financial_ledger_ride_id_idx on public.ride_financial_ledger (ride_id);
 create index if not exists ride_financial_ledger_actor_user_id_idx on public.ride_financial_ledger (actor_user_id);
@@ -33,6 +35,7 @@ create index if not exists ride_financial_ledger_created_at_idx on public.ride_f
 create index if not exists ride_financial_ledger_metadata_gin_idx on public.ride_financial_ledger using gin (metadata);
 
 alter table public.ride_financial_ledger enable row level security;
+alter table public.ride_financial_ledger force row level security;
 
 -- Reads are available to admins and ride participants.
 drop policy if exists ride_financial_ledger_select_admin_or_participant on public.ride_financial_ledger;
@@ -179,10 +182,11 @@ set search_path = public
 as $$
 declare
   v_tx jsonb := to_jsonb(new);
-  v_metadata jsonb := coalesce(v_tx->'metadata', '{}'::jsonb);
+  v_metadata jsonb := coalesce(to_jsonb(new)->'metadata', '{}'::jsonb);
   v_ride_id uuid := null;
   v_actor_user_id uuid := null;
   v_wallet_id uuid := null;
+  v_source_transaction_id uuid := null;
   v_amount numeric := 0;
   v_type text := 'wallet_transaction';
   v_description text := null;
@@ -222,6 +226,17 @@ begin
     v_wallet_id := null;
   end;
 
+  begin
+    v_source_transaction_id := coalesce(
+      nullif(v_tx->>'id', '')::uuid,
+      nullif(v_tx->>'transaction_id', '')::uuid,
+      nullif(v_metadata->>'transaction_id', '')::uuid,
+      nullif(v_metadata->>'transactionId', '')::uuid
+    );
+  exception when others then
+    v_source_transaction_id := null;
+  end;
+
   v_amount := round(coalesce(nullif(v_tx->>'amount', '')::numeric, 0), 2);
   v_type := coalesce(nullif(v_tx->>'type', ''), nullif(v_tx->>'transaction_type', ''), nullif(v_tx->>'category', ''), 'wallet_transaction');
   v_description := coalesce(nullif(v_tx->>'description', ''), nullif(v_tx->>'reason', ''), v_type);
@@ -245,7 +260,7 @@ begin
     v_refund_amount,
     v_description,
     jsonb_build_object('source', 'wallet_transactions', 'raw', v_tx),
-    new.id,
+    v_source_transaction_id,
     v_wallet_id
   );
 
