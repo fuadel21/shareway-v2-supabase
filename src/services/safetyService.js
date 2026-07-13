@@ -10,33 +10,43 @@ import { toast } from 'sonner';
  */
 export const triggerSOS = async (rideId) => {
     try {
-        // 1. Obtener ubicación actual para la alerta
         const location = await new Promise((resolve) => {
             if (!navigator.geolocation) return resolve(null);
             navigator.geolocation.getCurrentPosition(
-                (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+                (pos) => resolve({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                    accuracy: pos.coords.accuracy ?? null,
+                    captured_at: new Date().toISOString()
+                }),
                 () => resolve(null),
                 { enableHighAccuracy: true, timeout: 5000 }
             );
         });
 
-        // 2. Llamar al RPC de emergencia
         const { data, success, error } = await rpc.safeCall(
             () => supabase.rpc('trigger_emergency_alert_v2', {
                 p_ride_id: rideId,
-                p_current_location: location
+                p_current_location: location,
+                p_metadata: {
+                    source: 'client',
+                    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+                }
             }),
             'trigger_emergency_alert_v2'
         );
 
         if (!success) throw new Error(error);
 
+        const alertId = data?.alertId || data?.alert_id || null;
+        const chatId = data?.chatId || data?.chat_id || null;
+
         toast.error("🚨 ALERTA SOS ACTIVADA", {
-            description: "Tus contactos y el centro de control han sido notificados.",
+            description: "Alerta registrada. Mantén el canal abierto y llama al 112 si hay peligro inmediato.",
             duration: 10000
         });
 
-        return { success: true, alertId: data.alertId, chatId: data.chatId };
+        return { success: true, alertId, chatId, raw: data };
 
     } catch (error) {
         console.error("🛡️ [Safety] SOS trigger failed:", error);
