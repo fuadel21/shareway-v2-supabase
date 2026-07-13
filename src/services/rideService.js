@@ -6,7 +6,6 @@ import { supabase } from '../lib/supabase';
 import * as rpc from '@/lib/supabaseRPC';
 import { addMinutes, isBefore } from 'date-fns';
 import { RIDE_PRICING_CONFIG } from '../utils/pricingRules';
-import { expireStaleRides } from './rideExpirationService.js';
 
 // REGLAS DE NEGOCIO CENTRALIZADAS
 export const RIDE_RULES = {
@@ -32,14 +31,6 @@ export const isRideBookable = (ride, now = new Date()) => {
 export const filterBookableRides = (rides = []) => {
     const now = new Date();
     return (rides || []).filter((ride) => isRideBookable(ride, now));
-};
-
-const runExpirationBestEffort = async () => {
-    try {
-        await expireStaleRides();
-    } catch (error) {
-        console.warn('🧹 [Ride Expiration] best-effort cleanup skipped:', error?.message || error);
-    }
 };
 
 export { RIDE_PRICING_CONFIG };
@@ -329,7 +320,6 @@ export const submitReview = async ({ rideId, revieweeId, rating, comment }) => {
 
 export const getAvailableRides = async () => {
     try {
-        await runExpirationBestEffort();
         const { data, success, error } = await rpc.safeCall(
             () => supabase.rpc('get_available_rides_v2'),
             'get_available_rides_v2'
@@ -344,7 +334,6 @@ export const getAvailableRides = async () => {
 
 export const searchRides = async ({ origin, destination, date, maxDetour = 2500 }) => {
     try {
-        await runExpirationBestEffort();
         const oCoords = origin.coordinates || origin;
         const dCoords = destination.coordinates || destination;
 
