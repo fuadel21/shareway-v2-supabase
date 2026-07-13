@@ -33,8 +33,8 @@ create index if not exists ride_financial_ledger_created_at_idx on public.ride_f
 create index if not exists ride_financial_ledger_metadata_gin_idx on public.ride_financial_ledger using gin (metadata);
 
 alter table public.ride_financial_ledger enable row level security;
-alter table public.ride_financial_ledger force row level security;
 
+-- Reads are available to admins and ride participants.
 drop policy if exists ride_financial_ledger_select_admin_or_participant on public.ride_financial_ledger;
 create policy ride_financial_ledger_select_admin_or_participant
 on public.ride_financial_ledger
@@ -58,8 +58,9 @@ using (
   )
 );
 
-drop policy if exists ride_financial_ledger_insert_service_only on public.ride_financial_ledger;
-create policy ride_financial_ledger_insert_service_only
+-- Direct client inserts are limited to admins. Automated inserts go through security definer helpers/triggers.
+drop policy if exists ride_financial_ledger_insert_admin_only on public.ride_financial_ledger;
+create policy ride_financial_ledger_insert_admin_only
 on public.ride_financial_ledger
 for insert
 to authenticated
@@ -166,7 +167,9 @@ $$;
 comment on function public.record_ride_financial_event(uuid, uuid, text, text, numeric, numeric, numeric, numeric, text, jsonb, uuid, uuid)
 is 'Security definer helper to append a normalized financial event to the ride ledger.';
 
-grant execute on function public.record_ride_financial_event(uuid, uuid, text, text, numeric, numeric, numeric, numeric, text, jsonb, uuid, uuid) to authenticated;
+revoke all on function public.record_ride_financial_event(uuid, uuid, text, text, numeric, numeric, numeric, numeric, text, jsonb, uuid, uuid) from public;
+revoke execute on function public.record_ride_financial_event(uuid, uuid, text, text, numeric, numeric, numeric, numeric, text, jsonb, uuid, uuid) from authenticated;
+grant execute on function public.record_ride_financial_event(uuid, uuid, text, text, numeric, numeric, numeric, numeric, text, jsonb, uuid, uuid) to service_role;
 
 create or replace function public.sync_ride_financial_ledger_from_wallet_transaction()
 returns trigger
