@@ -26,7 +26,7 @@ import {
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
 import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
-import { cancelRide, cancelBooking, completeRide as completeRideService } from '../services/rideService.js';
+import { cancelRide, cancelBooking, completeRide as completeRideService, isRideBookable } from '../services/rideService.js';
 import { triggerSOS } from '../services/safetyService.js';
 
 const formatMoney = (value) => {
@@ -392,18 +392,53 @@ const RideDetails = () => {
     const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
-    const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled';
+    const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled' || ride.status === 'expired';
 
     const departureDate = new Date(ride.departure_time);
+    const hasValidDeparture = Number.isFinite(departureDate.getTime());
+    const hasDeparted = hasValidDeparture && departureDate <= currentTime;
     const minutesToDeparture = differenceInMinutes(departureDate, currentTime);
     const isTooLate = differenceInMinutes(currentTime, departureDate) > 120;
-    const isDelayed = isBefore(departureDate, currentTime) && !isRideActive && !isRideCancelled;
-    const canStartRide = (minutesToDeparture <= 15 || isBefore(departureDate, currentTime)) && !isRideActive && !isRideCancelled && !isTooLate;
+    const isDelayed = ride.status === 'scheduled' && hasDeparted && !isTooLate;
+    const canStartRide = ride.status === 'scheduled' && (minutesToDeparture <= 15 || hasDeparted) && !isRideActive && !isRideCancelled && !isTooLate;
     const canVerifyPassenger = isRideActive || canStartRide;
+    const isRideBookableNow = isRideBookable(ride, currentTime);
     const myPassengerEntry = passengers.find(p => p.id?.toString().toLowerCase() === currentUserId);
     const isRated = myPassengerEntry?.rated === true || myPassengerEntry?.rated === 'true';
     const myPin = myPassengerEntry?.pin;
     const ridePrice = formatMoney(ride.price) || '0.00€';
+    const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
+
+    const bookingBlockedLabel = (() => {
+        if (isRideCancelled) return 'Viaje Cancelado';
+        if (ride.status === 'completed') return 'Viaje Finalizado';
+        if (ride.status === 'expired' || isTooLate) return 'Viaje Expirado';
+        if (hasDeparted) return 'Viaje ya salido';
+        if (seatsAvailable <= 0) return 'Viaje Completo';
+        if (ride.status !== 'scheduled') return 'No Disponible';
+        return 'No Disponible';
+    })();
+
+    const bookingBlockedDescription = (() => {
+        if (isRideCancelled) return 'Este viaje ha sido cancelado y ya no acepta reservas.';
+        if (ride.status === 'completed') return 'Este viaje ya ha finalizado.';
+        if (ride.status === 'expired' || isTooLate || hasDeparted) return 'Este viaje ya ha salido o ha expirado.';
+        if (seatsAvailable <= 0) return 'No quedan plazas disponibles en este viaje.';
+        return 'Este viaje ya no está disponible para reservar.';
+    })();
+
+    const handleOpenBookingModal = () => {
+        if (!isRideBookableNow) {
+            toast.error('Reserva no disponible', {
+                description: bookingBlockedDescription,
+                duration: 5000,
+            });
+            fetchRide();
+            return;
+        }
+
+        setIsBookingModalOpen(true);
+    };
 
     return (
         <div className="bg-[#F8FAFC] min-h-screen pb-96">
@@ -431,6 +466,16 @@ const RideDetails = () => {
                     </div>
                 )}
 
+                {!isDriver && !isPassenger && !isRideBookableNow && !isRideCancelled && (
+                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-amber-700">
+                        <AlertCircle size={32} className="shrink-0" />
+                        <div>
+                            <p className="font-black uppercase italic leading-none">{bookingBlockedLabel}</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">{bookingBlockedDescription}</p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="h-56 w-full rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white relative group">
                     <MapComponent
                         center={selectedPickupLocation || ride.origin}
@@ -439,7 +484,7 @@ const RideDetails = () => {
                         interactive={true}
                         pickupLocation={selectedPickupLocation}
                         onLocationSelect={(loc) => {
-                            if (!isPassenger && ride.status === 'scheduled') {
+                            if (!isPassenger && isRideBookableNow) {
                                 setSelectedPickupLocation(loc);
                                 toast.info('Punto de recogida seleccionado', {
                                     description: 'Se usará esta ubicación al reservar.',
@@ -448,7 +493,7 @@ const RideDetails = () => {
                             }
                         }}
                     />
-                    {!isPassenger && ride.status === 'scheduled' && (
+                    {!isPassenger && isRideBookableNow && (
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm z-[10] pointer-events-none">
                             <MapPin className="size-3 text-primary animate-pulse" />
                             <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">Toca el mapa para elegir recogida</span>
@@ -791,18 +836,18 @@ const RideDetails = () => {
                         </div>
                     ) : (
                         <Button
-                            disabled={ride.seats_available <= 0 || isRideCancelled}
-                            onClick={() => setIsBookingModalOpen(true)}
+                            disabled={!isRideBookableNow}
+                            onClick={handleOpenBookingModal}
                             className={cn(
                                 'h-16 w-full rounded-[2.5rem] font-black uppercase italic tracking-[0.2em] text-lg shadow-2xl transition-all duration-300 transform active:scale-95 group',
-                                ride.seats_available > 0 ? 'bg-primary hover:shadow-primary/40 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                isRideBookableNow ? 'bg-primary hover:shadow-primary/40 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                             )}
                         >
-                            {ride.seats_available > 0 ? (
+                            {isRideBookableNow ? (
                                 <span className="flex items-center gap-3">
                                     Reservar Plaza <ChevronRight size={24} className="group-hover:translate-x-1 transition-transform" />
                                 </span>
-                            ) : 'Viaje Completo'}
+                            ) : bookingBlockedLabel}
                         </Button>
                     )}
                 </div>
