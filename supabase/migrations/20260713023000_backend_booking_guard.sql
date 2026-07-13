@@ -33,6 +33,11 @@ begin
       using errcode = 'P0001';
   end if;
 
+  if v_new_participants_count > v_old_participants_count and coalesce(old.seats_available, 0) <= 0 then
+    raise exception 'BOOKING_NOT_ALLOWED: No quedan plazas disponibles en este viaje.'
+      using errcode = 'P0001';
+  end if;
+
   if coalesce(new.seats_available, old.seats_available, 0) < 0 then
     raise exception 'BOOKING_NOT_ALLOWED: No quedan plazas disponibles en este viaje.'
       using errcode = 'P0001';
