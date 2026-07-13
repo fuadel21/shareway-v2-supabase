@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, PhoneCall, ShieldAlert, X } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -13,6 +12,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button.jsx';
+import { supabase } from '@/lib/supabase.js';
 import { getRideDetailsSecure } from '@/lib/supabaseRPC.js';
 import { triggerSOS } from '@/services/safetyService.js';
 import { cn } from '@/lib/utils.js';
@@ -23,18 +23,49 @@ const parseRideIdFromPath = (pathname) => {
 };
 
 const isActiveRideStatus = (status) => status === 'active' || status === 'in_progress';
-
 const normalizeId = (value) => value?.toString?.().toLowerCase?.() || '';
 
-export default function RideEmergencyQuickAction({ user }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const rideId = useMemo(() => parseRideIdFromPath(location.pathname), [location.pathname]);
+export default function RideEmergencyQuickAction() {
+  const [pathname, setPathname] = useState(() => window.location.pathname);
+  const [user, setUser] = useState(null);
   const [ride, setRide] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+
+  const rideId = parseRideIdFromPath(pathname);
+
+  useEffect(() => {
+    const syncPath = () => setPathname(window.location.pathname);
+    const timer = window.setInterval(syncPath, 800);
+
+    window.addEventListener('popstate', syncPath);
+    window.addEventListener('hashchange', syncPath);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener('popstate', syncPath);
+      window.removeEventListener('hashchange', syncPath);
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (mounted) setUser(data?.user || null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      mounted = false;
+      subscription?.unsubscribe?.();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +120,7 @@ export default function RideEmergencyQuickAction({ user }) {
         duration: 6000,
       });
       setIsConfirmOpen(false);
-      navigate(`/emergency/${rideId}`);
+      window.location.assign(`/emergency/${rideId}`);
     } catch (error) {
       console.error('[RideEmergencyQuickAction] trigger failed:', error);
       toast.error('No se pudo activar SOS', {
@@ -105,16 +136,18 @@ export default function RideEmergencyQuickAction({ user }) {
   return (
     <>
       <div className="fixed right-4 top-[5.25rem] z-[60] max-w-[calc(100vw-2rem)] sm:right-6 sm:top-24">
-        <div className={cn(
-          'w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-[1.75rem] border border-red-200 bg-white shadow-2xl shadow-red-200/60',
-          'animate-in fade-in slide-in-from-top-4 duration-300',
-        )}>
+        <div
+          className={cn(
+            'w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-[1.75rem] border border-red-200 bg-white shadow-2xl shadow-red-200/60',
+            'animate-in fade-in slide-in-from-top-4 duration-300',
+          )}
+        >
           <div className="flex items-start gap-3 bg-red-600 px-4 py-3 text-white">
             <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl bg-white/15">
               <ShieldAlert className="size-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">Emergencia activa</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100">Viaje en curso</p>
               <h3 className="text-base font-black uppercase italic leading-tight">SOS rápido</h3>
             </div>
             <button
