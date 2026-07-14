@@ -2,42 +2,16 @@
 -- Source: Supabase Performance Security Lints export for project wmkhutsesgtkcgqbctef.
 --
 -- This migration addresses:
--- - 38 tables in public schema without RLS enabled.
--- - 11 public views flagged as SECURITY DEFINER views.
--- - 2 sensitive session_id exposures caused by RLS being disabled.
+-- - Public tables without RLS enabled.
+-- - Public views flagged as SECURITY DEFINER views.
+-- - Sensitive session_id exposures caused by RLS being disabled.
 --
--- Design:
+-- Notes:
+-- - public.spatial_ref_sys is owned by PostGIS/Supabase, so it is intentionally excluded.
+-- - public.is_admin() is overloaded, so policies call public.is_admin(auth.uid()).
 -- - Enable RLS without FORCE RLS to avoid breaking SECURITY DEFINER maintenance functions.
--- - Keep internal logs/admin tables admin-only through RLS.
--- - Keep public configuration/catalog tables readable.
--- - Keep user-owned records limited to auth.uid().
--- - Switch flagged views to security_invoker where supported.
 
 set check_function_bodies = off;
-
-do $$
-declare
-    table_name text;
-begin
-    foreach table_name in array array['stripe_payments_audit','webhook_logs','audit_logs','user_devices','email_templates','performance_logs','spatial_ref_sys','admin_audit_logs','eea_emission_factors','rate_limits','performance_profiles','app_settings','country_configs','notification_preferences','level_config','ride_route_history','performance_metrics','polling_cache','location_cache','v_column_exists','dashboard_activity','location_updates','query_performance_log','load_test_results','error_monitoring','error_alerts','system_health','financial_discrepancies','ecopoints_transactions','user_levels','reward_redemptions','rewards','ride_location_history','chat_reads','refund_logs','user_challenge_progress','challenges','user_streaks']
-    loop
-        if to_regclass(format('public.%I', table_name)) is not null then
-            execute format('alter table public.%I enable row level security', table_name);
-        end if;
-    end loop;
-end $$;
-
-do $$
-declare
-    view_name text;
-begin
-    foreach view_name in array array['internal_sus_activity','audit_financial_discrepancies','v_community_stats','internal_error_monitor','user_ride_history','platform_rating_stats','admin_analytics_summary','internal_financial_alerts','v_eu_grant_report','view_realtime_stress_monitor','internal_stuck_rides']
-    loop
-        if to_regclass(format('public.%I', view_name)) is not null then
-            execute format('alter view public.%I set (security_invoker = true)', view_name);
-        end if;
-    end loop;
-end $$;
 
 create or replace function public.__sw_apply_lint_policy(
     p_table text,
@@ -94,21 +68,35 @@ begin
 end;
 $$;
 
--- Admins can manage the linted tables. Service role still bypasses RLS for Edge Functions.
 do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['stripe_payments_audit','webhook_logs','audit_logs','user_devices','email_templates','performance_logs','spatial_ref_sys','admin_audit_logs','eea_emission_factors','rate_limits','performance_profiles','app_settings','country_configs','notification_preferences','level_config','ride_route_history','performance_metrics','polling_cache','location_cache','v_column_exists','dashboard_activity','location_updates','query_performance_log','load_test_results','error_monitoring','error_alerts','system_health','financial_discrepancies','ecopoints_transactions','user_levels','reward_redemptions','rewards','ride_location_history','chat_reads','refund_logs','user_challenge_progress','challenges','user_streaks']
+    foreach table_name in array array[
+        'stripe_payments_audit','webhook_logs','audit_logs','user_devices',
+        'email_templates','performance_logs','admin_audit_logs','eea_emission_factors',
+        'rate_limits','performance_profiles','app_settings','country_configs',
+        'notification_preferences','level_config','ride_route_history',
+        'performance_metrics','polling_cache','location_cache','v_column_exists',
+        'dashboard_activity','location_updates','query_performance_log',
+        'load_test_results','error_monitoring','error_alerts','system_health',
+        'financial_discrepancies','ecopoints_transactions','user_levels',
+        'reward_redemptions','rewards','ride_location_history','chat_reads',
+        'refund_logs','user_challenge_progress','challenges','user_streaks'
+    ]
     loop
-        perform public.__sw_apply_lint_policy(
-            table_name,
-            'sw_admin_all',
-            'all',
-            'authenticated',
-            'public.is_admin()',
-            'public.is_admin()'
-        );
+        if to_regclass(format('public.%I', table_name)) is not null then
+            execute format('alter table public.%I enable row level security', table_name);
+
+            perform public.__sw_apply_lint_policy(
+                table_name,
+                'sw_admin_all',
+                'all',
+                'authenticated',
+                'public.is_admin(auth.uid())',
+                'public.is_admin(auth.uid())'
+            );
+        end if;
     end loop;
 end $$;
 
@@ -117,7 +105,10 @@ do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['spatial_ref_sys','eea_emission_factors','app_settings','country_configs','level_config','rewards','challenges','v_column_exists']
+    foreach table_name in array array[
+        'eea_emission_factors','app_settings','country_configs',
+        'level_config','rewards','challenges','v_column_exists'
+    ]
     loop
         perform public.__sw_apply_lint_policy(
             table_name,
@@ -135,7 +126,9 @@ do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['user_devices','notification_preferences','chat_reads','dashboard_activity']
+    foreach table_name in array array[
+        'user_devices','notification_preferences','chat_reads','dashboard_activity'
+    ]
     loop
         perform public.__sw_apply_lint_policy(
             table_name,
@@ -153,7 +146,12 @@ do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['stripe_payments_audit','refund_logs','ecopoints_transactions','user_levels','user_streaks','reward_redemptions','user_challenge_progress','rate_limits','performance_logs','performance_metrics','query_performance_log','error_monitoring','location_updates']
+    foreach table_name in array array[
+        'stripe_payments_audit','refund_logs','ecopoints_transactions',
+        'user_levels','user_streaks','reward_redemptions','user_challenge_progress',
+        'rate_limits','performance_logs','performance_metrics',
+        'query_performance_log','error_monitoring','location_updates'
+    ]
     loop
         perform public.__sw_apply_lint_policy(
             table_name,
@@ -171,7 +169,10 @@ do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['reward_redemptions','performance_logs','performance_metrics','query_performance_log','error_monitoring','location_updates']
+    foreach table_name in array array[
+        'reward_redemptions','performance_logs','performance_metrics',
+        'query_performance_log','error_monitoring','location_updates'
+    ]
     loop
         perform public.__sw_apply_lint_policy(
             table_name,
@@ -189,7 +190,10 @@ do $$
 declare
     table_name text;
 begin
-    foreach table_name in array array['notification_preferences','user_devices','chat_reads','dashboard_activity','location_updates']
+    foreach table_name in array array[
+        'notification_preferences','user_devices','chat_reads',
+        'dashboard_activity','location_updates'
+    ]
     loop
         perform public.__sw_apply_lint_policy(
             table_name,
@@ -270,7 +274,24 @@ select public.__sw_apply_lint_policy(
     $policy$
 );
 
--- Public cache tables stay readable only to admins. Edge Functions/service role can still maintain them.
+-- Switch flagged views to invoker permissions when PostgreSQL supports it.
+do $$
+declare
+    view_name text;
+begin
+    foreach view_name in array array[
+        'internal_sus_activity','audit_financial_discrepancies','v_community_stats',
+        'internal_error_monitor','user_ride_history','platform_rating_stats',
+        'admin_analytics_summary','internal_financial_alerts','v_eu_grant_report',
+        'view_realtime_stress_monitor','internal_stuck_rides'
+    ]
+    loop
+        if to_regclass(format('public.%I', view_name)) is not null then
+            execute format('alter view public.%I set (security_invoker = true)', view_name);
+        end if;
+    end loop;
+end $$;
+
 -- Sensitive session_id tables are protected by RLS:
 -- - error_monitoring
 -- - query_performance_log
