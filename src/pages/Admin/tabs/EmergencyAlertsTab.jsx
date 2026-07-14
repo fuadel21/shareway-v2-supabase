@@ -9,8 +9,10 @@ import {
   MessageCircle,
   Navigation,
   RefreshCw,
+  Search,
   ShieldCheck,
   UserRound,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
@@ -61,6 +63,12 @@ const formatDate = (value) => {
   }).format(date);
 };
 
+const normalizeSearchText = (value) => String(value || '')
+  .toLowerCase()
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .trim();
+
 const getPoint = (alert) => {
   const location = alert.current_location || alert.location || null;
   if (!location || typeof location !== 'object') return null;
@@ -83,20 +91,64 @@ const getLocationLabel = (value, fallback) => {
   return value.name || value.address || value.formatted_address || fallback;
 };
 
+const buildAlertSearchText = ({ alert, profile, ride }) => {
+  const point = getPoint(alert);
+  const origin = getLocationLabel(ride.origin, '');
+  const destination = getLocationLabel(ride.destination, '');
+  const safeMetadata = (() => {
+    try {
+      return alert.metadata ? JSON.stringify(alert.metadata) : '';
+    } catch (error) {
+      return '';
+    }
+  })();
+
+  return normalizeSearchText([
+    alert.id,
+    alert.ride_id,
+    alert.user_id,
+    alert.chat_id,
+    alert.status,
+    alert.severity,
+    severityCopy[alert.severity],
+    profile.display_name,
+    profile.email,
+    origin,
+    destination,
+    ride.status,
+    ride.driver_id,
+    formatDate(alert.created_at),
+    formatDate(ride.departure_time),
+    point ? `${point.lat},${point.lng}` : '',
+    safeMetadata,
+  ].filter(Boolean).join(' '));
+};
+
 const EmergencyAlertsTab = () => {
   const [alerts, setAlerts] = useState([]);
   const [profilesById, setProfilesById] = useState({});
   const [ridesById, setRidesById] = useState({});
   const [statusFilter, setStatusFilter] = useState('active');
   const [severityFilter, setSeverityFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
-  const filteredAlerts = useMemo(() => alerts.filter((alert) => {
-    const statusMatches = statusFilter === 'all' || alert.status === statusFilter;
-    const severityMatches = severityFilter === 'all' || alert.severity === severityFilter;
-    return statusMatches && severityMatches;
-  }), [alerts, severityFilter, statusFilter]);
+  const filteredAlerts = useMemo(() => {
+    const searchNeedle = normalizeSearchText(searchTerm);
+
+    return alerts.filter((alert) => {
+      const statusMatches = statusFilter === 'all' || alert.status === statusFilter;
+      const severityMatches = severityFilter === 'all' || alert.severity === severityFilter;
+      if (!statusMatches || !severityMatches) return false;
+
+      if (!searchNeedle) return true;
+
+      const profile = profilesById[alert.user_id] || {};
+      const ride = ridesById[alert.ride_id] || {};
+      return buildAlertSearchText({ alert, profile, ride }).includes(searchNeedle);
+    });
+  }, [alerts, profilesById, ridesById, searchTerm, severityFilter, statusFilter]);
 
   const statusStats = useMemo(() => ({
     total: alerts.length,
@@ -242,6 +294,25 @@ const EmergencyAlertsTab = () => {
             <CardTitle className="text-sm font-black uppercase italic tracking-tighter">Filtros rápidos</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-0 space-y-3">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Buscar usuario, email, viaje, ciudad..."
+                className="w-full rounded-2xl border border-slate-100 bg-slate-50 py-3 pl-11 pr-11 text-sm font-bold outline-none transition focus:border-red-200 focus:bg-white"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-xl bg-white text-slate-400 shadow-sm active:scale-95"
+                  aria-label="Limpiar búsqueda"
+                >
+                  <X className="size-4" />
+                </button>
+              )}
+            </div>
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
@@ -256,6 +327,9 @@ const EmergencyAlertsTab = () => {
             >
               {SEVERITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
+            <div className="rounded-2xl bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Mostrando {filteredAlerts.length} de {alerts.length} alertas
+            </div>
             <Button
               type="button"
               variant="outline"
@@ -288,7 +362,9 @@ const EmergencyAlertsTab = () => {
         <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-16 text-center">
           <ShieldCheck className="mx-auto mb-4 size-12 text-emerald-400" />
           <h3 className="text-lg font-black uppercase italic tracking-tighter text-slate-900">Sin alertas en este filtro</h3>
-          <p className="mt-2 text-xs font-bold text-slate-400">Cuando un usuario active SOS desde un viaje aparecerá aquí.</p>
+          <p className="mt-2 text-xs font-bold text-slate-400">
+            {searchTerm ? 'No hay coincidencias para esa búsqueda.' : 'Cuando un usuario active SOS desde un viaje aparecerá aquí.'}
+          </p>
         </div>
       ) : (
         <div className="grid gap-4">
