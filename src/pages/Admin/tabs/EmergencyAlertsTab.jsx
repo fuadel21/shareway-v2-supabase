@@ -27,6 +27,14 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Canceladas' },
 ];
 
+const SEVERITY_OPTIONS = [
+  { value: 'all', label: 'Todas las severidades' },
+  { value: 'critical', label: 'Críticas' },
+  { value: 'high', label: 'Altas' },
+  { value: 'medium', label: 'Medias' },
+  { value: 'low', label: 'Bajas' },
+];
+
 const statusCopy = {
   active: { label: 'Activa', className: 'bg-red-50 text-red-700 border-red-100' },
   acknowledged: { label: 'Reconocida', className: 'bg-amber-50 text-amber-700 border-amber-100' },
@@ -80,19 +88,22 @@ const EmergencyAlertsTab = () => {
   const [profilesById, setProfilesById] = useState({});
   const [ridesById, setRidesById] = useState({});
   const [statusFilter, setStatusFilter] = useState('active');
+  const [severityFilter, setSeverityFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
 
-  const filteredAlerts = useMemo(() => {
-    if (statusFilter === 'all') return alerts;
-    return alerts.filter((alert) => alert.status === statusFilter);
-  }, [alerts, statusFilter]);
+  const filteredAlerts = useMemo(() => alerts.filter((alert) => {
+    const statusMatches = statusFilter === 'all' || alert.status === statusFilter;
+    const severityMatches = severityFilter === 'all' || alert.severity === severityFilter;
+    return statusMatches && severityMatches;
+  }), [alerts, severityFilter, statusFilter]);
 
   const statusStats = useMemo(() => ({
     total: alerts.length,
     active: alerts.filter((alert) => alert.status === 'active').length,
     acknowledged: alerts.filter((alert) => alert.status === 'acknowledged').length,
     resolved: alerts.filter((alert) => alert.status === 'resolved').length,
+    critical: alerts.filter((alert) => alert.severity === 'critical').length,
   }), [alerts]);
 
   const hydrateRelatedData = async (rows) => {
@@ -196,6 +207,7 @@ const EmergencyAlertsTab = () => {
   const statCards = [
     { label: 'Total', value: statusStats.total, className: 'bg-slate-900 text-white' },
     { label: 'Activas', value: statusStats.active, className: 'bg-red-50 text-red-700' },
+    { label: 'Críticas', value: statusStats.critical, className: 'bg-rose-50 text-rose-700' },
     { label: 'Reconocidas', value: statusStats.acknowledged, className: 'bg-amber-50 text-amber-700' },
     { label: 'Resueltas', value: statusStats.resolved, className: 'bg-emerald-50 text-emerald-700' },
   ];
@@ -227,7 +239,7 @@ const EmergencyAlertsTab = () => {
 
         <Card className="rounded-[2rem] border-none bg-white shadow-xl">
           <CardHeader className="p-6 pb-3">
-            <CardTitle className="text-sm font-black uppercase italic tracking-tighter">Filtro rápido</CardTitle>
+            <CardTitle className="text-sm font-black uppercase italic tracking-tighter">Filtros rápidos</CardTitle>
           </CardHeader>
           <CardContent className="p-6 pt-0 space-y-3">
             <select
@@ -236,6 +248,13 @@ const EmergencyAlertsTab = () => {
               className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-black uppercase tracking-widest outline-none focus:border-red-200 focus:bg-white"
             >
               {STATUS_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+            <select
+              value={severityFilter}
+              onChange={(event) => setSeverityFilter(event.target.value)}
+              className="w-full rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm font-black uppercase tracking-widest outline-none focus:border-red-200 focus:bg-white"
+            >
+              {SEVERITY_OPTIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
             <Button
               type="button"
@@ -251,7 +270,7 @@ const EmergencyAlertsTab = () => {
         </Card>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {statCards.map((item) => (
           <div key={item.label} className={cn('rounded-[1.5rem] p-4 shadow-sm', item.className)}>
             <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{item.label}</p>
