@@ -1,2 +1,86 @@
 /* Estilos específicos de App.jsx */
 /* Los estilos globales de Tailwind están en index.css */
+
+/* Hotfix móvil: evita que el bloque "Tu actividad ahora" tape el buscador y el mapa. */
+@media (max-width: 1023px) {
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] {
+    top: 4.25rem !important;
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    gap: 0.5rem !important;
+    max-height: calc(100dvh - 10rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-bottom: 0.25rem;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child {
+    border-radius: 1.5rem !important;
+    padding: 0.85rem !important;
+    max-height: 13.25rem;
+    overflow: hidden;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative {
+    gap: 0.6rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child h2 {
+    font-size: 0.95rem !important;
+    line-height: 0.95rem !important;
+    letter-spacing: -0.035em !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child h2 + p {
+    display: none !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(2) {
+    display: none !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(3) {
+    gap: 0.375rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(3) button {
+    min-height: 3.15rem;
+    padding: 0.5rem !important;
+    border-radius: 1rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(3) button svg {
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-bottom: 0.2rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(3) button p:first-of-type {
+    font-size: 1rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(3) button p:last-child {
+    font-size: 0.42rem !important;
+    white-space: nowrap;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child > div.relative > div:nth-child(4) {
+    display: none !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(2) {
+    border-radius: 1.25rem !important;
+    padding: 0.75rem !important;
+  }
+
+  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(2) .grid-cols-\[1fr_96px\] {
+    grid-template-columns: 1fr 78px !important;
+  }
+
+  [data-sonner-toast] {
+    max-width: calc(100vw - 1.5rem) !important;
+    min-height: auto !important;
+    padding: 0.8rem 1rem !important;
+    border-radius: 1.4rem !important;
+  }
+}
