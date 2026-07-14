@@ -13,7 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Plus, Search, Car, Loader2, Calendar, Leaf, Sparkles, Navigation,
     Megaphone, Clock, Activity, Star, ShieldCheck, Heart, ChevronRight, X,
-    BadgeCheck, MapPin, Users, RotateCcw, ArrowRightLeft, SlidersHorizontal
+    BadgeCheck, MapPin, Users, RotateCcw, ArrowRightLeft, SlidersHorizontal,
+    WalletCards, MessageCircle, AlertCircle
 } from 'lucide-react';
 import { getAvailableRides } from '@/services/rideService';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -33,6 +34,7 @@ const copyByLanguage = {
         request: 'SOLICITUD',
         details: 'DETALLES',
         syncMapError: 'Error al sincronizar mapa',
+        activitySyncError: 'No se pudo cargar tu actividad',
         nearbyScanned: 'Viajes cercanos escaneados',
         locationError: 'No se pudo obtener ubicación',
         detailOpenError: 'No se pudo abrir el detalle: ID no encontrado',
@@ -59,7 +61,20 @@ const copyByLanguage = {
         anyDate: 'Cualquier fecha',
         anyRoute: 'Todas las rutas',
         searchHint: 'Origen, destino o fecha ayudan a encontrar mejores coincidencias.',
-        swap: 'Invertir ruta'
+        swap: 'Invertir ruta',
+        activityTitle: 'Tu actividad ahora',
+        activitySubtitle: 'Reservas, solicitudes y viajes en una vista rápida',
+        nextRide: 'Próximo viaje',
+        activeRides: 'En curso',
+        pendingRequests: 'Solicitudes',
+        openRequests: 'Tus búsquedas',
+        pendingPayments: 'Pagos',
+        noActivity: 'Sin actividad pendiente',
+        noActivityDesc: 'Busca un viaje, publica ruta o crea una solicitud.',
+        goToMyRides: 'Mis viajes',
+        goToRequests: 'Solicitudes',
+        goToWallet: 'Billetera',
+        refresh: 'Actualizar'
     },
     en: {
         positiveImpact: 'Positive Impact',
@@ -72,6 +87,7 @@ const copyByLanguage = {
         request: 'REQUEST',
         details: 'DETAILS',
         syncMapError: 'Error syncing map',
+        activitySyncError: 'Could not load your activity',
         nearbyScanned: 'Nearby rides scanned',
         locationError: 'Could not get location',
         detailOpenError: 'Could not open details: ID not found',
@@ -98,7 +114,20 @@ const copyByLanguage = {
         anyDate: 'Any date',
         anyRoute: 'All routes',
         searchHint: 'Origin, destination or date help find better matches.',
-        swap: 'Swap route'
+        swap: 'Swap route',
+        activityTitle: 'Your activity now',
+        activitySubtitle: 'Bookings, requests and rides at a glance',
+        nextRide: 'Next ride',
+        activeRides: 'In progress',
+        pendingRequests: 'Requests',
+        openRequests: 'Your searches',
+        pendingPayments: 'Payments',
+        noActivity: 'No pending activity',
+        noActivityDesc: 'Find a ride, publish a route or create a request.',
+        goToMyRides: 'My rides',
+        goToRequests: 'Requests',
+        goToWallet: 'Wallet',
+        refresh: 'Refresh'
     },
     ar: {
         positiveImpact: 'أثر إيجابي',
@@ -111,6 +140,7 @@ const copyByLanguage = {
         request: 'طلب',
         details: 'التفاصيل',
         syncMapError: 'حدث خطأ أثناء مزامنة الخريطة',
+        activitySyncError: 'تعذر تحميل نشاطك',
         nearbyScanned: 'تم فحص الرحلات القريبة',
         locationError: 'تعذر الحصول على الموقع',
         detailOpenError: 'تعذر فتح التفاصيل: لم يتم العثور على المعرف',
@@ -137,7 +167,20 @@ const copyByLanguage = {
         anyDate: 'أي تاريخ',
         anyRoute: 'كل المسارات',
         searchHint: 'نقطة الانطلاق أو الوجهة أو التاريخ تساعد في نتائج أفضل.',
-        swap: 'عكس المسار'
+        swap: 'عكس المسار',
+        activityTitle: 'نشاطك الآن',
+        activitySubtitle: 'الحجوزات والطلبات والرحلات في لمحة واحدة',
+        nextRide: 'الرحلة القادمة',
+        activeRides: 'قيد التنفيذ',
+        pendingRequests: 'الطلبات',
+        openRequests: 'عمليات البحث',
+        pendingPayments: 'المدفوعات',
+        noActivity: 'لا يوجد نشاط معلق',
+        noActivityDesc: 'ابحث عن رحلة أو انشر مسارًا أو أنشئ طلبًا.',
+        goToMyRides: 'رحلاتي',
+        goToRequests: 'الطلبات',
+        goToWallet: 'المحفظة',
+        refresh: 'تحديث'
     }
 };
 
@@ -194,9 +237,7 @@ const locationMatches = (target, candidate, maxKm = 45) => {
 
     const targetCoords = getLocationCoords(target);
     const candidateCoords = getLocationCoords(candidate);
-    if (targetCoords && candidateCoords) {
-        return distanceKm(targetCoords, candidateCoords) <= maxKm;
-    }
+    if (targetCoords && candidateCoords) return distanceKm(targetCoords, candidateCoords) <= maxKm;
 
     const targetText = normalizeText(getLocationLabel(target));
     const candidateText = normalizeText(getLocationLabel(candidate));
@@ -247,15 +288,9 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
     const profile = isRequest ? item.requester : item.driver;
     const name = profile?.display_name || profile?.full_name || copy.user;
     const photo = profile?.avatar_url || profile?.photo_url;
-
     const departureDate = item.departure_time ? new Date(item.departure_time) : null;
-    const timeLabel = formatTime(departureDate, language);
-    const dayLabel = formatShortDate(departureDate, language);
-
     const totalSeats = Number(item.seats || item.seats_needed || 1);
     const availableSeats = item.seats_available ?? totalSeats;
-    const occupiedSeats = Math.max(0, totalSeats - availableSeats);
-    const participantPhotos = item.participant_photos || [];
 
     return (
         <div
@@ -274,19 +309,11 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
 
             <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-3 min-w-0">
-                    <div className="relative mb-2 shrink-0">
-                        <Avatar className="h-12 w-12 border-2 border-white shadow-md">
-                            <AvatarImage src={photo} className="object-cover" />
-                            <AvatarFallback className="font-bold bg-slate-100 text-slate-400">{name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white border-2 border-slate-50 rounded-full px-3 py-1 shadow-xl flex items-center gap-1.5 z-20 min-w-[50px] justify-center scale-110">
-                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 drop-shadow-[0_0_3px_rgba(251,191,36,0.4)]" />
-                            <span className="text-[11px] font-black text-slate-900 leading-none tracking-tighter">
-                                {profile?.rating ? parseFloat(profile.rating).toFixed(1) : '5.0'}
-                            </span>
-                        </div>
-                    </div>
-                    <div className="text-left pt-1 min-w-0">
+                    <Avatar className="h-12 w-12 border-2 border-white shadow-md shrink-0">
+                        <AvatarImage src={photo} className="object-cover" />
+                        <AvatarFallback className="font-bold bg-slate-100 text-slate-400">{name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="text-left min-w-0">
                         <h3 className="truncate text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-none">{name}</h3>
                         <div className="flex items-center gap-2 mt-1">
                             <span className={cn('text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm', isRequest ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100')}>
@@ -298,34 +325,9 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
                 </div>
                 <div className="text-right shrink-0 pl-2">
                     <p className="text-lg font-black text-primary tracking-tighter leading-none">{item.price || item.suggested_price || 0}€</p>
-                    {!isRequest && (
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">
-                            {availableSeats} {copy.freeSeats}
-                        </p>
-                    )}
+                    {!isRequest && <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{availableSeats} {copy.freeSeats}</p>}
                 </div>
             </div>
-
-            {!isRequest && (
-                <div className="flex items-center gap-2 mb-3 px-1">
-                    <div className="flex -space-x-2">
-                        {participantPhotos.slice(0, 3).map((p, i) => (
-                            <img key={i} src={p} className="size-5 rounded-full border border-white bg-slate-100 object-cover" />
-                        ))}
-                        {occupiedSeats > 3 && (
-                            <div className="size-5 rounded-full border border-white bg-slate-900 text-white text-[7px] flex items-center justify-center font-black">
-                                +{occupiedSeats - 3}
-                            </div>
-                        )}
-                    </div>
-                    <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-primary transition-all duration-1000"
-                            style={{ width: `${Math.min(100, (occupiedSeats / Math.max(totalSeats, 1)) * 100)}%` }}
-                        />
-                    </div>
-                </div>
-            )}
 
             <div className="space-y-2 py-3 border-y border-slate-50">
                 <div className="flex items-center gap-3">
@@ -340,8 +342,8 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
 
             <div className="flex items-center justify-between pt-3">
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-400"><Clock size={12} /><span className="text-[10px] font-black text-slate-900">{timeLabel}</span></div>
-                    <div className="flex items-center gap-1.5 text-slate-400"><Calendar size={12} /><span className="text-[10px] font-bold text-slate-400">{dayLabel}</span></div>
+                    <div className="flex items-center gap-1.5 text-slate-400"><Clock size={12} /><span className="text-[10px] font-black text-slate-900">{formatTime(departureDate, language)}</span></div>
+                    <div className="flex items-center gap-1.5 text-slate-400"><Calendar size={12} /><span className="text-[10px] font-bold text-slate-400">{formatShortDate(departureDate, language)}</span></div>
                 </div>
                 <Button
                     size="sm"
@@ -355,17 +357,15 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
     );
 };
 
-const SearchPanel = ({ copy, t, origin, destination, date, seats, activeSearch, resultCount, onOrigin, onDestination, onDate, onSeats, onSearch, onClear, onSwap, onCreateRequest, compact = false }) => (
+const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, resultCount, onOrigin, onDestination, onDate, onSeats, onSearch, onClear, onSwap, onCreateRequest, compact = false }) => (
     <div className={cn('bg-white/95 backdrop-blur-2xl border border-white/60 shadow-2xl ring-1 ring-black/5', compact ? 'rounded-[1.5rem] p-3' : 'rounded-[2rem] p-5 space-y-4')}>
         {!compact && (
             <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                        <div className="size-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center"><SlidersHorizontal size={17} /></div>
-                        <div>
-                            <h2 className="text-lg font-black uppercase italic tracking-tighter text-slate-900 leading-none">{copy.searchTitle}</h2>
-                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{copy.searchSubtitle}</p>
-                        </div>
+                <div className="flex items-center gap-2 min-w-0">
+                    <div className="size-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center"><SlidersHorizontal size={17} /></div>
+                    <div>
+                        <h2 className="text-lg font-black uppercase italic tracking-tighter text-slate-900 leading-none">{copy.searchTitle}</h2>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{copy.searchSubtitle}</p>
                     </div>
                 </div>
                 {activeSearch && (
@@ -376,25 +376,15 @@ const SearchPanel = ({ copy, t, origin, destination, date, seats, activeSearch, 
             </div>
         )}
 
-        <div className={cn('grid gap-3', compact ? 'grid-cols-1' : 'grid-cols-1')}>
+        <div className="grid gap-3">
             <div className="grid gap-2">
-                <AddressAutocomplete
-                    label={copy.fromPlaceholder}
-                    onSelect={onOrigin}
-                    defaultValue={origin?.address || origin?.name}
-                    icon={<div className="size-2 rounded-full bg-emerald-500" />}
-                />
+                <AddressAutocomplete label={copy.fromPlaceholder} onSelect={onOrigin} defaultValue={origin?.address || origin?.name} icon={<div className="size-2 rounded-full bg-emerald-500" />} />
                 <div className="flex justify-center -my-1 relative z-10">
                     <button type="button" onClick={onSwap} className="size-8 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center active:scale-90" aria-label={copy.swap}>
                         <ArrowRightLeft size={14} />
                     </button>
                 </div>
-                <AddressAutocomplete
-                    label={copy.toPlaceholder}
-                    onSelect={onDestination}
-                    defaultValue={destination?.address || destination?.name}
-                    icon={<div className="size-2 rounded-full bg-primary" />}
-                />
+                <AddressAutocomplete label={copy.toPlaceholder} onSelect={onDestination} defaultValue={destination?.address || destination?.name} icon={<div className="size-2 rounded-full bg-primary" />} />
             </div>
 
             <div className="grid grid-cols-[1fr_96px] gap-2">
@@ -444,6 +434,97 @@ const SearchPanel = ({ copy, t, origin, destination, date, seats, activeSearch, 
     </div>
 );
 
+const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) => {
+    const totalActivity = Number(summary?.upcoming_driver || 0)
+        + Number(summary?.upcoming_passenger || 0)
+        + Number(summary?.active_rides || 0)
+        + Number(summary?.pending_requests || 0)
+        + Number(summary?.my_open_requests || 0)
+        + Number(summary?.pending_payments || 0);
+    const nextRide = summary?.next_ride;
+    const recentRequest = summary?.recent_request;
+
+    const statCards = [
+        { label: copy.activeRides, value: summary?.active_rides || 0, icon: Activity, action: '/my-rides', tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+        { label: copy.pendingRequests, value: summary?.pending_requests || 0, icon: MessageCircle, action: '/my-rides', tone: 'text-amber-600 bg-amber-50 border-amber-100' },
+        { label: copy.openRequests, value: summary?.my_open_requests || 0, icon: Megaphone, action: '/my-requests', tone: 'text-blue-600 bg-blue-50 border-blue-100' },
+        { label: copy.pendingPayments, value: summary?.pending_payments || 0, icon: WalletCards, action: '/wallet', tone: 'text-purple-600 bg-purple-50 border-purple-100' }
+    ];
+
+    return (
+        <div className="rounded-[2rem] bg-slate-900 text-white p-5 shadow-2xl overflow-hidden relative">
+            <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
+            <div className="relative space-y-4">
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 min-w-0">
+                        <div className="size-10 rounded-2xl bg-white/10 text-primary flex items-center justify-center shrink-0">
+                            <Activity size={18} />
+                        </div>
+                        <div className="min-w-0">
+                            <h2 className="text-lg font-black uppercase italic tracking-tighter leading-none">{copy.activityTitle}</h2>
+                            <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mt-1 leading-relaxed">{copy.activitySubtitle}</p>
+                        </div>
+                    </div>
+                    <Button type="button" variant="ghost" onClick={onRefresh} disabled={loading} className="h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-widest shrink-0">
+                        {loading ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
+                    </Button>
+                </div>
+
+                {nextRide ? (
+                    <button type="button" onClick={() => navigate(`/ride/${nextRide.id}`)} className="w-full rounded-3xl bg-white/10 hover:bg-white/15 p-4 text-left transition-all active:scale-[0.99]">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2">{copy.nextRide}</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-black uppercase italic">{getLocationLabel(nextRide.origin, copy.origin)} → {getLocationLabel(nextRide.destination, copy.destination)}</p>
+                                <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mt-1">{formatShortDate(new Date(nextRide.departure_time), 'es')} · {formatTime(new Date(nextRide.departure_time), 'es')}</p>
+                            </div>
+                            <ChevronRight className="size-5 text-primary shrink-0" />
+                        </div>
+                    </button>
+                ) : recentRequest ? (
+                    <button type="button" onClick={() => navigate(`/request/${recentRequest.id}`)} className="w-full rounded-3xl bg-white/10 hover:bg-white/15 p-4 text-left transition-all active:scale-[0.99]">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-amber-300 mb-2">{copy.openRequests}</p>
+                        <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <p className="truncate text-sm font-black uppercase italic">{getLocationLabel(recentRequest.origin, copy.origin)} → {getLocationLabel(recentRequest.destination, copy.destination)}</p>
+                                <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mt-1">{recentRequest.status}</p>
+                            </div>
+                            <ChevronRight className="size-5 text-amber-300 shrink-0" />
+                        </div>
+                    </button>
+                ) : totalActivity === 0 ? (
+                    <div className="rounded-3xl bg-white/10 p-4 flex items-start gap-3">
+                        <AlertCircle className="size-5 text-white/45 shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-xs font-black uppercase italic">{copy.noActivity}</p>
+                            <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mt-1 leading-relaxed">{copy.noActivityDesc}</p>
+                        </div>
+                    </div>
+                ) : null}
+
+                <div className="grid grid-cols-2 gap-2">
+                    {statCards.map((card) => {
+                        const Icon = card.icon;
+                        return (
+                            <button key={card.label} type="button" onClick={() => navigate(card.action)} className={cn('rounded-2xl border p-3 text-left transition-all active:scale-95', card.tone)}>
+                                <Icon size={16} className="mb-2" />
+                                <p className="text-xl font-black leading-none">{card.value}</p>
+                                <p className="text-[8px] font-black uppercase tracking-widest opacity-70 mt-1">{card.label}</p>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                    <Button type="button" onClick={() => navigate('/my-rides')} className="h-10 rounded-2xl bg-white text-slate-900 text-[9px] font-black uppercase tracking-widest">{copy.goToMyRides}</Button>
+                    <Button type="button" onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest">{copy.goToRequests}</Button>
+                    <Button type="button" onClick={() => navigate('/wallet')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest">{copy.goToWallet}</Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 function Dashboard() {
     const { user, profile } = useOutletContext();
     const navigate = useNavigate();
@@ -452,6 +533,8 @@ function Dashboard() {
     const copy = copyByLanguage[language];
 
     const [allData, setAllData] = useState([]);
+    const [activitySummary, setActivitySummary] = useState(null);
+    const [isActivityLoading, setIsActivityLoading] = useState(false);
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedItem, setSelectedItem] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -470,6 +553,21 @@ function Dashboard() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    const fetchActivitySummary = useCallback(async () => {
+        if (!user?.id) return;
+        setIsActivityLoading(true);
+        try {
+            const { data, error } = await supabase.rpc('fetch_user_activity_summary_v1', { p_user_id: user.id });
+            if (error) throw error;
+            setActivitySummary(data || null);
+        } catch (error) {
+            console.error('Activity summary error:', error);
+            toast.error(copy.activitySyncError);
+        } finally {
+            setIsActivityLoading(false);
+        }
+    }, [user?.id, copy.activitySyncError]);
 
     const fetchData = useCallback(async () => {
         if (!user || !profile) return;
@@ -492,12 +590,7 @@ function Dashboard() {
             }).map(r => ({ ...r, type: 'ride' }));
 
             const filteredRequests = (rawRequests || []).filter(req => req.requester_id !== user.id).map(req => ({ ...req, type: 'request' }));
-
-            const combined = [...filteredRides, ...filteredRequests].sort((a, b) =>
-                new Date(a.departure_time) - new Date(b.departure_time)
-            );
-
-            setAllData(combined);
+            setAllData([...filteredRides, ...filteredRequests].sort((a, b) => new Date(a.departure_time) - new Date(b.departure_time)));
         } catch (error) {
             console.error('Dashboard Sync Error:', error);
             toast.error(copy.syncMapError);
@@ -508,16 +601,18 @@ function Dashboard() {
 
     useEffect(() => {
         fetchData();
+        fetchActivitySummary();
         const ridesChannel = supabase
-            .channel('dashboard_sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => fetchData())
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => fetchData())
+            .channel(`dashboard_sync_${user?.id || 'guest'}`)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, () => { fetchData(); fetchActivitySummary(); })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => { fetchData(); fetchActivitySummary(); })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'wallet_transactions' }, () => fetchActivitySummary())
             .subscribe();
 
         return () => {
             supabase.removeChannel(ridesChannel);
         };
-    }, [fetchData]);
+    }, [fetchData, fetchActivitySummary, user?.id]);
 
     const handleLocateMe = () => {
         if (navigator.geolocation) {
@@ -525,29 +620,17 @@ function Dashboard() {
                 const nextCenter = [pos.coords.latitude, pos.coords.longitude];
                 setMapCenter(nextCenter);
                 setZoom(14);
-                toast.success(copy.nearbyScanned, {
-                    icon: <Sparkles className="h-4 w-4 text-primary" />
-                });
+                toast.success(copy.nearbyScanned, { icon: <Sparkles className="h-4 w-4 text-primary" /> });
             }, () => toast.error(copy.locationError));
         }
     };
 
     const applySearch = () => {
-        if (!searchOrigin && !searchDestination && !searchDate) {
-            toast.message(copy.searchHint);
-        }
-
-        const search = {
-            origin: searchOrigin,
-            destination: searchDestination,
-            date: searchDate,
-            seats: searchSeats
-        };
-
+        if (!searchOrigin && !searchDestination && !searchDate) toast.message(copy.searchHint);
+        const search = { origin: searchOrigin, destination: searchDestination, date: searchDate, seats: searchSeats };
         setActiveSearch(search);
         setActiveFilter('rides');
         setSelectedItem(null);
-
         const nextCenter = getLocationCoords(searchOrigin || searchDestination);
         if (nextCenter) {
             setMapCenter([nextCenter.lat, nextCenter.lng]);
@@ -630,7 +713,6 @@ function Dashboard() {
 
     const searchPanelProps = {
         copy,
-        t,
         origin: searchOrigin,
         destination: searchDestination,
         date: searchDate,
@@ -662,21 +744,16 @@ function Dashboard() {
                 </div>
 
                 <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50/50 border-b border-slate-100">
-                    <Button
-                        onClick={() => navigate('/publish')}
-                        className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest italic shadow-lg gap-2 border-none active:scale-95 transition-all"
-                    >
+                    <Button onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest italic shadow-lg gap-2 border-none active:scale-95 transition-all">
                         <Plus size={14} className="text-primary" /> {t('nav.publish')}
                     </Button>
-                    <Button
-                        onClick={() => navigate('/request')}
-                        className="h-12 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest italic shadow-md gap-2 border border-slate-200 active:scale-95 transition-all"
-                    >
+                    <Button onClick={() => navigate('/request')} className="h-12 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest italic shadow-md gap-2 border border-slate-200 active:scale-95 transition-all">
                         <Megaphone size={14} className="text-secondary" /> {t('nav.request')}
                     </Button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
+                    <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} />
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
@@ -710,55 +787,29 @@ function Dashboard() {
 
             <div className="flex-1 relative h-full">
                 <div className="lg:hidden absolute top-20 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
+                    <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} compact />
-
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
                         {filters.map((f) => (
-                            <button
-                                key={f.id}
-                                onClick={() => setActiveFilter(f.id)}
-                                className={cn(
-                                    'px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border',
-                                    activeFilter === f.id
-                                        ? 'bg-slate-900 text-white border-slate-900'
-                                        : 'bg-white/90 text-slate-600 border-white/50'
-                                )}
-                            >
+                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
                                 {f.label}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <Button
-                    onClick={handleLocateMe}
-                    className="absolute bottom-40 left-4 z-[1000] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group"
-                >
-                    <div className="relative">
-                        <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
-                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 text-primary bg-primary"></span>
-                        </span>
-                    </div>
+                <Button onClick={handleLocateMe} className="absolute bottom-40 left-4 z-[1000] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group">
+                    <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
                     <span className="text-[10px] font-black uppercase tracking-widest pr-1">{copy.nearMe}</span>
                 </Button>
 
                 {isMobile && (
                     <div className="absolute bottom-40 right-4 z-[1000] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
-                        <Button
-                            onClick={() => navigate('/publish')}
-                            className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
-                            size="icon"
-                        >
+                        <Button onClick={() => navigate('/publish')} className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5" size="icon">
                             <Plus className="h-6 w-6 text-primary" />
                             <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.publish')}</span>
                         </Button>
-                        <Button
-                            onClick={() => navigateToRequestWithSearch()}
-                            className="h-14 w-14 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
-                            size="icon"
-                        >
+                        <Button onClick={() => navigateToRequestWithSearch()} className="h-14 w-14 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5" size="icon">
                             <Megaphone className="h-6 w-6 text-amber-500" />
                             <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.request')}</span>
                         </Button>
@@ -784,9 +835,7 @@ function Dashboard() {
                                                 <h3 className="text-base font-black text-slate-900 uppercase italic tracking-widest">{activeSearch ? copy.activeSearch : copy.nearYouTitle}</h3>
                                                 {activeSearch && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{itemsToDisplay.length} {copy.matchingResults}</p>}
                                             </div>
-                                            <div className="size-8 bg-slate-100 rounded-full flex items-center justify-center">
-                                                <Activity size={14} className="text-slate-400" />
-                                            </div>
+                                            <div className="size-8 bg-slate-100 rounded-full flex items-center justify-center"><Activity size={14} className="text-slate-400" /></div>
                                         </div>
 
                                         <div className="space-y-3 pb-20">
@@ -818,21 +867,12 @@ function Dashboard() {
                                                     <AvatarFallback className="bg-slate-900 text-white font-black text-xl">{selectedItem.type === 'request' ? selectedItem.requester?.display_name?.[0] : selectedItem.driver?.display_name?.[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <h3 className="truncate text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
-                                                            {selectedItem.type === 'request' ? selectedItem.requester?.display_name : selectedItem.driver?.display_name}
-                                                        </h3>
-                                                        {(selectedItem.type === 'request' ? selectedItem.requester?.is_verified : selectedItem.driver?.is_verified) && <BadgeCheck size={16} className="text-blue-500 shrink-0" />}
-                                                    </div>
-                                                    <div className="flex items-center gap-3 mt-2">
-                                                        <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
-                                                            <Star size={10} className="fill-amber-500 text-amber-500" />
-                                                            <span className="text-[10px] font-black text-amber-700">{(selectedItem.type === 'request' ? 5.0 : (selectedItem.driver?.driver_rating || 5.0))}</span>
-                                                        </div>
-                                                        <span className={cn('text-[8px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm', selectedItem.type === 'request' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100')}>
-                                                            {selectedItem.type === 'request' ? copy.passenger : copy.driver}
-                                                        </span>
-                                                    </div>
+                                                    <h3 className="truncate text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
+                                                        {selectedItem.type === 'request' ? selectedItem.requester?.display_name : selectedItem.driver?.display_name}
+                                                    </h3>
+                                                    <span className={cn('text-[8px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm mt-2 inline-flex', selectedItem.type === 'request' ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100')}>
+                                                        {selectedItem.type === 'request' ? copy.passenger : copy.driver}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon" className="rounded-full bg-slate-50 hover:bg-slate-100 h-10 w-10" onClick={() => setSelectedItem(null)}>
@@ -842,11 +882,7 @@ function Dashboard() {
 
                                         <div className="space-y-4 p-5 bg-slate-50 rounded-3xl border border-slate-100 shadow-inner">
                                             <div className="flex items-center gap-4">
-                                                <div className="flex flex-col items-center gap-1">
-                                                    <div className="size-2 rounded-full bg-emerald-500" />
-                                                    <div className="w-0.5 h-4 bg-slate-200" />
-                                                    <div className="size-2 rounded-full bg-primary" />
-                                                </div>
+                                                <MapPin className="size-5 text-primary shrink-0" />
                                                 <div className="flex-1 space-y-1 min-w-0">
                                                     <p className="truncate text-xs font-bold text-slate-400 uppercase tracking-widest">{getLocationLabel(selectedItem.origin, copy.origin)}</p>
                                                     <p className="truncate text-base font-black text-slate-900 uppercase italic tracking-tight">{getLocationLabel(selectedItem.destination, copy.destination)}</p>
@@ -865,11 +901,9 @@ function Dashboard() {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-3">
-                                            <Button onClick={() => handleSelection(selectedItem, true)} className="flex-1 h-16 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all">
-                                                {selectedItem.type === 'request' ? copy.viewRequest : copy.viewDetails} <ChevronRight size={20} className="ml-2 text-primary" />
-                                            </Button>
-                                        </div>
+                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all">
+                                            {selectedItem.type === 'request' ? copy.viewRequest : copy.viewDetails} <ChevronRight size={20} className="ml-2 text-primary" />
+                                        </Button>
                                     </div>
                                 )}
                             </div>
