@@ -4,15 +4,16 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css';
 import 'leaflet-defaulticon-compatibility';
 import { supabase } from '../lib/supabase';
-import { isValid, isAfter, subMinutes } from 'date-fns';
+import { isValid, isAfter, subMinutes, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
+import { Input } from '@/components/ui/input.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     Plus, Search, Car, Loader2, Calendar, Leaf, Sparkles, Navigation,
     Megaphone, Clock, Activity, Star, ShieldCheck, Heart, ChevronRight, X,
-    BadgeCheck
+    BadgeCheck, MapPin, Users, RotateCcw, ArrowRightLeft, SlidersHorizontal
 } from 'lucide-react';
 import { getAvailableRides } from '@/services/rideService';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -40,7 +41,25 @@ const copyByLanguage = {
         noNearbyResults: 'Sin resultados cerca',
         seatPrice: 'Precio Plaza',
         viewRequest: 'Ver Solicitud',
-        viewDetails: 'Ver Detalles'
+        viewDetails: 'Ver Detalles',
+        searchTitle: 'Buscar viaje',
+        searchSubtitle: 'Encuentra una ruta real antes de publicar',
+        fromPlaceholder: '¿De dónde sales?',
+        toPlaceholder: '¿A dónde vas?',
+        dateLabel: 'Fecha',
+        seatsLabel: 'Plazas',
+        searchButton: 'Buscar viajes',
+        clearSearch: 'Limpiar',
+        activeSearch: 'Búsqueda activa',
+        matchingResults: 'resultados encontrados',
+        noSearchResults: 'No encontramos viajes para esta búsqueda',
+        noSearchResultsDesc: 'Publica una solicitud y los conductores podrán encontrarte.',
+        createRequest: 'Crear solicitud',
+        publishRide: 'Publicar viaje',
+        anyDate: 'Cualquier fecha',
+        anyRoute: 'Todas las rutas',
+        searchHint: 'Origen, destino o fecha ayudan a encontrar mejores coincidencias.',
+        swap: 'Invertir ruta'
     },
     en: {
         positiveImpact: 'Positive Impact',
@@ -61,7 +80,25 @@ const copyByLanguage = {
         noNearbyResults: 'No nearby results',
         seatPrice: 'Seat Price',
         viewRequest: 'View Request',
-        viewDetails: 'View Details'
+        viewDetails: 'View Details',
+        searchTitle: 'Find a ride',
+        searchSubtitle: 'Find a real route before posting',
+        fromPlaceholder: 'Where are you leaving from?',
+        toPlaceholder: 'Where are you going?',
+        dateLabel: 'Date',
+        seatsLabel: 'Seats',
+        searchButton: 'Search rides',
+        clearSearch: 'Clear',
+        activeSearch: 'Active search',
+        matchingResults: 'results found',
+        noSearchResults: 'No rides found for this search',
+        noSearchResultsDesc: 'Post a request so drivers can find you.',
+        createRequest: 'Create request',
+        publishRide: 'Publish ride',
+        anyDate: 'Any date',
+        anyRoute: 'All routes',
+        searchHint: 'Origin, destination or date help find better matches.',
+        swap: 'Swap route'
     },
     ar: {
         positiveImpact: 'أثر إيجابي',
@@ -82,7 +119,25 @@ const copyByLanguage = {
         noNearbyResults: 'لا توجد نتائج قريبة',
         seatPrice: 'سعر المقعد',
         viewRequest: 'عرض الطلب',
-        viewDetails: 'عرض التفاصيل'
+        viewDetails: 'عرض التفاصيل',
+        searchTitle: 'ابحث عن رحلة',
+        searchSubtitle: 'اعثر على مسار حقيقي قبل النشر',
+        fromPlaceholder: 'من أين تنطلق؟',
+        toPlaceholder: 'إلى أين تذهب؟',
+        dateLabel: 'التاريخ',
+        seatsLabel: 'المقاعد',
+        searchButton: 'بحث عن رحلات',
+        clearSearch: 'مسح',
+        activeSearch: 'بحث نشط',
+        matchingResults: 'نتائج متاحة',
+        noSearchResults: 'لا توجد رحلات لهذه المعايير',
+        noSearchResultsDesc: 'أنشئ طلبًا ليتمكن السائقون من العثور عليك.',
+        createRequest: 'إنشاء طلب',
+        publishRide: 'نشر رحلة',
+        anyDate: 'أي تاريخ',
+        anyRoute: 'كل المسارات',
+        searchHint: 'نقطة الانطلاق أو الوجهة أو التاريخ تساعد في نتائج أفضل.',
+        swap: 'عكس المسار'
     }
 };
 
@@ -100,6 +155,72 @@ const formatTime = (date, language) => {
 const formatShortDate = (date, language) => {
     if (!date || !isValid(date)) return '';
     return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short' }).format(date);
+};
+
+const getLocationCoords = (location) => {
+    const raw = location?.coordinates || location;
+    const lat = Number(raw?.lat ?? raw?.latitude);
+    const lng = Number(raw?.lng ?? raw?.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+};
+
+const getLocationLabel = (location, fallback = '') => {
+    if (!location) return fallback;
+    if (typeof location === 'string') return location;
+    return location.name || location.address || location.formatted_address || fallback;
+};
+
+const normalizeText = (value) => String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+
+const distanceKm = (a, b) => {
+    if (!a || !b) return null;
+    const radius = 6371;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLng = (b.lng - a.lng) * Math.PI / 180;
+    const lat1 = a.lat * Math.PI / 180;
+    const lat2 = b.lat * Math.PI / 180;
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return radius * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+};
+
+const locationMatches = (target, candidate, maxKm = 45) => {
+    if (!target) return true;
+    if (!candidate) return false;
+
+    const targetCoords = getLocationCoords(target);
+    const candidateCoords = getLocationCoords(candidate);
+    if (targetCoords && candidateCoords) {
+        return distanceKm(targetCoords, candidateCoords) <= maxKm;
+    }
+
+    const targetText = normalizeText(getLocationLabel(target));
+    const candidateText = normalizeText(getLocationLabel(candidate));
+    if (!targetText || !candidateText) return false;
+    return candidateText.includes(targetText) || targetText.includes(candidateText);
+};
+
+const isSameSearchDay = (departureTime, dateValue) => {
+    if (!dateValue) return true;
+    const departure = new Date(departureTime);
+    const selected = new Date(`${dateValue}T00:00:00`);
+    if (!isValid(departure) || !isValid(selected)) return true;
+    return isSameDay(departure, selected);
+};
+
+const getSeatCount = (item) => Number(item.seats_available ?? item.available_seats ?? item.seats ?? item.seats_needed ?? 1);
+
+const getSearchSummary = (search, copy) => {
+    if (!search) return copy.anyRoute;
+    const origin = getLocationLabel(search.origin, copy.origin);
+    const destination = getLocationLabel(search.destination, copy.destination);
+    const route = search.origin || search.destination ? `${origin} → ${destination}` : copy.anyRoute;
+    const date = search.date || copy.anyDate;
+    return `${route} · ${date} · ${search.seats} ${copy.seatsLabel.toLowerCase()}`;
 };
 
 const ImpactBadge = ({ profile, copy }) => {
@@ -131,9 +252,9 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
     const timeLabel = formatTime(departureDate, language);
     const dayLabel = formatShortDate(departureDate, language);
 
-    const totalSeats = item.seats || 1;
+    const totalSeats = Number(item.seats || item.seats_needed || 1);
     const availableSeats = item.seats_available ?? totalSeats;
-    const occupiedSeats = totalSeats - availableSeats;
+    const occupiedSeats = Math.max(0, totalSeats - availableSeats);
     const participantPhotos = item.participant_photos || [];
 
     return (
@@ -152,8 +273,8 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
             </div>
 
             <div className="flex items-center justify-between mb-4 relative z-10">
-                <div className="flex items-center gap-3">
-                    <div className="relative mb-2">
+                <div className="flex items-center gap-3 min-w-0">
+                    <div className="relative mb-2 shrink-0">
                         <Avatar className="h-12 w-12 border-2 border-white shadow-md">
                             <AvatarImage src={photo} className="object-cover" />
                             <AvatarFallback className="font-bold bg-slate-100 text-slate-400">{name.charAt(0)}</AvatarFallback>
@@ -165,8 +286,8 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
                             </span>
                         </div>
                     </div>
-                    <div className="text-left pt-1">
-                        <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-none">{profile?.display_name || copy.user}</h3>
+                    <div className="text-left pt-1 min-w-0">
+                        <h3 className="truncate text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-none">{name}</h3>
                         <div className="flex items-center gap-2 mt-1">
                             <span className={cn('text-[9px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm', isRequest ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-emerald-50 text-emerald-700 border-emerald-100')}>
                                 {isRequest ? copy.passenger : copy.driver}
@@ -175,7 +296,7 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
                         </div>
                     </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0 pl-2">
                     <p className="text-lg font-black text-primary tracking-tighter leading-none">{item.price || item.suggested_price || 0}€</p>
                     {!isRequest && (
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">
@@ -200,7 +321,7 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
                     <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-primary transition-all duration-1000"
-                            style={{ width: `${(occupiedSeats / totalSeats) * 100}%` }}
+                            style={{ width: `${Math.min(100, (occupiedSeats / Math.max(totalSeats, 1)) * 100)}%` }}
                         />
                     </div>
                 </div>
@@ -209,15 +330,15 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
             <div className="space-y-2 py-3 border-y border-slate-50">
                 <div className="flex items-center gap-3">
                     <div className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight truncate">{item.origin?.name || copy.origin}</p>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight truncate">{getLocationLabel(item.origin, copy.origin)}</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="size-1.5 rounded-full bg-primary shrink-0" />
-                    <p className="text-[11px] font-black text-slate-900 uppercase italic tracking-tight truncate">{item.destination?.name || copy.destination}</p>
+                    <p className="text-[11px] font-black text-slate-900 uppercase italic tracking-tight truncate">{getLocationLabel(item.destination, copy.destination)}</p>
                 </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between pt-3">
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5 text-slate-400"><Clock size={12} /><span className="text-[10px] font-black text-slate-900">{timeLabel}</span></div>
                     <div className="flex items-center gap-1.5 text-slate-400"><Calendar size={12} /><span className="text-[10px] font-bold text-slate-400">{dayLabel}</span></div>
@@ -234,6 +355,95 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
     );
 };
 
+const SearchPanel = ({ copy, t, origin, destination, date, seats, activeSearch, resultCount, onOrigin, onDestination, onDate, onSeats, onSearch, onClear, onSwap, onCreateRequest, compact = false }) => (
+    <div className={cn('bg-white/95 backdrop-blur-2xl border border-white/60 shadow-2xl ring-1 ring-black/5', compact ? 'rounded-[1.5rem] p-3' : 'rounded-[2rem] p-5 space-y-4')}>
+        {!compact && (
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <div className="size-9 rounded-2xl bg-primary/10 text-primary flex items-center justify-center"><SlidersHorizontal size={17} /></div>
+                        <div>
+                            <h2 className="text-lg font-black uppercase italic tracking-tighter text-slate-900 leading-none">{copy.searchTitle}</h2>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{copy.searchSubtitle}</p>
+                        </div>
+                    </div>
+                </div>
+                {activeSearch && (
+                    <Button type="button" variant="ghost" size="sm" onClick={onClear} className="rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 gap-1">
+                        <RotateCcw size={13} /> {copy.clearSearch}
+                    </Button>
+                )}
+            </div>
+        )}
+
+        <div className={cn('grid gap-3', compact ? 'grid-cols-1' : 'grid-cols-1')}>
+            <div className="grid gap-2">
+                <AddressAutocomplete
+                    label={copy.fromPlaceholder}
+                    onSelect={onOrigin}
+                    defaultValue={origin?.address || origin?.name}
+                    icon={<div className="size-2 rounded-full bg-emerald-500" />}
+                />
+                <div className="flex justify-center -my-1 relative z-10">
+                    <button type="button" onClick={onSwap} className="size-8 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center active:scale-90" aria-label={copy.swap}>
+                        <ArrowRightLeft size={14} />
+                    </button>
+                </div>
+                <AddressAutocomplete
+                    label={copy.toPlaceholder}
+                    onSelect={onDestination}
+                    defaultValue={destination?.address || destination?.name}
+                    icon={<div className="size-2 rounded-full bg-primary" />}
+                />
+            </div>
+
+            <div className="grid grid-cols-[1fr_96px] gap-2">
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">{copy.dateLabel}</p>
+                    <Input type="date" value={date} onChange={(e) => onDate(e.target.value)} className="h-9 border-none bg-transparent px-0 py-0 text-sm font-black text-slate-900 focus-visible:ring-0" />
+                </div>
+                <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1">{copy.seatsLabel}</p>
+                    <div className="flex items-center justify-between gap-2">
+                        <button type="button" onClick={() => onSeats(Math.max(1, seats - 1))} className="size-8 rounded-xl bg-white font-black text-slate-400 shadow-sm active:scale-90">-</button>
+                        <span className="text-base font-black text-slate-900">{seats}</span>
+                        <button type="button" onClick={() => onSeats(Math.min(8, seats + 1))} className="size-8 rounded-xl bg-white font-black text-slate-400 shadow-sm active:scale-90">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <Button type="button" onClick={onSearch} className="h-13 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl gap-2 active:scale-95">
+                <Search size={16} className="text-primary" /> {copy.searchButton}
+            </Button>
+        </div>
+
+        {!compact && (
+            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3">
+                {activeSearch ? (
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-primary">{copy.activeSearch}</p>
+                            <p className="truncate text-[11px] font-black text-slate-700 uppercase tracking-tight mt-1">{getSearchSummary(activeSearch, copy)}</p>
+                        </div>
+                        <div className="rounded-xl bg-white px-3 py-2 text-right shadow-sm shrink-0">
+                            <p className="text-lg font-black text-slate-900 leading-none">{resultCount}</p>
+                            <p className="text-[7px] font-black uppercase tracking-widest text-slate-400">{copy.matchingResults}</p>
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-[10px] font-bold text-slate-400 leading-relaxed">{copy.searchHint}</p>
+                )}
+            </div>
+        )}
+
+        {!compact && activeSearch && resultCount === 0 && (
+            <Button type="button" variant="outline" onClick={onCreateRequest} className="w-full h-12 rounded-2xl border-amber-100 bg-amber-50 text-amber-700 font-black uppercase tracking-widest text-[10px] gap-2">
+                <Megaphone size={15} /> {copy.createRequest}
+            </Button>
+        )}
+    </div>
+);
+
 function Dashboard() {
     const { user, profile } = useOutletContext();
     const navigate = useNavigate();
@@ -248,6 +458,11 @@ function Dashboard() {
     const [mapCenter, setMapCenter] = useState([40.416775, -3.703790]);
     const [zoom, setZoom] = useState(6);
     const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+    const [searchOrigin, setSearchOrigin] = useState(null);
+    const [searchDestination, setSearchDestination] = useState(null);
+    const [searchDate, setSearchDate] = useState('');
+    const [searchSeats, setSearchSeats] = useState(1);
+    const [activeSearch, setActiveSearch] = useState(null);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -262,20 +477,6 @@ function Dashboard() {
         try {
             const marginTime = subMinutes(new Date(), 60).toISOString();
             const rides = await getAvailableRides();
-
-            if (mapCenter && mapCenter[0] !== 40.416775) {
-                const { data: smartMatches, error: matchError } = await supabase.rpc('find_matching_rides_v2', {
-                    p_passenger_origin_lat: mapCenter[0],
-                    p_passenger_origin_lng: mapCenter[1],
-                    p_passenger_dest_lat: mapCenter[0],
-                    p_passenger_dest_lng: mapCenter[1],
-                    p_radius_meters: 10000
-                });
-
-                if (!matchError && smartMatches) {
-                    console.log('Smart Matches found:', smartMatches.length);
-                }
-            }
 
             const { data: rawRequests } = await supabase
                 .from('ride_requests')
@@ -303,7 +504,7 @@ function Dashboard() {
         } finally {
             setLoading(false);
         }
-    }, [user, profile, mapCenter, copy.syncMapError]);
+    }, [user, profile, copy.syncMapError]);
 
     useEffect(() => {
         fetchData();
@@ -321,9 +522,9 @@ function Dashboard() {
     const handleLocateMe = () => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition((pos) => {
-                setMapCenter([pos.coords.latitude, pos.coords.longitude]);
+                const nextCenter = [pos.coords.latitude, pos.coords.longitude];
+                setMapCenter(nextCenter);
                 setZoom(14);
-                fetchData();
                 toast.success(copy.nearbyScanned, {
                     icon: <Sparkles className="h-4 w-4 text-primary" />
                 });
@@ -331,12 +532,71 @@ function Dashboard() {
         }
     };
 
+    const applySearch = () => {
+        if (!searchOrigin && !searchDestination && !searchDate) {
+            toast.message(copy.searchHint);
+        }
+
+        const search = {
+            origin: searchOrigin,
+            destination: searchDestination,
+            date: searchDate,
+            seats: searchSeats
+        };
+
+        setActiveSearch(search);
+        setActiveFilter('rides');
+        setSelectedItem(null);
+
+        const nextCenter = getLocationCoords(searchOrigin || searchDestination);
+        if (nextCenter) {
+            setMapCenter([nextCenter.lat, nextCenter.lng]);
+            setZoom(11);
+        }
+    };
+
+    const clearSearch = () => {
+        setActiveSearch(null);
+        setSearchOrigin(null);
+        setSearchDestination(null);
+        setSearchDate('');
+        setSearchSeats(1);
+        setSelectedItem(null);
+    };
+
+    const swapRoute = () => {
+        setSearchOrigin(searchDestination);
+        setSearchDestination(searchOrigin);
+    };
+
+    const navigateToRequestWithSearch = () => {
+        navigate('/request', {
+            state: {
+                origin: activeSearch?.origin || searchOrigin,
+                destination: activeSearch?.destination || searchDestination,
+                date: activeSearch?.date || searchDate,
+                seats: activeSearch?.seats || searchSeats
+            }
+        });
+    };
+
     const itemsToDisplay = useMemo(() => {
         let filtered = allData || [];
         if (activeFilter === 'rides') filtered = filtered.filter(i => i.type === 'ride');
         if (activeFilter === 'requests') filtered = filtered.filter(i => i.type === 'request');
+
+        if (activeSearch) {
+            filtered = filtered.filter((item) => {
+                const originMatches = locationMatches(activeSearch.origin, item.origin, 55);
+                const destinationMatches = locationMatches(activeSearch.destination, item.destination, 65);
+                const dateMatches = isSameSearchDay(item.departure_time, activeSearch.date);
+                const seatsMatch = item.type === 'request' || getSeatCount(item) >= Number(activeSearch.seats || 1);
+                return originMatches && destinationMatches && dateMatches && seatsMatch;
+            });
+        }
+
         return filtered;
-    }, [allData, activeFilter]);
+    }, [allData, activeFilter, activeSearch]);
 
     const handleSelection = (item, forceNavigate = false) => {
         if (!item) return;
@@ -353,9 +613,9 @@ function Dashboard() {
         }
 
         setSelectedItem(item);
-        const coords = item.origin?.coordinates || item.origin;
-        if (coords?.lat || coords?.latitude) {
-            setMapCenter([coords.lat || coords.latitude, coords.lng || coords.longitude]);
+        const coords = getLocationCoords(item.origin);
+        if (coords) {
+            setMapCenter([coords.lat, coords.lng]);
             setZoom(13);
         }
     };
@@ -368,13 +628,32 @@ function Dashboard() {
         { id: 'requests', label: t('dashboard.filter_requests') }
     ];
 
+    const searchPanelProps = {
+        copy,
+        t,
+        origin: searchOrigin,
+        destination: searchDestination,
+        date: searchDate,
+        seats: searchSeats,
+        activeSearch,
+        resultCount: itemsToDisplay.length,
+        onOrigin: setSearchOrigin,
+        onDestination: setSearchDestination,
+        onDate: setSearchDate,
+        onSeats: setSearchSeats,
+        onSearch: applySearch,
+        onClear: clearSearch,
+        onSwap: swapRoute,
+        onCreateRequest: navigateToRequestWithSearch
+    };
+
     return (
         <div className="h-full w-full flex bg-slate-100 overflow-hidden font-sans text-left relative">
             <div className="absolute bottom-60 left-4 z-[40] pointer-events-none lg:top-24 lg:left-1/2 lg:-translate-x-1/2 animate-in fade-in zoom-in duration-1000">
                 <ImpactBadge profile={profile} copy={copy} />
             </div>
 
-            <div className="hidden lg:flex w-[380px] bg-white border-r border-slate-100 shadow-2xl flex-col z-50 animate-in slide-in-from-left duration-500">
+            <div className="hidden lg:flex w-[420px] bg-white border-r border-slate-100 shadow-2xl flex-col z-50 animate-in slide-in-from-left duration-500">
                 <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="bg-primary h-10 w-10 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20"><Sparkles className="h-5 w-5 text-white" /></div>
@@ -398,7 +677,7 @@ function Dashboard() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
-                    <div className="relative z-[100]"><AddressAutocomplete label={t('dashboard.search_label')} onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }} icon={<Search className="h-4 w-4 text-slate-400" />} /></div>
+                    <SearchPanel {...searchPanelProps} />
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
                         {filters.map((f) => (
@@ -407,22 +686,31 @@ function Dashboard() {
                     </div>
 
                     <div className="space-y-3">
-                        {loading ? <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div> : itemsToDisplay.length > 0 ? itemsToDisplay.map((item) => (
-                            <RideCard key={`${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} copy={copy} language={language} />
-                        )) : <div className="text-center py-16 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100"><Car className="mx-auto h-10 w-10 text-slate-200 mb-2 opacity-30" /><p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{t('dashboard.no_results')}</p></div>}
+                        {loading ? (
+                            <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div>
+                        ) : itemsToDisplay.length > 0 ? (
+                            itemsToDisplay.map((item) => (
+                                <RideCard key={`${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i, force) => handleSelection(i, force)} copy={copy} language={language} />
+                            ))
+                        ) : (
+                            <div className="text-center py-12 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-100 px-5">
+                                <Car className="mx-auto h-10 w-10 text-slate-200 mb-3 opacity-50" />
+                                <p className="text-sm font-black text-slate-900 uppercase italic">{activeSearch ? copy.noSearchResults : t('dashboard.no_results')}</p>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{activeSearch ? copy.noSearchResultsDesc : copy.noNearbyResults}</p>
+                                {activeSearch && (
+                                    <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                                        <Megaphone size={15} /> {copy.createRequest}
+                                    </Button>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
 
             <div className="flex-1 relative h-full">
                 <div className="lg:hidden absolute top-20 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
-                    <div className="bg-white/80 backdrop-blur-3xl p-1.5 rounded-[1.5rem] border border-white/40 shadow-2xl ring-1 ring-black/5">
-                        <AddressAutocomplete
-                            label={t('dashboard.search_label')}
-                            onSelect={(dest) => { if (dest?.coordinates) { setMapCenter([dest.coordinates.lat, dest.coordinates.lng]); setZoom(12); } }}
-                            icon={<Search className="h-4 w-4 text-primary" />}
-                        />
-                    </div>
+                    <SearchPanel {...searchPanelProps} compact />
 
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
                         {filters.map((f) => (
@@ -467,7 +755,7 @@ function Dashboard() {
                             <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.publish')}</span>
                         </Button>
                         <Button
-                            onClick={() => navigate('/request')}
+                            onClick={() => navigateToRequestWithSearch()}
                             className="h-14 w-14 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5"
                             size="icon"
                         >
@@ -492,7 +780,10 @@ function Dashboard() {
                                 {!selectedItem ? (
                                     <>
                                         <div className="flex items-center justify-between mb-4">
-                                            <h3 className="text-base font-black text-slate-900 uppercase italic tracking-widest">{copy.nearYouTitle}</h3>
+                                            <div>
+                                                <h3 className="text-base font-black text-slate-900 uppercase italic tracking-widest">{activeSearch ? copy.activeSearch : copy.nearYouTitle}</h3>
+                                                {activeSearch && <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{itemsToDisplay.length} {copy.matchingResults}</p>}
+                                            </div>
                                             <div className="size-8 bg-slate-100 rounded-full flex items-center justify-center">
                                                 <Activity size={14} className="text-slate-400" />
                                             </div>
@@ -503,11 +794,17 @@ function Dashboard() {
                                                 <div className="flex justify-center py-10"><Loader2 className="animate-spin text-primary/40 h-8 w-8" /></div>
                                             ) : itemsToDisplay.length > 0 ? (
                                                 itemsToDisplay.map((item) => (
-                                                    <RideCard key={`mobile-${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i) => handleSelection(i, true)} copy={copy} language={language} />
+                                                    <RideCard key={`mobile-${item.type}-${item.id}`} item={item} isSelected={selectedItem?.id === item.id} onClick={(i, force) => handleSelection(i, force)} copy={copy} language={language} />
                                                 ))
                                             ) : (
-                                                <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100">
-                                                    <p className="text-[10px] font-black text-slate-300 uppercase italic">{copy.noNearbyResults}</p>
+                                                <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-100 px-5">
+                                                    <Car className="mx-auto h-10 w-10 text-slate-200 mb-3" />
+                                                    <p className="text-[10px] font-black text-slate-900 uppercase italic">{activeSearch ? copy.noSearchResults : copy.noNearbyResults}</p>
+                                                    {activeSearch && (
+                                                        <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                                                            <Megaphone size={15} /> {copy.createRequest}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -515,17 +812,17 @@ function Dashboard() {
                                 ) : (
                                     <div className="pb-10 space-y-6 animate-in slide-in-from-bottom-4 duration-500">
                                         <div className="flex justify-between items-start">
-                                            <div className="flex items-center gap-4">
-                                                <Avatar className="h-16 w-16 border-4 border-white shadow-2xl">
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <Avatar className="h-16 w-16 border-4 border-white shadow-2xl shrink-0">
                                                     <AvatarImage src={selectedItem.type === 'request' ? selectedItem.requester?.photo_url : selectedItem.driver?.photo_url} className="object-cover" />
                                                     <AvatarFallback className="bg-slate-900 text-white font-black text-xl">{selectedItem.type === 'request' ? selectedItem.requester?.display_name?.[0] : selectedItem.driver?.display_name?.[0]}</AvatarFallback>
                                                 </Avatar>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <h3 className="truncate text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">
                                                             {selectedItem.type === 'request' ? selectedItem.requester?.display_name : selectedItem.driver?.display_name}
                                                         </h3>
-                                                        {(selectedItem.type === 'request' ? selectedItem.requester?.is_verified : selectedItem.driver?.is_verified) && <BadgeCheck size={16} className="text-blue-500" />}
+                                                        {(selectedItem.type === 'request' ? selectedItem.requester?.is_verified : selectedItem.driver?.is_verified) && <BadgeCheck size={16} className="text-blue-500 shrink-0" />}
                                                     </div>
                                                     <div className="flex items-center gap-3 mt-2">
                                                         <div className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-100">
@@ -550,9 +847,9 @@ function Dashboard() {
                                                     <div className="w-0.5 h-4 bg-slate-200" />
                                                     <div className="size-2 rounded-full bg-primary" />
                                                 </div>
-                                                <div className="flex-1 space-y-1">
-                                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedItem.origin?.name || copy.origin}</p>
-                                                    <p className="text-base font-black text-slate-900 uppercase italic tracking-tight">{selectedItem.destination?.name || copy.destination}</p>
+                                                <div className="flex-1 space-y-1 min-w-0">
+                                                    <p className="truncate text-xs font-bold text-slate-400 uppercase tracking-widest">{getLocationLabel(selectedItem.origin, copy.origin)}</p>
+                                                    <p className="truncate text-base font-black text-slate-900 uppercase italic tracking-tight">{getLocationLabel(selectedItem.destination, copy.destination)}</p>
                                                 </div>
                                             </div>
                                             <div className="h-px bg-slate-100 w-full" />
