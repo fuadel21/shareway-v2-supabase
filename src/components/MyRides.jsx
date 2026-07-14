@@ -1,16 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, isValid, subMinutes, isBefore } from 'date-fns';
+import { format, isValid, subMinutes, isBefore, differenceInMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-    Car, ArrowUpRight, Loader2, ChevronLeft, Heart, Users, Calendar, XCircle, CheckCircle, RefreshCw
+    AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+    AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+    Car, ArrowUpRight, Loader2, ChevronLeft, Heart, Users, Calendar, XCircle,
+    CheckCircle, RefreshCw, MessageCircle, Play, Flag, Eye, BellRing
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { startRide } from '@/lib/supabaseRPC.js';
+import { cancelRide, completeRide as completeRideService } from '@/services/rideService.js';
 
 const copyByLanguage = {
     es: {
@@ -24,6 +31,32 @@ const copyByLanguage = {
         noResults: 'Sin Resultados',
         noResultsDesc: 'No tienes viajes en esta sección',
         syncError: 'Error al sincronizar actividad',
+        actionError: 'No se pudo completar la acción',
+        refreshing: 'Actualizando actividad...',
+        actions: {
+            view: 'Ver',
+            chat: 'Chat',
+            requests: 'Solicitudes',
+            start: 'Iniciar',
+            finish: 'Finalizar',
+            cancel: 'Cancelar',
+            confirmStartTitle: '¿Iniciar este viaje?',
+            confirmStartDesc: 'El viaje pasará a estar en curso y los pasajeros podrán usar las funciones de viaje activo.',
+            confirmFinishTitle: '¿Finalizar este viaje?',
+            confirmFinishDesc: 'Se intentará cerrar el viaje, liberar pagos y preparar valoraciones.',
+            confirmCancelTitle: '¿Cancelar este viaje?',
+            confirmCancelDesc: 'Esta acción notificará a los pasajeros y aplicará la política de cancelación vigente.',
+            yesStart: 'Sí, iniciar',
+            yesFinish: 'Sí, finalizar',
+            yesCancel: 'Sí, cancelar',
+            no: 'Volver'
+        },
+        toasts: {
+            started: '¡Viaje iniciado!',
+            finished: '¡Viaje finalizado!',
+            cancelled: 'Viaje cancelado correctamente',
+            notReady: 'Esta acción todavía no está disponible desde la tarjeta'
+        },
         tabs: {
             active: 'Próximos',
             requested: 'Solicitudes',
@@ -58,6 +91,32 @@ const copyByLanguage = {
         noResults: 'No Results',
         noResultsDesc: 'You have no rides in this section',
         syncError: 'Error syncing activity',
+        actionError: 'Could not complete the action',
+        refreshing: 'Refreshing activity...',
+        actions: {
+            view: 'View',
+            chat: 'Chat',
+            requests: 'Requests',
+            start: 'Start',
+            finish: 'Finish',
+            cancel: 'Cancel',
+            confirmStartTitle: 'Start this ride?',
+            confirmStartDesc: 'The ride will move to in progress and passengers can use active trip features.',
+            confirmFinishTitle: 'Finish this ride?',
+            confirmFinishDesc: 'The ride will be closed, payments released and ratings prepared.',
+            confirmCancelTitle: 'Cancel this ride?',
+            confirmCancelDesc: 'Passengers will be notified and the current cancellation policy will apply.',
+            yesStart: 'Yes, start',
+            yesFinish: 'Yes, finish',
+            yesCancel: 'Yes, cancel',
+            no: 'Back'
+        },
+        toasts: {
+            started: 'Ride started!',
+            finished: 'Ride completed!',
+            cancelled: 'Ride cancelled successfully',
+            notReady: 'This action is not available from the card yet'
+        },
         tabs: {
             active: 'Upcoming',
             requested: 'Requests',
@@ -92,6 +151,32 @@ const copyByLanguage = {
         noResults: 'لا توجد نتائج',
         noResultsDesc: 'لا توجد رحلات في هذا القسم',
         syncError: 'حدث خطأ أثناء مزامنة النشاط',
+        actionError: 'تعذر إكمال الإجراء',
+        refreshing: 'يتم تحديث النشاط...',
+        actions: {
+            view: 'عرض',
+            chat: 'الدردشة',
+            requests: 'الطلبات',
+            start: 'بدء',
+            finish: 'إنهاء',
+            cancel: 'إلغاء',
+            confirmStartTitle: 'هل تريد بدء هذه الرحلة؟',
+            confirmStartDesc: 'ستصبح الرحلة قيد التنفيذ ويمكن للركاب استخدام ميزات الرحلة النشطة.',
+            confirmFinishTitle: 'هل تريد إنهاء هذه الرحلة؟',
+            confirmFinishDesc: 'سيتم إغلاق الرحلة ومحاولة تحرير المدفوعات وتجهيز التقييمات.',
+            confirmCancelTitle: 'هل تريد إلغاء هذه الرحلة؟',
+            confirmCancelDesc: 'سيتم إشعار الركاب وتطبيق سياسة الإلغاء الحالية.',
+            yesStart: 'نعم، ابدأ',
+            yesFinish: 'نعم، أنهِ',
+            yesCancel: 'نعم، إلغاء',
+            no: 'رجوع'
+        },
+        toasts: {
+            started: 'تم بدء الرحلة!',
+            finished: 'تم إنهاء الرحلة!',
+            cancelled: 'تم إلغاء الرحلة بنجاح',
+            notReady: 'هذا الإجراء غير متاح من البطاقة حالياً'
+        },
         tabs: {
             active: 'القادمة',
             requested: 'الطلبات',
@@ -134,7 +219,48 @@ function isStaleOpenRidePastGrace(ride, now = new Date()) {
     return isBefore(departureDate, subMinutes(now, RIDE_EXPIRATION_GRACE_MINUTES));
 }
 
-const RideCard = ({ ride, navigate, currentUserId, copy }) => {
+const countPendingRequests = (ride) => {
+    const directCount = Number(ride?.pending_requests_count ?? ride?.request_count ?? ride?.requests_count ?? 0);
+    if (Number.isFinite(directCount) && directCount > 0) return directCount;
+    if (Array.isArray(ride?.requests)) return ride.requests.filter(req => ['pending', 'requested'].includes(req.status)).length;
+    if (Array.isArray(ride?.ride_requests)) return ride.ride_requests.filter(req => ['pending', 'requested'].includes(req.status)).length;
+    return 0;
+};
+
+const getConfirmedPassengerCount = (ride) => {
+    if (Array.isArray(ride?.passengers)) {
+        return ride.passengers.filter(p => ['confirmed', 'verified', 'on_board', 'completed'].includes(p.status)).length;
+    }
+    const ids = Array.isArray(ride?.participant_ids) ? ride.participant_ids : [];
+    return ids.length;
+};
+
+const QuickActionButton = ({ icon: Icon, label, tone = 'neutral', onClick, disabled = false }) => {
+    const toneClass = {
+        neutral: 'bg-slate-50 text-slate-600 border-slate-100 hover:bg-slate-100',
+        primary: 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-900/10',
+        success: 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100',
+        warning: 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100',
+        danger: 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100',
+    }[tone] || 'bg-slate-50 text-slate-600 border-slate-100';
+
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            disabled={disabled}
+            className={cn(
+                'h-10 px-3 rounded-2xl border flex items-center justify-center gap-1.5 text-[9px] font-black uppercase tracking-widest transition-all active:scale-95 touch-action-manipulation disabled:opacity-50 disabled:pointer-events-none',
+                toneClass
+            )}
+        >
+            <Icon size={13} />
+            <span>{label}</span>
+        </button>
+    );
+};
+
+const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLoadingId }) => {
     const originAddress = ride.origin?.name || ride.origin?.address?.split(',')[0] || copy.origin;
     const destinationAddress = ride.destination?.name || ride.destination?.address?.split(',')[0] || copy.destination;
     const isDriver = ride.driver_id === currentUserId;
@@ -154,6 +280,19 @@ const RideCard = ({ ride, navigate, currentUserId, copy }) => {
     const isActuallyExpired = isStaleOpenRidePastGrace(ride);
     const effectiveStatus = isActuallyExpired ? 'expired' : (ride.status || 'scheduled');
     const currentTheme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES.scheduled;
+    const isClosed = ['completed', 'cancelled', 'expired', 'rejected'].includes(effectiveStatus);
+    const isActive = ['active', 'in_progress'].includes(effectiveStatus);
+    const pendingRequestCount = countPendingRequests(ride);
+    const confirmedPassengerCount = getConfirmedPassengerCount(ride);
+    const now = new Date();
+    const minutesToDeparture = dateObj && isValid(dateObj) ? differenceInMinutes(dateObj, now) : 999999;
+    const hasDeparted = dateObj && isValid(dateObj) ? dateObj <= now : false;
+    const isTooLate = dateObj && isValid(dateObj) ? differenceInMinutes(now, dateObj) > RIDE_EXPIRATION_GRACE_MINUTES : false;
+    const canStart = isDriver && effectiveStatus === 'scheduled' && (minutesToDeparture <= 15 || hasDeparted) && !isTooLate;
+    const canFinish = isDriver && isActive;
+    const canCancel = isDriver && !isClosed && !isActive;
+    const canOpenChat = !isClosed && (isDriver || ride.role === 'passenger');
+    const isLoading = actionLoadingId === ride.id;
 
     const getRoleLabel = () => {
         if (isDriver) return copy.roles.driver;
@@ -164,12 +303,24 @@ const RideCard = ({ ride, navigate, currentUserId, copy }) => {
         return ride.role === 'requester' ? copy.roles.requester : copy.roles.passenger;
     };
 
+    const stopAndRun = (event, fn) => {
+        event.preventDefault();
+        event.stopPropagation();
+        fn();
+    };
+
     return (
         <div
             className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white flex flex-col mb-4"
             onClick={() => navigate(`/ride/${ride.id}`)}
         >
             <div className="absolute top-4 right-4 flex gap-2 z-20">
+                {pendingRequestCount > 0 && isDriver && (
+                    <div className="bg-amber-500 text-white px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                        <BellRing size={10} />
+                        <span className="text-[8px] font-black">{pendingRequestCount}</span>
+                    </div>
+                )}
                 {ride.is_women_only && <div className="bg-pink-500 text-white p-1.5 rounded-full shadow-lg"><Heart size={10} className="fill-white" /></div>}
                 {isDriver && <div className="bg-slate-900 text-white p-1.5 rounded-full shadow-lg"><Car size={10} /></div>}
             </div>
@@ -200,7 +351,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy }) => {
                         <div className="w-0.5 h-4 bg-slate-100" />
                         <div className="size-2 rounded-full bg-primary" />
                     </div>
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-3 min-w-0">
                         <p className="text-[11px] font-bold text-slate-600 truncate uppercase tracking-tight">{originAddress}</p>
                         <p className="text-[11px] font-black text-slate-900 truncate uppercase tracking-tight italic">{destinationAddress}</p>
                     </div>
@@ -212,7 +363,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy }) => {
                             ride.passengers.slice(0, 3).map((p, i) => (
                                 <Avatar key={i} className="size-7 border-2 border-white shadow-sm">
                                     <AvatarImage src={p.avatar_url || p.photoURL} />
-                                    <AvatarFallback className="text-[8px] bg-slate-100">{p.displayName?.charAt(0) || 'U'}</AvatarFallback>
+                                    <AvatarFallback className="text-[8px] bg-slate-100">{p.displayName?.charAt(0) || p.display_name?.charAt(0) || 'U'}</AvatarFallback>
                                 </Avatar>
                             ))
                         ) : (
@@ -233,6 +384,32 @@ const RideCard = ({ ride, navigate, currentUserId, copy }) => {
                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mt-1">{copy.seatPrice}</p>
                     </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2" onClick={(event) => event.stopPropagation()}>
+                    <QuickActionButton icon={Eye} label={copy.actions.view} onClick={(event) => stopAndRun(event, () => navigate(`/ride/${ride.id}`))} />
+                    {canOpenChat && (
+                        <QuickActionButton icon={MessageCircle} label={copy.actions.chat} tone="primary" onClick={(event) => stopAndRun(event, () => navigate(`/rides/${ride.id}/chats`))} />
+                    )}
+                    {isDriver && pendingRequestCount > 0 && (
+                        <QuickActionButton icon={BellRing} label={`${copy.actions.requests} ${pendingRequestCount}`} tone="warning" onClick={(event) => stopAndRun(event, () => navigate(`/ride/${ride.id}`))} />
+                    )}
+                    {canStart && (
+                        <QuickActionButton icon={Play} label={copy.actions.start} tone="success" disabled={isLoading} onClick={(event) => stopAndRun(event, () => onQuickAction('start', ride))} />
+                    )}
+                    {canFinish && (
+                        <QuickActionButton icon={Flag} label={copy.actions.finish} tone="success" disabled={isLoading} onClick={(event) => stopAndRun(event, () => onQuickAction('finish', ride))} />
+                    )}
+                    {canCancel && (
+                        <QuickActionButton icon={XCircle} label={copy.actions.cancel} tone="danger" disabled={isLoading} onClick={(event) => stopAndRun(event, () => onQuickAction('cancel', ride))} />
+                    )}
+                </div>
+
+                {isDriver && confirmedPassengerCount > 0 && !isClosed && (
+                    <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-emerald-700 flex items-center justify-between">
+                        <span>{confirmedPassengerCount} pasajero{confirmedPassengerCount === 1 ? '' : 's'} confirmado{confirmedPassengerCount === 1 ? '' : 's'}</span>
+                        <span>{isActive ? copy.status.active : copy.status.scheduled}</span>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -246,6 +423,8 @@ const MyRides = () => {
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState(null);
+    const [actionLoadingId, setActionLoadingId] = useState(null);
+    const [secureAction, setSecureAction] = useState(null);
 
     const fetchRidesDirect = async (id) => {
         setLoading(true);
@@ -330,6 +509,61 @@ const MyRides = () => {
         });
     }, [rides, activeTab]);
 
+    const openActionConfirm = (type, ride) => {
+        const actionCopy = {
+            start: {
+                tone: 'success',
+                title: copy.actions.confirmStartTitle,
+                description: copy.actions.confirmStartDesc,
+                confirmLabel: copy.actions.yesStart,
+            },
+            finish: {
+                tone: 'success',
+                title: copy.actions.confirmFinishTitle,
+                description: copy.actions.confirmFinishDesc,
+                confirmLabel: copy.actions.yesFinish,
+            },
+            cancel: {
+                tone: 'danger',
+                title: copy.actions.confirmCancelTitle,
+                description: copy.actions.confirmCancelDesc,
+                confirmLabel: copy.actions.yesCancel,
+            },
+        }[type];
+
+        setSecureAction({ type, ride, ...actionCopy });
+    };
+
+    const executeSecureAction = async () => {
+        if (!secureAction?.ride?.id || !userId) return;
+        const { type, ride } = secureAction;
+        setActionLoadingId(ride.id);
+        const toastId = toast.loading(copy.refreshing);
+
+        try {
+            if (type === 'start') {
+                const result = await startRide(ride.id);
+                if (!result?.success) throw new Error(result?.error || result?.message || copy.actionError);
+                toast.success(copy.toasts.started, { id: toastId });
+            } else if (type === 'finish') {
+                const result = await completeRideService(ride.id);
+                if (!result?.success) throw new Error(result?.error || result?.message || copy.actionError);
+                toast.success(copy.toasts.finished, { id: toastId });
+            } else if (type === 'cancel') {
+                const result = await cancelRide(ride.id);
+                if (!result?.success) throw new Error(result?.error || result?.message || copy.actionError);
+                toast.success(copy.toasts.cancelled, { id: toastId });
+            }
+
+            setSecureAction(null);
+            await fetchRidesDirect(userId);
+        } catch (error) {
+            toast.error(copy.actionError, { id: toastId, description: error.message });
+        } finally {
+            setActionLoadingId(null);
+        }
+    };
+
     const tabs = [
         { id: 'active', label: copy.tabs.active, icon: Calendar },
         { id: 'requested', label: copy.tabs.requested, icon: Users },
@@ -385,7 +619,15 @@ const MyRides = () => {
                         <div className="flex justify-center py-20"><Loader2 className="animate-spin text-primary size-8" /></div>
                     ) : filteredRides.length > 0 ? (
                         filteredRides.map(ride => (
-                            <RideCard key={ride.id} ride={ride} navigate={navigate} currentUserId={userId} copy={copy} />
+                            <RideCard
+                                key={ride.id}
+                                ride={ride}
+                                navigate={navigate}
+                                currentUserId={userId}
+                                copy={copy}
+                                onQuickAction={openActionConfirm}
+                                actionLoadingId={actionLoadingId}
+                            />
                         ))
                     ) : (
                         <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 shadow-inner">
@@ -398,6 +640,33 @@ const MyRides = () => {
                     )}
                 </div>
             </main>
+
+            <AlertDialog open={Boolean(secureAction)} onOpenChange={(open) => !open && setSecureAction(null)}>
+                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl max-w-sm">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-black tracking-tighter italic uppercase text-slate-900">
+                            {secureAction?.title}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-sm font-semibold text-slate-500 leading-relaxed">
+                            {secureAction?.description}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2 sm:gap-2">
+                        <AlertDialogCancel className="rounded-2xl font-black uppercase tracking-widest text-[10px]">
+                            {copy.actions.no}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={executeSecureAction}
+                            className={cn(
+                                'rounded-2xl font-black uppercase tracking-widest text-[10px]',
+                                secureAction?.tone === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'
+                            )}
+                        >
+                            {actionLoadingId ? <Loader2 className="size-4 animate-spin" /> : secureAction?.confirmLabel}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
