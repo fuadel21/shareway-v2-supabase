@@ -3,26 +3,27 @@
 
 /* Hotfix móvil: deja el mapa limpio y evita overlays grandes encima del mapa. */
 @media (max-width: 1023px) {
+  /* Overlay móvil del Dashboard: solo debe exponer los filtros reales. */
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] {
-    top: 5rem !important;
-    left: 1rem !important;
+    top: 2.75rem !important;
+    left: 0.9rem !important;
     right: auto !important;
     width: auto !important;
-    max-width: 5.1rem !important;
-    gap: 0.4rem !important;
-    max-height: none !important;
-    overflow-y: visible !important;
-    padding-bottom: 0 !important;
-    pointer-events: auto !important;
-    touch-action: manipulation !important;
-    z-index: 1300 !important;
+    max-width: 4.9rem !important;
+    padding: 0 !important;
+    margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
+    gap: 0.45rem !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+    z-index: 9000 !important;
+    isolation: isolate !important;
   }
 
   /* En móvil, actividad y buscador grande no deben vivir encima del mapa.
-     Selector amplio: evita depender de top-20 si Tailwind recompone clases. */
+     Ya existen los botones flotantes OFRECER, PEDIR y CERCA DE TI. */
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child,
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(2),
   .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:first-child,
@@ -42,44 +43,41 @@
     pointer-events: none !important;
   }
 
-  /* Filtros conectados: mismo JSX/onClick, presentación flotante tipo mapa. */
+  /* Filtros reales: mismo JSX/onClick, capa táctil propia por encima del mapa. */
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3),
   .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3),
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) {
-    width: auto !important;
-    max-width: 5.1rem !important;
-    margin-top: 0 !important;
-    margin-left: 0 !important;
-    margin-right: auto !important;
+    width: 4.9rem !important;
+    max-width: 4.9rem !important;
+    margin: 0 !important;
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.45rem !important;
+    gap: 0.5rem !important;
     overflow: visible !important;
     pointer-events: auto !important;
     touch-action: manipulation !important;
-    z-index: 1400 !important;
+    z-index: 9100 !important;
+    position: relative !important;
   }
 
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button,
   .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3) button,
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) button {
-    width: 5.1rem !important;
-    min-width: 5.1rem !important;
-    height: 3.1rem !important;
-    min-height: 3.1rem !important;
-    padding: 0.35rem 0.45rem !important;
-    border-radius: 1.1rem !important;
+    width: 4.9rem !important;
+    min-width: 4.9rem !important;
+    height: 3.35rem !important;
+    min-height: 3.35rem !important;
+    padding: 0.3rem 0.35rem !important;
+    border-radius: 1.2rem !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
     font-size: 0.48rem !important;
     line-height: 1.05 !important;
-    letter-spacing: 0.08em !important;
-    box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.75) !important;
-    backdrop-filter: blur(18px) !important;
+    letter-spacing: 0.07em !important;
     white-space: normal !important;
     cursor: pointer !important;
     pointer-events: auto !important;
@@ -87,15 +85,18 @@
     user-select: none !important;
     -webkit-tap-highlight-color: transparent !important;
     position: relative !important;
-    z-index: 1500 !important;
+    z-index: 9200 !important;
+    box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(18px) !important;
+    transform: translateZ(0) !important;
   }
 
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button:not([class*="bg-slate-900"]),
   .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3) button:not([class*="bg-slate-900"]),
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) button:not([class*="bg-slate-900"]) {
-    background: rgba(255, 255, 255, 0.94) !important;
+    background: rgba(255, 255, 255, 0.96) !important;
     color: rgb(51 65 85) !important;
-    border-color: rgba(255, 255, 255, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.75) !important;
   }
 
   /* Ajuste visual: compacta controles flotantes para enseñar más mapa. */
