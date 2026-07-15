@@ -138,6 +138,70 @@ const injectActivityEmptyStateCtas = () => {
   card.appendChild(wrapper);
 };
 
+const getRequestGuideCopy = () => {
+  const lang = document.documentElement.lang || navigator.language || 'es';
+  if (lang.startsWith('en')) {
+    return {
+      eyebrow: 'Request guide',
+      title: 'Tell drivers what route you need',
+      desc: 'Add origin, destination, time, seats and a fair suggested price. Drivers will be able to find your request.',
+      step1: 'Route',
+      step2: 'Time',
+      step3: 'Price',
+      myRequests: 'My requests',
+    };
+  }
+  if (lang.startsWith('ar')) {
+    return {
+      eyebrow: 'دليل الطلب',
+      title: 'أخبر السائقين بالمسار الذي تحتاجه',
+      desc: 'أضف نقطة الانطلاق والوجهة والوقت والمقاعد وسعرًا مناسبًا. سيتمكن السائقون من العثور على طلبك.',
+      step1: 'المسار',
+      step2: 'الوقت',
+      step3: 'السعر',
+      myRequests: 'طلباتي',
+    };
+  }
+  return {
+    eyebrow: 'Guía rápida',
+    title: 'Di a los conductores qué ruta necesitas',
+    desc: 'Añade origen, destino, hora, plazas y un precio razonable. Así los conductores podrán encontrarte.',
+    step1: 'Ruta',
+    step2: 'Hora',
+    step3: 'Precio',
+    myRequests: 'Mis solicitudes',
+  };
+};
+
+const injectRequestGuide = () => {
+  if (window.location.pathname !== '/request') return;
+  if (document.querySelector('[data-shareway-request-guide]')) return;
+
+  const form = document.querySelector('main form');
+  if (!form) return;
+
+  const copy = getRequestGuideCopy();
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute('data-shareway-request-guide', 'true');
+  wrapper.className = 'rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-5 space-y-4 text-left';
+  wrapper.innerHTML = `
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-[9px] font-black uppercase tracking-[0.25em] text-orange-500">${copy.eyebrow}</p>
+        <h2 class="mt-1 text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">${copy.title}</h2>
+        <p class="mt-2 text-[11px] font-bold text-slate-400 leading-relaxed">${copy.desc}</p>
+      </div>
+      <button type="button" data-shareway-nav="/my-requests?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRequests}</button>
+    </div>
+    <div class="grid grid-cols-3 gap-2">
+      <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-center"><p class="text-lg font-black text-slate-900">1</p><p class="text-[8px] font-black uppercase tracking-widest text-slate-400">${copy.step1}</p></div>
+      <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-center"><p class="text-lg font-black text-slate-900">2</p><p class="text-[8px] font-black uppercase tracking-widest text-slate-400">${copy.step2}</p></div>
+      <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-center"><p class="text-lg font-black text-slate-900">3</p><p class="text-[8px] font-black uppercase tracking-widest text-slate-400">${copy.step3}</p></div>
+    </div>
+  `;
+  form.prepend(wrapper);
+};
+
 const GrowthPageTracker = () => {
   const location = useLocation();
 
@@ -179,6 +243,17 @@ const GrowthPageTracker = () => {
     if (location.pathname !== '/my-rides') return undefined;
     const timer = window.setTimeout(injectActivityEmptyStateCtas, 350);
     const observer = new MutationObserver(() => injectActivityEmptyStateCtas());
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (location.pathname !== '/request') return undefined;
+    const timer = window.setTimeout(injectRequestGuide, 350);
+    const observer = new MutationObserver(() => injectRequestGuide());
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       window.clearTimeout(timer);
