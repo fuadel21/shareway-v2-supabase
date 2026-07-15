@@ -1,5 +1,6 @@
 /* Estilos específicos de App.jsx */
 /* Los estilos globales de Tailwind están en index.css */
+@import './styles/mobile-dashboard-clean.css';
 
 /* Hotfix móvil: deja el mapa limpio y evita que "Tu actividad ahora" tape el buscador. */
 @media (max-width: 1023px) {
