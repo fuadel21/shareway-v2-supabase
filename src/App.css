@@ -14,6 +14,8 @@
     overflow-y: visible !important;
     padding-bottom: 0 !important;
     pointer-events: auto !important;
+    touch-action: manipulation !important;
+    z-index: 1300 !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
@@ -56,6 +58,8 @@
     gap: 0.45rem !important;
     overflow: visible !important;
     pointer-events: auto !important;
+    touch-action: manipulation !important;
+    z-index: 1400 !important;
   }
 
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button,
@@ -77,6 +81,13 @@
     box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.75) !important;
     backdrop-filter: blur(18px) !important;
     white-space: normal !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+    user-select: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    position: relative !important;
+    z-index: 1500 !important;
   }
 
   div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button:not([class*="bg-slate-900"]),
