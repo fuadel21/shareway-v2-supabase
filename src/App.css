@@ -3,21 +3,28 @@
 
 /* Hotfix móvil: deja el mapa limpio y evita overlays grandes encima del mapa. */
 @media (max-width: 1023px) {
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] {
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] {
     top: 5rem !important;
     left: 1rem !important;
-    right: 1rem !important;
-    gap: 0.35rem !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: 5.1rem !important;
+    gap: 0.4rem !important;
     max-height: none !important;
-    overflow-y: visible;
-    padding-bottom: 0;
-    pointer-events: none;
+    overflow-y: visible !important;
+    padding-bottom: 0 !important;
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
   }
 
   /* En móvil, actividad y buscador grande no deben vivir encima del mapa.
-     Ya existen los botones flotantes OFRECER y PEDIR. */
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child,
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(2),
+     Selector amplio: evita depender de top-20 si Tailwind recompone clases. */
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:first-child,
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(2),
+  .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:first-child,
+  .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(2),
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:first-child,
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(2) {
     display: none !important;
@@ -33,14 +40,15 @@
     pointer-events: none !important;
   }
 
-  /* Filtros del mapa conectados: mismo onClick, diseño tipo OFRECER/PEDIR. */
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3),
+  /* Filtros conectados: mismo JSX/onClick, presentación flotante tipo mapa. */
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3),
+  .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3),
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) {
     width: auto !important;
-    max-width: 4.65rem !important;
+    max-width: 5.1rem !important;
     margin-top: 0 !important;
-    margin-left: auto !important;
-    margin-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: auto !important;
     padding: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -50,27 +58,29 @@
     pointer-events: auto !important;
   }
 
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button,
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button,
+  .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3) button,
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) button {
-    width: 4.65rem !important;
-    min-width: 4.65rem !important;
-    height: 3.15rem !important;
-    min-height: 3.15rem !important;
-    padding: 0.35rem 0.35rem !important;
-    border-radius: 1.15rem !important;
+    width: 5.1rem !important;
+    min-width: 5.1rem !important;
+    height: 3.1rem !important;
+    min-height: 3.1rem !important;
+    padding: 0.35rem 0.45rem !important;
+    border-radius: 1.1rem !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-    font-size: 0.52rem !important;
-    line-height: 1 !important;
+    font-size: 0.48rem !important;
+    line-height: 1.05 !important;
     letter-spacing: 0.08em !important;
     box-shadow: 0 18px 35px -22px rgba(15, 23, 42, 0.75) !important;
     backdrop-filter: blur(18px) !important;
     white-space: normal !important;
   }
 
-  div[class*="lg:hidden"][class*="absolute"][class*="top-20"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button:not([class*="bg-slate-900"]),
+  div[class*="lg:hidden"][class*="absolute"][class*="left-4"][class*="right-4"][class*="z-[40]"] > div:nth-child(3) button:not([class*="bg-slate-900"]),
+  .lg\:hidden.absolute.left-4.right-4.z-\[40\] > div:nth-child(3) button:not([class*="bg-slate-900"]),
   .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) button:not([class*="bg-slate-900"]) {
     background: rgba(255, 255, 255, 0.94) !important;
     color: rgb(51 65 85) !important;
