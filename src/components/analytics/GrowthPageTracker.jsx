@@ -238,6 +238,8 @@ const GrowthPageTracker = () => {
     document.addEventListener('click', handleClick, { capture: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
   }, []);
+
+  return null;
 };
 
 export default GrowthPageTracker;
