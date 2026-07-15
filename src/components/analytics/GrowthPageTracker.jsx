@@ -69,6 +69,21 @@ const getActivityTabLabel = (tab) => {
   return ['proximos', 'upcoming'];
 };
 
+const getRequestTabLabel = (tab) => {
+  if (tab === 'accepted') return ['aceptadas', 'accepted', 'المقبولة'];
+  if (tab === 'history') return ['historial', 'history', 'السجل'];
+  return ['activas', 'active', 'النشطة'];
+};
+
+const clickTabByLabels = (labels) => {
+  const tabButton = Array.from(document.querySelectorAll('button')).find((button) => {
+    const text = normalizeButtonText(button.textContent || '');
+    return labels.some((label) => text.includes(normalizeButtonText(label)));
+  });
+
+  tabButton?.click?.();
+};
+
 const getActivityCopy = () => {
   const lang = document.documentElement.lang || navigator.language || 'es';
   if (lang.startsWith('en')) {
@@ -142,13 +157,19 @@ const GrowthPageTracker = () => {
     if (location.pathname !== '/my-rides' || !targetTab) return undefined;
 
     const timer = window.setTimeout(() => {
-      const labels = getActivityTabLabel(targetTab);
-      const tabButton = Array.from(document.querySelectorAll('button')).find((button) => {
-        const text = normalizeButtonText(button.textContent || '');
-        return labels.some((label) => text.includes(label));
-      });
+      clickTabByLabels(getActivityTabLabel(targetTab));
+    }, 250);
 
-      tabButton?.click?.();
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const targetTab = params.get('tab');
+    if (location.pathname !== '/my-requests' || !targetTab) return undefined;
+
+    const timer = window.setTimeout(() => {
+      clickTabByLabels(getRequestTabLabel(targetTab));
     }, 250);
 
     return () => window.clearTimeout(timer);
@@ -217,8 +238,6 @@ const GrowthPageTracker = () => {
     document.addEventListener('click', handleClick, { capture: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
   }, []);
-
-  return null;
 };
 
 export default GrowthPageTracker;
