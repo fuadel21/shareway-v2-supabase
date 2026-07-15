@@ -47,6 +47,28 @@ const isTrackableSeoTarget = (targetPath) => (
   targetPath.startsWith('/ahorrar-compartiendo-taxi')
 );
 
+const normalizeButtonText = (value = '') => value
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toLowerCase();
+
+const getDashboardActivityTarget = (label) => {
+  const text = normalizeButtonText(label);
+  if (text === 'todos' || text === 'all') return '/my-rides?tab=active';
+  if (text === 'viajes' || text === 'rides') return '/my-rides?tab=active';
+  if (text === 'solicitudes' || text === 'requests') return '/my-rides?tab=requested';
+  return null;
+};
+
+const getActivityTabLabel = (tab) => {
+  if (tab === 'requested') return ['solicitudes', 'requests'];
+  if (tab === 'history') return ['historial', 'history'];
+  if (tab === 'cancelled') return ['cancelados', 'cancelled', 'canceladas'];
+  return ['proximos', 'upcoming'];
+};
+
 const GrowthPageTracker = () => {
   const location = useLocation();
 
@@ -61,7 +83,36 @@ const GrowthPageTracker = () => {
   }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const targetTab = params.get('tab');
+    if (location.pathname !== '/my-rides' || !targetTab) return undefined;
+
+    const timer = window.setTimeout(() => {
+      const labels = getActivityTabLabel(targetTab);
+      const tabButton = Array.from(document.querySelectorAll('button')).find((button) => {
+        const text = normalizeButtonText(button.textContent || '');
+        return labels.some((label) => text.includes(label));
+      });
+
+      tabButton?.click?.();
+    }, 250);
+
+    return () => window.clearTimeout(timer);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     const handleClick = (event) => {
+      const button = event.target?.closest?.('button');
+      if (window.location.pathname === '/dashboard' && button) {
+        const target = getDashboardActivityTarget(button.textContent || '');
+        if (target) {
+          event.preventDefault();
+          event.stopPropagation();
+          window.location.assign(target);
+          return;
+        }
+      }
+
       const anchor = event.target?.closest?.('a[href]');
       if (!anchor) return;
 
