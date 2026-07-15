@@ -71,25 +71,29 @@
     letter-spacing: 0.12em !important;
   }
 
+  /* El stack derecho tiene OFRECER + PEDIR. Hay que subirlo para que PEDIR no quede tapado por la barra inferior. */
   div[class*="absolute"][class*="bottom-40"][class*="right-4"][class*="z-[1000]"] {
-    bottom: 5.8rem !important;
+    bottom: 7.8rem !important;
     right: 0.9rem !important;
-    gap: 0.6rem !important;
+    gap: 0.45rem !important;
+    z-index: 1200 !important;
   }
 
   div[class*="absolute"][class*="bottom-40"][class*="right-4"][class*="z-[1000]"] button {
-    width: 3.25rem !important;
-    height: 3.25rem !important;
-    border-radius: 1.15rem !important;
+    width: 3.15rem !important;
+    height: 3.15rem !important;
+    min-width: 3.15rem !important;
+    min-height: 3.15rem !important;
+    border-radius: 1.1rem !important;
   }
 
   div[class*="absolute"][class*="bottom-40"][class*="right-4"][class*="z-[1000]"] button svg {
-    width: 1.15rem !important;
-    height: 1.15rem !important;
+    width: 1.1rem !important;
+    height: 1.1rem !important;
   }
 
   div[class*="absolute"][class*="bottom-40"][class*="right-4"][class*="z-[1000]"] button span {
-    font-size: 0.4rem !important;
+    font-size: 0.38rem !important;
     line-height: 1 !important;
   }
 
