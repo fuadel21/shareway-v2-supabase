@@ -69,6 +69,60 @@ const getActivityTabLabel = (tab) => {
   return ['proximos', 'upcoming'];
 };
 
+const getActivityCopy = () => {
+  const lang = document.documentElement.lang || navigator.language || 'es';
+  if (lang.startsWith('en')) {
+    return {
+      title: 'What do you want to do now?',
+      desc: 'Create a ride or request a seat to start seeing activity here.',
+      publish: 'Publish ride',
+      request: 'Request seat',
+    };
+  }
+  if (lang.startsWith('ar')) {
+    return {
+      title: 'ماذا تريد أن تفعل الآن؟',
+      desc: 'انشر رحلة أو أنشئ طلبًا لبدء ظهور النشاط هنا.',
+      publish: 'نشر رحلة',
+      request: 'طلب مقعد',
+    };
+  }
+  return {
+    title: '¿Qué quieres hacer ahora?',
+    desc: 'Publica un viaje o pide plaza para empezar a ver actividad aquí.',
+    publish: 'Publicar viaje',
+    request: 'Pedir plaza',
+  };
+};
+
+const injectActivityEmptyStateCtas = () => {
+  if (window.location.pathname !== '/my-rides') return;
+  const emptyTitle = Array.from(document.querySelectorAll('h3, p')).find((node) => {
+    const text = normalizeButtonText(node.textContent || '');
+    return text.includes('sin resultados') || text.includes('no results') || text.includes('لا توجد نتائج');
+  });
+
+  const card = emptyTitle?.closest?.('div');
+  if (!card || card.querySelector('[data-shareway-empty-activity]')) return;
+
+  const copy = getActivityCopy();
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute('data-shareway-empty-activity', 'true');
+  wrapper.className = 'mt-6 px-5 pb-2 space-y-3';
+  wrapper.innerHTML = `
+    <div class="rounded-3xl bg-slate-950 text-white px-5 py-4 shadow-xl text-left">
+      <p class="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">ShareWay</p>
+      <h4 class="mt-1 text-base font-black italic uppercase tracking-tight">${copy.title}</h4>
+      <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.request}</button>
+    </div>
+  `;
+  card.appendChild(wrapper);
+};
+
 const GrowthPageTracker = () => {
   const location = useLocation();
 
@@ -101,7 +155,26 @@ const GrowthPageTracker = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    if (location.pathname !== '/my-rides') return undefined;
+    const timer = window.setTimeout(injectActivityEmptyStateCtas, 350);
+    const observer = new MutationObserver(() => injectActivityEmptyStateCtas());
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
     const handleClick = (event) => {
+      const injectedNav = event.target?.closest?.('[data-shareway-nav]');
+      if (injectedNav) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.location.assign(injectedNav.getAttribute('data-shareway-nav'));
+        return;
+      }
+
       const button = event.target?.closest?.('button');
       if (window.location.pathname === '/dashboard' && button) {
         const target = getDashboardActivityTarget(button.textContent || '');
