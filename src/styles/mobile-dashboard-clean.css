@@ -1,0 +1,29 @@
+/* Mobile Dashboard cleanup: keep the map usable and let floating actions handle publish/request. */
+@media (max-width: 1023px) {
+  /* Hide the large mobile top overlay children that duplicate the map actions. */
+  .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(1),
+  .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(2) {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] {
+    top: 5rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    gap: 0.35rem !important;
+    pointer-events: auto !important;
+  }
+
+  .lg\:hidden.absolute.top-20.left-4.right-4.z-\[40\] > div:nth-child(3) {
+    margin-top: 0 !important;
+  }
+}
