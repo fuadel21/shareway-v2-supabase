@@ -28,17 +28,56 @@ const copyByLanguage = {
     es: {
         recent: 'Reciente',
         net: 'Neto (90%)',
-        locale: 'es-ES'
+        locale: 'es-ES',
+        trustTitle: 'Pagos seguros',
+        trustDesc: 'Tu dinero se organiza entre saldo disponible, importes en garantía y movimientos del historial.',
+        availableGuide: 'Disponible',
+        availableGuideDesc: 'Saldo que puedes usar para reservar o gestionar viajes.',
+        guaranteeGuide: 'Garantía',
+        guaranteeGuideDesc: 'Pagos bloqueados temporalmente hasta finalizar el viaje.',
+        historyGuide: 'Historial',
+        historyGuideDesc: 'Toca cualquier movimiento para ver el detalle.',
+        myRides: 'Mis viajes',
+        paymentSettings: 'Ajustes',
+        emptyTitle: 'Sin movimientos todavía',
+        emptyDesc: 'Cuando recargues, reserves o cobres un viaje, aparecerá aquí.',
+        dashboard: 'Buscar viaje'
     },
     en: {
         recent: 'Recent',
         net: 'Net (90%)',
-        locale: 'en-US'
+        locale: 'en-US',
+        trustTitle: 'Secure payments',
+        trustDesc: 'Your money is organized between available balance, held funds and transaction history.',
+        availableGuide: 'Available',
+        availableGuideDesc: 'Balance you can use to book or manage rides.',
+        guaranteeGuide: 'Guarantee',
+        guaranteeGuideDesc: 'Payments temporarily held until the ride is completed.',
+        historyGuide: 'History',
+        historyGuideDesc: 'Tap any movement to see the details.',
+        myRides: 'My rides',
+        paymentSettings: 'Settings',
+        emptyTitle: 'No movements yet',
+        emptyDesc: 'Top-ups, bookings and ride earnings will appear here.',
+        dashboard: 'Find ride'
     },
     ar: {
         recent: 'حديث',
         net: 'الصافي (90%)',
-        locale: 'ar-SA'
+        locale: 'ar-SA',
+        trustTitle: 'مدفوعات آمنة',
+        trustDesc: 'يتم تنظيم أموالك بين الرصيد المتاح والمبالغ المحجوزة وسجل العمليات.',
+        availableGuide: 'متاح',
+        availableGuideDesc: 'رصيد يمكنك استخدامه للحجز أو إدارة الرحلات.',
+        guaranteeGuide: 'ضمان',
+        guaranteeGuideDesc: 'مدفوعات محجوزة مؤقتًا حتى انتهاء الرحلة.',
+        historyGuide: 'السجل',
+        historyGuideDesc: 'اضغط على أي حركة لرؤية التفاصيل.',
+        myRides: 'رحلاتي',
+        paymentSettings: 'الإعدادات',
+        emptyTitle: 'لا توجد حركات بعد',
+        emptyDesc: 'ستظهر عمليات الشحن والحجز وأرباح الرحلات هنا.',
+        dashboard: 'البحث عن رحلة'
     }
 };
 
@@ -135,6 +174,7 @@ const Wallet = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
     const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     const { wallet, loadingWallet, refreshWallet } = useWallet(user);
     const [transactions, setTransactions] = useState([]);
     const [isLoadingTxs, setIsLoadingTxs] = useState(true);
@@ -284,12 +324,61 @@ const Wallet = () => {
                     </CardContent>
                 </Card>
 
+                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden">
+                    <CardContent className="p-6 space-y-5">
+                        <div className="flex items-start gap-4">
+                            <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                <ShieldCheck className="size-6" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">ShareWay Wallet</p>
+                                <h3 className="text-xl font-black italic uppercase tracking-tighter text-slate-900">{copy.trustTitle}</h3>
+                                <p className="text-xs font-bold text-slate-400 leading-relaxed mt-1">{copy.trustDesc}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                [copy.availableGuide, copy.availableGuideDesc, WalletIcon],
+                                [copy.guaranteeGuide, copy.guaranteeGuideDesc, ShieldCheck],
+                                [copy.historyGuide, copy.historyGuideDesc, History],
+                            ].map(([title, desc, Icon]) => (
+                                <div key={title} className="rounded-3xl bg-slate-50 border border-slate-100 p-4 min-h-[118px]">
+                                    <Icon className="size-4 text-primary mb-3" />
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-900">{title}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 leading-relaxed mt-1 normal-case">{desc}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Button type="button" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest">
+                                {copy.myRides}
+                            </Button>
+                            <Button type="button" variant="outline" onClick={() => navigate('/settings')} className="h-12 rounded-2xl bg-white border-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-widest">
+                                {copy.paymentSettings}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-6 text-left">
                     <div className="flex items-center justify-between px-2 text-left">
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic"><History className="h-4 w-4 text-primary" /> {t('wallet.activity')}</h3>
                     </div>
                     <div className="space-y-1">
-                        {transactions.length > 0 ? (transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
+                        {transactions.length > 0 ? (
+                            transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)
+                        ) : (
+                            <div className="bg-white border border-slate-100 rounded-[3rem] p-10 text-center border-dashed shadow-sm">
+                                <Sparkles className="size-10 text-slate-200 mx-auto mb-4" />
+                                <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{copy.emptyTitle}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2">{copy.emptyDesc}</p>
+                                <Button onClick={() => navigate('/dashboard')} className="mt-6 h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest px-8">
+                                    {copy.dashboard}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
