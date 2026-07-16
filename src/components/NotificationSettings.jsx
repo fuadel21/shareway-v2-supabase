@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent } from '@/components/ui/card.jsx';
+import { Button } from '@/components/ui/button.jsx';
 import { Switch } from '@/components/ui/switch.jsx';
-import { MessageSquare, Briefcase, Clock, Sparkles, Bell, BellOff, ShieldCheck, Zap, Star, Megaphone } from 'lucide-react';
+import { MessageSquare, Briefcase, Clock, Sparkles, Bell, BellOff, ShieldCheck, Zap, Star, Megaphone, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
 import BrowserAlertsCard from './BrowserAlertsCard';
@@ -21,22 +22,27 @@ const DEFAULT_NOTIFICATION_SETTINGS = {
 
 function NotificationSettings() {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const { profile, refreshProfile } = useOutletContext();
     const [isUpdating, setIsUpdating] = useState(false);
 
     const NOTIFICATION_OPTIONS = [
-        { id: 'messages', icon: MessageSquare, title: t('notifications.options.messages_title', 'Mensajes'), description: t('notifications.options.messages_desc', 'Avisos cuando recibes un nuevo mensaje.'), color: 'text-blue-500' },
-        { id: 'rideUpdates', icon: Briefcase, title: t('notifications.options.ride_updates_title', 'Viajes y reservas'), description: t('notifications.options.ride_updates_desc', 'Reservas, cancelaciones y cambios importantes.'), color: 'text-indigo-500' },
-        { id: 'reminders', icon: Clock, title: t('notifications.options.reminders_title', 'Recordatorios'), description: t('notifications.options.reminders_desc', 'Avisos antes de la salida y tareas pendientes.'), color: 'text-amber-500' },
-        { id: 'reviews', icon: Star, title: 'Valoraciones', description: 'Avisos cuando recibes una valoración nueva.', color: 'text-yellow-500' },
-        { id: 'adminAnnouncements', icon: Megaphone, title: 'Avisos ShareWay', description: 'Comunicados importantes del equipo o administración.', color: 'text-emerald-500' },
-        { id: 'promotions', icon: Sparkles, title: t('notifications.options.promotions_title', 'Promociones'), description: t('notifications.options.promotions_desc', 'Campañas, beneficios y comunicaciones comerciales.'), color: 'text-rose-500' },
+        { id: 'messages', icon: MessageSquare, title: t('notifications.options.messages_title', 'Mensajes'), description: t('notifications.options.messages_desc', 'Avisos cuando recibes un nuevo mensaje.'), color: 'text-blue-500', critical: true },
+        { id: 'rideUpdates', icon: Briefcase, title: t('notifications.options.ride_updates_title', 'Viajes y reservas'), description: t('notifications.options.ride_updates_desc', 'Reservas, cancelaciones y cambios importantes.'), color: 'text-indigo-500', critical: true },
+        { id: 'reminders', icon: Clock, title: t('notifications.options.reminders_title', 'Recordatorios'), description: t('notifications.options.reminders_desc', 'Avisos antes de la salida y tareas pendientes.'), color: 'text-amber-500', critical: true },
+        { id: 'reviews', icon: Star, title: 'Valoraciones', description: 'Avisos cuando recibes una valoración nueva.', color: 'text-yellow-500', critical: false },
+        { id: 'adminAnnouncements', icon: Megaphone, title: 'Avisos ShareWay', description: 'Comunicados importantes del equipo o administración.', color: 'text-emerald-500', critical: true },
+        { id: 'promotions', icon: Sparkles, title: t('notifications.options.promotions_title', 'Promociones'), description: t('notifications.options.promotions_desc', 'Campañas, beneficios y comunicaciones comerciales.'), color: 'text-rose-500', critical: false },
     ];
 
     const settings = {
         ...DEFAULT_NOTIFICATION_SETTINGS,
         ...(profile?.preferences?.notifications || {}),
     };
+
+    const activeCount = NOTIFICATION_OPTIONS.filter((opt) => settings[opt.id]).length;
+    const criticalCount = NOTIFICATION_OPTIONS.filter((opt) => opt.critical && settings[opt.id]).length;
+    const totalCritical = NOTIFICATION_OPTIONS.filter((opt) => opt.critical).length;
 
     const handleToggle = async (id, value) => {
         setIsUpdating(true);
@@ -98,6 +104,43 @@ function NotificationSettings() {
                     </div>
                 </div>
 
+                <Card className="border-none rounded-[2.5rem] bg-slate-950 text-white shadow-2xl shadow-slate-900/20 overflow-hidden">
+                    <CardContent className="p-6 space-y-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Centro de avisos</p>
+                                <h3 className="mt-1 text-xl font-black uppercase italic tracking-tighter">{activeCount}/{NOTIFICATION_OPTIONS.length} canales activos</h3>
+                                <p className="mt-2 text-xs font-bold text-white/45 leading-relaxed">
+                                    Mantén activos mensajes, viajes y recordatorios para no perder solicitudes ni cambios importantes.
+                                </p>
+                            </div>
+                            <div className="h-14 w-14 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
+                                <Bell className="h-6 w-6 text-primary" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Críticos</p>
+                                <p className="mt-1 text-lg font-black italic">{criticalCount}/{totalCritical}</p>
+                            </div>
+                            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+                                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Opcionales</p>
+                                <p className="mt-1 text-lg font-black italic">{activeCount - criticalCount}/{NOTIFICATION_OPTIONS.length - totalCritical}</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button type="button" onClick={() => navigate('/chats')} className="h-12 rounded-2xl bg-white text-slate-950 hover:bg-white/90 text-[9px] font-black uppercase tracking-widest">
+                                Mensajes <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                            <Button type="button" variant="outline" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-white/10 border-white/10 text-white hover:bg-white/20 text-[9px] font-black uppercase tracking-widest">
+                                Mis viajes <ChevronRight className="ml-1 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <BrowserAlertsCard userId={profile?.id} />
 
                 <div className="space-y-3">
@@ -118,7 +161,10 @@ function NotificationSettings() {
                                                 <opt.icon className={cn("size-6", opt.color)} />
                                             </div>
                                             <div className="text-left min-w-0">
-                                                <p className="font-black text-slate-900 tracking-tight uppercase italic truncate">{opt.title}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-black text-slate-900 tracking-tight uppercase italic truncate">{opt.title}</p>
+                                                    {opt.critical && <span className="text-[7px] font-black uppercase tracking-widest text-primary bg-primary/10 px-2 py-1 rounded-full">Clave</span>}
+                                                </div>
                                                 <p className="text-[10px] font-bold text-slate-400 leading-relaxed">{opt.description}</p>
                                             </div>
                                         </div>
