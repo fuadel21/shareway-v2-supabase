@@ -4,7 +4,8 @@ import {
   History, Map as MapIcon, Shield, Fingerprint,
   ChevronRight, LogOut, User, Bell, Palette,
   Landmark, Wallet as WalletIcon,
-  Smartphone, Leaf, Star, FlaskConical, Car
+  Smartphone, Leaf, Star, FlaskConical, Car,
+  CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useTranslation } from 'react-i18next';
@@ -42,12 +43,25 @@ const SectionHeader = ({ title, icon: Icon, color }) => {
   );
 };
 
+const AccountStatusPill = ({ done, label }) => (
+  <div className={cn(
+    'flex items-center gap-2 rounded-2xl px-3 py-2 border text-left',
+    done ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'
+  )}>
+    {done ? <CheckCircle2 className="size-4 shrink-0" /> : <AlertTriangle className="size-4 shrink-0" />}
+    <span className="text-[9px] font-black uppercase tracking-widest leading-tight">{label}</span>
+  </div>
+);
+
 const Settings = () => {
   const navigate = useNavigate();
   const { profile, user, isAdmin, handleSignOut } = useOutletContext();
   const { t } = useTranslation();
   const vehicle = profile?.vehicle || {};
   const hasVehicle = Boolean(vehicle.make && vehicle.model);
+  const hasProfileName = Boolean(profile?.display_name || profile?.full_name || profile?.name);
+  const hasPayouts = Boolean(profile?.stripe_onboarding_complete);
+  const trustScore = [hasProfileName, hasVehicle, hasPayouts].filter(Boolean).length;
 
   return (
     <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
@@ -64,6 +78,49 @@ const Settings = () => {
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12 text-left">
+        <section className="rounded-[2.5rem] bg-slate-900 text-white p-6 shadow-2xl overflow-hidden relative">
+          <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
+          <div className="relative space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">ShareWay</p>
+                <h2 className="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">Centro de cuenta</h2>
+                <p className="mt-2 text-xs font-bold text-white/55 leading-relaxed">Completa perfil, vehículo y cobros para dar más confianza antes de viajar.</p>
+              </div>
+              <div className="h-14 w-14 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
+                <Shield className="size-6 text-primary" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-white/10 p-3 text-left">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Estado</p>
+                <p className="mt-1 text-lg font-black italic">{trustScore}/3</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3 text-left">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Vehículo</p>
+                <p className="mt-1 text-[10px] font-black uppercase truncate">{hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Pendiente'}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3 text-left">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Cobros</p>
+                <p className="mt-1 text-[10px] font-black uppercase">{hasPayouts ? 'Listos' : 'Revisar'}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2">
+              <AccountStatusPill done={hasProfileName} label="Perfil visible" />
+              <AccountStatusPill done={hasVehicle} label="Vehículo configurado" />
+              <AccountStatusPill done={hasPayouts} label="Cobros del conductor" />
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 pt-1">
+              <Button type="button" onClick={() => navigate('/profile/edit')} className="h-12 rounded-2xl bg-white text-slate-900 hover:bg-white/90 text-[9px] font-black uppercase tracking-widest">Perfil</Button>
+              <Button type="button" onClick={() => navigate('/settings/vehicle')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-widest">Vehículo</Button>
+              <Button type="button" onClick={() => navigate('/settings/security')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-widest">Seguridad</Button>
+            </div>
+          </div>
+        </section>
+
         <section>
           <SectionHeader title={t('settings.account_section')} icon={User} color="text-slate-900" />
           <div className="grid grid-cols-1 gap-4">
