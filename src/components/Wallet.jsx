@@ -19,7 +19,9 @@ import {
     ChevronLeft,
     CreditCard,
     Eye,
-    EyeOff
+    EyeOff,
+    RefreshCw,
+    Route
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -28,17 +30,50 @@ const copyByLanguage = {
     es: {
         recent: 'Reciente',
         net: 'Neto (90%)',
-        locale: 'es-ES'
+        locale: 'es-ES',
+        centerTitle: 'Centro de cartera',
+        centerDesc: 'Controla saldo, dinero en garantía y movimientos recientes antes de reservar o publicar viajes.',
+        available: 'Disponible',
+        protectedFunds: 'En garantía',
+        movements: 'Movimientos',
+        refresh: 'Actualizar',
+        myTrips: 'Mis viajes',
+        paymentSettings: 'Pagos',
+        emptyTitle: 'Sin movimientos todavía',
+        emptyDesc: 'Cuando recargues, reserves o cobres un viaje, aparecerá aquí el historial.',
+        heldHint: 'El dinero en garantía se libera según el estado del viaje.'
     },
     en: {
         recent: 'Recent',
         net: 'Net (90%)',
-        locale: 'en-US'
+        locale: 'en-US',
+        centerTitle: 'Wallet center',
+        centerDesc: 'Track balance, protected funds and recent movements before booking or publishing rides.',
+        available: 'Available',
+        protectedFunds: 'Protected',
+        movements: 'Movements',
+        refresh: 'Refresh',
+        myTrips: 'My rides',
+        paymentSettings: 'Payments',
+        emptyTitle: 'No movements yet',
+        emptyDesc: 'Top-ups, bookings and ride payouts will appear here.',
+        heldHint: 'Protected funds are released according to the ride status.'
     },
     ar: {
         recent: 'حديث',
         net: 'الصافي (90%)',
-        locale: 'ar-SA'
+        locale: 'ar-SA',
+        centerTitle: 'مركز المحفظة',
+        centerDesc: 'تابع الرصيد والمبالغ المحجوزة والحركات الأخيرة قبل الحجز أو نشر الرحلات.',
+        available: 'متاح',
+        protectedFunds: 'محجوز',
+        movements: 'الحركات',
+        refresh: 'تحديث',
+        myTrips: 'رحلاتي',
+        paymentSettings: 'المدفوعات',
+        emptyTitle: 'لا توجد حركات بعد',
+        emptyDesc: 'ستظهر هنا عمليات الشحن والحجوزات والمدفوعات.',
+        heldHint: 'يتم تحرير المبالغ المحجوزة حسب حالة الرحلة.'
     }
 };
 
@@ -135,6 +170,7 @@ const Wallet = () => {
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
     const language = getLanguage(i18n.language);
+    const copy = copyByLanguage[language];
     const { wallet, loadingWallet, refreshWallet } = useWallet(user);
     const [transactions, setTransactions] = useState([]);
     const [isLoadingTxs, setIsLoadingTxs] = useState(true);
@@ -142,6 +178,7 @@ const Wallet = () => {
     const [selectedTx, setSelectedTx] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [showBalance, setShowBalance] = useState(() => localStorage.getItem('wallet_privacy') !== 'true');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const togglePrivacy = () => {
         const newValue = !showBalance;
@@ -167,6 +204,16 @@ const Wallet = () => {
             setIsLoadingTxs(false);
         }
     }, [user?.id]);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await refreshWallet();
+            await fetchTransactions();
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     useEffect(() => {
         fetchTransactions();
@@ -207,6 +254,7 @@ const Wallet = () => {
     const balance = useMemo(() => parseFloat(wallet?.balance || 0), [wallet]);
     const heldBalance = useMemo(() => parseFloat(wallet?.heldBalance || 0), [wallet]);
     const formattedBalance = formatCurrency(balance, language);
+    const latestTransactions = transactions.length;
 
     if (loadingWallet && isLoadingTxs) {
         return (
@@ -284,12 +332,85 @@ const Wallet = () => {
                     </CardContent>
                 </Card>
 
+                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden">
+                    <CardContent className="p-6 space-y-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4 min-w-0">
+                                <div className="size-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                    <ShieldCheck className="size-6" />
+                                </div>
+                                <div className="min-w-0 text-left">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">ShareWay</p>
+                                    <h2 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter leading-none">{copy.centerTitle}</h2>
+                                    <p className="text-[11px] font-bold text-slate-500 mt-2 leading-relaxed">{copy.centerDesc}</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleRefresh}
+                                disabled={isRefreshing}
+                                className="size-12 rounded-2xl bg-slate-50 text-slate-500 flex items-center justify-center active:scale-95 transition-all disabled:opacity-50"
+                            >
+                                <RefreshCw className={cn('size-5', isRefreshing && 'animate-spin')} />
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2">
+                            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-left">
+                                <WalletIcon className="size-4 text-emerald-600 mb-2" />
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{copy.available}</p>
+                                <p className="text-sm font-black text-slate-900">{showBalance ? formattedBalance : '••••'}</p>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-left">
+                                <ShieldCheck className="size-4 text-amber-600 mb-2" />
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{copy.protectedFunds}</p>
+                                <p className="text-sm font-black text-slate-900">{showBalance ? `${heldBalance.toFixed(2)}€` : '•••'}</p>
+                            </div>
+                            <div className="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-left">
+                                <History className="size-4 text-primary mb-2" />
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{copy.movements}</p>
+                                <p className="text-sm font-black text-slate-900">{latestTransactions}</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 flex items-start gap-3">
+                            <Sparkles className="size-4 text-amber-600 mt-0.5 shrink-0" />
+                            <p className="text-[11px] font-bold text-amber-700 leading-relaxed">{copy.heldHint}</p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <Button type="button" onClick={() => navigate('/my-rides?tab=active')} className="h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                                <Route className="size-4 text-primary" /> {copy.myTrips}
+                            </Button>
+                            <Button type="button" onClick={() => navigate('/settings/payout')} variant="outline" className="h-14 rounded-2xl bg-white border-slate-200 text-slate-700 font-black uppercase tracking-widest text-[10px] gap-2">
+                                <CreditCard className="size-4 text-primary" /> {copy.paymentSettings}
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
                 <div className="space-y-6 text-left">
                     <div className="flex items-center justify-between px-2 text-left">
                         <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-2 italic"><History className="h-4 w-4 text-primary" /> {t('wallet.activity')}</h3>
+                        <button type="button" onClick={handleRefresh} className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-primary flex items-center gap-1">
+                            <RefreshCw className={cn('size-3', isRefreshing && 'animate-spin')} /> {copy.refresh}
+                        </button>
                     </div>
                     <div className="space-y-1">
-                        {transactions.length > 0 ? (transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)) : (<div className="bg-white/50 border border-slate-100 rounded-[3rem] p-20 text-center border-dashed"><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest italic">{t('wallet.no_transactions')}</p></div>)}
+                        {transactions.length > 0 ? (
+                            transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)
+                        ) : (
+                            <div className="bg-white border border-dashed border-slate-200 rounded-[3rem] p-10 text-center">
+                                <div className="size-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-5">
+                                    <History className="h-8 w-8 text-slate-200" />
+                                </div>
+                                <h3 className="text-sm font-black text-slate-900 uppercase italic mb-2">{copy.emptyTitle}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">{copy.emptyDesc}</p>
+                                <Button onClick={() => setIsModalOpen(true)} className="mt-7 rounded-2xl bg-primary font-black text-[10px] uppercase h-12 px-8 shadow-lg shadow-primary/20">
+                                    {t('wallet.add_funds')}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
