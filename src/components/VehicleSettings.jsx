@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button.jsx';
 import { Input } from '@/components/ui/input.jsx';
 import { Textarea } from '@/components/ui/textarea.jsx';
 import { Label } from '@/components/ui/label.jsx';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
 import {
   Baby,
   Camera,
@@ -80,6 +79,26 @@ const ToggleCard = ({ icon: Icon, label, description, active, onClick }) => (
   </button>
 );
 
+const ReadinessStep = ({ icon: Icon, title, description, completed }) => (
+  <div className={cn(
+    'rounded-3xl border p-4 text-left transition-all',
+    completed ? 'border-emerald-100 bg-emerald-50/70' : 'border-slate-100 bg-white'
+  )}>
+    <div className="flex items-start gap-3">
+      <div className={cn(
+        'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+        completed ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-400'
+      )}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-black uppercase italic tracking-tight text-slate-900">{title}</p>
+        <p className="mt-1 text-[10px] font-bold uppercase leading-4 tracking-widest text-slate-400">{description}</p>
+      </div>
+    </div>
+  </div>
+);
+
 const VehicleSettings = () => {
   const navigate = useNavigate();
   const { user, profile, refreshProfile } = useOutletContext();
@@ -109,6 +128,22 @@ const VehicleSettings = () => {
     const checks = [vehicle.make, vehicle.model, vehicle.color, vehicle.plate, vehicle.seats, vehicle.luggage];
     const completed = checks.filter(Boolean).length;
     return Math.round((completed / checks.length) * 100);
+  }, [vehicle]);
+
+  const readiness = useMemo(() => {
+    const basicsReady = Boolean(vehicle.make && vehicle.model && vehicle.color && vehicle.plate);
+    const capacityReady = Boolean(Number(vehicle.seats) > 0 && vehicle.luggage);
+    const rulesReady = Boolean(vehicle.kids || vehicle.ac || vehicle.pets || vehicle.smoking === false || vehicle.notes);
+    const completed = [basicsReady, capacityReady, rulesReady].filter(Boolean).length;
+
+    return {
+      completed,
+      total: 3,
+      basicsReady,
+      capacityReady,
+      rulesReady,
+      isReady: basicsReady && capacityReady,
+    };
   }, [vehicle]);
 
   const updateVehicle = (patch) => {
@@ -212,6 +247,39 @@ const VehicleSettings = () => {
       </header>
 
       <main className="mx-auto max-w-xl space-y-6 px-4 py-6 md:py-8">
+        <section className="rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Listo para publicar</p>
+              <h2 className="mt-2 text-2xl font-black uppercase italic leading-none tracking-tighter text-slate-900">
+                {readiness.isReady ? 'Vehículo preparado' : 'Completa tu coche'}
+              </h2>
+              <p className="mt-2 text-xs font-bold uppercase leading-5 tracking-widest text-slate-400">
+                {readiness.isReady ? 'Ya puedes publicar viajes con más confianza.' : 'Completa datos básicos y plazas para que el pasajero reserve tranquilo.'}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-slate-950 px-4 py-3 text-right text-white">
+              <p className="text-[8px] font-black uppercase tracking-widest text-white/40">Guía</p>
+              <p className="text-xl font-black text-primary">{readiness.completed}/{readiness.total}</p>
+            </div>
+          </div>
+
+          <div className="mt-6 grid grid-cols-1 gap-3">
+            <ReadinessStep icon={Car} title="Datos básicos" description="Marca, modelo, color y matrícula parcial" completed={readiness.basicsReady} />
+            <ReadinessStep icon={Users} title="Plazas y equipaje" description="Asientos disponibles y tamaño de maleta" completed={readiness.capacityReady} />
+            <ReadinessStep icon={ShieldCheck} title="Normas claras" description="Mascotas, niños, aire y notas para pasajeros" completed={readiness.rulesReady} />
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <Button type="button" onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-950 text-[10px] font-black uppercase tracking-widest text-white">
+              Publicar viaje
+            </Button>
+            <Button type="button" variant="outline" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-700">
+              Mis viajes
+            </Button>
+          </div>
+        </section>
+
         <section className="overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-2xl">
           <div className="relative aspect-[16/9] bg-slate-900">
             {previewUrl ? (
