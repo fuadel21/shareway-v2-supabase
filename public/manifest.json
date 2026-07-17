@@ -1,21 +1,47 @@
 {
   "short_name": "ShareWay",
-  "name": "ShareWay | Comparte taxi y trayectos",
-  "description": "Comparte taxi y trayectos con otros usuarios, ahorra en tus desplazamientos y muévete de forma más eficiente y segura.",
+  "name": "ShareWay | Comparte coche y trayectos",
+  "description": "Comparte coche y trayectos con personas con rutas compatibles. Ahorra en tus desplazamientos, reduce emisiones y viaja con más confianza.",
   "icons": [
     {
       "src": "/favicon.ico",
       "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "type": "image/x-icon",
+      "purpose": "any"
     }
   ],
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
   "theme_color": "#0f172a",
-  "background_color": "#ffffff",
+  "background_color": "#f8fafc",
   "orientation": "portrait",
   "lang": "es-ES",
   "dir": "ltr",
-  "categories": ["travel", "navigation", "transportation"]
+  "categories": ["travel", "navigation", "transportation", "social"],
+  "shortcuts": [
+    {
+      "name": "Publicar viaje",
+      "short_name": "Publicar",
+      "description": "Ofrece plazas para compartir coche.",
+      "url": "/publish",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+    },
+    {
+      "name": "Pedir plaza",
+      "short_name": "Pedir",
+      "description": "Crea una solicitud de trayecto compartido.",
+      "url": "/request",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+    },
+    {
+      "name": "Mis viajes",
+      "short_name": "Viajes",
+      "description": "Consulta tu actividad de viajes.",
+      "url": "/my-rides?tab=active",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+    }
+  ]
 }
