@@ -202,6 +202,68 @@ const injectRequestGuide = () => {
   form.prepend(wrapper);
 };
 
+const getCalendarCopy = () => {
+  const lang = document.documentElement.lang || navigator.language || 'es';
+  if (lang.startsWith('en')) {
+    return {
+      eyebrow: 'Calendar center',
+      title: 'Keep your rides under control',
+      desc: 'Review this month, open your trips, or create a new ride/request without leaving the agenda.',
+      myRides: 'My trips',
+      publish: 'Publish',
+      request: 'Request',
+    };
+  }
+  if (lang.startsWith('ar')) {
+    return {
+      eyebrow: 'مركز التقويم',
+      title: 'تحكم في رحلاتك',
+      desc: 'راجع الشهر وافتح رحلاتك أو أنشئ رحلة أو طلبًا جديدًا من التقويم.',
+      myRides: 'رحلاتي',
+      publish: 'نشر',
+      request: 'طلب',
+    };
+  }
+  return {
+    eyebrow: 'Centro de agenda',
+    title: 'Controla tus viajes del mes',
+    desc: 'Revisa el calendario, abre tus viajes o crea una publicación/solicitud sin salir de la agenda.',
+    myRides: 'Mis viajes',
+    publish: 'Publicar',
+    request: 'Pedir',
+  };
+};
+
+const injectCalendarCommandCenter = () => {
+  if (window.location.pathname !== '/calendar') return;
+  if (document.querySelector('[data-shareway-calendar-center]')) return;
+
+  const title = Array.from(document.querySelectorAll('h1')).find((node) => normalizeButtonText(node.textContent || '').includes('calendario'));
+  const headerCard = title?.closest?.('div.rounded-\[2rem\]');
+  const parent = headerCard?.parentElement;
+  if (!headerCard || !parent) return;
+
+  const copy = getCalendarCopy();
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute('data-shareway-calendar-center', 'true');
+  wrapper.className = 'rounded-[2rem] bg-slate-950 text-white p-5 shadow-xl lg:p-7 text-left';
+  wrapper.innerHTML = `
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <p class="text-[10px] font-black uppercase tracking-[0.3em] text-orange-400">${copy.eyebrow}</p>
+        <h2 class="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">${copy.title}</h2>
+        <p class="mt-2 text-xs font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
+      </div>
+      <button type="button" data-shareway-nav="/my-rides" class="shrink-0 h-11 px-3 rounded-2xl bg-white text-slate-950 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRides}</button>
+    </div>
+    <div class="mt-4 grid grid-cols-2 gap-2">
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white/10 text-white border border-white/10 text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.request}</button>
+    </div>
+  `;
+  headerCard.insertAdjacentElement('afterend', wrapper);
+};
+
 const GrowthPageTracker = () => {
   const location = useLocation();
 
@@ -254,6 +316,17 @@ const GrowthPageTracker = () => {
     if (location.pathname !== '/request') return undefined;
     const timer = window.setTimeout(injectRequestGuide, 350);
     const observer = new MutationObserver(() => injectRequestGuide());
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (location.pathname !== '/calendar') return undefined;
+    const timer = window.setTimeout(injectCalendarCommandCenter, 350);
+    const observer = new MutationObserver(() => injectCalendarCommandCenter());
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       window.clearTimeout(timer);
