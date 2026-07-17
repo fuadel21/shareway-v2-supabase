@@ -29,20 +29,13 @@ const hasAdminAccess = (profile) => {
   return profile?.is_admin === true || role === 'admin' || role === 'super_admin';
 };
 
-const getBasePath = (path = '') => path.split('?')[0];
+const isPathActive = (pathname, activePaths = []) => activePaths.some((path) => (
+  pathname === path || pathname.startsWith(`${path}/`)
+));
 
-const isNavPathActive = (pathname, to, activeMatchPaths = []) => {
-  const basePath = getBasePath(to);
-  if (pathname === basePath) return true;
-
-  return activeMatchPaths.some((matchPath) => (
-    pathname === matchPath || pathname.startsWith(`${matchPath}/`)
-  ));
-};
-
-const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpecial, activeMatchPaths = [] }) => {
+const NavItem = ({ to, activePaths, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
   const location = useLocation();
-  const isActive = isNavPathActive(location.pathname, to, activeMatchPaths);
+  const isActive = isPathActive(location.pathname, activePaths || [String(to).split('?')[0]]);
 
   return (
     <NavLink to={to} className={cn(
@@ -186,21 +179,21 @@ const MainLayout = (props) => {
   const isAdmin = context.isAdmin || hasAdminAccess(profile);
 
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary', activeMatchPaths: ['/dashboard'] },
-    { to: '/my-rides?tab=active', icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600', activeMatchPaths: ['/my-rides', '/ride', '/rides', '/ride-chat', '/leave-review'] },
-    { to: '/calendar', icon: CalendarDays, label: 'Agenda', color: 'text-blue-600', activeMatchPaths: ['/calendar'] },
-    { to: '/my-requests?tab=active', icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600', activeMatchPaths: ['/my-requests', '/request'] },
+    { to: '/dashboard', activePaths: ['/dashboard', '/'], icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
+    { to: '/my-rides?tab=active', activePaths: ['/my-rides', '/ride', '/leave-review'], icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
+    { to: '/calendar', activePaths: ['/calendar'], icon: CalendarDays, label: 'Agenda', color: 'text-blue-600' },
+    { to: '/my-requests?tab=active', activePaths: ['/my-requests', '/request'], icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600' },
     {
       to: '/chats',
+      activePaths: ['/chats', '/chat', '/rides'],
       icon: MessageSquare,
       label: t('nav.chat'),
       badge: unreadChats,
       color: 'text-emerald-500',
-      activeMatchPaths: ['/chats', '/chat', '/ride-chat'],
       isSpecial: true
     },
-    { to: '/wallet', icon: Wallet, label: t('nav.wallet'), color: 'text-amber-500', activeMatchPaths: ['/wallet', '/disputes'] },
-    { to: '/settings', icon: SettingsIcon, label: t('nav.settings'), color: 'text-indigo-600', activeMatchPaths: ['/settings', '/profile/edit', '/verification-center', '/edit-favorite-route'] },
+    { to: '/wallet', activePaths: ['/wallet'], icon: Wallet, label: t('nav.wallet'), color: 'text-amber-500' },
+    { to: '/settings', activePaths: ['/settings', '/profile/edit', '/verification-center', '/achievements', '/disputes'], icon: SettingsIcon, label: t('nav.settings'), color: 'text-indigo-600' },
   ];
 
   const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
