@@ -1,0 +1,22 @@
+@media (max-width: 639px) {
+  .max-w-xl.mx-auto form > .grid.grid-cols-2.gap-4 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .max-w-xl.mx-auto form .grid.grid-cols-3.gap-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .max-w-xl.mx-auto form .rounded-\[2\.5rem\],
+  .max-w-xl.mx-auto form .rounded-\[2rem\] {
+    border-radius: 1.65rem !important;
+  }
+
+  .max-w-xl.mx-auto form .p-8 {
+    padding: 1.25rem !important;
+  }
+
+  .max-w-xl.mx-auto form .p-6 {
+    padding: 1.15rem !important;
+  }
+}
