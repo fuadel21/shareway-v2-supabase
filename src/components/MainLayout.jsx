@@ -244,7 +244,7 @@ const MainLayout = (props) => {
 
       <main className={cn(
         "flex-1 relative",
-        isDashboard ? "overflow-hidden" : "pt-14 lg:pt-16 pb-24 lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
+        isDashboard ? "overflow-hidden" : "pt-14 lg:pt-16 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-32 overflow-y-auto overflow-x-hidden custom-scrollbar"
       )}>
         <div className={cn("mx-auto h-full", !isDashboard && "max-w-7xl")}>
           <Outlet context={{ ...context, unreadNotifications: unreadCount }} />
