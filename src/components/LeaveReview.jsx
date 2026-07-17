@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useOutletContext } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Textarea } from '@/components/ui/textarea.jsx';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
+import { Card, CardContent, CardHeader } from '@/components/ui/card.jsx';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar.jsx';
-import { Loader2, Star, MessageSquare, Send, Sparkles, UserCheck, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Loader2, Star, MessageSquare, Sparkles, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { submitReviewAndNotify } from '../services/rideNotificationBridge.js';
@@ -15,6 +15,14 @@ const getInitials = (name) => {
     return name.trim().split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().substring(0, 2);
 };
 
+const getRatingHint = (rating) => {
+    if (rating >= 5) return 'Excelente experiencia';
+    if (rating === 4) return 'Muy buen viaje';
+    if (rating === 3) return 'Correcto, con detalles';
+    if (rating > 0) return 'Cuéntanos qué ocurrió';
+    return 'Toca las estrellas para puntuar';
+};
+
 const StarRating = ({ rating, setRating }) => (
     <div className="flex items-center gap-3">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -23,12 +31,41 @@ const StarRating = ({ rating, setRating }) => (
                 type="button"
                 className="focus:outline-none transition-all hover:scale-125 active:scale-90"
                 onClick={() => setRating(star)}
+                aria-label={`Puntuar ${star} estrellas`}
             >
                 <Star
                     className={`h-10 w-10 ${rating >= star ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]' : 'text-gray-200'}`}
                 />
             </button>
         ))}
+    </div>
+);
+
+const ReviewGuidance = ({ rating, commentLength }) => (
+    <div className="rounded-[2rem] bg-amber-50/70 border border-amber-100 p-5 space-y-4 text-left">
+        <div className="flex items-start gap-3">
+            <div className="h-11 w-11 rounded-2xl bg-white text-amber-500 flex items-center justify-center shadow-sm shrink-0">
+                <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-600">Valoración justa</p>
+                <p className="mt-1 text-xs font-bold text-slate-600 leading-5 italic">
+                    Ayuda a otros usuarios explicando puntualidad, comunicación y respeto durante el viaje.
+                </p>
+            </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+            {['Puntualidad', 'Comunicación', 'Respeto'].map((item) => (
+                <div key={item} className="rounded-2xl bg-white px-3 py-3 text-center shadow-sm border border-amber-100/60">
+                    <CheckCircle2 className="mx-auto mb-1 h-4 w-4 text-emerald-500" />
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{item}</p>
+                </div>
+            ))}
+        </div>
+        <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 border border-amber-100/60">
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{getRatingHint(rating)}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{commentLength}/500</span>
+        </div>
     </div>
 );
 
@@ -145,18 +182,21 @@ const LeaveReview = () => {
                     </CardHeader>
 
                     <CardContent className="p-8 space-y-10 -mt-8 bg-white rounded-t-[3rem] relative z-20">
-                        <div className="flex flex-col items-center space-y-4 pt-4">
+                        <ReviewGuidance rating={rating} commentLength={comment.length} />
+
+                        <div className="flex flex-col items-center space-y-4 pt-2">
                             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Puntuación del viaje</p>
                             <StarRating rating={rating} setRating={setRating} />
+                            <p className="text-xs font-black text-primary uppercase tracking-widest">{getRatingHint(rating)}</p>
                         </div>
 
                         <div className="space-y-4">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
-                                <MessageSquare className="h-4 w-4 text-primary" />
-                                <span>Tu Experiencia</span>
+                            <div className="flex items-center justify-between gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
+                                <span className="flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Tu Experiencia</span>
+                                <span>{comment.length}/500</span>
                             </div>
                             <Textarea
-                                placeholder={`¿Cómo fue el viaje? (Máx. 500 caracteres)`}
+                                placeholder={`¿Cómo fue el viaje? Ejemplo: puntual, buena comunicación, conducción tranquila...`}
                                 className="min-h-[150px] p-6 rounded-[2rem] border-none bg-slate-50 font-medium transition-all shadow-inner focus-visible:ring-primary"
                                 value={comment}
                                 maxLength={500}
