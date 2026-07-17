@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, startOfMonth, startOfWeek, subMonths } from 'date-fns';
+import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CalendarDays, Car, ChevronLeft, ChevronRight, Clock, Loader2, MapPin, Plus, Search, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent } from '@/components/ui/card.jsx';
 import { cn } from '@/lib/utils.js';
-import { getTripCalendarEvents, getUpcomingEvents, groupEventsByDate } from '@/services/calendarService.js';
+import { getLocalDateKey, getTripCalendarEvents, getUpcomingEvents, groupEventsByDate } from '@/services/calendarService.js';
 
 const STATUS_STYLES = {
   scheduled: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -39,6 +39,14 @@ const formatTime = (value) => {
     return format(new Date(value), 'HH:mm');
   } catch {
     return '--:--';
+  }
+};
+
+const parseLocalDateKey = (value) => {
+  try {
+    return parseISO(value);
+  } catch {
+    return new Date();
   }
 };
 
@@ -92,7 +100,7 @@ export default function TripCalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(getLocalDateKey(new Date()));
   const navigate = useNavigate();
 
   const monthRange = useMemo(() => ({
@@ -124,6 +132,7 @@ export default function TripCalendarPage() {
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
   const upcomingEvents = useMemo(() => getUpcomingEvents(events, 6), [events]);
   const selectedEvents = groupedEvents[selectedDate] || [];
+  const selectedDateObject = useMemo(() => parseLocalDateKey(selectedDate), [selectedDate]);
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 });
@@ -182,7 +191,7 @@ export default function TripCalendarPage() {
 
               <div className="mt-2 grid grid-cols-7 gap-1 sm:gap-2">
                 {days.map((day) => {
-                  const key = day.toISOString().slice(0, 10);
+                  const key = getLocalDateKey(day);
                   const dayEvents = groupedEvents[key] || [];
                   const active = key === selectedDate;
                   const inMonth = isSameMonth(day, currentMonth);
@@ -228,7 +237,7 @@ export default function TripCalendarPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">Próximo día seleccionado</p>
-                    <h2 className="text-xl font-black uppercase italic tracking-tighter">{format(new Date(selectedDate), "d 'de' MMMM", { locale: es })}</h2>
+                    <h2 className="text-xl font-black uppercase italic tracking-tighter">{format(selectedDateObject, "d 'de' MMMM", { locale: es })}</h2>
                   </div>
                 </div>
 

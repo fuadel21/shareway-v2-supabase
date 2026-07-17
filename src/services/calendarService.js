@@ -1,4 +1,11 @@
+import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase.js';
+
+export const getLocalDateKey = (value) => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return format(date, 'yyyy-MM-dd');
+};
 
 const normalizeRide = (ride, userId) => ({
   id: ride.id,
@@ -76,7 +83,8 @@ export const getTripCalendarEvents = async (userId, { from, to } = {}) => {
 };
 
 export const groupEventsByDate = (events = []) => events.reduce((acc, event) => {
-  const key = new Date(event.startsAt).toISOString().slice(0, 10);
+  const key = getLocalDateKey(event.startsAt);
+  if (!key) return acc;
   if (!acc[key]) acc[key] = [];
   acc[key].push(event);
   return acc;
