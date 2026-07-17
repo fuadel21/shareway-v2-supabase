@@ -168,8 +168,8 @@
 
 /* Formularios principales: Publicar viaje y Pedir plaza en una columna en móvil. */
 @media (max-width: 639px) {
-  .max-w-xl.mx-auto form > .grid.grid-cols-2.gap-4,
-  .max-w-xl.mx-auto form .grid.grid-cols-3.gap-2 {
+  div[class*="min-h-screen"][class*="pb-32"] > main.max-w-xl.mx-auto form > .grid.grid-cols-2.gap-4,
+  div[class*="min-h-screen"][class*="pb-32"] > main.max-w-xl.mx-auto form .grid.grid-cols-3.gap-2 {
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
