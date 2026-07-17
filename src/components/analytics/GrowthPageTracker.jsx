@@ -75,13 +75,20 @@ const getRequestTabLabel = (tab) => {
   return ['activas', 'active', 'النشطة'];
 };
 
-const clickTabByLabels = (labels) => {
+const clickTabByLabels = (labels, attempts = 8) => {
   const tabButton = Array.from(document.querySelectorAll('button')).find((button) => {
     const text = normalizeButtonText(button.textContent || '');
     return labels.some((label) => text.includes(normalizeButtonText(label)));
   });
 
-  tabButton?.click?.();
+  if (tabButton) {
+    tabButton.click?.();
+    return;
+  }
+
+  if (attempts > 0) {
+    window.setTimeout(() => clickTabByLabels(labels, attempts - 1), 250);
+  }
 };
 
 const getActivityCopy = () => {
@@ -89,24 +96,30 @@ const getActivityCopy = () => {
   if (lang.startsWith('en')) {
     return {
       title: 'What do you want to do now?',
-      desc: 'Create a ride or request a seat to start seeing activity here.',
+      desc: 'Create a ride, request a seat, check your calendar or open messages to keep moving.',
       publish: 'Publish ride',
       request: 'Request seat',
+      calendar: 'Calendar',
+      chats: 'Messages',
     };
   }
   if (lang.startsWith('ar')) {
     return {
       title: 'ماذا تريد أن تفعل الآن؟',
-      desc: 'انشر رحلة أو أنشئ طلبًا لبدء ظهور النشاط هنا.',
+      desc: 'انشر رحلة أو أنشئ طلبًا أو افتح التقويم والرسائل لمتابعة نشاطك.',
       publish: 'نشر رحلة',
       request: 'طلب مقعد',
+      calendar: 'التقويم',
+      chats: 'الرسائل',
     };
   }
   return {
     title: '¿Qué quieres hacer ahora?',
-    desc: 'Publica un viaje o pide plaza para empezar a ver actividad aquí.',
+    desc: 'Publica un viaje, pide plaza, revisa el calendario o abre mensajes para seguir con tu actividad.',
     publish: 'Publicar viaje',
     request: 'Pedir plaza',
+    calendar: 'Calendario',
+    chats: 'Mensajes',
   };
 };
 
@@ -133,6 +146,67 @@ const injectActivityEmptyStateCtas = () => {
     <div class="grid grid-cols-2 gap-2">
       <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
       <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.request}</button>
+      <button type="button" data-shareway-nav="/calendar" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.calendar}</button>
+      <button type="button" data-shareway-nav="/chats" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.chats}</button>
+    </div>
+  `;
+  card.appendChild(wrapper);
+};
+
+const getRequestEmptyCopy = () => {
+  const lang = document.documentElement.lang || navigator.language || 'es';
+  if (lang.startsWith('en')) {
+    return {
+      title: 'No requests here yet',
+      desc: 'Use requests when you do not find a matching ride. Drivers can see your route and respond.',
+      newRequest: 'New request',
+      active: 'Active requests',
+      rides: 'My trips',
+    };
+  }
+  if (lang.startsWith('ar')) {
+    return {
+      title: 'لا توجد طلبات هنا بعد',
+      desc: 'استخدم الطلبات عندما لا تجد رحلة مناسبة. يمكن للسائقين رؤية مسارك والرد عليك.',
+      newRequest: 'طلب جديد',
+      active: 'الطلبات النشطة',
+      rides: 'رحلاتي',
+    };
+  }
+  return {
+    title: 'Aún no hay solicitudes aquí',
+    desc: 'Usa las solicitudes cuando no encuentres un viaje. Los conductores podrán ver tu ruta y responderte.',
+    newRequest: 'Nueva solicitud',
+    active: 'Solicitudes activas',
+    rides: 'Mis viajes',
+  };
+};
+
+const injectRequestEmptyStateCtas = () => {
+  if (window.location.pathname !== '/my-requests') return;
+  const emptyTitle = Array.from(document.querySelectorAll('h3, p')).find((node) => {
+    const text = normalizeButtonText(node.textContent || '');
+    return text.includes('sin solicitudes') || text.includes('no requests') || text.includes('لا توجد طلبات');
+  });
+
+  const card = emptyTitle?.closest?.('div');
+  if (!card || card.querySelector('[data-shareway-empty-requests]')) return;
+
+  const copy = getRequestEmptyCopy();
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute('data-shareway-empty-requests', 'true');
+  wrapper.className = 'mt-6 space-y-3';
+  wrapper.innerHTML = `
+    <div class="rounded-3xl bg-slate-950 text-white px-5 py-4 shadow-xl text-left">
+      <p class="text-[10px] font-black uppercase tracking-[0.22em] text-orange-400">ShareWay</p>
+      <h4 class="mt-1 text-base font-black italic uppercase tracking-tight">${copy.title}</h4>
+      <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.newRequest}</button>
+      <button type="button" data-shareway-nav="/my-requests?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.active}</button>
+      <button type="button" data-shareway-nav="/my-rides?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.rides}</button>
+      <button type="button" data-shareway-nav="/dashboard" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">Dashboard</button>
     </div>
   `;
   card.appendChild(wrapper);
@@ -254,7 +328,7 @@ const injectCalendarCommandCenter = () => {
         <h2 class="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">${copy.title}</h2>
         <p class="mt-2 text-xs font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
       </div>
-      <button type="button" data-shareway-nav="/my-rides" class="shrink-0 h-11 px-3 rounded-2xl bg-white text-slate-950 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRides}</button>
+      <button type="button" data-shareway-nav="/my-rides?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-white text-slate-950 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRides}</button>
     </div>
     <div class="mt-4 grid grid-cols-2 gap-2">
       <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
@@ -284,7 +358,7 @@ const GrowthPageTracker = () => {
 
     const timer = window.setTimeout(() => {
       clickTabByLabels(getActivityTabLabel(targetTab));
-    }, 250);
+    }, 150);
 
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.search]);
@@ -296,7 +370,7 @@ const GrowthPageTracker = () => {
 
     const timer = window.setTimeout(() => {
       clickTabByLabels(getRequestTabLabel(targetTab));
-    }, 250);
+    }, 150);
 
     return () => window.clearTimeout(timer);
   }, [location.pathname, location.search]);
@@ -305,6 +379,17 @@ const GrowthPageTracker = () => {
     if (location.pathname !== '/my-rides') return undefined;
     const timer = window.setTimeout(injectActivityEmptyStateCtas, 350);
     const observer = new MutationObserver(() => injectActivityEmptyStateCtas());
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      window.clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (location.pathname !== '/my-requests') return undefined;
+    const timer = window.setTimeout(injectRequestEmptyStateCtas, 350);
+    const observer = new MutationObserver(() => injectRequestEmptyStateCtas());
     observer.observe(document.body, { childList: true, subtree: true });
     return () => {
       window.clearTimeout(timer);
