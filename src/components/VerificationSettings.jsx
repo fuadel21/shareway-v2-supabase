@@ -92,7 +92,7 @@ function VerificationSettings() {
         if (!profile?.phone) {
             return toast.warning(t('verification.phone_missing'), {
                 description: t('verification.phone_missing_desc'),
-                action: { label: t('common.save'), onClick: () => navigate('/edit-profile') },
+                action: { label: t('common.save'), onClick: () => navigate('/profile/edit?section=personal') },
             });
         }
 
@@ -204,6 +204,25 @@ function VerificationSettings() {
                         <p className="text-xs font-bold text-slate-600 leading-relaxed italic">
                             {t('verification.benefit_info')}
                         </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => navigate('/profile/edit?section=personal')}
+                            className="h-14 rounded-2xl border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-700"
+                        >
+                            Editar perfil
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => navigate('/settings/security')}
+                            className="h-14 rounded-2xl border-slate-200 bg-white text-[10px] font-black uppercase tracking-widest text-slate-700"
+                        >
+                            Seguridad
+                        </Button>
                     </div>
                 </Card>
 
