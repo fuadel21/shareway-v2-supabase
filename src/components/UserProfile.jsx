@@ -31,6 +31,24 @@ const copyByLanguage = {
         premiumTransport: 'Transporte Premium',
         standard: 'Estándar',
         testimonials: 'Testimonios Corales',
+        trustTitle: 'Confianza del perfil',
+        trustReady: 'Perfil fuerte para compartir viaje',
+        trustPending: 'Perfil en progreso',
+        trustDescReady: 'Este perfil ya muestra señales clave antes de reservar.',
+        trustDescPending: 'Completar estos puntos ayuda a que otros usuarios reserven con más tranquilidad.',
+        verified: 'Verificación',
+        verifiedOk: 'Identidad verificada',
+        verifiedPending: 'Pendiente de verificación',
+        ridesSignal: 'Historial',
+        ridesOk: 'Tiene viajes registrados',
+        ridesPending: 'Aún sin viajes',
+        vehicleSignal: 'Vehículo',
+        vehicleOk: 'Vehículo visible',
+        vehiclePending: 'Vehículo pendiente',
+        bioSignal: 'Presentación',
+        bioOk: 'Biografía añadida',
+        bioPending: 'Añadir biografía',
+        editProfile: 'Editar perfil',
         locale: 'es-ES'
     },
     en: {
@@ -48,6 +66,24 @@ const copyByLanguage = {
         premiumTransport: 'Premium Transport',
         standard: 'Standard',
         testimonials: 'Community Testimonials',
+        trustTitle: 'Profile trust',
+        trustReady: 'Strong ride-sharing profile',
+        trustPending: 'Profile in progress',
+        trustDescReady: 'This profile already shows key trust signals before booking.',
+        trustDescPending: 'Completing these points helps other users book with more confidence.',
+        verified: 'Verification',
+        verifiedOk: 'Identity verified',
+        verifiedPending: 'Verification pending',
+        ridesSignal: 'History',
+        ridesOk: 'Has ride history',
+        ridesPending: 'No rides yet',
+        vehicleSignal: 'Vehicle',
+        vehicleOk: 'Vehicle visible',
+        vehiclePending: 'Vehicle pending',
+        bioSignal: 'Intro',
+        bioOk: 'Bio added',
+        bioPending: 'Add a bio',
+        editProfile: 'Edit profile',
         locale: 'en-US'
     },
     ar: {
@@ -65,6 +101,24 @@ const copyByLanguage = {
         premiumTransport: 'نقل مميز',
         standard: 'قياسي',
         testimonials: 'آراء المجتمع',
+        trustTitle: 'ثقة الملف',
+        trustReady: 'ملف قوي لمشاركة الرحلات',
+        trustPending: 'الملف قيد الإكمال',
+        trustDescReady: 'يعرض هذا الملف إشارات ثقة مهمة قبل الحجز.',
+        trustDescPending: 'إكمال هذه النقاط يساعد الآخرين على الحجز بثقة أكبر.',
+        verified: 'التحقق',
+        verifiedOk: 'الهوية موثقة',
+        verifiedPending: 'التحقق معلق',
+        ridesSignal: 'السجل',
+        ridesOk: 'لديه رحلات مسجلة',
+        ridesPending: 'لا توجد رحلات بعد',
+        vehicleSignal: 'المركبة',
+        vehicleOk: 'المركبة ظاهرة',
+        vehiclePending: 'المركبة غير مكتملة',
+        bioSignal: 'التعريف',
+        bioOk: 'تمت إضافة نبذة',
+        bioPending: 'أضف نبذة',
+        editProfile: 'تعديل الملف',
         locale: 'ar-SA'
     }
 };
@@ -82,6 +136,24 @@ const StatCard = ({ icon: Icon, value, label, color }) => (
         </div>
         <p className="font-black text-lg text-slate-900 leading-none">{value}</p>
         <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+    </div>
+);
+
+const TrustSignal = ({ active, label, detail, icon: Icon }) => (
+    <div className={cn(
+        'rounded-3xl border p-4 flex items-start gap-3 transition-all',
+        active ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-100'
+    )}>
+        <div className={cn(
+            'h-10 w-10 rounded-2xl flex items-center justify-center shrink-0',
+            active ? 'bg-emerald-500 text-white' : 'bg-white text-slate-300'
+        )}>
+            <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 text-left">
+            <p className={cn('text-[10px] font-black uppercase tracking-widest', active ? 'text-emerald-700' : 'text-slate-400')}>{label}</p>
+            <p className="text-xs font-bold text-slate-700 leading-5">{detail}</p>
+        </div>
     </div>
 );
 
@@ -166,6 +238,23 @@ function UserProfile() {
         return config[tier] || config.Seed;
     }, [profile.eco_tier]);
 
+    const trustSignals = useMemo(() => {
+        const hasVehicle = Boolean(profile.vehicle?.make || profile.vehicle?.model || profile.vehicle?.photoURL);
+        const hasRides = Number(profile.rides_count || 0) > 0;
+        const isVerified = profile.verification_status === 'verified';
+        const hasBio = Boolean(String(profile.bio || '').trim());
+        const signals = [
+            { key: 'verified', active: isVerified, label: copy.verified, detail: isVerified ? copy.verifiedOk : copy.verifiedPending, icon: ShieldCheck },
+            { key: 'rides', active: hasRides, label: copy.ridesSignal, detail: hasRides ? copy.ridesOk : copy.ridesPending, icon: TrendingUp },
+            { key: 'vehicle', active: hasVehicle, label: copy.vehicleSignal, detail: hasVehicle ? copy.vehicleOk : copy.vehiclePending, icon: Car },
+            { key: 'bio', active: hasBio, label: copy.bioSignal, detail: hasBio ? copy.bioOk : copy.bioPending, icon: Info }
+        ];
+        return {
+            signals,
+            completed: signals.filter((signal) => signal.active).length
+        };
+    }, [profile, copy]);
+
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="h-10 w-10 animate-spin text-primary opacity-20" /></div>;
 
     return (
@@ -220,6 +309,34 @@ function UserProfile() {
                     <StatCard icon={Leaf} value={parseFloat(profile.total_co2_saved).toFixed(1)} label="kg CO2" color="bg-emerald-50 text-emerald-600" />
                     <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label={copy.statLevel} color={ecoSystem.color} />
                 </div>
+
+                <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 space-y-5">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="text-left">
+                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">{copy.trustTitle}</p>
+                            <h3 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 leading-none">
+                                {trustSignals.completed >= 3 ? copy.trustReady : copy.trustPending}
+                            </h3>
+                            <p className="text-xs font-bold text-slate-400 leading-5 mt-2">
+                                {trustSignals.completed >= 3 ? copy.trustDescReady : copy.trustDescPending}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-950 px-4 py-3 text-center shrink-0">
+                            <p className="text-[8px] font-black uppercase tracking-widest text-white/40">Trust</p>
+                            <p className="text-xl font-black text-primary">{trustSignals.completed}/4</p>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3">
+                        {trustSignals.signals.map((signal) => (
+                            <TrustSignal key={signal.key} {...signal} />
+                        ))}
+                    </div>
+                    {isOwnProfile && trustSignals.completed < 4 && (
+                        <Button onClick={() => navigate('/profile/edit')} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest">
+                            {copy.editProfile}
+                        </Button>
+                    )}
+                </section>
 
                 {profile.bio && (
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
