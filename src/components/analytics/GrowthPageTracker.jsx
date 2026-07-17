@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { trackGrowthEvent, trackPageView } from '@/lib/growthAnalytics.js';
 
 const getSeoPageType = (path) => {
@@ -340,6 +340,7 @@ const injectCalendarCommandCenter = () => {
 
 const GrowthPageTracker = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const pageType = getSeoPageType(location.pathname);
@@ -420,12 +421,27 @@ const GrowthPageTracker = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
+    const navigateInsideApp = (target) => {
+      if (!target) return;
+      try {
+        const url = new URL(target, window.location.origin);
+        if (url.origin === window.location.origin) {
+          navigate(`${url.pathname}${url.search}${url.hash}`);
+          return;
+        }
+      } catch (error) {
+        navigate(target);
+        return;
+      }
+      window.location.assign(target);
+    };
+
     const handleClick = (event) => {
       const injectedNav = event.target?.closest?.('[data-shareway-nav]');
       if (injectedNav) {
         event.preventDefault();
         event.stopPropagation();
-        window.location.assign(injectedNav.getAttribute('data-shareway-nav'));
+        navigateInsideApp(injectedNav.getAttribute('data-shareway-nav'));
         return;
       }
 
@@ -435,7 +451,7 @@ const GrowthPageTracker = () => {
         if (target) {
           event.preventDefault();
           event.stopPropagation();
-          window.location.assign(target);
+          navigateInsideApp(target);
           return;
         }
       }
@@ -470,7 +486,7 @@ const GrowthPageTracker = () => {
 
     document.addEventListener('click', handleClick, { capture: true });
     return () => document.removeEventListener('click', handleClick, { capture: true });
-  }, []);
+  }, [navigate]);
 
   return null;
 };
