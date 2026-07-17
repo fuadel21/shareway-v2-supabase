@@ -29,9 +29,13 @@ const hasAdminAccess = (profile) => {
   return profile?.is_admin === true || role === 'admin' || role === 'super_admin';
 };
 
-const NavItem = ({ to, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
+const isPathActive = (pathname, activePaths = []) => activePaths.some((path) => (
+  pathname === path || pathname.startsWith(`${path}/`)
+));
+
+const NavItem = ({ to, activePaths, icon: Icon, label, badge, isDesktop, activeColor, isSpecial }) => {
   const location = useLocation();
-  const isActive = location.pathname === to;
+  const isActive = isPathActive(location.pathname, activePaths || [String(to).split('?')[0]]);
 
   return (
     <NavLink to={to} className={cn(
@@ -175,20 +179,21 @@ const MainLayout = (props) => {
   const isAdmin = context.isAdmin || hasAdminAccess(profile);
 
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
-    { to: '/my-rides', icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
-    { to: '/calendar', icon: CalendarDays, label: 'Agenda', color: 'text-blue-600' },
-    { to: '/my-requests', icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600' },
+    { to: '/dashboard', activePaths: ['/dashboard', '/'], icon: LayoutDashboard, label: t('nav.explore'), color: 'text-primary' },
+    { to: '/my-rides?tab=active', activePaths: ['/my-rides', '/ride', '/leave-review'], icon: Car, label: t('nav.my_rides'), color: 'text-emerald-600' },
+    { to: '/calendar', activePaths: ['/calendar'], icon: CalendarDays, label: 'Agenda', color: 'text-blue-600' },
+    { to: '/my-requests?tab=active', activePaths: ['/my-requests', '/request'], icon: CheckCircle2, label: t('dashboard.filter_requests'), color: 'text-orange-600' },
     {
       to: '/chats',
+      activePaths: ['/chats', '/chat', '/rides'],
       icon: MessageSquare,
       label: t('nav.chat'),
       badge: unreadChats,
       color: 'text-emerald-500',
       isSpecial: true
     },
-    { to: '/wallet', icon: Wallet, label: t('nav.wallet'), color: 'text-amber-500' },
-    { to: '/settings', icon: SettingsIcon, label: t('nav.settings'), color: 'text-indigo-600' },
+    { to: '/wallet', activePaths: ['/wallet'], icon: Wallet, label: t('nav.wallet'), color: 'text-amber-500' },
+    { to: '/settings', activePaths: ['/settings', '/profile/edit', '/verification-center', '/achievements', '/disputes'], icon: SettingsIcon, label: t('nav.settings'), color: 'text-indigo-600' },
   ];
 
   const isDashboard = location.pathname === '/dashboard' || location.pathname === '/';
@@ -208,8 +213,8 @@ const MainLayout = (props) => {
           <Button onClick={() => navigate('/calendar')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CalendarDays size={14} />Agenda</Button>
           <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
           <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-widest text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
-          <Button onClick={() => navigate('/my-rides')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
-          <Button onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CheckCircle2 size={14} />{t('dashboard.filter_requests')}</Button>
+          <Button onClick={() => navigate('/my-rides?tab=active')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
+          <Button onClick={() => navigate('/my-requests?tab=active')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-widest gap-2"><CheckCircle2 size={14} />{t('dashboard.filter_requests')}</Button>
         </div>
 
         <div className="flex items-center gap-2 lg:gap-3">
