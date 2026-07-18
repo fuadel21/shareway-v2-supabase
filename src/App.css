@@ -215,3 +215,47 @@
     width: 100% !important;
   }
 }
+
+/* Pack móvil: pulido grande para pantallas pequeñas sin tocar lógica. */
+@media (max-width: 639px) {
+  .no-scrollbar,
+  [class*="overflow-x-auto"] {
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+  }
+
+  .no-scrollbar > *,
+  [class*="overflow-x-auto"] > * {
+    scroll-snap-align: start;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 {
+    padding-bottom: calc(10rem + env(safe-area-inset-bottom)) !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl > div[class*="space-y"] {
+    scroll-margin-bottom: calc(7rem + env(safe-area-inset-bottom));
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .text-center.py-20,
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .text-center.py-24 {
+    padding-top: 3.5rem !important;
+    padding-bottom: 3.5rem !important;
+    border-radius: 2rem !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl button {
+    min-height: 2.75rem;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .sticky.top-0,
+  .bg-slate-50.min-h-screen.pb-40 header.sticky {
+    top: env(safe-area-inset-top) !important;
+  }
+}
