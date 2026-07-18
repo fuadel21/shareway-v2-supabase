@@ -259,3 +259,54 @@
     top: env(safe-area-inset-top) !important;
   }
 }
+
+/* Formularios y modales: mejor comportamiento con teclado móvil. */
+@media (max-width: 639px) {
+  form {
+    scroll-margin-bottom: calc(8rem + env(safe-area-inset-bottom));
+  }
+
+  form input,
+  form select,
+  form textarea {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  form textarea {
+    min-height: 7rem;
+    resize: vertical;
+  }
+
+  .max-w-xl.mx-auto form > *,
+  .max-w-xl.mx-auto form [class*="grid"],
+  .max-w-xl.mx-auto form [class*="flex"] {
+    min-width: 0;
+  }
+
+  .max-w-xl.mx-auto form .flex.items-center.justify-between {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  form button[type="submit"],
+  form button[class*="bg-primary"],
+  form button[class*="bg-slate-900"] {
+    min-height: 3rem;
+  }
+
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: calc(100dvh - 2rem) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .fixed.inset-0 [role="dialog"],
+  .fixed.inset-0 [data-radix-dialog-content] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
