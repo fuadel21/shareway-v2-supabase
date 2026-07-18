@@ -189,3 +189,18 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* Mis solicitudes: las tarjetas respiran mejor en móvil. */
+@media (max-width: 639px) {
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .px-6.pb-6.pt-0.grid.grid-cols-3.gap-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .px-6.pb-6.pt-0.grid.grid-cols-3.gap-2 > div:last-child {
+    justify-content: stretch !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .px-6.pb-6.pt-0.grid.grid-cols-3.gap-2 > div:last-child button {
+    width: 100% !important;
+  }
+}
