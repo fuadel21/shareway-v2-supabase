@@ -11,7 +11,7 @@
     }
   ],
   "id": "/",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
@@ -22,6 +22,13 @@
   "dir": "ltr",
   "categories": ["travel", "navigation", "transportation", "social"],
   "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Inicio",
+      "description": "Abre tu panel principal de ShareWay.",
+      "url": "/dashboard",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+    },
     {
       "name": "Publicar viaje",
       "short_name": "Publicar",
