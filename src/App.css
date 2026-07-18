@@ -173,3 +173,19 @@
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Estabilidad móvil: evita zoom accidental y mejora la respuesta táctil. */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
