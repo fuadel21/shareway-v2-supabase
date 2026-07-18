@@ -204,3 +204,14 @@
     width: 100% !important;
   }
 }
+
+/* Mis viajes: acciones rápidas de cada tarjeta en una columna en móvil. */
+@media (max-width: 639px) {
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .p-6.space-y-4 .grid.grid-cols-2.gap-2 {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl .p-6.space-y-4 .grid.grid-cols-2.gap-2 button {
+    width: 100% !important;
+  }
+}
