@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import './i18n/rtl.css';
+import './styles/mobile-navigation-polish.css';
 import './i18n/config';
 import App from "./App.jsx";
 import RideEmergencyQuickAction from "./components/RideEmergencyQuickAction.jsx";
