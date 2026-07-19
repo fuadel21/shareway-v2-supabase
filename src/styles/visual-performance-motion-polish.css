@@ -1,0 +1,66 @@
+/* Visual performance and motion polish: safer rendering without touching app logic. */
+@media (max-width: 1023px) {
+  .bg-white\/80,
+  .bg-white\/90,
+  .bg-white\/95,
+  .backdrop-blur-xl,
+  .backdrop-blur-2xl,
+  .backdrop-blur-3xl {
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .shadow-2xl,
+  .shadow-xl {
+    will-change: auto;
+  }
+
+  main.flex-1.relative:not(.overflow-hidden) {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  main.flex-1.relative:not(.overflow-hidden) article,
+  main.flex-1.relative:not(.overflow-hidden) section,
+  main.flex-1.relative:not(.overflow-hidden) [class*="rounded-3xl"],
+  main.flex-1.relative:not(.overflow-hidden) [class*="rounded-2xl"] {
+    contain: layout paint;
+  }
+
+  [class*="transition-all"] {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  }
+}
+
+@media (min-width: 640px) {
+  main.flex-1.relative:not(.overflow-hidden) [class*="space-y"] > *,
+  main.flex-1.relative:not(.overflow-hidden) .grid > * {
+    content-visibility: auto;
+    contain-intrinsic-size: 1px 220px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [class*="animate-"],
+  [class*="transition-"],
+  [class*="hover:scale"],
+  [class*="active:scale"] {
+    transform: none !important;
+  }
+}
+
+@supports not (content-visibility: auto) {
+  main.flex-1.relative:not(.overflow-hidden) [class*="space-y"] > *,
+  main.flex-1.relative:not(.overflow-hidden) .grid > * {
+    contain: layout paint;
+  }
+}
