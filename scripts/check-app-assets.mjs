@@ -13,13 +13,6 @@ const requireFile = (filePath, reason) => {
   }
 };
 
-const requireIncludes = (filePath, value, reason) => {
-  const content = read(filePath);
-  if (!content.includes(value)) {
-    failures.push(`${filePath} must include ${value}: ${reason}`);
-  }
-};
-
 const mainPath = 'src/main.jsx';
 const main = read(mainPath);
 const importRegex = /import\s+['"](\.\/[A-Za-z0-9_./-]+\.css)['"];?/g;
@@ -44,7 +37,9 @@ const expectedCssImports = [
 ];
 
 for (const importPath of expectedCssImports) {
-  requireIncludes(mainPath, `import '${importPath}'`, 'keep responsive/polish CSS layers loaded');
+  if (!cssImports.includes(importPath)) {
+    failures.push(`${mainPath} must import ${importPath}: keep responsive/polish CSS layers loaded`);
+  }
 }
 
 const publicFiles = [
