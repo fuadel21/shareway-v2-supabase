@@ -1,0 +1,81 @@
+/* Responsive tablet/desktop polish: isolated CSS layer for safer large UI iteration. */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .max-w-xl {
+    max-width: min(42rem, calc(100vw - 2rem)) !important;
+  }
+
+  .max-w-7xl {
+    max-width: min(72rem, calc(100vw - 2rem)) !important;
+  }
+
+  main.flex-1.relative:not(.overflow-hidden) {
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 5rem;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl,
+  .bg-slate-50.min-h-screen.pb-32 main.max-w-xl {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  form .grid.grid-cols-2,
+  form .grid.grid-cols-3 {
+    gap: 1rem !important;
+  }
+
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    max-width: min(42rem, calc(100vw - 3rem)) !important;
+    max-height: calc(100dvh - 3rem) !important;
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .max-w-xl {
+    max-width: 40rem !important;
+  }
+
+  .max-w-7xl {
+    max-width: min(80rem, calc(100vw - 3rem)) !important;
+  }
+
+  main.flex-1.relative:not(.overflow-hidden) {
+    scroll-padding-top: 5.5rem;
+    scroll-padding-bottom: 5.5rem;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl,
+  .bg-slate-50.min-h-screen.pb-32 main.max-w-xl {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+  }
+
+  .bg-slate-50.min-h-screen.pb-40 main.max-w-xl > div,
+  .bg-slate-50.min-h-screen.pb-32 main.max-w-xl > div {
+    border-radius: 1.75rem;
+  }
+
+  form .grid.grid-cols-2,
+  form .grid.grid-cols-3 {
+    gap: 1.1rem !important;
+  }
+
+  [role="dialog"],
+  [data-radix-dialog-content] {
+    max-height: calc(100dvh - 4rem) !important;
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 1280px) {
+  .max-w-7xl {
+    max-width: min(86rem, calc(100vw - 4rem)) !important;
+  }
+
+  header.fixed.top-0.left-0.right-0 {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+}

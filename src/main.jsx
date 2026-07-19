@@ -4,6 +4,7 @@ import "./index.css";
 import './i18n/rtl.css';
 import './styles/mobile-navigation-polish.css';
 import './styles/mobile-accessibility-touch-polish.css';
+import './styles/responsive-tablet-desktop-polish.css';
 import './i18n/config';
 import App from "./App.jsx";
 import RideEmergencyQuickAction from "./components/RideEmergencyQuickAction.jsx";
