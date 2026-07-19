@@ -1,0 +1,79 @@
+/* Mobile navigation polish: isolated CSS layer for safer large UI iteration. */
+@media (max-width: 639px) {
+  nav.fixed.bottom-0.left-0.right-0 {
+    min-height: calc(5.75rem + env(safe-area-inset-bottom));
+    padding-bottom: max(env(safe-area-inset-bottom), 0.35rem) !important;
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    box-shadow: 0 -18px 45px -30px rgba(15, 23, 42, 0.55) !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 > div {
+    height: 5.1rem !important;
+    padding-left: 0.7rem !important;
+    padding-right: 0.7rem !important;
+    padding-top: 0.55rem !important;
+    padding-bottom: 0.55rem !important;
+    gap: 0.15rem !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a {
+    min-width: 2.55rem !important;
+    min-height: 4.1rem !important;
+    border-radius: 1.15rem;
+    outline-offset: 0.2rem;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a > div {
+    padding: 0.55rem !important;
+    border-radius: 1rem !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a[aria-current="page"] > div,
+  nav.fixed.bottom-0.left-0.right-0 a:focus-visible > div {
+    transform: translateY(-0.16rem) scale(1.02);
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a span:last-child {
+    max-width: 3.15rem;
+    font-size: 0.43rem !important;
+    line-height: 1.05 !important;
+    letter-spacing: 0.045em !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 svg {
+    width: 1rem !important;
+    height: 1rem !important;
+  }
+
+  header.fixed.top-0.left-0.right-0 {
+    min-height: 3.5rem;
+    transform: translateZ(0);
+  }
+
+  main.flex-1.relative:not(.overflow-hidden) {
+    scroll-padding-top: 4rem;
+    scroll-padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+  }
+
+  button[class*="fixed"],
+  a[class*="fixed"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@media (max-width: 374px) {
+  nav.fixed.bottom-0.left-0.right-0 > div {
+    padding-left: 0.45rem !important;
+    padding-right: 0.45rem !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a {
+    min-width: 2.25rem !important;
+  }
+
+  nav.fixed.bottom-0.left-0.right-0 a span:last-child {
+    font-size: 0.38rem !important;
+    max-width: 2.55rem;
+  }
+}
