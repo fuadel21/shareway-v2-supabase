@@ -14,7 +14,8 @@
         "lint": "eslint . --ext .js,.jsx --report-unused-disable-directives --max-warnings 0",
         "audit:production": "node scripts/check-production-readiness.mjs",
         "audit:sensitive": "node scripts/check-sensitive-client-writes.mjs",
-        "ci:production": "pnpm run audit:production && pnpm run audit:sensitive && pnpm run build"
+        "audit:seo-pwa": "node scripts/check-seo-pwa-consistency.mjs",
+        "ci:production": "pnpm run audit:production && pnpm run audit:sensitive && pnpm run audit:seo-pwa && pnpm run build"
     },
     "dependencies": {
         "@capacitor/app": "^8.0.0",
