@@ -1,0 +1,74 @@
+/* Mobile accessibility and touch polish: isolated CSS layer for safe UI hardening. */
+@media (max-width: 639px) {
+  button,
+  a,
+  [role="button"],
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid rgba(14, 165, 233, 0.45);
+    outline-offset: 3px;
+  }
+
+  input,
+  select,
+  textarea {
+    min-height: 2.75rem;
+    scroll-margin-top: 4.5rem;
+    scroll-margin-bottom: calc(8rem + env(safe-area-inset-bottom));
+  }
+
+  button:not([disabled]),
+  a[href],
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  [class*="overflow-y-auto"],
+  [class*="overflow-x-auto"],
+  [data-radix-scroll-area-viewport] {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  [data-sonner-toaster],
+  [data-sonner-toast] {
+    touch-action: manipulation;
+  }
+
+  ::selection {
+    background: rgba(14, 165, 233, 0.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
