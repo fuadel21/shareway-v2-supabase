@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PLATFORM_FEE_RATE = 0.10;
+const QUERY_TIMEOUT_MS = 12000;
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -32,20 +33,32 @@ const makeDailyBuckets = (days = 7) => {
   });
 };
 
+const withTimeout = (promise, label) => Promise.race([
+  promise,
+  new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`${label} timed out after ${QUERY_TIMEOUT_MS}ms`)), QUERY_TIMEOUT_MS);
+  }),
+]);
+
 const safeSelect = async (table, select, options = {}) => {
-  let query = supabase.from(table).select(select);
+  try {
+    let query = supabase.from(table).select(select);
 
-  if (options.gte) query = query.gte(options.gte.column, options.gte.value);
-  if (options.order) query = query.order(options.order.column, { ascending: options.order.ascending ?? false });
-  if (options.limit) query = query.limit(options.limit);
+    if (options.gte) query = query.gte(options.gte.column, options.gte.value);
+    if (options.order) query = query.order(options.order.column, { ascending: options.order.ascending ?? false });
+    if (options.limit) query = query.limit(options.limit);
 
-  const { data, error, count } = await query;
-  if (error) {
-    console.warn(`[Admin Metrics] ${table} failed:`, error.message);
+    const { data, error, count } = await withTimeout(query, table);
+    if (error) {
+      console.warn(`[Admin Metrics] ${table} failed:`, error.message);
+      return { data: [], count: 0, error };
+    }
+
+    return { data: data || [], count: count ?? data?.length ?? 0, error: null };
+  } catch (error) {
+    console.warn(`[Admin Metrics] ${table} unavailable:`, error.message);
     return { data: [], count: 0, error };
   }
-
-  return { data: data || [], count: count ?? data?.length ?? 0, error: null };
 };
 
 const isPlatformFeeTransaction = (transaction) => {
@@ -66,9 +79,10 @@ const isPlatformFeeTransaction = (transaction) => {
 };
 
 export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
-  const buckets = makeDailyBuckets(days);
+  const safeDays = Math.max(1, Math.min(Number(days) || 7, 31));
+  const buckets = makeDailyBuckets(safeDays);
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
-  const since = new Date(Date.now() - days * DAY_MS).toISOString();
+  const since = new Date(Date.now() - safeDays * DAY_MS).toISOString();
 
   const [ridesRes, transactionsRes, profilesRes, requestsRes] = await Promise.all([
     safeSelect('rides', '*', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
@@ -137,6 +151,15 @@ export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
 
   const totalProfit = realFeeTotal || estimatedFeeTotal;
   const activeRides = (statusCounts.scheduled || 0) + (statusCounts.active || 0) + (statusCounts.in_progress || 0);
+  const sourceHealth = {
+    rides: !ridesRes.error,
+    walletTransactions: !transactionsRes.error,
+    profiles: !profilesRes.error,
+    rideRequests: !requestsRes.error,
+  };
+  const unavailableSources = Object.entries(sourceHealth)
+    .filter(([, healthy]) => !healthy)
+    .map(([source]) => source);
 
   return {
     chartData: buckets.map((bucket) => ({
@@ -161,5 +184,8 @@ export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
       profiles: profiles.length,
       rideRequests: requests.length,
     },
+    sourceHealth,
+    unavailableSources,
+    isPartial: unavailableSources.length > 0,
   };
 };
