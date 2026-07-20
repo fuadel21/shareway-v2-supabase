@@ -106,27 +106,9 @@ const seoLandingRoutes = [
     'rutas-compartidas-bilbao',
     'rutas-compartidas-zaragoza',
     'rutas-compartidas-trabajo',
-    'taxi-compartido',
     'compartir-trayecto',
-    'compartir-taxi-aeropuerto',
-    'compartir-taxi-barato',
-    'ahorrar-compartiendo-taxi',
     'compartir-trayecto-trabajo',
-    'compartir-trayecto-universidad',
-    'taxi-compartido-madrid',
-    'taxi-compartido-barcelona',
-    'taxi-compartido-valencia',
-    'taxi-compartido-sevilla',
-    'taxi-compartido-malaga',
-    'taxi-compartido-alicante',
-    'taxi-compartido-bilbao',
-    'taxi-compartido-zaragoza',
-    'compartir-taxi-aeropuerto-madrid',
-    'compartir-taxi-aeropuerto-barcelona',
-    'compartir-taxi-aeropuerto-valencia',
-    'compartir-taxi-aeropuerto-sevilla',
-    'compartir-taxi-aeropuerto-malaga',
-    'compartir-taxi-aeropuerto-alicante'
+    'compartir-trayecto-universidad'
 ];
 
 const legalPageRoutes = ['contacto', 'aviso-legal', 'privacidad', 'cookies', 'terminos'];
