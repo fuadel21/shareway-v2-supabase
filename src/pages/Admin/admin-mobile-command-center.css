@@ -1,0 +1,128 @@
+/* Mobile recovery layer for the ShareWay admin command center. */
+
+.admin-shell {
+  min-height: 100vh;
+}
+
+.admin-shell__main {
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .admin-shell__header {
+    height: 4.5rem;
+    padding-inline: 1rem;
+  }
+
+  .admin-shell__back {
+    display: inline-flex !important;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+  }
+
+  .admin-shell__brand {
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .admin-shell__brand-mark {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.85rem;
+  }
+
+  .admin-shell__brand-copy h2 {
+    font-size: 1.05rem;
+  }
+
+  .admin-shell__brand-copy p {
+    font-size: 0.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  .admin-shell__profile {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+
+  .admin-shell__content {
+    padding: 1rem 0.75rem 2rem;
+  }
+
+  /* AdminDashboard root: header first, module switcher second, metrics afterwards. */
+  .admin-shell__content > div > div.space-y-5,
+  .admin-shell__content > div > div.space-y-8 {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .admin-shell__content > div > div > :first-child {
+    order: 1;
+  }
+
+  .admin-shell__content > div > div > :last-child {
+    order: 2;
+  }
+
+  .admin-shell__content > div > div > :nth-child(2) {
+    order: 3;
+  }
+
+  /* The module card should not reserve a huge empty viewport on mobile. */
+  .admin-shell__content [class*="min-h-[700px]"] {
+    min-height: 0 !important;
+  }
+
+  /* Convert the 11-module grid into a compact horizontal command strip. */
+  .admin-shell__content [role="tablist"] {
+    display: flex !important;
+    grid-template-columns: none !important;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline proximity;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    padding: 0.4rem !important;
+    margin-bottom: 1rem !important;
+    gap: 0.4rem !important;
+  }
+
+  .admin-shell__content [role="tablist"]::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-shell__content [role="tab"] {
+    min-width: 5.75rem;
+    min-height: 3.25rem !important;
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    padding: 0.55rem 0.7rem !important;
+    border-radius: 1rem !important;
+  }
+
+  /* Keep the selected module and its content visible near the top. */
+  .admin-shell__content [data-state="active"][role="tab"] {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Reduce oversized dashboard cards without changing desktop layout. */
+  .admin-shell__content .rounded-\[2\.5rem\] {
+    border-radius: 1.6rem !important;
+  }
+
+  .admin-shell__content .p-8,
+  .admin-shell__content .sm\:p-8,
+  .admin-shell__content .sm\:p-6 {
+    padding: 1rem !important;
+  }
+
+  .admin-shell__content .text-5xl,
+  .admin-shell__content .sm\:text-5xl {
+    font-size: 2.35rem !important;
+    line-height: 1 !important;
+  }
+}
