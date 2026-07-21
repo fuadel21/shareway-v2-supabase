@@ -20,7 +20,8 @@
         "audit:admin": "node scripts/check-admin-command-center-health.mjs",
         "audit:ride-lifecycle": "node scripts/check-ride-lifecycle-integrity.mjs",
         "audit:cancellations": "node scripts/check-cancellation-seat-refund-integrity.mjs",
-        "ci:production": "pnpm run audit:production && pnpm run audit:sensitive && pnpm run audit:seo-pwa && pnpm run audit:assets && pnpm run audit:routes && pnpm run audit:admin && pnpm run audit:ride-lifecycle && pnpm run audit:cancellations && pnpm run build"
+        "audit:ride-states": "node scripts/check-ride-state-transition-integrity.mjs",
+        "ci:production": "pnpm run audit:production && pnpm run audit:sensitive && pnpm run audit:seo-pwa && pnpm run audit:assets && pnpm run audit:routes && pnpm run audit:admin && pnpm run audit:ride-lifecycle && pnpm run audit:cancellations && pnpm run audit:ride-states && pnpm run build"
     },
     "dependencies": {
         "@capacitor/app": "^8.0.0",
@@ -72,7 +73,7 @@
         "recharts": "^3.7.0",
         "sonner": "^1.7.4",
         "tailwind-merge": "^2.6.0",
-        "tailwindcss-animate": "^1.0.7"
+        "tailwindcss": "^3.4.19"
     },
     "devDependencies": {
         "@capacitor/android": "^8.0.1",
