@@ -2,7 +2,7 @@
  * Servicio de Seguridad & SOS - Blindaje Crítico v1.0
  */
 import { supabase } from '@/lib/supabase';
-import * as rpc from '@/lib/supabaseRPC';
+import { triggerEmergencyAlertV2 } from '@/lib/emergencyRPC';
 import { toast } from 'sonner';
 
 /**
@@ -24,16 +24,13 @@ export const triggerSOS = async (rideId) => {
             );
         });
 
-        const { data, success, error } = await rpc.safeCall(
-            () => supabase.rpc('trigger_emergency_alert_v2', {
-                p_ride_id: rideId,
-                p_current_location: location,
-                p_metadata: {
-                    source: 'client',
-                    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
-                }
-            }),
-            'trigger_emergency_alert_v2'
+        const { data, success, error } = await triggerEmergencyAlertV2(
+            rideId,
+            location,
+            {
+                source: 'client',
+                user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+            }
         );
 
         if (!success) throw new Error(error);
