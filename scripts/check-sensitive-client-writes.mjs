@@ -29,17 +29,25 @@ const blockedDirectWriteTables = [
   'disputes',
 ];
 
-const sensitiveUpdateFields = {
-  rides: [
-    'status', 'driver_id', 'departure_time', 'started_at', 'completed_at',
-    'cancelled_at', 'seats', 'seats_available', 'available_seats', 'price',
-    'payment_status', 'payout_status', 'escrow_status',
-  ],
-  ride_requests: [
-    'status', 'driver_id', 'ride_id', 'matched_ride_id', 'seats_needed',
-    'suggested_price', 'accepted_at', 'cancelled_at',
-  ],
+const permittedLiteralUpdateFields = {
+  rides: new Set([
+    'vehicle_model',
+    'vehicle_plate',
+    'vehicle_color',
+    'vehicle_year',
+    'vehicle_photo_url',
+    'vehicle_luggage',
+    'vehicle_snapshot',
+  ]),
+  ride_requests: new Set(),
 };
+
+const protectedRideStateFields = new Set([
+  'status', 'driver_id', 'departure_time', 'started_at', 'completed_at',
+  'cancelled_at', 'seats', 'total_seats', 'seats_available', 'available_seats',
+  'participant_ids', 'passengers', 'price', 'payment_status', 'payout_status',
+  'escrow_status',
+]);
 
 const rlsReviewedTables = ['profiles', 'notifications', 'messages'];
 
@@ -55,6 +63,7 @@ const lifecycleRpcNames = [
   'confirm_trip_and_pay',
   'admin_update_user_status',
   'trigger_emergency_alert',
+  'trigger_emergency_alert_v2',
 ];
 
 const allowedRpcWrapperFiles = new Set(['src/lib/supabaseRPC.js']);
@@ -62,6 +71,9 @@ const allowedRpcWrapperFiles = new Set(['src/lib/supabaseRPC.js']);
 const getExtension = (filePath) => filePath.match(/\.[^.]+$/)?.[0] || '';
 const normalizePath = (filePath) => relative(root, filePath).replaceAll('\\', '/');
 const shouldIgnorePath = (filePath) => ignoredPathPatterns.some((pattern) => pattern.test(normalizePath(filePath)));
+const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const lineForIndex = (content, index) => content.slice(0, index).split(/\r?\n/).length;
+const lineText = (content, lineNumber) => content.split(/\r?\n/)[lineNumber - 1]?.trim() || '';
 
 const walk = (dir, files = []) => {
   for (const entry of readdirSync(dir)) {
@@ -73,10 +85,6 @@ const walk = (dir, files = []) => {
   }
   return files;
 };
-
-const lineForIndex = (content, index) => content.slice(0, index).split(/\r?\n/).length;
-const lineText = (content, lineNumber) => content.split(/\r?\n/)[lineNumber - 1]?.trim() || '';
-const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const findings = [];
 const rlsNotes = [];
@@ -90,6 +98,17 @@ const recordFinding = ({ content, matchIndex, relativePath, type, message }) => 
     line: lineText(content, lineNumber),
     message,
   });
+};
+
+const parseLiteralObjectKeys = (payload) => {
+  const trimmed = payload.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return null;
+  if (/\.\.\./.test(trimmed)) return null;
+
+  const keys = [];
+  const keyPattern = /(?:^|[,{]\s*)['"]?([A-Za-z_$][\w$]*)['"]?\s*:/g;
+  for (const match of trimmed.matchAll(keyPattern)) keys.push(match[1]);
+  return keys.length > 0 ? keys : null;
 };
 
 for (const scanDir of scanDirs) {
@@ -121,22 +140,39 @@ for (const scanDir of scanDirs) {
 
       for (const match of content.matchAll(updatePattern)) {
         const payload = match[1] || '';
-        const protectedFields = sensitiveUpdateFields[table];
-        const touchesSensitiveField = !protectedFields || protectedFields.some((field) => (
-          new RegExp(`(?:^|[,{\\s])['"]?${escapeRegExp(field)}['"]?\\s*:`, 'm').test(payload)
-        ));
+        const permittedFields = permittedLiteralUpdateFields[table];
 
-        if (touchesSensitiveField) {
+        if (!permittedFields) {
           recordFinding({
             content,
             matchIndex: match.index ?? 0,
             relativePath,
             type: 'direct-sensitive-update',
-            message: `Actualización directa de campos sensibles en '${table}'. Usa una RPC atómica y autorizada.`,
+            message: `Actualización directa sobre tabla crítica '${table}'. Usa una RPC atómica y autorizada.`,
+          });
+          continue;
+        }
+
+        const literalKeys = parseLiteralObjectKeys(payload);
+        const isKnownSafeLiteral = literalKeys
+          && literalKeys.every((field) => permittedFields.has(field))
+          && !literalKeys.some((field) => protectedRideStateFields.has(field));
+
+        if (!isKnownSafeLiteral) {
+          recordFinding({
+            content,
+            matchIndex: match.index ?? 0,
+            relativePath,
+            type: 'unproven-sensitive-update',
+            message: `La actualización de '${table}' no puede demostrarse segura. Solo se permiten payloads literales con metadata autorizada; variables, spreads y campos de ciclo requieren RPC.`,
           });
         } else {
-          const lineNumber = lineForIndex(content, match.index ?? 0);
-          rlsNotes.push({ file: relativePath, lineNumber, table, reason: 'metadata no sensible' });
+          rlsNotes.push({
+            file: relativePath,
+            lineNumber: lineForIndex(content, match.index ?? 0),
+            table,
+            reason: `metadata autorizada: ${literalKeys.join(', ')}`,
+          });
         }
       }
     }
@@ -182,7 +218,7 @@ if (findings.length > 0) {
     console.error(`  Motivo: ${finding.message}`);
     console.error(`  Línea: ${finding.line}\n`);
   }
-  console.error('Solución: mover estas operaciones a RPCs seguros que validen auth.uid(), rol y permisos en Supabase.\n');
+  console.error('Solución: mover estas operaciones a RPCs seguros o limitar la escritura a metadata explícitamente autorizada por RLS y trigger.\n');
   process.exit(1);
 }
 
@@ -193,7 +229,7 @@ if (rlsNotes.length > 0) {
   for (const note of uniqueNotes.values()) {
     console.warn(`- ${note.file}:${note.lineNumber} tabla '${note.table}' (${note.reason})`);
   }
-  console.warn('Estas escrituras no bloquean el build, pero requieren policies RLS verificadas.\n');
+  console.warn('Estas escrituras no bloquean el build, pero requieren policies y triggers RLS verificados.\n');
 }
 
 console.log('✅ Sensitive client write check passed. No dangerous direct client writes found.');
