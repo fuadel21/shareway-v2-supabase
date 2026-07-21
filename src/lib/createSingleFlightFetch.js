@@ -14,6 +14,7 @@ const DEFAULT_CRITICAL_RPCS = new Set([
   'handle_passenger_no_show',
   'complete_passenger_dropoff',
   'trigger_emergency_alert',
+  'trigger_emergency_alert_v2',
   'add_funds',
   'request_payout',
   'request_platform_payout',
@@ -57,12 +58,37 @@ const readBody = async (input, init) => {
   return '';
 };
 
+const getHeaderValue = (headers, name) => {
+  if (!headers) return '';
+
+  if (typeof Headers !== 'undefined' && headers instanceof Headers) {
+    return headers.get(name) || '';
+  }
+
+  if (Array.isArray(headers)) {
+    const match = headers.find(([key]) => String(key).toLowerCase() === name.toLowerCase());
+    return match?.[1] || '';
+  }
+
+  const matchingKey = Object.keys(headers).find((key) => key.toLowerCase() === name.toLowerCase());
+  return matchingKey ? String(headers[matchingKey] || '') : '';
+};
+
+const getAuthorizationContext = (input, init) => {
+  const initAuthorization = getHeaderValue(init?.headers, 'authorization');
+  if (initAuthorization) return initAuthorization;
+
+  if (typeof Request !== 'undefined' && input instanceof Request) {
+    return input.headers.get('authorization') || '';
+  }
+
+  return '';
+};
+
 /**
  * Collapses concurrent identical critical RPC requests into one network call.
  * Each caller receives its own Response clone, so Supabase can consume it safely.
- *
- * This protects against double taps and against safeCall retrying while the first
- * timed-out HTTP request is still running on the server.
+ * Requests are isolated by URL and authorization context to prevent cross-session reuse.
  */
 export const createSingleFlightFetch = (
   baseFetch = globalThis.fetch,
@@ -84,15 +110,22 @@ export const createSingleFlightFetch = (
     }
 
     const body = await readBody(input, init);
-    const key = `${method}:${rpcName}:${body}`;
+    const authorization = getAuthorizationContext(input, init);
+    const key = `${method}:${url}:${authorization}:${body}`;
 
     let requestPromise = inFlight.get(key);
     if (!requestPromise) {
-      requestPromise = Promise.resolve(baseFetch(input, init));
+      requestPromise = Promise.resolve().then(() => baseFetch(input, init));
       inFlight.set(key, requestPromise);
-      requestPromise.finally(() => {
-        if (inFlight.get(key) === requestPromise) inFlight.delete(key);
-      });
+
+      requestPromise.then(
+        () => {
+          if (inFlight.get(key) === requestPromise) inFlight.delete(key);
+        },
+        () => {
+          if (inFlight.get(key) === requestPromise) inFlight.delete(key);
+        },
+      );
     }
 
     const response = await requestPromise;
