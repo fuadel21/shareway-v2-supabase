@@ -52,17 +52,18 @@ if (!fs.existsSync(migrationDir)) {
     if (!/driver_id/i.test(completeRide)) failures.push('complete_ride no valida al conductor');
     if (!/completed/i.test(completeRide)) failures.push('complete_ride no fija estado completed');
 
-    const requiresActiveOnly =
-      /v_ride_status\s*(?:<>|!=)\s*['"]active['"]/i.test(completeRide)
-      || /v_ride_status\s+not\s+in\s*\(\s*['"]active['"]\s*\)/i.test(completeRide);
+    const allowsStartedStates =
+      /v_ride_status\s+not\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
+      || /v_ride_status\s+not\s+in\s*\(\s*['"]in_progress['"]\s*,\s*['"]active['"]\s*\)/i.test(completeRide);
     const explicitlyAllowsScheduled =
       /v_ride_status\s+not\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide)
       || /v_ride_status\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide);
 
-    if (!requiresActiveOnly) failures.push('complete_ride debe exigir estado active antes de liquidar el viaje');
+    if (!allowsStartedStates) failures.push('complete_ride debe exigir estado active o in_progress antes de liquidar');
     if (explicitlyAllowsScheduled) failures.push('complete_ride permite completar un viaje scheduled sin iniciarlo');
-    if (!/where[\s\S]{0,180}status\s*=\s*['"]active['"]/i.test(completeRide)) {
-      failures.push('complete_ride debe condicionar la actualización final a status = active');
+    if (!/where[\s\S]{0,220}status\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
+      && !/where[\s\S]{0,220}status\s+in\s*\(\s*['"]in_progress['"]\s*,\s*['"]active['"]\s*\)/i.test(completeRide)) {
+      failures.push('complete_ride debe condicionar la actualización final a active o in_progress');
     }
     if (!/completed_at/i.test(completeRide)) warnings.push('complete_ride no registra completed_at de forma visible');
     if (!/for\s+update/i.test(completeRide)) warnings.push('complete_ride no contiene FOR UPDATE; revisar doble finalización');
@@ -122,4 +123,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('✅ Transiciones protegidas: scheduled → active → completed, con cancelación autorizada y sin escrituras directas desde el cliente.');
+console.log('✅ Transiciones protegidas: scheduled → active/in_progress → completed, con cancelación autorizada y sin escrituras directas desde el cliente.');
