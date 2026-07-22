@@ -37,8 +37,6 @@ serve(async (req) => {
       rideId,
       pickupLocation,
       pickupAddress,
-      dropoffLocation,
-      dropoffAddress,
       totalAmount,
       pricePerSeat,
       numSeats = 1,
@@ -82,6 +80,8 @@ serve(async (req) => {
       return jsonResponse({ error: { message: 'No quedan plazas suficientes' } }, 409)
     }
 
+    // Una reserva parcial puede costar menos que el trayecto completo. El código
+    // anterior la rechazaba siempre que totalAmount era inferior a ride.price.
     const maxExpectedTotal = roundMoney((Number(ride.price) || 0) * requestedSeats + 50)
     if (maxExpectedTotal > 0 && requestedTotal > maxExpectedTotal) {
       return jsonResponse({ error: { message: 'Importe superior al máximo permitido para este viaje' } }, 400)
@@ -126,9 +126,6 @@ serve(async (req) => {
       amount: requestedTotal,
       pickup_location: pickupLocation ?? null,
       pickup_address: pickupAddress ?? null,
-      dropoff_location: dropoffLocation ?? null,
-      dropoff_address: dropoffAddress ?? null,
-      num_seats: requestedSeats,
     }, { onConflict: 'ride_id,requester_id' })
 
     if (requestError) {
