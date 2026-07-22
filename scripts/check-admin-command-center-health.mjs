@@ -6,7 +6,18 @@ const root = process.cwd();
 const dashboardPath = path.join(root, 'src', 'pages', 'Admin', 'AdminDashboard.jsx');
 const layoutPath = path.join(root, 'src', 'pages', 'Admin', 'AdminLayout.jsx');
 const appPath = path.join(root, 'src', 'App.jsx');
-const mobileCssPath = path.join(root, 'src', 'styles', 'admin-command-center-mobile.css');
+const mobileCssPath = path.join(root, 'src', 'pages', 'Admin', 'admin-mobile-command-center.css');
+
+const requiredFiles = [dashboardPath, layoutPath, appPath, mobileCssPath];
+const missingFiles = requiredFiles.filter((filePath) => !fs.existsSync(filePath));
+
+if (missingFiles.length > 0) {
+  console.error('❌ Admin command center health check failed:');
+  for (const filePath of missingFiles) {
+    console.error(`- Missing required file: ${path.relative(root, filePath)}`);
+  }
+  process.exit(1);
+}
 
 const dashboard = fs.readFileSync(dashboardPath, 'utf8');
 const layout = fs.readFileSync(layoutPath, 'utf8');
@@ -46,16 +57,21 @@ if (!app.includes('<Route path=":tab" element={<AdminDashboard />}')) failures.p
 if (!app.includes('hasAdminAccess')) failures.push('Missing admin access guard');
 if (!layout.includes("navigate('/dashboard')")) failures.push('Missing back-to-dashboard action');
 if (!layout.includes('handleSignOut')) failures.push('Missing admin sign-out action');
+if (!layout.includes("import './admin-mobile-command-center.css'")) failures.push('Missing admin mobile stylesheet import');
 
 for (const selector of [
-  '.admin-command-center',
-  '.admin-command-center__modules',
-  '.admin-command-center__tabs-list',
+  '.admin-shell',
+  '.admin-shell__header',
+  '.admin-shell__content',
+  '[role="tablist"]',
+  '[role="tab"]',
 ]) {
   if (!mobileCss.includes(selector)) failures.push(`Missing mobile command center selector: ${selector}`);
 }
 
 if (!mobileCss.includes('overflow-x: auto')) failures.push('Mobile admin tabs must remain horizontally scrollable');
+if (!dashboard.includes('adminTabs.map')) failures.push('Admin module navigation must be generated from the tab registry');
+if (!dashboard.includes('onValueChange={(value) => navigate(`/admin/${value}`)}')) failures.push('Admin tab changes must update the route');
 
 if (failures.length) {
   console.error('❌ Admin command center health check failed:');
