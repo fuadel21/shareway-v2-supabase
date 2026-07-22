@@ -39,8 +39,41 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run production audit chain
-        run: pnpm run ci:production
+      - name: Production readiness audit
+        run: pnpm run audit:production
+
+      - name: Sensitive writes audit
+        run: pnpm run audit:sensitive
+
+      - name: SEO and PWA audit
+        run: pnpm run audit:seo-pwa
+
+      - name: Asset health audit
+        run: pnpm run audit:assets
+
+      - name: Public routes audit
+        run: pnpm run audit:routes
+
+      - name: Admin command center audit
+        run: pnpm run audit:admin
+
+      - name: Ride lifecycle audit
+        run: pnpm run audit:ride-lifecycle
+
+      - name: Cancellation and refund audit
+        run: pnpm run audit:cancellations
+
+      - name: Ride state transitions audit
+        run: pnpm run audit:ride-states
+
+      - name: Post-ride audit
+        run: pnpm run audit:post-ride
+
+      - name: Ride chat and notifications audit
+        run: pnpm run audit:ride-chat
+
+      - name: Build application
+        run: pnpm run build
 
       - name: Run unit tests
         run: pnpm test
