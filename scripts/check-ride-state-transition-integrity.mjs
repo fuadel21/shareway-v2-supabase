@@ -66,13 +66,24 @@ if (!fs.existsSync(migrationDir)) {
     }
   }
 
+  const activeLifecycleFunctions = [
+    ['start_ride', startRide],
+    ['complete_ride', completeRide],
+    ['cancel_ride', cancelRide],
+  ];
+
   const forbiddenTransitions = [
     /status\s*=\s*['"]completed['"][\s\S]{0,240}status\s*=\s*['"](?:scheduled|in_progress|active)['"]/i,
     /status\s*=\s*['"]cancelled['"][\s\S]{0,240}status\s*=\s*['"](?:scheduled|in_progress|active|completed)['"]/i,
   ];
 
-  for (const pattern of forbiddenTransitions) {
-    if (pattern.test(sql)) failures.push('Se detectó una posible reapertura de viaje en migraciones');
+  for (const [functionName, body] of activeLifecycleFunctions) {
+    if (!body) continue;
+    for (const pattern of forbiddenTransitions) {
+      if (pattern.test(body)) {
+        failures.push(`${functionName} contiene una posible reapertura de viaje`);
+      }
+    }
   }
 }
 
