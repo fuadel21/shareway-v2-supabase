@@ -15,6 +15,16 @@ export default defineConfig({
             port: 5173,
         },
     },
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/test/setup.js'],
+        env: {
+            VITE_SUPABASE_URL: 'https://shareway-test.supabase.co',
+            VITE_SUPABASE_ANON_KEY: 'test-anon-key-for-local-vitest-only',
+        },
+        restoreMocks: true,
+        clearMocks: true,
+    },
     css: {
         postcss: {
             plugins: [
