@@ -1,10 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 
-const resultFile = path.join(os.tmpdir(), `shareway-vitest-${process.pid}.json`);
+const resultFile = process.env.VITEST_REPORT_FILE
+  || path.join(process.cwd(), '.artifacts', 'vitest-report.json');
 const vitestBin = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
+
+fs.mkdirSync(path.dirname(resultFile), { recursive: true });
 
 const run = spawnSync(
   vitestBin,
@@ -40,8 +42,6 @@ try {
   if (fallback) console.error(fallback);
   console.error('No se pudo leer el informe JSON de Vitest.');
   process.exit(run.status || 1);
-} finally {
-  fs.rmSync(resultFile, { force: true });
 }
 
 const failed = [];
@@ -101,4 +101,5 @@ if (failed.length) {
 const passed = report.numPassedTests ?? 0;
 const total = report.numTotalTests ?? 0;
 console.log(`\nVitest: ${passed}/${total} tests correctos.`);
+console.log(`Informe JSON conservado en ${resultFile}`);
 process.exit(run.status || (failed.length ? 1 : 0));
