@@ -77,3 +77,12 @@ jobs:
 
       - name: Run unit tests
         run: pnpm test
+
+      - name: Upload Vitest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-report-production-ci
+          path: .artifacts/vitest-report.json
+          if-no-files-found: warn
+          retention-days: 7
