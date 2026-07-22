@@ -17,40 +17,56 @@ if (!fs.existsSync(migrationDir)) {
     .map((file) => `\n-- FILE: ${file}\n${fs.readFileSync(path.join(migrationDir, file), 'utf8')}`)
     .join('\n');
 
-  const findLatestFunction = (name) => {
-    const pattern = new RegExp(`create\\s+or\\s+replace\\s+function\\s+(?:public\\.)?${name}\\s*\\([\\s\\S]*?(?=create\\s+or\\s+replace\\s+function|$)`, 'ig');
-    const matches = [...sql.matchAll(pattern)];
-    return matches.at(-1)?.[0] || '';
+  const findLatestFunction = (candidates) => {
+    const matches = [];
+
+    for (const name of candidates) {
+      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(
+        `create\\s+or\\s+replace\\s+function\\s+(?:public\\.)?${escapedName}\\s*\\([\\s\\S]*?(?=create\\s+or\\s+replace\\s+function|$)`,
+        'ig'
+      );
+
+      for (const match of sql.matchAll(pattern)) {
+        matches.push({ name, body: match[0], index: match.index ?? -1 });
+      }
+    }
+
+    return matches.sort((a, b) => a.index - b.index).at(-1) || { name: candidates[0], body: '' };
   };
 
-  const startRide = findLatestFunction('start_ride');
-  const completeRide = findLatestFunction('complete_ride');
-  const cancelRide = findLatestFunction('cancel_ride');
+  const startRideDefinition = findLatestFunction(['start_ride', 'start_ride_v2', 'start_ride_unified']);
+  const completeRideDefinition = findLatestFunction(['complete_ride', 'complete_ride_v2', 'complete_ride_unified']);
+  const cancelRideDefinition = findLatestFunction(['cancel_ride', 'cancel_ride_unified', 'cancel_ride_v2']);
 
-  for (const [name, body] of [
-    ['start_ride', startRide],
-    ['complete_ride', completeRide],
-    ['cancel_ride', cancelRide],
+  const startRide = startRideDefinition.body;
+  const completeRide = completeRideDefinition.body;
+  const cancelRide = cancelRideDefinition.body;
+
+  for (const [label, definition] of [
+    ['start_ride', startRideDefinition],
+    ['complete_ride', completeRideDefinition],
+    ['cancel_ride', cancelRideDefinition],
   ]) {
-    if (!body) failures.push(`Falta una definición SQL localizable de ${name}`);
+    if (!definition.body) failures.push(`Falta una definición SQL localizable de ${label} (incluidos alias v2/unified)`);
   }
 
   if (startRide) {
-    if (!/auth\.uid\s*\(\s*\)/i.test(startRide)) failures.push('start_ride no valida auth.uid()');
-    if (!/driver_id/i.test(startRide)) failures.push('start_ride no valida al conductor');
-    if (!/scheduled/i.test(startRide)) failures.push('start_ride no exige estado scheduled');
-    if (!/in_progress|active/i.test(startRide)) failures.push('start_ride no fija un estado de viaje en curso');
+    if (!/auth\.uid\s*\(\s*\)/i.test(startRide)) failures.push(`${startRideDefinition.name} no valida auth.uid()`);
+    if (!/driver_id/i.test(startRide)) failures.push(`${startRideDefinition.name} no valida al conductor`);
+    if (!/scheduled/i.test(startRide)) failures.push(`${startRideDefinition.name} no exige estado scheduled`);
+    if (!/in_progress|active/i.test(startRide)) failures.push(`${startRideDefinition.name} no fija un estado de viaje en curso`);
     if (/completed|cancelled|canceled/i.test(startRide) && !/(?:<>|!=|not\s+in|raise|exception)/i.test(startRide)) {
-      warnings.push('start_ride menciona estados terminales; revisar que solo los rechace');
+      warnings.push(`${startRideDefinition.name} menciona estados terminales; revisar que solo los rechace`);
     }
-    if (!/for\s+update/i.test(startRide)) warnings.push('start_ride no contiene FOR UPDATE; revisar concurrencia en servidor');
-    if (!/started_at/i.test(startRide)) warnings.push('start_ride no registra started_at de forma visible');
+    if (!/for\s+update/i.test(startRide)) warnings.push(`${startRideDefinition.name} no contiene FOR UPDATE; revisar concurrencia en servidor`);
+    if (!/started_at/i.test(startRide)) warnings.push(`${startRideDefinition.name} no registra started_at de forma visible`);
   }
 
   if (completeRide) {
-    if (!/auth\.uid\s*\(\s*\)/i.test(completeRide)) failures.push('complete_ride no valida auth.uid()');
-    if (!/driver_id/i.test(completeRide)) failures.push('complete_ride no valida al conductor');
-    if (!/completed/i.test(completeRide)) failures.push('complete_ride no fija estado completed');
+    if (!/auth\.uid\s*\(\s*\)/i.test(completeRide)) failures.push(`${completeRideDefinition.name} no valida auth.uid()`);
+    if (!/driver_id/i.test(completeRide)) failures.push(`${completeRideDefinition.name} no valida al conductor`);
+    if (!/completed/i.test(completeRide)) failures.push(`${completeRideDefinition.name} no fija estado completed`);
 
     const allowsStartedStates =
       /v_ride_status\s+not\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
@@ -59,25 +75,25 @@ if (!fs.existsSync(migrationDir)) {
       /v_ride_status\s+not\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide)
       || /v_ride_status\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide);
 
-    if (!allowsStartedStates) failures.push('complete_ride debe exigir estado active o in_progress antes de liquidar');
-    if (explicitlyAllowsScheduled) failures.push('complete_ride permite completar un viaje scheduled sin iniciarlo');
+    if (!allowsStartedStates) failures.push(`${completeRideDefinition.name} debe exigir estado active o in_progress antes de liquidar`);
+    if (explicitlyAllowsScheduled) failures.push(`${completeRideDefinition.name} permite completar un viaje scheduled sin iniciarlo`);
     if (!/where[\s\S]{0,220}status\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
       && !/where[\s\S]{0,220}status\s+in\s*\(\s*['"]in_progress['"]\s*,\s*['"]active['"]\s*\)/i.test(completeRide)) {
-      failures.push('complete_ride debe condicionar la actualización final a active o in_progress');
+      failures.push(`${completeRideDefinition.name} debe condicionar la actualización final a active o in_progress`);
     }
-    if (!/completed_at/i.test(completeRide)) warnings.push('complete_ride no registra completed_at de forma visible');
-    if (!/for\s+update/i.test(completeRide)) warnings.push('complete_ride no contiene FOR UPDATE; revisar doble finalización');
+    if (!/completed_at/i.test(completeRide)) warnings.push(`${completeRideDefinition.name} no registra completed_at de forma visible`);
+    if (!/for\s+update/i.test(completeRide)) warnings.push(`${completeRideDefinition.name} no contiene FOR UPDATE; revisar doble finalización`);
     if (!/escrow|wallet|payment|payout|transaction/i.test(completeRide)) {
-      warnings.push('complete_ride no muestra liquidación o cierre financiero; revisar si delega en otra función');
+      warnings.push(`${completeRideDefinition.name} no muestra liquidación o cierre financiero; revisar si delega en otra función`);
     }
   }
 
   if (cancelRide) {
-    if (!/auth\.uid\s*\(\s*\)/i.test(cancelRide)) failures.push('cancel_ride no valida auth.uid()');
-    if (!/driver_id/i.test(cancelRide)) failures.push('cancel_ride no valida al conductor');
-    if (!/scheduled|in_progress|active/i.test(cancelRide)) failures.push('cancel_ride no limita estados cancelables');
-    if (!/cancelled|canceled/i.test(cancelRide)) failures.push('cancel_ride no fija estado cancelado');
-    if (!/completed/i.test(cancelRide)) warnings.push('cancel_ride no muestra un rechazo explícito de viajes completados');
+    if (!/auth\.uid\s*\(\s*\)/i.test(cancelRide)) failures.push(`${cancelRideDefinition.name} no valida auth.uid()`);
+    if (!/driver_id/i.test(cancelRide)) failures.push(`${cancelRideDefinition.name} no valida al conductor`);
+    if (!/scheduled|in_progress|active/i.test(cancelRide)) failures.push(`${cancelRideDefinition.name} no limita estados cancelables`);
+    if (!/cancelled|canceled/i.test(cancelRide)) failures.push(`${cancelRideDefinition.name} no fija estado cancelado`);
+    if (!/completed/i.test(cancelRide)) warnings.push(`${cancelRideDefinition.name} no muestra un rechazo explícito de viajes completados`);
   }
 }
 
@@ -119,7 +135,10 @@ for (const warning of warnings) console.warn(`⚠️  ${warning}`);
 
 if (failures.length) {
   console.error('\n❌ Auditoría de transiciones del viaje fallida:');
-  for (const failure of failures) console.error(` - ${failure}`);
+  for (const failure of failures) {
+    console.error(`::error title=Ride state transition audit::${failure}`);
+    console.error(` - ${failure}`);
+  }
   process.exit(1);
 }
 
