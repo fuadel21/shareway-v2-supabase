@@ -12,6 +12,7 @@ import App from "./App.jsx";
 import RideEmergencyQuickAction from "./components/RideEmergencyQuickAction.jsx";
 import RideEmergencyHistoryPanel from "./components/RideEmergencyHistoryPanel.jsx";
 import RideBoardingOverlay from "./components/RideBoardingOverlay.jsx";
+import BookingContractGuard from "./components/BookingContractGuard.jsx";
 
 // Importar estilos de Leaflet globalmente
 import 'leaflet/dist/leaflet.css';
@@ -27,5 +28,6 @@ root.render(
     <RideEmergencyQuickAction />
     <RideEmergencyHistoryPanel />
     <RideBoardingOverlay />
+    <BookingContractGuard />
   </React.StrictMode>
 );
