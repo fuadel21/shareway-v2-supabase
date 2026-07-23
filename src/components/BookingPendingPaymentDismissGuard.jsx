@@ -45,12 +45,13 @@ const isRecoveryDismissButton = (target) => {
   );
 };
 
-const isUnresolvedPayment = (pending) => Boolean(
-  pending && (
-    pending.status === 'stripe_confirming' ||
-    pending.status === 'server_confirming' ||
-    pending.paymentIntentId
-  )
+// Only retain the hard lock when the client has evidence that Stripe accepted
+// the payment. Pre-call status markers are not enough: they can survive a
+// definitive validation, network or wallet failure before any charge occurred.
+const isUnresolvedAcceptedPayment = (pending) => Boolean(
+  pending?.method === 'card' &&
+  typeof pending?.paymentIntentId === 'string' &&
+  pending.paymentIntentId.trim().length > 0
 );
 
 const BookingPendingPaymentDismissGuard = () => {
@@ -60,14 +61,14 @@ const BookingPendingPaymentDismissGuard = () => {
 
       const rideId = getRideIdFromPath();
       const pending = readPendingBooking(rideId);
-      if (!isUnresolvedPayment(pending)) return;
+      if (!isUnresolvedAcceptedPayment(pending)) return;
 
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
       toast.info('Pago todavía en comprobación', {
-        description: 'No puedes quitar este aviso mientras el primer pago sigue pendiente de confirmación. Usa “Comprobar otra vez” o abre el viaje.',
+        description: 'Stripe ya aceptó este pago y estamos esperando la confirmación de la plaza. Usa “Comprobar otra vez” o abre el viaje para evitar un segundo cobro.',
         duration: 6000,
       });
     };
