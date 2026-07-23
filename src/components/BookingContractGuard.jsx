@@ -38,6 +38,20 @@ const findBookingDialog = () => {
   ) || null;
 };
 
+const isRecoveryDismissButton = (target, dialogElement) => {
+  if (!(target instanceof Element) || !dialogElement) return null;
+  const button = target.closest('button');
+  if (!button || !dialogElement.contains(button)) return null;
+
+  const recoveryPanel = button.closest('.bg-amber-50');
+  const className = String(button.className || '');
+  if (!recoveryPanel || !className.includes('underline') || !className.includes('text-amber-700/60')) {
+    return null;
+  }
+
+  return button;
+};
+
 const BookingContractGuard = () => {
   const [rideId, setRideId] = useState(getRideIdFromPath());
   const [dialogElement, setDialogElement] = useState(null);
@@ -49,6 +63,7 @@ const BookingContractGuard = () => {
   const dialogRef = useRef(null);
   const observerTimerRef = useRef(null);
   const requestIdRef = useRef(0);
+  const replayDismissRef = useRef(false);
 
   const blockedMessage = useMemo(() => {
     if (!state || state.can_book !== false) return null;
@@ -134,6 +149,58 @@ const BookingContractGuard = () => {
   useEffect(() => {
     if (!dialogElement || !rideId) return undefined;
 
+    const onDismissCapture = async (event) => {
+      if (replayDismissRef.current) return;
+
+      const button = isRecoveryDismissButton(event.target, dialogElement);
+      if (!button || !hasPendingBooking(rideId)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      const requestId = ++requestIdRef.current;
+      setPendingBookingActive(false);
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data, error: rpcError } = await supabase.rpc('get_booking_contract_state', {
+          p_ride_id: rideId,
+        });
+        if (rpcError) throw rpcError;
+        if (requestId !== requestIdRef.current) return;
+
+        localStorage.removeItem(pendingKeyForRide(rideId));
+        setPendingBookingActive(false);
+        setState(data);
+        setLoading(false);
+
+        if (data?.can_book === false) return;
+        if (!button.isConnected) return;
+
+        replayDismissRef.current = true;
+        button.click();
+        queueMicrotask(() => {
+          replayDismissRef.current = false;
+        });
+      } catch (err) {
+        console.error('Booking recovery dismissal preflight failed:', err);
+        if (requestId === requestIdRef.current) {
+          setState(null);
+          setLoading(false);
+          setError('No se pudo comprobar la reserva. El aviso se mantiene para evitar otro pago.');
+        }
+      }
+    };
+
+    dialogElement.addEventListener('click', onDismissCapture, true);
+    return () => dialogElement.removeEventListener('click', onDismissCapture, true);
+  }, [dialogElement, rideId]);
+
+  useEffect(() => {
+    if (!dialogElement || !rideId) return undefined;
+
     let previousPending = hasPendingBooking(rideId);
     setPendingBookingActive(previousPending);
 
@@ -142,9 +209,6 @@ const BookingContractGuard = () => {
       if (nextPending === previousPending) return;
       previousPending = nextPending;
       setPendingBookingActive(nextPending);
-
-      // When the user dismisses a recovery marker, re-check the backend
-      // immediately so ALREADY_BOOKED cannot remain hidden and allow a second payment.
       if (!nextPending) refresh();
     }, 300);
 
