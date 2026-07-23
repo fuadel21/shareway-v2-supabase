@@ -36,12 +36,57 @@ export const safeCall = async (rpcCall, functionName, retries = 2) => {
     return executeCall(0);
 };
 
+const normalizeRideStartError = (error, readiness = null) => {
+    const raw = String(error || '');
+    if (raw.includes('PIN_VERIFICATION_REQUIRED')) {
+        const count = Number(readiness?.unresolved_count || 0);
+        return count > 0
+            ? `Debes verificar el PIN o resolver el no-show de ${count} pasajero(s) antes de iniciar.`
+            : 'Debes verificar todos los PIN o resolver los no-show antes de iniciar.';
+    }
+    return raw || 'No se pudo iniciar el viaje';
+};
+
 // --- USER-FACING RPCs ---
-export const startRide = (rideId, driverId = null) =>
-    safeCall(() => supabase.rpc('start_ride', {
+export const getRideStartReadiness = (rideId) =>
+    safeCall(() => supabase.rpc('get_ride_start_readiness', {
+        p_ride_id: rideId
+    }), 'get_ride_start_readiness');
+
+export const startRide = async (rideId, driverId = null) => {
+    const readinessResponse = await getRideStartReadiness(rideId);
+    const readiness = readinessResponse?.data;
+
+    if (!readinessResponse.success) {
+        return {
+            data: null,
+            success: false,
+            error: readinessResponse.error || 'No se pudo comprobar el embarque antes de iniciar.'
+        };
+    }
+
+    if (readiness?.ready === false) {
+        return {
+            data: readiness,
+            success: false,
+            error: normalizeRideStartError('PIN_VERIFICATION_REQUIRED', readiness)
+        };
+    }
+
+    const result = await safeCall(() => supabase.rpc('start_ride', {
         p_ride_id: rideId,
         p_driver_id: driverId
     }), 'start_ride');
+
+    if (!result.success) {
+        return {
+            ...result,
+            error: normalizeRideStartError(result.error, readiness)
+        };
+    }
+
+    return { ...result, readiness };
+};
 
 export const updateRideLocation = (rideId, lat, lng, heading = 0) =>
     safeCall(() => supabase.rpc('update_ride_location', {
@@ -117,7 +162,6 @@ export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = n
         p_num_seats: parseInt(numSeats || 1)
     }), 'confirm_trip_and_pay');
 
-
 export const cancelBookingAndRefund = (rideId) =>
     safeCall(() => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
 
@@ -163,7 +207,6 @@ export const getOrCreateChat = (otherUserId, rideId = null) =>
         p_ride_id: rideId
     }), 'get_or_create_chat_v2');
 
-
 // --- ADMIN & MANAGEMENT RPCs ---
 export const adminUpdateUserStatus = (userId, status) =>
     safeCall(() => supabase.rpc('admin_update_user_status', { p_user_id: userId, p_status: status }), 'admin_update_user_status');
@@ -187,7 +230,7 @@ export const updatePlatformSetting = (key, value) =>
     safeCall(() => supabase.rpc('update_platform_setting', { p_key: key, p_value: value }), 'update_platform_setting');
 
 export const getPlatformAuditLogs = (category = 'all', limit = 50) =>
-    safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_category: category, p_limit: limit }), 'get_filtered_audit_logs');
+    safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_key: category, p_limit: limit }), 'get_filtered_audit_logs');
 
 export const requestPlatformPayout = () =>
     safeCall(() => supabase.rpc('request_platform_payout'), 'request_platform_payout');
@@ -268,7 +311,6 @@ export const createPayoutRequest = requestPayout;
 export const searchUsers = async (searchTerm) => {
     const { data, success } = await safeCall(() => supabase.rpc('search_users', { p_search_term: searchTerm }), 'search_users');
     if (success && data) {
-        // Map robust SQL names back to UI-friendly names
         const mappedData = data.map(u => ({
             id: u.user_id,
             display_name: u.user_display_name,
