@@ -230,7 +230,7 @@ export const updatePlatformSetting = (key, value) =>
     safeCall(() => supabase.rpc('update_platform_setting', { p_key: key, p_value: value }), 'update_platform_setting');
 
 export const getPlatformAuditLogs = (category = 'all', limit = 50) =>
-    safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_key: category, p_limit: limit }), 'get_filtered_audit_logs');
+    safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_category: category, p_limit: limit }), 'get_filtered_audit_logs');
 
 export const requestPlatformPayout = () =>
     safeCall(() => supabase.rpc('request_platform_payout'), 'request_platform_payout');
