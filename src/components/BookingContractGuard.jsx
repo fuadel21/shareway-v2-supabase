@@ -45,20 +45,22 @@ const BookingContractGuard = () => {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [pendingBookingActive, setPendingBookingActive] = useState(() => hasPendingBooking(getRideIdFromPath()));
   const dialogRef = useRef(null);
   const observerTimerRef = useRef(null);
   const requestIdRef = useRef(0);
 
   const blockedMessage = useMemo(() => {
     if (!state || state.can_book !== false) return null;
-    if (state.reason === 'ALREADY_BOOKED' && hasPendingBooking(rideId)) return null;
+    if (state.reason === 'ALREADY_BOOKED' && pendingBookingActive) return null;
     return reasonMessages[state.reason] || 'La reserva ya no está disponible.';
-  }, [state, rideId]);
+  }, [state, pendingBookingActive]);
 
   const refresh = useCallback(async () => {
     const currentRideId = getRideIdFromPath();
     const currentDialog = findBookingDialog();
     setRideId(currentRideId);
+    setPendingBookingActive(hasPendingBooking(currentRideId));
 
     if (!currentRideId || !currentDialog) {
       setState(null);
@@ -102,6 +104,7 @@ const BookingContractGuard = () => {
           setState(null);
           setError(null);
           setLoading(false);
+          setPendingBookingActive(false);
         }
       }, 120);
     };
@@ -127,6 +130,26 @@ const BookingContractGuard = () => {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [refresh]);
+
+  useEffect(() => {
+    if (!dialogElement || !rideId) return undefined;
+
+    let previousPending = hasPendingBooking(rideId);
+    setPendingBookingActive(previousPending);
+
+    const timer = window.setInterval(() => {
+      const nextPending = hasPendingBooking(rideId);
+      if (nextPending === previousPending) return;
+      previousPending = nextPending;
+      setPendingBookingActive(nextPending);
+
+      // When the user dismisses a recovery marker, re-check the backend
+      // immediately so ALREADY_BOOKED cannot remain hidden and allow a second payment.
+      if (!nextPending) refresh();
+    }, 300);
+
+    return () => window.clearInterval(timer);
+  }, [dialogElement, rideId, refresh]);
 
   useEffect(() => {
     if (!dialogElement) {
