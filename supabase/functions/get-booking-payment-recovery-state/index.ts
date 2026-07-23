@@ -84,9 +84,15 @@ serve(async (req) => {
       })
     }
 
-    const paymentIntentId = String(
-      localPaymentIntentId || request?.payment_intent_id || '',
-    ).trim()
+    const serverPaymentIntentId = String(request?.payment_intent_id || '').trim()
+    const localIntentId = String(localPaymentIntentId || '').trim()
+
+    // The database record is authoritative. A different local ID may belong to an
+    // older attempt from this or another device and must never unlock a new charge.
+    const paymentIntentId = serverPaymentIntentId || localIntentId
+    const ignoredStaleLocalIntent = Boolean(
+      serverPaymentIntentId && localIntentId && serverPaymentIntentId !== localIntentId
+    )
 
     if (!paymentIntentId) {
       return jsonResponse({
@@ -112,6 +118,7 @@ serve(async (req) => {
         canDismiss: false,
         bookingConfirmed: false,
         paymentIntentId,
+        ignoredStaleLocalIntent,
         reason: 'PAYMENT_STATUS_UNAVAILABLE',
       })
     }
@@ -124,26 +131,50 @@ serve(async (req) => {
     }
 
     const status = paymentIntent.status
-    const pendingStatuses = new Set([
-      'processing',
-      'requires_action',
-      'requires_capture',
-      'requires_confirmation',
-    ])
-    const retryableStatuses = new Set(['canceled', 'requires_payment_method'])
 
-    if (status === 'succeeded' || pendingStatuses.has(status)) {
+    if (status === 'requires_action' || status === 'requires_confirmation') {
+      try {
+        const canceled = await stripe.paymentIntents.cancel(paymentIntentId)
+        return jsonResponse({
+          state: 'retryable',
+          canDismiss: true,
+          bookingConfirmed: false,
+          paymentIntentId,
+          paymentStatus: canceled.status,
+          requestStatus: request?.status ?? null,
+          ignoredStaleLocalIntent,
+          reason: 'INTERRUPTED_AUTHENTICATION_CANCELED',
+        })
+      } catch (error) {
+        console.error('get-booking-payment-recovery-state cancel interrupted intent:', error)
+        return jsonResponse({
+          state: 'unknown',
+          canDismiss: false,
+          bookingConfirmed: false,
+          paymentIntentId,
+          paymentStatus: status,
+          requestStatus: request?.status ?? null,
+          ignoredStaleLocalIntent,
+          reason: 'INTERRUPTED_PAYMENT_CANCEL_FAILED',
+        })
+      }
+    }
+
+    if (status === 'succeeded' || status === 'requires_capture' || status === 'processing') {
       return jsonResponse({
-        state: status === 'succeeded' ? 'paid_waiting_booking' : 'pending',
+        state: status === 'succeeded' || status === 'requires_capture'
+          ? 'paid_waiting_booking'
+          : 'pending',
         canDismiss: false,
         bookingConfirmed: false,
         paymentIntentId,
         paymentStatus: status,
         requestStatus: request?.status ?? null,
+        ignoredStaleLocalIntent,
       })
     }
 
-    if (retryableStatuses.has(status)) {
+    if (status === 'canceled' || status === 'requires_payment_method') {
       return jsonResponse({
         state: 'retryable',
         canDismiss: true,
@@ -151,6 +182,7 @@ serve(async (req) => {
         paymentIntentId,
         paymentStatus: status,
         requestStatus: request?.status ?? null,
+        ignoredStaleLocalIntent,
       })
     }
 
@@ -161,6 +193,7 @@ serve(async (req) => {
       paymentIntentId,
       paymentStatus: status,
       requestStatus: request?.status ?? null,
+      ignoredStaleLocalIntent,
     })
   } catch (error) {
     console.error('get-booking-payment-recovery-state:', error)
