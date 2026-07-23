@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 
@@ -15,10 +15,10 @@ const getRideIdFromPath = () => {
   return match?.[1] || null;
 };
 
-const isBookingDialogOpen = () => Boolean(
-  document.querySelector('[role="dialog"]')?.textContent?.toLowerCase().includes('reserva') ||
-  document.querySelector('[role="dialog"]')?.textContent?.toLowerCase().includes('booking')
-);
+const isBookingDialogOpen = () => {
+  const dialogText = document.querySelector('[role="dialog"]')?.textContent?.toLowerCase() || '';
+  return dialogText.includes('reserva') || dialogText.includes('booking');
+};
 
 const BookingContractGuard = () => {
   const [rideId, setRideId] = useState(getRideIdFromPath());
@@ -26,6 +26,9 @@ const BookingContractGuard = () => {
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const dialogOpenRef = useRef(false);
+  const observerTimerRef = useRef(null);
+  const requestIdRef = useRef(0);
 
   const blockedMessage = useMemo(() => {
     if (!state || state.can_book !== false) return null;
@@ -35,47 +38,62 @@ const BookingContractGuard = () => {
   const refresh = useCallback(async () => {
     const currentRideId = getRideIdFromPath();
     setRideId(currentRideId);
+
     if (!currentRideId || !isBookingDialogOpen()) {
       setState(null);
       setError(null);
       return;
     }
 
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
+
     try {
       const { data, error: rpcError } = await supabase.rpc('get_booking_contract_state', {
         p_ride_id: currentRideId,
       });
       if (rpcError) throw rpcError;
-      setState(data);
+      if (requestId === requestIdRef.current) setState(data);
     } catch (err) {
       console.error('Booking contract preflight failed:', err);
-      setState(null);
-      setError('No se pudo comprobar la disponibilidad. Cierra la reserva y vuelve a intentarlo.');
+      if (requestId === requestIdRef.current) {
+        setState(null);
+        setError('No se pudo comprobar la disponibilidad. Cierra la reserva y vuelve a intentarlo.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     const syncDialog = () => {
-      const open = isBookingDialogOpen();
-      setDialogOpen(open);
-      if (open) refresh();
-      else {
-        setState(null);
-        setError(null);
-      }
+      if (observerTimerRef.current) window.clearTimeout(observerTimerRef.current);
+      observerTimerRef.current = window.setTimeout(() => {
+        const open = isBookingDialogOpen();
+        const changed = open !== dialogOpenRef.current;
+        dialogOpenRef.current = open;
+        setDialogOpen(open);
+
+        if (changed && open) refresh();
+        if (changed && !open) {
+          requestIdRef.current += 1;
+          setState(null);
+          setError(null);
+          setLoading(false);
+        }
+      }, 120);
     };
 
     syncDialog();
     const observer = new MutationObserver(syncDialog);
     observer.observe(document.body, { childList: true, subtree: true });
 
-    const onFocus = () => dialogOpen && refresh();
+    const onFocus = () => {
+      if (dialogOpenRef.current) refresh();
+    };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible' && dialogOpen) refresh();
+      if (document.visibilityState === 'visible' && dialogOpenRef.current) refresh();
     };
 
     window.addEventListener('focus', onFocus);
@@ -83,10 +101,11 @@ const BookingContractGuard = () => {
 
     return () => {
       observer.disconnect();
+      if (observerTimerRef.current) window.clearTimeout(observerTimerRef.current);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [dialogOpen, refresh]);
+  }, [refresh]);
 
   useEffect(() => {
     if (!dialogOpen || !rideId) return undefined;
