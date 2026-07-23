@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertCircle, Loader2, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../lib/supabase.js';
 
@@ -15,31 +16,51 @@ const getRideIdFromPath = () => {
   return match?.[1] || null;
 };
 
-const isBookingDialogOpen = () => {
-  const dialogText = document.querySelector('[role="dialog"]')?.textContent?.toLowerCase() || '';
-  return dialogText.includes('reserva') || dialogText.includes('booking');
+const pendingKeyForRide = (rideId) => `sw_pending_booking_recovery:${rideId}`;
+
+const hasPendingBooking = (rideId) => {
+  if (!rideId) return false;
+  try {
+    const raw = localStorage.getItem(pendingKeyForRide(rideId));
+    if (!raw) return false;
+    const pending = JSON.parse(raw);
+    return Boolean(pending?.savedAt && Date.now() - pending.savedAt <= 30 * 60 * 1000);
+  } catch {
+    return false;
+  }
+};
+
+const findBookingDialog = () => {
+  if (!getRideIdFromPath()) return null;
+  return Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+    dialog.classList.contains('sm:max-w-[460px]') ||
+    dialog.className.includes('sm:max-w-[460px]')
+  ) || null;
 };
 
 const BookingContractGuard = () => {
   const [rideId, setRideId] = useState(getRideIdFromPath());
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogElement, setDialogElement] = useState(null);
+  const [portalElement, setPortalElement] = useState(null);
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const dialogOpenRef = useRef(false);
+  const dialogRef = useRef(null);
   const observerTimerRef = useRef(null);
   const requestIdRef = useRef(0);
 
   const blockedMessage = useMemo(() => {
     if (!state || state.can_book !== false) return null;
+    if (state.reason === 'ALREADY_BOOKED' && hasPendingBooking(rideId)) return null;
     return reasonMessages[state.reason] || 'La reserva ya no está disponible.';
-  }, [state]);
+  }, [state, rideId]);
 
   const refresh = useCallback(async () => {
     const currentRideId = getRideIdFromPath();
+    const currentDialog = findBookingDialog();
     setRideId(currentRideId);
 
-    if (!currentRideId || !isBookingDialogOpen()) {
+    if (!currentRideId || !currentDialog) {
       setState(null);
       setError(null);
       return;
@@ -70,13 +91,13 @@ const BookingContractGuard = () => {
     const syncDialog = () => {
       if (observerTimerRef.current) window.clearTimeout(observerTimerRef.current);
       observerTimerRef.current = window.setTimeout(() => {
-        const open = isBookingDialogOpen();
-        const changed = open !== dialogOpenRef.current;
-        dialogOpenRef.current = open;
-        setDialogOpen(open);
+        const nextDialog = findBookingDialog();
+        const changed = nextDialog !== dialogRef.current;
+        dialogRef.current = nextDialog;
+        setDialogElement(nextDialog);
 
-        if (changed && open) refresh();
-        if (changed && !open) {
+        if (changed && nextDialog) refresh();
+        if (changed && !nextDialog) {
           requestIdRef.current += 1;
           setState(null);
           setError(null);
@@ -90,10 +111,10 @@ const BookingContractGuard = () => {
     observer.observe(document.body, { childList: true, subtree: true });
 
     const onFocus = () => {
-      if (dialogOpenRef.current) refresh();
+      if (dialogRef.current) refresh();
     };
     const onVisibility = () => {
-      if (document.visibilityState === 'visible' && dialogOpenRef.current) refresh();
+      if (document.visibilityState === 'visible' && dialogRef.current) refresh();
     };
 
     window.addEventListener('focus', onFocus);
@@ -108,7 +129,50 @@ const BookingContractGuard = () => {
   }, [refresh]);
 
   useEffect(() => {
-    if (!dialogOpen || !rideId) return undefined;
+    if (!dialogElement) {
+      setPortalElement(null);
+      return undefined;
+    }
+
+    const node = document.createElement('div');
+    node.dataset.bookingContractPortal = 'true';
+    dialogElement.appendChild(node);
+    setPortalElement(node);
+
+    return () => {
+      node.remove();
+      setPortalElement(null);
+    };
+  }, [dialogElement]);
+
+  const guardActive = Boolean(dialogElement && (loading || blockedMessage || error));
+
+  useEffect(() => {
+    if (!dialogElement) return undefined;
+
+    const contentChildren = Array.from(dialogElement.children).filter(
+      (child) => child !== portalElement
+    );
+
+    if (guardActive) {
+      dialogElement.setAttribute('aria-busy', 'true');
+      contentChildren.forEach((child) => {
+        child.setAttribute('inert', '');
+        child.setAttribute('aria-hidden', 'true');
+      });
+    }
+
+    return () => {
+      dialogElement.removeAttribute('aria-busy');
+      contentChildren.forEach((child) => {
+        child.removeAttribute('inert');
+        child.removeAttribute('aria-hidden');
+      });
+    };
+  }, [dialogElement, portalElement, guardActive]);
+
+  useEffect(() => {
+    if (!dialogElement || !rideId) return undefined;
 
     const channel = supabase
       .channel(`booking_contract_${rideId}`)
@@ -123,12 +187,12 @@ const BookingContractGuard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [dialogOpen, rideId, refresh]);
+  }, [dialogElement, rideId, refresh]);
 
-  if (!dialogOpen || (!loading && !blockedMessage && !error)) return null;
+  if (!portalElement || !guardActive) return null;
 
-  return (
-    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
+  return createPortal(
+    <div className="absolute inset-0 z-[250] flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-[2rem] border border-white/20 bg-white p-6 shadow-2xl">
         {loading && !blockedMessage && !error ? (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
@@ -172,7 +236,8 @@ const BookingContractGuard = () => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    portalElement
   );
 };
 
