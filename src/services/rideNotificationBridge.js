@@ -11,6 +11,7 @@ import {
   notifyRideRequestAccepted,
   notifyRideRequestRejected,
 } from './notificationEvents.js';
+import { fetchPostRideReviewAccess } from '../lib/postRideReviewAccess.js';
 
 const getRideOrigin = (ride) => ride?.origin_address || ride?.origin?.address || ride?.origin?.name || '';
 const getRideDestination = (ride) => ride?.destination_address || ride?.destination?.address || ride?.destination?.name || '';
@@ -105,6 +106,14 @@ export const cancelBookingAndNotifyDriver = async ({ rideId, ride = null, passen
 };
 
 export const submitReviewAndNotify = async ({ rideId, revieweeId, rating, comment, reviewer = null }) => {
+  const access = await fetchPostRideReviewAccess({
+    rideId,
+    reviewerId: reviewer?.id,
+    revieweeId,
+  });
+
+  if (!access.allowed) throw new Error(access.reason || 'Valoración no permitida.');
+
   const result = await submitReview({ rideId, revieweeId, rating, comment });
 
   await notifyReviewReceived({
