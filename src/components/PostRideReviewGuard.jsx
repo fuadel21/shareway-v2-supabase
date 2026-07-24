@@ -3,6 +3,7 @@ import { AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { supabase } from '../lib/supabase.js';
 import { fetchPostRideReviewAccess } from '../lib/postRideReviewAccess.js';
+import { subscribeToNavigation } from '../lib/navigationEvents.js';
 
 const getReviewRoute = () => {
   const match = window.location.pathname.match(/^\/leave-review\/([^/]+)\/([^/]+)$/);
@@ -45,12 +46,10 @@ const PostRideReviewGuard = () => {
     };
 
     check();
-    window.addEventListener('popstate', check);
-    window.addEventListener('shareway:navigation', check);
+    const unsubscribe = subscribeToNavigation(check);
     return () => {
       mounted = false;
-      window.removeEventListener('popstate', check);
-      window.removeEventListener('shareway:navigation', check);
+      unsubscribe();
     };
   }, []);
 
