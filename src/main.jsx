@@ -14,6 +14,7 @@ import RideEmergencyHistoryPanel from "./components/RideEmergencyHistoryPanel.js
 import RideBoardingOverlay from "./components/RideBoardingOverlay.jsx";
 import BookingContractGuard from "./components/BookingContractGuard.jsx";
 import BookingPendingPaymentDismissGuard from "./components/BookingPendingPaymentDismissGuard.jsx";
+import BookingRecoveryResolutionBridge from "./components/BookingRecoveryResolutionBridge.jsx";
 
 // Importar estilos de Leaflet globalmente
 import 'leaflet/dist/leaflet.css';
@@ -30,6 +31,7 @@ root.render(
     <RideEmergencyHistoryPanel />
     <RideBoardingOverlay />
     <BookingPendingPaymentDismissGuard />
+    <BookingRecoveryResolutionBridge />
     <BookingContractGuard />
   </React.StrictMode>
 );
