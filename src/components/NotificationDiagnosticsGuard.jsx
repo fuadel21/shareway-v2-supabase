@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { Button } from './ui/button.jsx';
 import { supabase } from '../lib/supabase.js';
+import { subscribeToNavigation } from '../lib/navigationEvents.js';
 
 const isAdminProfile = (profile) => {
   const role = String(profile?.role || '').toLowerCase();
@@ -42,12 +43,10 @@ const NotificationDiagnosticsGuard = () => {
     };
 
     check();
-    window.addEventListener('popstate', check);
-    window.addEventListener('shareway:navigation', check);
+    const unsubscribe = subscribeToNavigation(check);
     return () => {
       mounted = false;
-      window.removeEventListener('popstate', check);
-      window.removeEventListener('shareway:navigation', check);
+      unsubscribe();
     };
   }, []);
 
