@@ -60,16 +60,23 @@ export const validatePostRideReviewAccess = ({ ride, reviewerId, revieweeId }) =
 
 export const fetchPostRideReviewAccess = async ({ rideId, reviewerId, revieweeId }) => {
   if (!rideId) return { allowed: false, reason: 'Viaje no válido.', ride: null };
+  if (!reviewerId) return { allowed: false, reason: 'Sesión no válida.', ride: null };
+  if (!revieweeId) return { allowed: false, reason: 'Usuario a valorar no válido.', ride: null };
 
-  const { data: ride, error } = await supabase
-    .from('rides')
-    .select('id,status,driver_id,participant_ids,passengers,completed_at')
-    .eq('id', rideId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc('get_post_ride_review_access', {
+    p_ride_id: rideId,
+    p_reviewee_id: revieweeId,
+  });
 
   if (error) throw error;
+  const result = Array.isArray(data) ? data[0] : data;
   return {
-    ...validatePostRideReviewAccess({ ride, reviewerId, revieweeId }),
-    ride,
+    allowed: result?.allowed === true,
+    reason: result?.reason ?? (result?.allowed ? null : 'Valoración no disponible.'),
+    ride: result?.ride_id ? {
+      id: result.ride_id,
+      status: result.ride_status,
+      completed_at: result.completed_at,
+    } : null,
   };
 };
