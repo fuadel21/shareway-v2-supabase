@@ -191,24 +191,43 @@ for each row
 execute function public.enforce_ride_booking_seat_integrity();
 
 -- Repair only rows whose counters do not match their active passenger payload.
--- Assigning passengers to itself deliberately invokes the canonical trigger.
-update public.rides
-set passengers = coalesce(passengers, '[]'::jsonb)
-where jsonb_typeof(coalesce(passengers, '[]'::jsonb)) = 'array'
+-- The CTE calculates a non-negative total before the trigger runs, so even a
+-- malformed legacy total can be repaired instead of being rejected first.
+with seat_state as (
+  select
+    id,
+    coalesce(passengers, '[]'::jsonb) as normalized_passengers,
+    public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb)) as occupied,
+    case
+      when coalesce(total_seats, 0) > 0 then total_seats
+      else greatest(
+        coalesce(seats_available, 0)
+          + public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb)),
+        public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb)),
+        0
+      )
+    end as effective_total
+  from public.rides
+  where jsonb_typeof(coalesce(passengers, '[]'::jsonb)) = 'array'
+), candidates as (
+  select
+    id,
+    normalized_passengers,
+    effective_total,
+    greatest(effective_total - occupied, 0) as expected_available
+  from seat_state
+)
+update public.rides as ride
+set
+  passengers = candidate.normalized_passengers,
+  total_seats = candidate.effective_total
+from candidates as candidate
+where ride.id = candidate.id
   and (
-    total_seats is null
-    or total_seats < 0
-    or seats_available is null
-    or seats_available < 0
-    or seats_available > greatest(coalesce(total_seats, 0), 0)
-    or seats_available <> greatest(
-      greatest(
-        coalesce(total_seats, 0),
-        coalesce(seats_available, 0) + public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb)),
-        public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb))
-      ) - public.ride_active_seat_count(coalesce(passengers, '[]'::jsonb)),
-      0
-    )
+    ride.total_seats is null
+    or ride.total_seats < 0
+    or ride.seats_available is null
+    or ride.seats_available <> candidate.expected_available
   );
 
 -- NOT VALID preserves deployability when a legacy row needs manual review,
