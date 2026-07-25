@@ -27,6 +27,22 @@ const rpcFailure = (operation: string, error: any): RpcFailure => ({
   details: error?.details,
 })
 
+const rpcBusinessFailure = (operation: string, data: unknown): RpcFailure | null => {
+  const payload = Array.isArray(data) && data.length === 1 ? data[0] : data
+
+  if (!payload || typeof payload !== 'object') return null
+
+  const result = payload as Record<string, unknown>
+  if (result.success !== false) return null
+
+  return {
+    operation,
+    message: String(result.error || result.message || 'La operación financiera fue rechazada por Supabase'),
+    code: result.code ? String(result.code) : 'RPC_BUSINESS_FAILURE',
+    details: result.details ? String(result.details) : undefined,
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return jsonResponse({ error: 'Método no permitido' }, 405)
@@ -63,8 +79,15 @@ serve(async (req) => {
   const failures: RpcFailure[] = []
 
   const runRpc = async (operation: string, fn: string, params: Record<string, unknown>) => {
-    const { error } = await supabaseAdmin.rpc(fn, params)
-    if (error) failures.push(rpcFailure(operation, error))
+    const { data, error } = await supabaseAdmin.rpc(fn, params)
+
+    if (error) {
+      failures.push(rpcFailure(operation, error))
+      return
+    }
+
+    const businessFailure = rpcBusinessFailure(operation, data)
+    if (businessFailure) failures.push(businessFailure)
   }
 
   try {
