@@ -1,7 +1,26 @@
 import { supabase } from './supabase';
 
+const sanitizeError = (value, fallback = 'La operación fue rechazada por el servidor') => {
+    const raw = String(value || fallback);
+    return raw.replace(/eyJ[a-zA-Z0-9._-]+/g, '[TOKEN_HIDDEN]');
+};
+
+const getBusinessFailure = (data) => {
+    const payload = Array.isArray(data) && data.length === 1 ? data[0] : data;
+
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+    if (payload.success !== false) return null;
+
+    return sanitizeError(
+        payload.error || payload.message || payload.code,
+        'La operación no pudo completarse.'
+    );
+};
+
 /**
- * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout
+ * Enhanced Safe RPC Wrapper with Retries and Dynamic Timeout.
+ * Treats both PostgREST errors and JSON business responses with success=false
+ * as failed operations, so the UI cannot report a rejected mutation as successful.
  */
 export const safeCall = async (rpcCall, functionName, retries = 2) => {
     const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund', 'trigger_emergency_alert'];
@@ -17,19 +36,32 @@ export const safeCall = async (rpcCall, functionName, retries = 2) => {
                 )
             ]);
 
-            if (result.error) {
-                const cleanError = result.error.message?.replace(/eyJ[a-zA-Z0-9._-]+/g, '[TOKEN_HIDDEN]');
+            if (!result || typeof result !== 'object') {
+                const cleanError = 'Respuesta inválida del servidor';
                 console.error(`🛡️ RPC Error [${functionName}]:`, cleanError);
                 return { data: null, error: cleanError, success: false };
             }
 
+            if (result.error) {
+                const cleanError = sanitizeError(result.error.message || result.error);
+                console.error(`🛡️ RPC Error [${functionName}]:`, cleanError);
+                return { data: null, error: cleanError, success: false };
+            }
+
+            const businessFailure = getBusinessFailure(result.data);
+            if (businessFailure) {
+                console.warn(`🛡️ RPC Business Failure [${functionName}]:`, businessFailure);
+                return { data: result.data, error: businessFailure, success: false };
+            }
+
             return { data: result.data, error: null, success: true };
         } catch (err) {
-            if (attempt < retries && (err.message.includes('Timeout') || err.message.includes('fetch'))) {
+            const message = err instanceof Error ? err.message : String(err || 'Error de conexión');
+            if (attempt < retries && (message.includes('Timeout') || message.includes('fetch'))) {
                 console.warn(`⚠️ Retrying ${functionName} (${attempt + 1}/${retries})...`);
                 return executeCall(attempt + 1);
             }
-            return { data: null, error: err.message || "Error de conexión", success: false };
+            return { data: null, error: sanitizeError(message, 'Error de conexión'), success: false };
         }
     };
 
