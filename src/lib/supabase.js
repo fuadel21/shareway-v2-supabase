@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createSingleFlightFetch } from './createSingleFlightFetch.js';
 import { installRideSyncRecovery } from './enhanceRideSyncChannel.js';
+import { installRadarPresenceHeartbeat } from './radarPresenceHeartbeat.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -33,6 +34,10 @@ const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // RideDetails keeps its normal realtime subscription. This recovery layer only
 // requests a fresh secure snapshot after reconnect/focus/online events so both
 // driver and passenger recover from any missed seat or passenger update.
-export const supabase = installRideSyncRecovery(supabaseClient);
+const recoveredClient = installRideSyncRecovery(supabaseClient);
+
+// Enabled radar modes stay eligible for matching while the user keeps using the app.
+// This heartbeat never enables a radar and never overwrites its stored coordinates.
+export const supabase = installRadarPresenceHeartbeat(recoveredClient);
 
 export const SUPABASE_CONFIG = { url: SUPABASE_URL, anonKey: SUPABASE_ANON_KEY };
