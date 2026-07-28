@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Radar, MapPin, Loader2, ShieldCheck } from 'lucide-react';
+import { Radar, MapPin, Loader2, ShieldCheck, Route } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import { safeCall } from '@/lib/supabaseRPC';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Switch } from '@/components/ui/switch.jsx';
 
 const RADII = [10, 25, 50, 100];
+const DESTINATION_RADII = [10, 25, 50];
 
 const getCurrentPosition = () => new Promise((resolve, reject) => {
   if (!navigator.geolocation) {
@@ -23,7 +24,14 @@ const getCurrentPosition = () => new Promise((resolve, reject) => {
 });
 
 export default function DriverRadarSettingsCard() {
-  const [settings, setSettings] = useState({ enabled: false, radius_km: 25, has_location: false });
+  const [settings, setSettings] = useState({
+    enabled: false,
+    radius_km: 25,
+    has_location: false,
+    match_favorite_routes: false,
+    destination_radius_km: 25,
+    favorite_routes_count: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -77,6 +85,41 @@ export default function DriverRadarSettingsCard() {
       });
     } catch (error) {
       toast.error('No se pudo actualizar el radar', { description: error.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const saveRouteFilter = async ({
+    enabled = settings.match_favorite_routes,
+    destinationRadius = settings.destination_radius_km,
+  } = {}) => {
+    setIsSaving(true);
+    try {
+      const { data, success, error } = await safeCall(
+        () => supabase.rpc('set_driver_radar_route_filter', {
+          p_enabled: enabled,
+          p_destination_radius_km: destinationRadius,
+        }),
+        'set_driver_radar_route_filter',
+      );
+
+      if (!success) throw new Error(error || 'No se pudo actualizar el filtro de rutas.');
+
+      setSettings((current) => ({
+        ...current,
+        ...data,
+        match_favorite_routes: enabled,
+        destination_radius_km: destinationRadius,
+      }));
+
+      toast.success(enabled ? 'Coincidencia inteligente activada' : 'Coincidencia inteligente desactivada', {
+        description: enabled
+          ? 'Solo recibirás solicitudes compatibles con una ruta favorita.'
+          : 'Volverás a recibir solicitudes según proximidad al origen.',
+      });
+    } catch (error) {
+      toast.error('No se pudo actualizar el filtro', { description: error.message });
     } finally {
       setIsSaving(false);
     }
@@ -151,6 +194,54 @@ export default function DriverRadarSettingsCard() {
               </Button>
             ))}
           </div>
+        </div>
+
+        <div className="relative rounded-3xl border border-white/10 bg-white/5 p-5 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <Route className="size-5 text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest">Usar mis rutas favoritas</p>
+                <p className="mt-1 text-[11px] font-bold text-white/55 leading-relaxed">
+                  Exige que el origen y el destino de la solicitud encajen con una ruta guardada.
+                </p>
+                <p className="mt-2 text-[9px] font-black uppercase tracking-widest text-white/30">
+                  {settings.favorite_routes_count || 0} ruta(s) disponible(s)
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={Boolean(settings.match_favorite_routes)}
+              onCheckedChange={(enabled) => saveRouteFilter({ enabled })}
+              disabled={isSaving}
+              className="data-[state=checked]:bg-primary shrink-0"
+            />
+          </div>
+
+          {settings.match_favorite_routes && (
+            <div className="space-y-3 pt-2 border-t border-white/10">
+              <div className="flex items-center justify-between">
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-white/40">Margen del destino</p>
+                <span className="text-sm font-black text-primary">{settings.destination_radius_km} km</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {DESTINATION_RADII.map((radius) => (
+                  <Button
+                    key={radius}
+                    type="button"
+                    variant="outline"
+                    disabled={isSaving}
+                    onClick={() => saveRouteFilter({ destinationRadius: radius })}
+                    className={settings.destination_radius_km === radius
+                      ? 'h-11 rounded-2xl border-primary bg-primary text-white hover:bg-primary/90 font-black'
+                      : 'h-11 rounded-2xl border-white/10 bg-white/5 text-white hover:bg-white/10 font-black'}
+                  >
+                    {radius}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="relative flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-emerald-300">
