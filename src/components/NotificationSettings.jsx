@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
 import BrowserAlertsCard from './BrowserAlertsCard';
 import DriverRadarSettingsCard from './DriverRadarSettingsCard';
+import PassengerRadarSettingsCard from './PassengerRadarSettingsCard';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -141,6 +142,7 @@ function NotificationSettings() {
                 </Card>
 
                 <BrowserAlertsCard userId={profile?.id} />
+                <PassengerRadarSettingsCard />
                 <DriverRadarSettingsCard />
 
                 <div className="space-y-3">
