@@ -8,6 +8,7 @@ import { MessageSquare, Briefcase, Clock, Sparkles, Bell, BellOff, ShieldCheck, 
 import { toast } from 'sonner';
 import SubPageHeader from './SubPageHeader';
 import BrowserAlertsCard from './BrowserAlertsCard';
+import DriverRadarSettingsCard from './DriverRadarSettingsCard';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -78,8 +79,6 @@ function NotificationSettings() {
             <SubPageHeader title={t('notifications.title', 'Notificaciones')} backTo="/settings" />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8 text-left">
-
-                {/* HERO: Smart Notification Status */}
                 <div className="bg-white rounded-[3rem] p-8 shadow-2xl shadow-slate-200 border border-slate-100 relative overflow-hidden group">
                     <div className="absolute -right-6 -top-6 opacity-5 rotate-12 group-hover:scale-110 transition-transform">
                         <Bell size={120} className="text-primary" />
@@ -142,6 +141,7 @@ function NotificationSettings() {
                 </Card>
 
                 <BrowserAlertsCard userId={profile?.id} />
+                <DriverRadarSettingsCard />
 
                 <div className="space-y-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-4 italic">{t('notifications.channels_title', 'Canales activos')}</p>
