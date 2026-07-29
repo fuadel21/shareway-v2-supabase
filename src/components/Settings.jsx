@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   History, Map as MapIcon, Shield, Fingerprint,
   ChevronRight, LogOut, User, Bell, Palette,
   Landmark, Wallet as WalletIcon,
   Smartphone, Leaf, Star, FlaskConical, Car,
-  CheckCircle2, AlertTriangle
+  CheckCircle2, AlertTriangle, Radar, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
+import { safeCall } from '@/lib/supabaseRPC';
 import ReferralCard from '@/components/referrals/ReferralCard.jsx';
 
 const SettingItem = ({ icon: Icon, label, onClick, color, sublabel, badge }) => (
@@ -31,17 +33,15 @@ const SettingItem = ({ icon: Icon, label, onClick, color, sublabel, badge }) => 
   </button>
 );
 
-const SectionHeader = ({ title, icon: Icon, color }) => {
-  return (
-    <div className="px-4 flex justify-between items-center mb-6">
-      <div className="flex items-center gap-3">
-        {Icon && <Icon size={14} className={color} />}
-        <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">{title}</h3>
-      </div>
-      <div className="h-px flex-1 bg-slate-100 ml-4 opacity-50" />
+const SectionHeader = ({ title, icon: Icon, color }) => (
+  <div className="px-4 flex justify-between items-center mb-6">
+    <div className="flex items-center gap-3">
+      {Icon && <Icon size={14} className={color} />}
+      <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">{title}</h3>
     </div>
-  );
-};
+    <div className="h-px flex-1 bg-slate-100 ml-4 opacity-50" />
+  </div>
+);
 
 const AccountStatusPill = ({ done, label }) => (
   <div className={cn(
@@ -50,6 +50,21 @@ const AccountStatusPill = ({ done, label }) => (
   )}>
     {done ? <CheckCircle2 className="size-4 shrink-0" /> : <AlertTriangle className="size-4 shrink-0" />}
     <span className="text-[9px] font-black uppercase tracking-widest leading-tight">{label}</span>
+  </div>
+);
+
+const RadarStatusPill = ({ enabled, label }) => (
+  <div className={cn(
+    'rounded-2xl border px-4 py-3 flex items-center justify-between gap-3',
+    enabled ? 'bg-emerald-500/15 border-emerald-400/20' : 'bg-white/5 border-white/10'
+  )}>
+    <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{label}</span>
+    <span className={cn(
+      'text-[8px] font-black uppercase tracking-widest rounded-full px-2 py-1',
+      enabled ? 'bg-emerald-400 text-slate-950' : 'bg-white/10 text-white/45'
+    )}>
+      {enabled ? 'Activo' : 'Inactivo'}
+    </span>
   </div>
 );
 
@@ -62,6 +77,36 @@ const Settings = () => {
   const hasProfileName = Boolean(profile?.display_name || profile?.full_name || profile?.name);
   const hasPayouts = Boolean(profile?.stripe_onboarding_complete);
   const trustScore = [hasProfileName, hasVehicle, hasPayouts].filter(Boolean).length;
+  const [radarStatus, setRadarStatus] = useState({ passenger: false, driver: false, loading: true });
+
+  useEffect(() => {
+    let active = true;
+
+    const loadRadarStatus = async () => {
+      const [passengerResult, driverResult] = await Promise.all([
+        safeCall(
+          () => supabase.rpc('get_my_passenger_radar_preferences'),
+          'get_my_passenger_radar_preferences'
+        ),
+        safeCall(
+          () => supabase.rpc('get_my_driver_radar_preferences'),
+          'get_my_driver_radar_preferences'
+        ),
+      ]);
+
+      if (!active) return;
+      setRadarStatus({
+        passenger: Boolean(passengerResult.success && passengerResult.data?.enabled),
+        driver: Boolean(driverResult.success && driverResult.data?.enabled),
+        loading: false,
+      });
+    };
+
+    loadRadarStatus();
+    return () => { active = false; };
+  }, [user?.id]);
+
+  const activeRadars = [radarStatus.passenger, radarStatus.driver].filter(Boolean).length;
 
   return (
     <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
@@ -121,113 +166,85 @@ const Settings = () => {
           </div>
         </section>
 
+        <section className="rounded-[2.5rem] bg-slate-950 text-white p-6 shadow-2xl overflow-hidden relative">
+          <div className="absolute -left-12 -bottom-12 size-40 rounded-full bg-emerald-400/15 blur-2xl" />
+          <div className="relative space-y-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">Radar ShareWay</p>
+                <h2 className="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">Viajes compatibles</h2>
+                <p className="mt-2 text-xs font-bold text-white/55 leading-relaxed">Recibe avisos cuando aparezca una plaza o una solicitud cerca de ti.</p>
+              </div>
+              <div className="h-14 w-14 rounded-2xl bg-emerald-400/15 border border-emerald-300/15 flex items-center justify-center shrink-0">
+                {radarStatus.loading ? <Loader2 className="size-6 text-emerald-300 animate-spin" /> : <Radar className="size-6 text-emerald-300" />}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-2xl bg-white/10 p-3 col-span-1">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Activos</p>
+                <p className="mt-1 text-lg font-black italic">{radarStatus.loading ? '—' : `${activeRadars}/2`}</p>
+              </div>
+              <div className="rounded-2xl bg-white/10 p-3 col-span-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Cobertura</p>
+                <p className="mt-1 text-[10px] font-black uppercase">Pasajero y conductor</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <RadarStatusPill enabled={radarStatus.passenger} label="Radar de plazas" />
+              <RadarStatusPill enabled={radarStatus.driver} label="Radar de solicitudes" />
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => navigate('/settings/notifications')}
+              className="w-full h-14 rounded-2xl bg-emerald-400 text-slate-950 hover:bg-emerald-300 text-[10px] font-black uppercase tracking-[0.18em]"
+            >
+              <Radar className="mr-2 size-5" /> Configurar radar
+            </Button>
+          </div>
+        </section>
+
         <section>
           <SectionHeader title={t('settings.account_section')} icon={User} color="text-slate-900" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem
-              icon={User}
-              label={profile?.display_name || t('settings.my_profile')}
-              sublabel={t('settings.edit_profile')}
-              color="bg-slate-900"
-              onClick={() => navigate('/profile/edit')}
-            />
+            <SettingItem icon={User} label={profile?.display_name || t('settings.my_profile')} sublabel={t('settings.edit_profile')} color="bg-slate-900" onClick={() => navigate('/profile/edit')} />
             <ReferralCard profile={profile} user={user} />
-            <SettingItem
-              icon={Leaf}
-              label={t('settings.environmental_impact')}
-              sublabel={t('settings.environmental_impact_sub')}
-              color="bg-emerald-600"
-              onClick={() => navigate('/settings/impact')}
-            />
-            <SettingItem
-              icon={Star}
-              label={t('settings.my_reviews')}
-              sublabel={t('settings.my_reviews_sub')}
-              color="bg-amber-500"
-              onClick={() => navigate(`/profile/${profile?.id}`)}
-            />
+            <SettingItem icon={Leaf} label={t('settings.environmental_impact')} sublabel={t('settings.environmental_impact_sub')} color="bg-emerald-600" onClick={() => navigate('/settings/impact')} />
+            <SettingItem icon={Star} label={t('settings.my_reviews')} sublabel={t('settings.my_reviews_sub')} color="bg-amber-500" onClick={() => navigate(`/profile/${profile?.id}`)} />
           </div>
         </section>
 
         <section>
           <SectionHeader title={t('wallet.title')} icon={WalletIcon} color="text-amber-500" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem
-              icon={Landmark}
-              label={t('settings.driver_payouts')}
-              sublabel={t('settings.payouts_sub')}
-              color="bg-emerald-600"
-              badge={!profile?.stripe_onboarding_complete}
-              onClick={() => navigate('/settings/payout')}
-            />
+            <SettingItem icon={Landmark} label={t('settings.driver_payouts')} sublabel={t('settings.payouts_sub')} color="bg-emerald-600" badge={!profile?.stripe_onboarding_complete} onClick={() => navigate('/settings/payout')} />
           </div>
         </section>
 
         <section>
           <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem
-              icon={Car}
-              label={hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Mi vehículo'}
-              sublabel={hasVehicle ? 'Editar coche, plazas y normas' : 'Añade coche, plazas, equipaje y normas'}
-              color="bg-slate-900"
-              badge={!hasVehicle}
-              onClick={() => navigate('/settings/vehicle')}
-            />
-            <SettingItem
-              icon={MapIcon}
-              label={t('settings.routes')}
-              sublabel={t('settings.routes_sub')}
-              color="bg-blue-600"
-              onClick={() => navigate('/settings/routes')}
-            />
+            <SettingItem icon={Car} label={hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Mi vehículo'} sublabel={hasVehicle ? 'Editar coche, plazas y normas' : 'Añade coche, plazas, equipaje y normas'} color="bg-slate-900" badge={!hasVehicle} onClick={() => navigate('/settings/vehicle')} />
+            <SettingItem icon={MapIcon} label={t('settings.routes')} sublabel={t('settings.routes_sub')} color="bg-blue-600" onClick={() => navigate('/settings/routes')} />
           </div>
         </section>
 
         <section>
           <SectionHeader title={t('settings.security_trust')} icon={Shield} color="text-orange-500" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem
-              icon={Shield}
-              label={t('settings.security')}
-              sublabel={t('settings.security_sub')}
-              color="bg-orange-500"
-              onClick={() => navigate('/settings/security')}
-            />
-            <SettingItem
-              icon={Fingerprint}
-              label={t('settings.identity')}
-              sublabel={t('settings.identity_sub')}
-              color="bg-slate-800"
-              onClick={() => navigate('/settings/verification')}
-            />
+            <SettingItem icon={Shield} label={t('settings.security')} sublabel={t('settings.security_sub')} color="bg-orange-500" onClick={() => navigate('/settings/security')} />
+            <SettingItem icon={Fingerprint} label={t('settings.identity')} sublabel={t('settings.identity_sub')} color="bg-slate-800" onClick={() => navigate('/settings/verification')} />
           </div>
         </section>
 
         <section>
           <SectionHeader title={t('settings.app_prefs')} icon={Smartphone} color="text-indigo-500" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem
-              icon={Palette}
-              label={t('settings.design_style')}
-              sublabel={t('settings.design_sub')}
-              color="bg-indigo-500"
-              onClick={() => navigate('/settings/appearance')}
-            />
-            <SettingItem
-              icon={Bell}
-              label={t('settings.notifications')}
-              sublabel={t('settings.notifications_sub')}
-              color="bg-violet-600"
-              onClick={() => navigate('/settings/notifications')}
-            />
-            <SettingItem
-              icon={History}
-              label={t('settings.activity_history')}
-              sublabel={t('settings.activity_history_sub')}
-              color="bg-slate-900"
-              onClick={() => navigate('/settings/activity')}
-            />
+            <SettingItem icon={Palette} label={t('settings.design_style')} sublabel={t('settings.design_sub')} color="bg-indigo-500" onClick={() => navigate('/settings/appearance')} />
+            <SettingItem icon={Bell} label={t('settings.notifications')} sublabel={t('settings.notifications_sub')} color="bg-violet-600" onClick={() => navigate('/settings/notifications')} />
+            <SettingItem icon={History} label={t('settings.activity_history')} sublabel={t('settings.activity_history_sub')} color="bg-slate-900" onClick={() => navigate('/settings/activity')} />
           </div>
         </section>
 
@@ -235,23 +252,13 @@ const Settings = () => {
           <section>
             <SectionHeader title="Herramientas internas" icon={FlaskConical} color="text-cyan-500" />
             <div className="grid grid-cols-1 gap-4">
-              <SettingItem
-                icon={FlaskConical}
-                label="Test de notificaciones"
-                sublabel="Validar RLS, Realtime y contador"
-                color="bg-cyan-600"
-                onClick={() => navigate('/settings/notification-test')}
-              />
+              <SettingItem icon={FlaskConical} label="Test de notificaciones" sublabel="Validar RLS, Realtime y contador" color="bg-cyan-600" onClick={() => navigate('/settings/notification-test')} />
             </div>
           </section>
         )}
 
         <div className="pt-6 md:pt-10">
-          <Button
-            onClick={handleSignOut}
-            variant="ghost"
-            className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2.5rem] bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-black text-base md:text-lg tracking-tighter shadow-sm border-none uppercase italic"
-          >
+          <Button onClick={handleSignOut} variant="ghost" className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2.5rem] bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-black text-base md:text-lg tracking-tighter shadow-sm border-none uppercase italic">
             <LogOut className="mr-3 size-5 md:size-6" /> {t('nav.logout')}
           </Button>
         </div>
