@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
   History, Map as MapIcon, Shield, Fingerprint,
   ChevronRight, LogOut, User, Bell, Palette,
   Landmark, Wallet as WalletIcon,
   Smartphone, Leaf, Star, FlaskConical, Car,
-  CheckCircle2, AlertTriangle, Radar, Loader2
+  CheckCircle2, AlertTriangle, Radar, Loader2, RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button.jsx';
 import { useTranslation } from 'react-i18next';
@@ -53,20 +53,39 @@ const AccountStatusPill = ({ done, label }) => (
   </div>
 );
 
-const RadarStatusPill = ({ enabled, label }) => (
-  <div className={cn(
-    'rounded-2xl border px-4 py-3 flex items-center justify-between gap-3',
-    enabled ? 'bg-emerald-500/15 border-emerald-400/20' : 'bg-white/5 border-white/10'
-  )}>
-    <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{label}</span>
-    <span className={cn(
-      'text-[8px] font-black uppercase tracking-widest rounded-full px-2 py-1',
-      enabled ? 'bg-emerald-400 text-slate-950' : 'bg-white/10 text-white/45'
+const RadarStatusPill = ({ state, label }) => {
+  const isActive = state === 'active';
+  const isUnknown = state === 'unknown';
+  const statusLabel = isActive ? 'Activo' : isUnknown ? 'No disponible' : 'Inactivo';
+
+  return (
+    <div className={cn(
+      'rounded-2xl border px-4 py-3 flex items-center justify-between gap-3',
+      isActive
+        ? 'bg-emerald-500/15 border-emerald-400/20'
+        : isUnknown
+          ? 'bg-amber-400/10 border-amber-300/20'
+          : 'bg-white/5 border-white/10'
     )}>
-      {enabled ? 'Activo' : 'Inactivo'}
-    </span>
-  </div>
-);
+      <span className="text-[9px] font-black uppercase tracking-widest text-white/70">{label}</span>
+      <span className={cn(
+        'text-[8px] font-black uppercase tracking-widest rounded-full px-2 py-1',
+        isActive
+          ? 'bg-emerald-400 text-slate-950'
+          : isUnknown
+            ? 'bg-amber-300 text-slate-950'
+            : 'bg-white/10 text-white/45'
+      )}>
+        {statusLabel}
+      </span>
+    </div>
+  );
+};
+
+const getRadarState = (result) => {
+  if (!result?.success) return 'unknown';
+  return result.data?.enabled ? 'active' : 'inactive';
+};
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -77,12 +96,36 @@ const Settings = () => {
   const hasProfileName = Boolean(profile?.display_name || profile?.full_name || profile?.name);
   const hasPayouts = Boolean(profile?.stripe_onboarding_complete);
   const trustScore = [hasProfileName, hasVehicle, hasPayouts].filter(Boolean).length;
-  const [radarStatus, setRadarStatus] = useState({ passenger: false, driver: false, loading: true });
+  const [radarStatus, setRadarStatus] = useState({ passenger: 'unknown', driver: 'unknown', loading: true });
+
+  const loadRadarStatus = useCallback(async () => {
+    if (!user?.id) return;
+
+    setRadarStatus((current) => ({ ...current, loading: true }));
+    const [passengerResult, driverResult] = await Promise.all([
+      safeCall(
+        () => supabase.rpc('get_my_passenger_radar_preferences'),
+        'get_my_passenger_radar_preferences'
+      ),
+      safeCall(
+        () => supabase.rpc('get_my_driver_radar_preferences'),
+        'get_my_driver_radar_preferences'
+      ),
+    ]);
+
+    setRadarStatus({
+      passenger: getRadarState(passengerResult),
+      driver: getRadarState(driverResult),
+      loading: false,
+    });
+  }, [user?.id]);
 
   useEffect(() => {
     let active = true;
 
-    const loadRadarStatus = async () => {
+    const load = async () => {
+      if (!user?.id) return;
+      setRadarStatus((current) => ({ ...current, loading: true }));
       const [passengerResult, driverResult] = await Promise.all([
         safeCall(
           () => supabase.rpc('get_my_passenger_radar_preferences'),
@@ -96,17 +139,19 @@ const Settings = () => {
 
       if (!active) return;
       setRadarStatus({
-        passenger: Boolean(passengerResult.success && passengerResult.data?.enabled),
-        driver: Boolean(driverResult.success && driverResult.data?.enabled),
+        passenger: getRadarState(passengerResult),
+        driver: getRadarState(driverResult),
         loading: false,
       });
     };
 
-    loadRadarStatus();
+    load();
     return () => { active = false; };
   }, [user?.id]);
 
-  const activeRadars = [radarStatus.passenger, radarStatus.driver].filter(Boolean).length;
+  const knownRadarStates = [radarStatus.passenger, radarStatus.driver].filter((state) => state !== 'unknown');
+  const activeRadars = knownRadarStates.filter((state) => state === 'active').length;
+  const hasUnknownRadar = knownRadarStates.length < 2;
 
   return (
     <div className="bg-slate-50 min-h-screen pb-40 font-sans text-left">
@@ -183,7 +228,7 @@ const Settings = () => {
             <div className="grid grid-cols-3 gap-2">
               <div className="rounded-2xl bg-white/10 p-3 col-span-1">
                 <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Activos</p>
-                <p className="mt-1 text-lg font-black italic">{radarStatus.loading ? '—' : `${activeRadars}/2`}</p>
+                <p className="mt-1 text-lg font-black italic">{radarStatus.loading || hasUnknownRadar ? '—' : `${activeRadars}/2`}</p>
               </div>
               <div className="rounded-2xl bg-white/10 p-3 col-span-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-white/35">Cobertura</p>
@@ -192,9 +237,18 @@ const Settings = () => {
             </div>
 
             <div className="space-y-2">
-              <RadarStatusPill enabled={radarStatus.passenger} label="Radar de plazas" />
-              <RadarStatusPill enabled={radarStatus.driver} label="Radar de solicitudes" />
+              <RadarStatusPill state={radarStatus.passenger} label="Radar de plazas" />
+              <RadarStatusPill state={radarStatus.driver} label="Radar de solicitudes" />
             </div>
+
+            {hasUnknownRadar && !radarStatus.loading && (
+              <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 px-4 py-3 flex items-center justify-between gap-3">
+                <p className="text-[9px] font-bold leading-relaxed text-amber-100">No hemos podido comprobar uno o más radares. Tu configuración no se ha cambiado.</p>
+                <Button type="button" variant="ghost" size="icon" onClick={loadRadarStatus} className="shrink-0 rounded-xl text-amber-100 hover:bg-amber-300/10" aria-label="Reintentar estado del radar">
+                  <RefreshCw className="size-4" />
+                </Button>
+              </div>
+            )}
 
             <Button
               type="button"
