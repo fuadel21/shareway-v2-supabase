@@ -338,6 +338,36 @@ const injectCalendarCommandCenter = () => {
   headerCard.insertAdjacentElement('afterend', wrapper);
 };
 
+const injectMobileFormLayoutStyles = () => {
+  if (document.getElementById('shareway-mobile-form-layouts')) return;
+
+  const style = document.createElement('style');
+  style.id = 'shareway-mobile-form-layouts';
+  style.textContent = `
+    @media (max-width: 639px) {
+      body[data-shareway-form-route="true"] main form > .grid.grid-cols-2.gap-4,
+      body[data-shareway-form-route="true"] main form .grid.grid-cols-3.gap-2 {
+        grid-template-columns: minmax(0, 1fr) !important;
+      }
+
+      body[data-shareway-form-route="true"] main form .grid.grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+    }
+
+    @media (min-width: 640px) {
+      body[data-shareway-form-route="true"] main form > .grid.grid-cols-2.gap-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+
+      body[data-shareway-form-route="true"] main form .grid.grid-cols-3.gap-2 {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+};
+
 const GrowthPageTracker = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -351,6 +381,19 @@ const GrowthPageTracker = () => {
       pageType,
     });
   }, [location.pathname, location.search, location.hash]);
+
+  useEffect(() => {
+    const isFormRoute = location.pathname === '/publish' || location.pathname === '/request';
+    if (!isFormRoute) {
+      document.body.removeAttribute('data-shareway-form-route');
+      return undefined;
+    }
+
+    injectMobileFormLayoutStyles();
+    document.body.setAttribute('data-shareway-form-route', 'true');
+
+    return () => document.body.removeAttribute('data-shareway-form-route');
+  }, [location.pathname]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search || '');
@@ -421,19 +464,21 @@ const GrowthPageTracker = () => {
   }, [location.pathname, location.search]);
 
   useEffect(() => {
-    const navigateInsideApp = (target) => {
+    const navigateInternal = (target) => {
       if (!target) return;
+      let targetUrl;
       try {
-        const url = new URL(target, window.location.origin);
-        if (url.origin === window.location.origin) {
-          navigate(`${url.pathname}${url.search}${url.hash}`);
-          return;
-        }
+        targetUrl = new URL(target, window.location.origin);
       } catch (error) {
-        navigate(target);
         return;
       }
-      window.location.assign(target);
+
+      if (targetUrl.origin !== window.location.origin) {
+        window.location.assign(targetUrl.href);
+        return;
+      }
+
+      navigate(`${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`);
     };
 
     const handleClick = (event) => {
@@ -441,7 +486,7 @@ const GrowthPageTracker = () => {
       if (injectedNav) {
         event.preventDefault();
         event.stopPropagation();
-        navigateInsideApp(injectedNav.getAttribute('data-shareway-nav'));
+        navigateInternal(injectedNav.getAttribute('data-shareway-nav'));
         return;
       }
 
@@ -451,7 +496,7 @@ const GrowthPageTracker = () => {
         if (target) {
           event.preventDefault();
           event.stopPropagation();
-          navigateInsideApp(target);
+          navigateInternal(target);
           return;
         }
       }
