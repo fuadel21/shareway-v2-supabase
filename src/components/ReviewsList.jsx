@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Loader2, Quote, MessageSquare } from 'lucide-react';
+import { Star, Loader2, Quote, MessageSquare, ShieldCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,23 @@ const ReviewsList = ({ userId }) => {
         fetchReviews();
     }, [userId]);
 
+    const reviewSummary = useMemo(() => {
+        if (!reviews.length) return { average: '0.0', count: 0, trusted: false };
+        const total = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+        const average = total / reviews.length;
+        return {
+            average: average.toFixed(1),
+            count: reviews.length,
+            trusted: average >= 4.5 && reviews.length >= 2,
+        };
+    }, [reviews]);
+
+    const formatReviewDate = (date) => {
+        const value = new Date(date);
+        if (Number.isNaN(value.getTime())) return 'Fecha reciente';
+        return format(value, 'd MMM yyyy', { locale: es });
+    };
+
     if (loading) return (
         <div className="flex flex-col items-center justify-center p-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary opacity-20 mb-2" />
@@ -42,16 +59,45 @@ const ReviewsList = ({ userId }) => {
     );
 
     if (reviews.length === 0) return (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 italic shadow-inner">
-            <MessageSquare className="h-10 w-10 text-slate-100 mb-3" />
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
-                Aún no tiene valoraciones.<br/>¡Sé el primero en viajar con este usuario!
+        <div className="flex flex-col items-center justify-center p-8 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 italic shadow-inner text-center">
+            <div className="h-16 w-16 rounded-3xl bg-slate-50 flex items-center justify-center mb-4">
+                <MessageSquare className="h-8 w-8 text-slate-200" />
+            </div>
+            <p className="text-sm font-black text-slate-800 uppercase tracking-tight">Aún no tiene valoraciones</p>
+            <p className="mt-2 max-w-xs text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-5">
+                Las opiniones aparecerán aquí después de completar viajes. Ayudan a crear confianza antes de reservar.
             </p>
         </div>
     );
 
     return (
         <div className="space-y-4">
+            <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                    <div className="h-14 w-14 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center shadow-sm shrink-0">
+                        <Star className="h-7 w-7 fill-current" />
+                    </div>
+                    <div className="text-left min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Resumen de confianza</p>
+                        <h4 className="text-2xl font-black uppercase italic tracking-tighter text-slate-900 leading-none">
+                            {reviewSummary.average}/5
+                        </h4>
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                            {reviewSummary.count} {reviewSummary.count === 1 ? 'valoración' : 'valoraciones'} visibles
+                        </p>
+                    </div>
+                </div>
+                <div className={cn(
+                    'rounded-2xl px-3 py-2 text-center shrink-0 border',
+                    reviewSummary.trusted ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+                )}>
+                    <ShieldCheck className="h-5 w-5 mx-auto mb-1" />
+                    <p className="text-[8px] font-black uppercase tracking-widest">
+                        {reviewSummary.trusted ? 'Fuerte' : 'Nuevo'}
+                    </p>
+                </div>
+            </section>
+
             {reviews.map((review, idx) => (
                 <div
                     key={review.id}
@@ -77,7 +123,7 @@ const ReviewsList = ({ userId }) => {
                                     {review.sender_name || 'Miembro Elite'}
                                 </p>
                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">
-                                    {format(new Date(review.created_at), "d MMM yyyy", { locale: es })}
+                                    {formatReviewDate(review.created_at)}
                                 </span>
                             </div>
 
