@@ -51,6 +51,14 @@ const BLOCKED_PATTERNS = [
   {
     pattern: /refundAmounts\s*:\s*{[^}]*passenger-/is,
     reason: 'Mapa de reembolsos con pasajeros simulados.'
+  },
+  {
+    pattern: /Mock for test/i,
+    reason: 'Comentario mock en codigo de aplicacion.'
+  },
+  {
+    pattern: /return\s+25\.50\s*;/,
+    reason: 'Importe escrow simulado.'
   }
 ];
 
@@ -107,6 +115,56 @@ for (const scanDir of SCAN_DIRS) {
         reason
       });
     }
+  }
+}
+
+const SECRET_FILE_EXTENSIONS = new Set(['.js', '.jsx', '.ts', '.tsx', '.json', '.txt', '.env', '.yml', '.yaml'])
+const SECRET_IGNORED_PATH_PATTERNS = [
+  /(^|\/)node_modules\//,
+  /(^|\/)\.git\//,
+  /(^|\/)_archive\//,
+  /(^|\/)_LEGACY_HISTORY_\//,
+  /(^|\/)coverage\//,
+  /\.md$/
+]
+const SECRET_PATTERNS = [
+  { pattern: /sk_live_[A-Za-z0-9]{16,}/, reason: 'Stripe live secret committed.' },
+  { pattern: /sk_test_[A-Za-z0-9]{16,}/, reason: 'Stripe test secret committed.' },
+  { pattern: /whsec_[A-Za-z0-9]{16,}/, reason: 'Stripe webhook secret committed.' }
+]
+
+const shouldIgnoreSecretPath = (filePath) => {
+  const normalizedPath = relative(root, filePath).replaceAll('\\', '/')
+  return SECRET_IGNORED_PATH_PATTERNS.some((pattern) => pattern.test(normalizedPath))
+}
+
+const walkSecrets = (dir, files = []) => {
+  for (const entry of readdirSync(dir)) {
+    if (entry === 'node_modules' || entry === 'dist' || entry === '.git' || entry === 'coverage') continue
+    const fullPath = join(dir, entry)
+    const stat = statSync(fullPath)
+    if (stat.isDirectory()) {
+      walkSecrets(fullPath, files)
+    } else if (SECRET_FILE_EXTENSIONS.has(getExtension(fullPath)) && !shouldIgnoreSecretPath(fullPath)) {
+      files.push(fullPath)
+    }
+  }
+  return files
+}
+
+for (const file of walkSecrets(root)) {
+  const content = readFileSync(file, 'utf8')
+  const lines = content.split(/\r?\n/)
+  for (const { pattern, reason } of SECRET_PATTERNS) {
+    const match = content.match(pattern)
+    if (!match) continue
+    const lineNumber = content.slice(0, match.index ?? 0).split(/\r?\n/).length
+    findings.push({
+      file: relative(root, file).replaceAll('\\', '/'),
+      lineNumber,
+      line: lines[lineNumber - 1]?.trim() || '',
+      reason
+    })
   }
 }
 

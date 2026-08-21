@@ -41,11 +41,19 @@ const NotificationTestPage = () => {
     readAll,
   } = useNotifications(user, { limit: 12, enableToasts: false });
 
-  const canRunTest = Boolean(user?.id);
+  const canRunTest = Boolean(user?.id && isAdmin);
   const testLabel = useMemo(() => {
     const name = profile?.display_name || user?.email?.split('@')[0] || 'Usuario';
     return `${name} · ${isAdmin ? 'admin' : 'usuario'}`;
   }, [isAdmin, profile?.display_name, user?.email]);
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center px-6 text-center">
+        <p className="text-sm font-bold text-slate-500">Esta herramienta solo está disponible para administradores.</p>
+      </div>
+    );
+  }
 
   const handleCreateTestNotification = async () => {
     if (!canRunTest) {

@@ -1,22 +1,35 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno'
-import { corsHeaders } from '../_shared/cors.ts'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
   httpClient: Stripe.createFetchHttpClient()
 })
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // Aceptamos return_url opcional desde el body para soportar Deep Links de Capacitor
-    const { userId, return_url } = await req.json()
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) throw new Error('No autorizado')
 
-    if (!userId) throw new Error('User ID is required');
+    const supabaseUser = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } },
+    )
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
+    if (authError || !user) throw new Error('No autorizado')
+
+    // Aceptamos return_url opcional desde el body para soportar Deep Links de Capacitor
+    const { userId, return_url } = await req.json().catch(() => ({}))
+    if (userId && String(userId) !== String(user.id)) {
+      throw new Error('No autorizado')
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL'),
@@ -26,7 +39,7 @@ serve(async (req) => {
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('stripe_account_id')
-      .eq('id', userId)
+      .eq('id', user.id)
       .single()
 
     if (profileError) throw profileError
@@ -35,7 +48,7 @@ serve(async (req) => {
 
     // 1. Crear cuenta de Stripe Express si no existe
     if (!accountId) {
-      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(userId)
+      const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(user.id)
       if (userError) throw userError
 
       const account = await stripe.accounts.create({
@@ -52,7 +65,7 @@ serve(async (req) => {
         }
       })
       accountId = account.id
-      await supabaseAdmin.from('profiles').update({ stripe_account_id: accountId }).eq('id', userId)
+      await supabaseAdmin.from('profiles').update({ stripe_account_id: accountId }).eq('id', user.id)
     }
 
     // 2. Determinar URLs de retorno (Prioridad al body, luego al origin)

@@ -1,0 +1,11 @@
+# Minimal project pin for CLI deploys. Secrets stay in the Supabase dashboard.
+project_id = "wmkhutsesgtkcgqbctef"
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.process-radar-push-outbox]
+verify_jwt = false
