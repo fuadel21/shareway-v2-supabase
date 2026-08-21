@@ -14,7 +14,7 @@ The product core (RPC ride lifecycle, Stripe webhook signature verification, sta
 - Escrow no longer returns a fake `25.50` balance.
 - Notification test page is admin-only.
 - Vercel security headers added. Auto-deploy remains **disabled** (`git.deploymentEnabled: false`) until secrets are rotated and functions are deployed.
-- CI now deploys **all** Edge Functions on `main`, not only `send-push`.
+- Edge Function deploy workflow still only publishes `send-push` (GitHub App cannot update workflow files). Deploy the rest with `supabase functions deploy`.
 
 ### Must do outside this repo
 
