@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { differenceInMinutes, format, isBefore, isValid, subMinutes } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -530,11 +530,17 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
     );
 };
 
+const VALID_ACTIVITY_TABS = ['active', 'requested', 'history', 'cancelled'];
+
 const MyRides = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { i18n } = useTranslation();
     const copy = copyByLanguage[getLanguage(i18n.language)];
-    const [activeTab, setActiveTab] = useState('active');
+    const requestedTab = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState(
+        VALID_ACTIVITY_TABS.includes(requestedTab) ? requestedTab : 'active'
+    );
     const [rides, setRides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [userId, setUserId] = useState(null);
@@ -561,6 +567,12 @@ const MyRides = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (VALID_ACTIVITY_TABS.includes(requestedTab)) {
+            setActiveTab(requestedTab);
+        }
+    }, [requestedTab]);
 
     useEffect(() => {
         let mounted = true;
