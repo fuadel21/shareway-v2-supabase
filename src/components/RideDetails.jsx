@@ -28,6 +28,7 @@ import { supabase } from '../lib/supabase.js';
 import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking, completeRide as completeRideService, isRideBookable } from '../services/rideService.js';
 import { triggerSOS } from '../services/safetyService.js';
+import RideManagement from './RideManagement.jsx';
 
 const formatMoney = (value) => {
     const numericValue = Number(value);
@@ -261,10 +262,15 @@ const RideDetails = () => {
     };
 
     const askCancelRide = () => {
+        const confirmedCount = (ride?.passengers || []).filter((passenger) =>
+            ['confirmed', 'verified', 'on_board', 'completed'].includes(passenger.status)
+        ).length;
         openSecureAction({
             tone: 'danger',
             title: '¿Cancelar este viaje?',
-            description: 'Esta acción notificará a todos los pasajeros y no se puede deshacer. Se aplicarán las políticas de cancelación vigentes.',
+            description: confirmedCount > 0
+                ? `Este viaje tiene ${confirmedCount} pasajero${confirmedCount === 1 ? '' : 's'} confirmado${confirmedCount === 1 ? '' : 's'}. Se notificará a todos y se aplicará la política de reembolso vigente.`
+                : 'Esta acción no se puede deshacer. El viaje dejará de estar disponible para reservas.',
             confirmLabel: 'Sí, cancelar viaje',
             errorTitle: 'No se pudo cancelar el viaje',
             onConfirm: performCancelRide,
@@ -389,7 +395,7 @@ const RideDetails = () => {
     const isDriver = currentUserId && driverId && currentUserId === driverId;
     const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
     const isPassenger = passengers.some(p => p.id?.toString()?.toLowerCase() === currentUserId);
-    const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
+    const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'on_board', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
     const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
     const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled' || ride.status === 'expired';
@@ -408,6 +414,10 @@ const RideDetails = () => {
     const myPin = myPassengerEntry?.pin;
     const ridePrice = formatMoney(ride.price) || '0.00€';
     const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
+    const canCancelBooking = isPassenger
+        && ride.status === 'scheduled'
+        && !hasDeparted
+        && (!myPassengerEntry?.status || ['confirmed', 'pending'].includes(myPassengerEntry.status));
 
     const bookingBlockedLabel = (() => {
         if (isRideCancelled) return 'Viaje Cancelado';
@@ -580,6 +590,10 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
+                {isDriver && !isRideClosed && (
+                    <RideManagement ride={ride} onRefresh={fetchRide} embedded />
+                )}
+
                 <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
                     <div className="p-8">
                         <div className="flex items-center gap-6">
@@ -659,7 +673,7 @@ const RideDetails = () => {
                                                         <span className="text-[9px] font-black uppercase tracking-tighter text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100 flex items-center gap-1">
                                                             <CheckCircle2 size={10} /> Entregado
                                                         </span>
-                                                    ) : passenger.status === 'verified' ? (
+                                                    ) : ['verified', 'on_board'].includes(passenger.status) ? (
                                                         <span className="text-[9px] font-black uppercase tracking-tighter text-emerald-500 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100 flex items-center gap-1">
                                                             <BadgeCheck size={10} /> A bordo
                                                         </span>
@@ -810,16 +824,21 @@ const RideDetails = () => {
                             )}
 
                             <div className="flex gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="h-16 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400"
-                                    onClick={askCancelBooking}
-                                >
-                                    Cancelar
-                                </Button>
+                                {canCancelBooking && (
+                                    <Button
+                                        variant="outline"
+                                        className="h-16 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400"
+                                        onClick={askCancelBooking}
+                                    >
+                                        Cancelar
+                                    </Button>
+                                )}
                                 <Button
                                     onClick={() => navigate(`/rides/${rideId}/chats`)}
-                                    className="h-16 flex-[2] rounded-3xl bg-slate-900 font-black uppercase italic tracking-widest text-white shadow-2xl"
+                                    className={cn(
+                                        'h-16 rounded-3xl bg-slate-900 font-black uppercase italic tracking-widest text-white shadow-2xl',
+                                        canCancelBooking ? 'flex-[2]' : 'flex-1'
+                                    )}
                                 >
                                     <span className="flex items-center gap-2">Chat <MessageCircle size={18} /></span>
                                 </Button>

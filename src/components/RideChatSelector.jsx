@@ -207,7 +207,7 @@ function RideChatSelector() {
                 <Button
                     variant="ghost"
                     className="w-full rounded-2xl font-black text-xs uppercase tracking-widest text-slate-400 hover:text-slate-900"
-                    onClick={() => navigate(`/rides/${rideId}`)}
+                    onClick={() => navigate(`/ride/${rideId}`)}
                 >
                     Volver a Detalles del Viaje
                 </Button>

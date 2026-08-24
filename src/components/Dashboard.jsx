@@ -21,6 +21,7 @@ import AddressAutocomplete from './AddressAutocomplete';
 import MapComponent from './MapComponent';
 import { DraggableSheet } from './DraggableSheet';
 import { useTranslation } from 'react-i18next';
+import { buildDriverPendingInbox, getActivityStatPath } from '@/lib/dashboardActivity';
 
 const copyByLanguage = {
     es: {
@@ -74,7 +75,12 @@ const copyByLanguage = {
         goToMyRides: 'Mis viajes',
         goToRequests: 'Solicitudes',
         goToWallet: 'Billetera',
-        refresh: 'Actualizar'
+        refresh: 'Actualizar',
+        pendingInboxTitle: 'Solicitudes por aprobar',
+        pendingInboxDesc: 'Tienes pasajeros esperando respuesta',
+        reviewRequest: 'Revisar',
+        pendingSeat: 'solicitud',
+        pendingSeats: 'solicitudes'
     },
     en: {
         positiveImpact: 'Positive Impact',
@@ -127,7 +133,12 @@ const copyByLanguage = {
         goToMyRides: 'My rides',
         goToRequests: 'Requests',
         goToWallet: 'Wallet',
-        refresh: 'Refresh'
+        refresh: 'Refresh',
+        pendingInboxTitle: 'Requests to approve',
+        pendingInboxDesc: 'Passengers are waiting for your answer',
+        reviewRequest: 'Review',
+        pendingSeat: 'request',
+        pendingSeats: 'requests'
     },
     ar: {
         positiveImpact: 'أثر إيجابي',
@@ -180,7 +191,12 @@ const copyByLanguage = {
         goToMyRides: 'رحلاتي',
         goToRequests: 'الطلبات',
         goToWallet: 'المحفظة',
-        refresh: 'تحديث'
+        refresh: 'تحديث',
+        pendingInboxTitle: 'طلبات بانتظار الموافقة',
+        pendingInboxDesc: 'هناك ركاب ينتظرون ردك',
+        reviewRequest: 'مراجعة',
+        pendingSeat: 'طلب',
+        pendingSeats: 'طلبات'
     }
 };
 
@@ -434,21 +450,25 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
     </div>
 );
 
-const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) => {
+const ActivitySummaryPanel = ({ copy, summary, pendingInbox = [], loading, onRefresh, navigate }) => {
     const totalActivity = Number(summary?.upcoming_driver || 0)
         + Number(summary?.upcoming_passenger || 0)
         + Number(summary?.active_rides || 0)
         + Number(summary?.pending_requests || 0)
         + Number(summary?.my_open_requests || 0)
-        + Number(summary?.pending_payments || 0);
+        + Number(summary?.pending_payments || 0)
+        + pendingInbox.length;
     const nextRide = summary?.next_ride;
     const recentRequest = summary?.recent_request;
+    const visibleInbox = pendingInbox.slice(0, 3);
+    const pendingInboxCount = pendingInbox.reduce((sum, item) => sum + Number(item.pendingCount || 0), 0);
+    const pendingStatValue = Math.max(Number(summary?.pending_requests || 0), pendingInboxCount);
 
     const statCards = [
-        { label: copy.activeRides, value: summary?.active_rides || 0, icon: Activity, action: '/my-rides', tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-        { label: copy.pendingRequests, value: summary?.pending_requests || 0, icon: MessageCircle, action: '/my-rides', tone: 'text-amber-600 bg-amber-50 border-amber-100' },
-        { label: copy.openRequests, value: summary?.my_open_requests || 0, icon: Megaphone, action: '/my-requests', tone: 'text-blue-600 bg-blue-50 border-blue-100' },
-        { label: copy.pendingPayments, value: summary?.pending_payments || 0, icon: WalletCards, action: '/wallet', tone: 'text-purple-600 bg-purple-50 border-purple-100' }
+        { label: copy.activeRides, value: summary?.active_rides || 0, icon: Activity, action: getActivityStatPath('activeRides'), tone: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+        { label: copy.pendingRequests, value: pendingStatValue, icon: MessageCircle, action: getActivityStatPath('pendingRequests'), tone: 'text-amber-600 bg-amber-50 border-amber-100' },
+        { label: copy.openRequests, value: summary?.my_open_requests || 0, icon: Megaphone, action: getActivityStatPath('openRequests'), tone: 'text-blue-600 bg-blue-50 border-blue-100' },
+        { label: copy.pendingPayments, value: summary?.pending_payments || 0, icon: WalletCards, action: getActivityStatPath('pendingPayments'), tone: 'text-purple-600 bg-purple-50 border-purple-100' }
     ];
 
     return (
@@ -470,6 +490,42 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
                     </Button>
                 </div>
 
+                {visibleInbox.length > 0 && (
+                    <div className="rounded-3xl bg-amber-400 text-slate-950 p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                            <div>
+                                <p className="text-[9px] font-black uppercase tracking-widest">{copy.pendingInboxTitle}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-70">{copy.pendingInboxDesc}</p>
+                            </div>
+                            <span className="h-8 min-w-8 px-2 rounded-xl bg-slate-950 text-amber-300 text-sm font-black flex items-center justify-center">
+                                {pendingInboxCount}
+                            </span>
+                        </div>
+                        <div className="space-y-2">
+                            {visibleInbox.map((item) => (
+                                <button
+                                    key={item.id}
+                                    type="button"
+                                    onClick={() => navigate(`/ride/${item.id}`)}
+                                    className="w-full rounded-2xl bg-white/80 hover:bg-white p-3 text-left transition-all active:scale-[0.99]"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="truncate text-xs font-black uppercase italic">
+                                                {getLocationLabel(item.origin, copy.origin)} → {getLocationLabel(item.destination, copy.destination)}
+                                            </p>
+                                            <p className="text-[9px] font-bold uppercase tracking-widest mt-1 opacity-60">
+                                                {item.pendingCount} {item.pendingCount === 1 ? copy.pendingSeat : copy.pendingSeats}
+                                            </p>
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-widest shrink-0">{copy.reviewRequest}</span>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {nextRide ? (
                     <button type="button" onClick={() => navigate(`/ride/${nextRide.id}`)} className="w-full rounded-3xl bg-white/10 hover:bg-white/15 p-4 text-left transition-all active:scale-[0.99]">
                         <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2">{copy.nextRide}</p>
@@ -481,7 +537,7 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
                             <ChevronRight className="size-5 text-primary shrink-0" />
                         </div>
                     </button>
-                ) : recentRequest ? (
+                ) : visibleInbox.length === 0 && recentRequest ? (
                     <button type="button" onClick={() => navigate(`/request/${recentRequest.id}`)} className="w-full rounded-3xl bg-white/10 hover:bg-white/15 p-4 text-left transition-all active:scale-[0.99]">
                         <p className="text-[9px] font-black uppercase tracking-widest text-amber-300 mb-2">{copy.openRequests}</p>
                         <div className="flex items-center justify-between gap-3">
@@ -534,6 +590,7 @@ function Dashboard() {
 
     const [allData, setAllData] = useState([]);
     const [activitySummary, setActivitySummary] = useState(null);
+    const [pendingInbox, setPendingInbox] = useState([]);
     const [isActivityLoading, setIsActivityLoading] = useState(false);
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedItem, setSelectedItem] = useState(null);
@@ -561,6 +618,34 @@ function Dashboard() {
             const { data, error } = await supabase.rpc('fetch_user_activity_summary_v1', { p_user_id: user.id });
             if (error) throw error;
             setActivitySummary(data || null);
+
+            const { data: driverRides, error: ridesError } = await supabase
+                .from('rides')
+                .select('id, driver_id, origin, destination, departure_time, status, passengers')
+                .eq('driver_id', user.id)
+                .in('status', ['scheduled', 'active', 'in_progress']);
+
+            if (ridesError) {
+                console.warn('Pending inbox query failed:', ridesError);
+                setPendingInbox([]);
+            } else {
+                const rideIds = (driverRides || []).map((ride) => ride.id);
+                let rideRequests = [];
+                if (rideIds.length > 0) {
+                    const { data: pendingRequests, error: requestsError } = await supabase
+                        .from('ride_requests')
+                        .select('id, ride_id, status')
+                        .eq('status', 'pending')
+                        .in('ride_id', rideIds);
+                    if (!requestsError) rideRequests = pendingRequests || [];
+                }
+
+                const ridesWithRequests = (driverRides || []).map((ride) => ({
+                    ...ride,
+                    ride_requests: rideRequests.filter((item) => String(item.ride_id) === String(ride.id)),
+                }));
+                setPendingInbox(buildDriverPendingInbox(ridesWithRequests, user.id));
+            }
         } catch (error) {
             console.error('Activity summary error:', error);
             toast.error(copy.activitySyncError);
@@ -753,7 +838,7 @@ function Dashboard() {
                 </div>
 
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
-                    <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
+                    <ActivitySummaryPanel copy={copy} summary={activitySummary} pendingInbox={pendingInbox} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} />
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
@@ -787,7 +872,7 @@ function Dashboard() {
 
             <div className="flex-1 relative h-full">
                 <div className="lg:hidden absolute top-20 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
-                    <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
+                    <ActivitySummaryPanel copy={copy} summary={activitySummary} pendingInbox={pendingInbox} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} compact />
                     <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
                         {filters.map((f) => (

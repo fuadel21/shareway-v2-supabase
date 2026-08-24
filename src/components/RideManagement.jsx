@@ -19,6 +19,7 @@ import {
     updateRide,
     verifyPassenger
 } from '@/services/rideService';
+import { getOrCreateChat } from '@/lib/supabaseRPC';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -41,12 +42,20 @@ const getRideDeparture = (ride) => ride?.departure_time || ride?.departureTime |
 const getRideSeats = (ride) => Number(ride?.seats_total ?? ride?.total_seats ?? ride?.seats ?? ride?.seats_available ?? 1);
 const getRidePrice = (ride) => Number(ride?.price_per_seat ?? ride?.price ?? RIDE_RULES.MIN_PRICE);
 
-const PassengerItem = ({ passenger, onVerify, onAccept, onReject, rideId }) => {
-    const navigate = useNavigate();
+const getDestinationCoords = (ride) => {
+    const dest = ride?.destination?.coordinates || ride?.destination || {};
+    const lat = Number(dest.lat ?? dest.latitude);
+    const lng = Number(dest.lng ?? dest.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    return { lat, lng };
+};
+
+const PassengerItem = ({ passenger, onVerify, onAccept, onReject, onChat }) => {
     const isVerified = ['verified', 'on_board', 'completed'].includes(passenger.status);
     const isPending = passenger.status === 'pending';
     const isConfirmed = passenger.status === 'confirmed';
-    const photoURL = passenger.photoURL || passenger.photo_url;
+    const photoURL = passenger.photoURL || passenger.photo_url || passenger.avatar_url;
+    const displayName = passenger.displayName || passenger.display_name || 'Pasajero';
 
     return (
         <div className={cn(
@@ -57,11 +66,11 @@ const PassengerItem = ({ passenger, onVerify, onAccept, onReject, rideId }) => {
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar className="h-12 w-12 border-2 border-white shadow-md">
                         <AvatarImage src={photoURL} />
-                        <AvatarFallback className="font-black bg-slate-100 text-slate-400">{passenger.displayName?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="font-black bg-slate-100 text-slate-400">{displayName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="text-left flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                            <p className="font-black text-sm uppercase italic tracking-tighter text-slate-900 truncate">{passenger.displayName}</p>
+                            <p className="font-black text-sm uppercase italic tracking-tighter text-slate-900 truncate">{displayName}</p>
                             {isVerified && <BadgeCheck size={14} className="text-emerald-500" />}
                         </div>
                         <p className={cn(
@@ -77,8 +86,9 @@ const PassengerItem = ({ passenger, onVerify, onAccept, onReject, rideId }) => {
                     <Button
                         size="icon"
                         variant="ghost"
+                        aria-label={`Abrir chat con ${displayName}`}
                         className="size-10 rounded-xl bg-slate-50 text-slate-400 hover:text-primary hover:bg-primary/5"
-                        onClick={() => navigate(`/ride-chat/${rideId}/${passenger.id}`)}
+                        onClick={() => onChat?.(passenger)}
                     >
                         <MessageSquare size={18} />
                     </Button>
@@ -105,12 +115,12 @@ const PassengerItem = ({ passenger, onVerify, onAccept, onReject, rideId }) => {
     );
 };
 
-const RideManagement = ({ ride, onRefresh }) => {
+const RideManagement = ({ ride, onRefresh, embedded = false }) => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
     const [selectedPassenger, setSelectedPassenger] = useState(null);
-    const [currentCoords] = useState(null);
+    const [currentCoords, setCurrentCoords] = useState(null);
     const [distMeters, setDistMeters] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editDate, setEditDate] = useState('');
@@ -145,8 +155,25 @@ const RideManagement = ({ ride, onRefresh }) => {
     }, [ride]);
 
     useEffect(() => {
-        if (!currentCoords || !ride.destination?.coordinates) return;
-        const dest = ride.destination.coordinates;
+        if (!isRideStarted || typeof navigator === 'undefined' || !navigator.geolocation) return undefined;
+
+        const watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                setCurrentCoords({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                });
+            },
+            () => {},
+            { enableHighAccuracy: true, maximumAge: 15000, timeout: 10000 }
+        );
+
+        return () => navigator.geolocation.clearWatch(watchId);
+    }, [isRideStarted]);
+
+    useEffect(() => {
+        const dest = getDestinationCoords(ride);
+        if (!currentCoords || !dest) return;
         const R = 6371e3;
         const phi1 = currentCoords.lat * Math.PI / 180;
         const phi2 = dest.lat * Math.PI / 180;
@@ -155,7 +182,7 @@ const RideManagement = ({ ride, onRefresh }) => {
         const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2)
             + Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
         setDistMeters(Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))));
-    }, [currentCoords, ride.destination]);
+    }, [currentCoords, ride]);
 
     const canCompleteRide = useMemo(() => {
         const verifiedCount = onboardPassengers.filter((p) => ['verified', 'on_board', 'completed'].includes(p.status)).length;
@@ -178,7 +205,7 @@ const RideManagement = ({ ride, onRefresh }) => {
         setIsLoading(true);
         try {
             await acceptPassenger(ride.id, passenger.id);
-            toast.success(`${passenger.displayName} aceptado`);
+            toast.success(`${passenger.displayName || passenger.display_name || 'Pasajero'} aceptado`);
             onRefresh();
         } catch (error) {
             toast.error(error.message);
@@ -198,6 +225,25 @@ const RideManagement = ({ ride, onRefresh }) => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handlePassengerChat = async (passenger) => {
+        if (!passenger?.id) return;
+        try {
+            const { data, success, error } = await getOrCreateChat(passenger.id, ride.id);
+            if (!success) throw new Error(error);
+            if (data?.chatId) {
+                navigate(`/rides/${ride.id}/chat/${data.chatId}`);
+                return;
+            }
+            throw new Error('No se pudo obtener el ID del chat');
+        } catch (error) {
+            toast.error(error.message || 'No se pudo abrir la conversación');
+        }
+    };
+
+    const handleOpenRideChats = () => {
+        navigate(`/rides/${ride.id}/chats`);
     };
 
     const handleSaveSchedule = async () => {
@@ -279,6 +325,15 @@ const RideManagement = ({ ride, onRefresh }) => {
         }
     };
 
+    const showLifecycleActions = !embedded;
+    const showPassengerRoster = !embedded;
+    const showScheduledEditor = isRideScheduled;
+    const showPendingRequests = pendingRequests.length > 0;
+
+    if (embedded && !showScheduledEditor && !showPendingRequests) {
+        return null;
+    }
+
     return (
         <Card className="rounded-[3rem] border-none shadow-diamond bg-white p-6 sm:p-8 space-y-8 relative overflow-hidden">
             <div className="flex items-center justify-between">
@@ -287,7 +342,12 @@ const RideManagement = ({ ride, onRefresh }) => {
                     <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-1">Control del Conductor</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button onClick={() => navigate(`/ride-chat/${ride.id}`)} variant="outline" className="h-12 w-12 rounded-2xl border-2 border-orange-50 bg-orange-50/50 text-orange-600 shadow-sm">
+                    <Button
+                        onClick={handleOpenRideChats}
+                        variant="outline"
+                        aria-label="Abrir conversaciones del viaje"
+                        className="h-12 w-12 rounded-2xl border-2 border-orange-50 bg-orange-50/50 text-orange-600 shadow-sm"
+                    >
                         <MessageCircle size={20} />
                     </Button>
                     {isRideStarted && (
@@ -298,7 +358,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                 </div>
             </div>
 
-            {isRideScheduled && (
+            {showScheduledEditor && (
                 <div className="rounded-[2rem] border border-slate-100 bg-slate-50/80 p-4 sm:p-5 space-y-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
@@ -440,112 +500,124 @@ const RideManagement = ({ ride, onRefresh }) => {
                         </div>
                     )}
 
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleCancelRide}
-                        disabled={isLoading}
-                        className="h-12 w-full rounded-2xl border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-black uppercase tracking-widest"
-                    >
-                        <Trash2 size={15} className="mr-2" /> Cancelar viaje programado
-                    </Button>
+                    {!embedded && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleCancelRide}
+                            disabled={isLoading}
+                            className="h-12 w-full rounded-2xl border-red-100 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 text-[10px] font-black uppercase tracking-widest"
+                        >
+                            <Trash2 size={15} className="mr-2" /> Cancelar viaje programado
+                        </Button>
+                    )}
                 </div>
             )}
 
-            {pendingRequests.length > 0 && (
+            {showPendingRequests && (
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 px-2">
                         <UserPlus size={14} className="text-indigo-500" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-500">Solicitudes por Aprobar ({pendingRequests.length})</h4>
                     </div>
                     {pendingRequests.map((passenger) => (
-                        <PassengerItem key={passenger.id} passenger={passenger} rideId={ride.id} onAccept={handleAccept} onReject={handleReject} />
+                        <PassengerItem
+                            key={passenger.id}
+                            passenger={passenger}
+                            onAccept={handleAccept}
+                            onReject={handleReject}
+                            onChat={handlePassengerChat}
+                        />
                     ))}
                 </div>
             )}
 
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 px-2">
-                    <Users size={14} className="text-slate-400" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pasajeros del Viaje ({onboardPassengers.length})</h4>
-                </div>
-                {onboardPassengers.length > 0 ? (
-                    onboardPassengers.map((passenger) => (
-                        <PassengerItem
-                            key={passenger.id}
-                            passenger={passenger}
-                            rideId={ride.id}
-                            onVerify={(pax) => {
-                                setSelectedPassenger(pax);
-                                setIsPinDialogOpen(true);
-                            }}
-                        />
-                    ))
-                ) : (
-                    <div className="p-8 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
-                        <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">No hay pasajeros confirmados<br />todavía.</p>
+            {showPassengerRoster && (
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 px-2">
+                        <Users size={14} className="text-slate-400" />
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pasajeros del Viaje ({onboardPassengers.length})</h4>
                     </div>
-                )}
-            </div>
+                    {onboardPassengers.length > 0 ? (
+                        onboardPassengers.map((passenger) => (
+                            <PassengerItem
+                                key={passenger.id}
+                                passenger={passenger}
+                                onChat={handlePassengerChat}
+                                onVerify={(pax) => {
+                                    setSelectedPassenger(pax);
+                                    setIsPinDialogOpen(true);
+                                }}
+                            />
+                        ))
+                    ) : (
+                        <div className="p-8 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">No hay pasajeros confirmados<br />todavía.</p>
+                        </div>
+                    )}
+                </div>
+            )}
 
-            <div className="pt-4 space-y-4">
-                {isRideScheduled && (
-                    <Button
-                        onClick={async () => {
-                            try {
-                                setIsLoading(true);
-                                await startRide(ride.id);
-                                onRefresh();
-                            } catch (error) {
-                                toast.error(error.message || 'No se pudo iniciar el viaje');
-                            } finally {
-                                setIsLoading(false);
-                            }
-                        }}
-                        disabled={onboardPassengers.length === 0 || isLoading}
-                        className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none"
-                    >
-                        INICIAR VIAJE <PlayCircle className="ml-3 text-primary h-6 w-6" />
-                    </Button>
-                )}
-
-                {isRideStarted && (
-                    <div className="space-y-4">
-                        {distMeters !== null && (
-                            <div className={cn(
-                                'p-6 rounded-[2rem] border-2 flex items-center justify-between',
-                                distMeters <= 500 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'
-                            )}>
-                                <div className="text-left">
-                                    <p className="text-[9px] font-black uppercase text-slate-400">Distancia al destino</p>
-                                    <p className="font-black text-2xl italic text-slate-900">{distMeters > 1000 ? `${(distMeters / 1000).toFixed(1)} km` : `${distMeters} m`}</p>
-                                </div>
-                                <Navigation size={24} className={distMeters <= 500 ? 'text-emerald-500 animate-bounce' : 'text-slate-300'} />
-                            </div>
-                        )}
+            {showLifecycleActions && (
+                <div className="pt-4 space-y-4">
+                    {isRideScheduled && (
                         <Button
                             onClick={async () => {
                                 try {
                                     setIsLoading(true);
-                                    await completeRide(ride.id);
-                                    navigate('/my-rides');
+                                    await startRide(ride.id);
+                                    onRefresh();
                                 } catch (error) {
-                                    toast.error(error.message || 'No se pudo finalizar el viaje');
+                                    toast.error(error.message || 'No se pudo iniciar el viaje');
                                 } finally {
                                     setIsLoading(false);
                                 }
                             }}
-                            disabled={!canCompleteRide || isLoading}
-                            className={cn(
-                                'w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl transition-all border-none',
-                                !canCompleteRide ? 'bg-slate-100 text-slate-300' : 'bg-emerald-600 text-white'
-                            )}
+                            disabled={onboardPassengers.length === 0 || isLoading}
+                            className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none"
                         >
-                            {canCompleteRide ? 'FINALIZAR Y COBRAR' : 'BLOQUEADO HASTA DESTINO'}
+                            INICIAR VIAJE <PlayCircle className="ml-3 text-primary h-6 w-6" />
                         </Button>
-                    </div>
-                )}
-            </div>
+                    )}
+
+                    {isRideStarted && (
+                        <div className="space-y-4">
+                            {distMeters !== null && (
+                                <div className={cn(
+                                    'p-6 rounded-[2rem] border-2 flex items-center justify-between',
+                                    distMeters <= 500 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'
+                                )}>
+                                    <div className="text-left">
+                                        <p className="text-[9px] font-black uppercase text-slate-400">Distancia al destino</p>
+                                        <p className="font-black text-2xl italic text-slate-900">{distMeters > 1000 ? `${(distMeters / 1000).toFixed(1)} km` : `${distMeters} m`}</p>
+                                    </div>
+                                    <Navigation size={24} className={distMeters <= 500 ? 'text-emerald-500 animate-bounce' : 'text-slate-300'} />
+                                </div>
+                            )}
+                            <Button
+                                onClick={async () => {
+                                    try {
+                                        setIsLoading(true);
+                                        await completeRide(ride.id);
+                                        navigate('/my-rides');
+                                    } catch (error) {
+                                        toast.error(error.message || 'No se pudo finalizar el viaje');
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                disabled={!canCompleteRide || isLoading}
+                                className={cn(
+                                    'w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl transition-all border-none',
+                                    !canCompleteRide ? 'bg-slate-100 text-slate-300' : 'bg-emerald-600 text-white'
+                                )}
+                            >
+                                {canCompleteRide ? 'FINALIZAR Y COBRAR' : 'BLOQUEADO HASTA DESTINO'}
+                            </Button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <PinVerificationDialog
                 open={isPinDialogOpen}

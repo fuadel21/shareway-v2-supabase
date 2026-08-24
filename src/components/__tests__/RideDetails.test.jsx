@@ -81,6 +81,10 @@ vi.mock('../MapComponent', () => ({
   default: () => <div data-testid="map-component">Map</div>
 }));
 
+vi.mock('../RideManagement', () => ({
+  default: () => <div data-testid="ride-management">Gestión Élite</div>
+}));
+
 describe('RideDetails - Smoke Tests', () => {
 
   it('should render without crashing', async () => {
