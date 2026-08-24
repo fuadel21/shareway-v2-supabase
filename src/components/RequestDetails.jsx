@@ -3,6 +3,8 @@ import { useNavigate, useParams, Link, useOutletContext } from 'react-router-dom
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { fulfillRequest } from '@/services/rideService';
+import { getOrCreateChat } from '@/lib/supabaseRPC';
+import { extractChatId, getRequestChatPath, getRequestChatPeerId } from '@/lib/requestChat';
 import { Button } from '@/components/ui/button.jsx';
 import { Card } from '@/components/ui/card.jsx';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar.jsx';
@@ -87,7 +89,10 @@ const copyByLanguage = {
         routePreview: 'Vista de ruta',
         shareUnavailable: 'No se pudo compartir esta solicitud',
         shareTitle: 'Solicitud ShareWay',
-        shareText: 'Mira esta solicitud de viaje en ShareWay'
+        shareText: 'Mira esta solicitud de viaje en ShareWay',
+        chat: 'Chat',
+        chatError: 'No se pudo abrir la conversación',
+        chatUnavailable: 'Aún no hay un conductor con quien chatear'
     },
     en: {
         user: 'User',
@@ -155,7 +160,10 @@ const copyByLanguage = {
         routePreview: 'Route preview',
         shareUnavailable: 'Could not share this request',
         shareTitle: 'ShareWay request',
-        shareText: 'Check this ride request on ShareWay'
+        shareText: 'Check this ride request on ShareWay',
+        chat: 'Chat',
+        chatError: 'Could not open the conversation',
+        chatUnavailable: 'There is no driver to chat with yet'
     },
     ar: {
         user: 'مستخدم',
@@ -223,7 +231,10 @@ const copyByLanguage = {
         routePreview: 'معاينة المسار',
         shareUnavailable: 'تعذر مشاركة هذا الطلب',
         shareTitle: 'طلب ShareWay',
-        shareText: 'شاهد طلب الرحلة هذا على ShareWay'
+        shareText: 'شاهد طلب الرحلة هذا على ShareWay',
+        chat: 'الدردشة',
+        chatError: 'تعذر فتح المحادثة',
+        chatUnavailable: 'لا يوجد سائق للدردشة معه بعد'
     }
 };
 
@@ -309,6 +320,7 @@ const RequestDetails = () => {
     const [isCancelling, setIsCancelling] = useState(false);
     const [price, setPrice] = useState('');
     const [totalSeats, setTotalSeats] = useState('4');
+    const [isOpeningChat, setIsOpeningChat] = useState(false);
 
     const fetchRequestDetails = useCallback(async () => {
         try {
@@ -382,6 +394,35 @@ const RequestDetails = () => {
         }
     };
 
+    const handleOpenChat = async () => {
+        const isMyRequest = user?.id === request?.requester_id;
+        const peerId = getRequestChatPeerId({
+            isMyRequest,
+            requesterId: request?.requester_id,
+            driverId: request?.driver_id || request?.accepted_driver_id,
+        });
+
+        if (!peerId || peerId === String(user?.id || '')) {
+            toast.error(copy.chatUnavailable);
+            return;
+        }
+
+        setIsOpeningChat(true);
+        try {
+            const linkedRideId = getLinkedRideId(request);
+            const { data, success, error } = await getOrCreateChat(peerId, linkedRideId);
+            if (!success) throw new Error(error || copy.chatError);
+            const chatId = extractChatId(data);
+            const path = getRequestChatPath({ linkedRideId, chatId });
+            if (!path) throw new Error(copy.chatError);
+            navigate(path);
+        } catch (error) {
+            toast.error(copy.chatError, { description: error.message });
+        } finally {
+            setIsOpeningChat(false);
+        }
+    };
+
     const handleCancelRequest = async () => {
         setIsCancelling(true);
         try {
@@ -432,7 +473,12 @@ const RequestDetails = () => {
             linkedRideId: getLinkedRideId(request),
             canCancel: user?.id === request?.requester_id && ['pending', 'accepted'].includes(status),
             canAccept: user?.id !== request?.requester_id && status === 'pending',
-            canViewRide: Boolean(getLinkedRideId(request))
+            canViewRide: Boolean(getLinkedRideId(request)),
+            canChat: Boolean(getRequestChatPeerId({
+                isMyRequest: user?.id === request?.requester_id,
+                requesterId: request?.requester_id,
+                driverId: request?.driver_id || request?.accepted_driver_id,
+            }))
         };
     }, [request, user?.id, copy]);
 
@@ -536,19 +582,31 @@ const RequestDetails = () => {
 
                     <div className="space-y-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.quickActions}</p>
-                        {!computed.isMyRequest && (
-                            <div className="grid grid-cols-3 gap-2">
+                        <div className={cn(
+                            'grid gap-2',
+                            computed.isMyRequest
+                                ? (computed.canChat ? 'grid-cols-2' : 'grid-cols-1')
+                                : (computed.canChat ? 'grid-cols-3' : 'grid-cols-2')
+                        )}>
+                            {!computed.isMyRequest && (
                                 <Button onClick={handleCallRequester} className="h-12 rounded-2xl bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 font-black text-[10px] uppercase tracking-widest">
                                     <Phone size={16} className="mr-1" /> {copy.call}
                                 </Button>
-                                <Button onClick={() => navigate(`/ride-chat/${request.id}`)} className="h-12 rounded-2xl bg-orange-50 text-orange-600 border-none hover:bg-orange-100 font-black text-[10px] uppercase tracking-widest">
-                                    <MessageCircle size={16} className="mr-1" /> Chat
+                            )}
+                            {computed.canChat && (
+                                <Button
+                                    onClick={handleOpenChat}
+                                    disabled={isOpeningChat}
+                                    className="h-12 rounded-2xl bg-orange-50 text-orange-600 border-none hover:bg-orange-100 font-black text-[10px] uppercase tracking-widest"
+                                >
+                                    {isOpeningChat ? <Loader2 size={16} className="mr-1 animate-spin" /> : <MessageCircle size={16} className="mr-1" />}
+                                    {copy.chat}
                                 </Button>
-                                <Button type="button" onClick={handleShare} className="h-12 rounded-2xl bg-slate-50 text-slate-500 p-0 border-none hover:bg-slate-100">
-                                    <Share2 size={18} />
-                                </Button>
-                            </div>
-                        )}
+                            )}
+                            <Button type="button" onClick={handleShare} className="h-12 rounded-2xl bg-slate-50 text-slate-500 p-0 border-none hover:bg-slate-100">
+                                <Share2 size={18} />
+                            </Button>
+                        </div>
 
                         <div className="grid grid-cols-2 gap-2">
                             <Button type="button" variant="outline" onClick={() => navigate('/my-requests')} className="h-12 rounded-2xl border-slate-100 bg-white font-black text-[10px] uppercase tracking-widest gap-2">
