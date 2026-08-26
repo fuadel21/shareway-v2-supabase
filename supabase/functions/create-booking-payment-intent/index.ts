@@ -69,6 +69,8 @@ serve(async (req) => {
       numSeats = 1,
       bookingSignature,
       useWalletBalance = false,
+      departureTime,
+      departure_time,
     } = await req.json()
 
     if (!rideId) return jsonResponse({ error: { message: 'ID del viaje requerido' } }, 400)
@@ -108,7 +110,11 @@ serve(async (req) => {
     if (ride.status !== 'scheduled') {
       return jsonResponse({ error: { message: 'Este viaje ya no está disponible para reservar' } }, 409)
     }
-    if (new Date(ride.departure_time).getTime() <= Date.now()) {
+    const resolvedDeparture = ride.departure_time || departure_time || departureTime
+    if (!resolvedDeparture) {
+      return jsonResponse({ error: { message: 'La solicitud necesita fecha y hora de salida' } }, 400)
+    }
+    if (new Date(resolvedDeparture).getTime() <= Date.now()) {
       return jsonResponse({ error: { message: 'Este viaje ya ha salido o ha expirado' } }, 409)
     }
     if (Number(ride.seats_available || 0) < requestedSeats) {
@@ -185,14 +191,17 @@ serve(async (req) => {
       status: 'pending',
       payment_intent_id: paymentIntent.id,
       amount: requestedTotal,
-      departure_time: ride.departure_time,
+<<<<<<< HEAD
+      departure_time: resolvedDeparture,
       pickup_location: pickupLocation ?? null,
       pickup_address: pickupAddress ?? null,
     }, { onConflict: 'ride_id,requester_id' })
 
     if (requestError) {
       await stripe.paymentIntents.cancel(paymentIntent.id).catch(() => undefined)
-      return jsonResponse({ error: { message: 'No se pudo preparar la solicitud de reserva' } }, 500)
+      return jsonResponse({
+        error: { message: requestError.message || 'No se pudo preparar la solicitud de reserva' },
+      }, 500)
     }
 
     return jsonResponse({

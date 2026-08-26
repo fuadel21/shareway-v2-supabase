@@ -668,6 +668,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                         pricePerSeat: roundMoney(cleanTotal / Math.max(Number(numSeats), 1)),
                         numSeats: Number(numSeats),
                         bookingSignature,
+                        departure_time: ride?.departure_time || ride?.departureTime || null,
                     },
                 });
                 if (error || !data?.clientSecret) throw new Error(data?.error?.message || error?.message || copy.stripeUnavailable);
