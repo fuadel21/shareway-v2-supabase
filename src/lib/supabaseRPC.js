@@ -70,6 +70,12 @@ export const safeCall = async (rpcCall, functionName, retries = 2) => {
 
 const normalizeRideStartError = (error, readiness = null) => {
     const raw = String(error || '');
+    const unpaidCount = Number(readiness?.unpaid_count || 0) + Number(readiness?.unpaid_request_count || 0);
+    if (raw.includes('PAYMENT_REQUIRED') || raw.includes('UNPAID')) {
+        return unpaidCount > 0
+            ? `Hay ${unpaidCount} reserva(s) sin pagar. El viaje no puede iniciar hasta que se complete el pago.`
+            : 'Hay reservas sin pagar. El viaje no puede iniciar hasta que se complete el pago.';
+    }
     if (raw.includes('PIN_VERIFICATION_REQUIRED')) {
         const count = Number(readiness?.unresolved_count || 0);
         return count > 0
@@ -97,11 +103,15 @@ export const startRide = async (rideId, driverId = null) => {
         };
     }
 
-    if (readiness?.ready === false) {
+    if (readiness?.ready !== true) {
+        const unpaid = Number(readiness?.unpaid_count || 0) + Number(readiness?.unpaid_request_count || 0);
         return {
             data: readiness,
             success: false,
-            error: normalizeRideStartError('PIN_VERIFICATION_REQUIRED', readiness)
+            error: normalizeRideStartError(
+                unpaid > 0 ? 'PAYMENT_REQUIRED' : 'PIN_VERIFICATION_REQUIRED',
+                readiness
+            )
         };
     }
 
@@ -146,12 +156,38 @@ export const triggerEmergencyAlert = (rideId, details) =>
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
 
-export const verifyPassenger = (rideId, pin, passengerId = null) =>
-    safeCall(() => supabase.rpc('verify_passenger_boarding', {
+export const verifyPassenger = async (rideId, pin, passengerId = null) => {
+    const cleanPin = String(pin || '').replace(/\D/g, '');
+    const primary = await safeCall(() => supabase.rpc('verify_passenger_boarding', {
         p_ride_id: rideId,
-        p_pin: pin,
+        p_pin: cleanPin,
         p_passenger_id: passengerId
     }), 'verify_passenger_boarding');
+
+    if (primary.success) return primary;
+
+    const err = String(primary.error || '');
+    const missingFn = /could not find the function|pgrst202/i.test(err);
+    const startSideEffect = /PIN_VERIFICATION_REQUIRED|PAYMENT_REQUIRED|enforce_verified/i.test(err);
+
+    if (missingFn) {
+        const legacy = await safeCall(() => supabase.rpc('verify_passenger_boarding', {
+            p_ride_id: rideId,
+            p_pin: cleanPin
+        }), 'verify_passenger_boarding');
+        if (legacy.success) return legacy;
+    }
+
+    if (passengerId && (startSideEffect || missingFn)) {
+        return safeCall(() => supabase.rpc('verify_passenger_boarding_v2', {
+            p_ride_id: rideId,
+            p_passenger_id: passengerId,
+            p_pin: cleanPin
+        }), 'verify_passenger_boarding_v2');
+    }
+
+    return primary;
+};
 
 export const getMyRidePin = (rideId) =>
     safeCall(() => supabase.rpc('get_my_ride_pin', { p_ride_id: rideId }), 'get_my_ride_pin');

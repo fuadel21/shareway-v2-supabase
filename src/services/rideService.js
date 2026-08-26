@@ -471,7 +471,8 @@ export const cancelBooking = async (rideId) => {
 };
 
 export const verifyPassenger = async (rideId, passengerId, pin) => {
-    const { success, error } = await rpc.verifyPassenger(rideId, pin, passengerId ?? null);
+    const cleanPin = String(pin || '').replace(/\D/g, '');
+    const { success, error } = await rpc.verifyPassenger(rideId, cleanPin, passengerId ?? null);
     if (!success) throw new Error(error);
     return true;
 };

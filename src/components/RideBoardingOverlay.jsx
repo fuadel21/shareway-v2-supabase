@@ -8,6 +8,7 @@ import {
   handlePassengerNoShow,
   verifyPassenger,
 } from '../lib/supabaseRPC.js';
+import { getBoardingSummary, normalizeBoardingPin } from '../utils/rideBoarding.js';
 
 const getRideIdFromPath = () => {
   const match = window.location.pathname.match(/^\/ride\/([^/]+)\/?$/);
@@ -123,29 +124,33 @@ const RideBoardingOverlay = () => {
   const isDriver = ride && currentUserId && String(ride.driver_id) === String(currentUserId);
   const isScheduled = ride?.status === 'scheduled';
 
-  const unresolvedPassengers = useMemo(() => {
-    const fromReadiness = Array.isArray(readiness?.unresolved_passengers)
-      ? readiness.unresolved_passengers
-      : [];
-    if (fromReadiness.length > 0) return fromReadiness;
-    return (Array.isArray(ride?.passengers) ? ride.passengers : []).filter((passenger) =>
-      ['confirmed', 'accepted', 'pending_boarding'].includes(passengerStatus(passenger))
-    );
-  }, [readiness, ride]);
+  const boardingSummary = useMemo(
+    () => getBoardingSummary(ride || {}, readiness),
+    [ride, readiness]
+  );
 
-  const verifiedCount = Number(readiness?.verified_count ||
-    (Array.isArray(ride?.passengers)
-      ? ride.passengers.filter((passenger) => ['verified', 'completed'].includes(passengerStatus(passenger))).length
-      : 0));
+  const unresolvedPassengers = useMemo(() => {
+    const pinPending = boardingSummary.unresolvedPinPassengers || [];
+    const unpaid = boardingSummary.unpaidPassengers || [];
+    const seen = new Set();
+    return [...unpaid, ...pinPending].filter((passenger) => {
+      const key = String(passenger?.id || passenger?.user_id || Math.random());
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [boardingSummary]);
+
+  const verifiedCount = boardingSummary.verifiedCount;
 
   const departureTime = ride?.departure_time ? new Date(ride.departure_time).getTime() : Number.NaN;
   const now = Date.now();
   const canVerify = Number.isFinite(departureTime) && now >= departureTime - 15 * 60 * 1000;
   const canMarkNoShow = Number.isFinite(departureTime) && now >= departureTime;
-  const startBlocked = isScheduled && readiness?.ready !== true;
+  const startBlocked = isScheduled && boardingSummary.ready !== true;
 
   const submitPin = async (passenger) => {
-    const cleanPin = pin.trim();
+    const cleanPin = normalizeBoardingPin(pin);
     if (!/^\d{4,8}$/.test(cleanPin)) {
       toast.error('Introduce un PIN válido');
       return;
@@ -207,11 +212,13 @@ const RideBoardingOverlay = () => {
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Control de embarque</p>
               <p className="text-sm font-black text-slate-900">
-                {readiness?.ready
+                {boardingSummary.ready
                   ? `Todo listo · ${verifiedCount} verificado(s)`
                   : readiness?.unavailable
                     ? 'Comprobación no disponible'
-                    : `${unresolvedPassengers.length} pasajero(s) pendiente(s)`}
+                    : boardingSummary.unpaidCount > 0
+                      ? `${boardingSummary.unpaidCount} reserva(s) sin pagar`
+                      : `${unresolvedPassengers.length} pasajero(s) pendiente(s)`}
               </p>
             </div>
           </div>
@@ -226,9 +233,9 @@ const RideBoardingOverlay = () => {
               </div>
             )}
 
-            {!readiness?.unavailable && unresolvedPassengers.length === 0 && (
+            {!readiness?.unavailable && boardingSummary.ready && (
               <div className="rounded-2xl bg-emerald-50 p-3 text-xs font-bold text-emerald-700">
-                Todos los pasajeros están verificados o resueltos. Ya puedes iniciar el viaje.
+                Todos los pasajeros están pagados y verificados o resueltos. Ya puedes iniciar el viaje.
               </div>
             )}
 
@@ -240,7 +247,11 @@ const RideBoardingOverlay = () => {
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-slate-900">{passengerName(passenger)}</p>
-                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Pendiente de PIN</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">
+                        {['pending', 'requested', 'awaiting_payment', 'unpaid'].includes(passengerStatus(passenger))
+                          ? 'Reserva sin pagar'
+                          : 'Pendiente de PIN'}
+                      </p>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -313,7 +324,9 @@ const RideBoardingOverlay = () => {
                 <Lock className="size-4" />
                 {readiness?.unavailable
                   ? 'Comprobando embarque'
-                  : `Faltan ${unresolvedPassengers.length} pasajero(s)`}
+                  : boardingSummary.unpaidCount > 0
+                    ? 'Hay reservas sin pagar'
+                    : `Faltan ${unresolvedPassengers.length} pasajero(s)`}
               </button>
             </div>
           </div>

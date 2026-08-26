@@ -41,6 +41,7 @@ import {
     cancelRide,
     completeRide as completeRideService,
 } from '@/services/rideService.js';
+import { canPresentStartRide } from '@/utils/rideBoarding.js';
 
 const copyByLanguage = {
     es: {
@@ -339,7 +340,8 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
     const canStart = isDriver
         && effectiveStatus === 'scheduled'
         && (minutesToDeparture <= 15 || hasDeparted)
-        && !isTooLate;
+        && !isTooLate
+        && canPresentStartRide({ ride, now });
     const canFinish = isDriver && isActive;
     const canCancelRide = isDriver && !isClosed && !isActive;
     const passengerStatus = myPassengerEntry?.status;
