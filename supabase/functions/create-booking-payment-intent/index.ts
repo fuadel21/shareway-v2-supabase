@@ -185,6 +185,7 @@ serve(async (req) => {
       status: 'pending',
       payment_intent_id: paymentIntent.id,
       amount: requestedTotal,
+      departure_time: ride.departure_time,
       pickup_location: pickupLocation ?? null,
       pickup_address: pickupAddress ?? null,
     }, { onConflict: 'ride_id,requester_id' })
