@@ -191,7 +191,6 @@ serve(async (req) => {
       status: 'pending',
       payment_intent_id: paymentIntent.id,
       amount: requestedTotal,
-<<<<<<< HEAD
       departure_time: resolvedDeparture,
       pickup_location: pickupLocation ?? null,
       pickup_address: pickupAddress ?? null,
