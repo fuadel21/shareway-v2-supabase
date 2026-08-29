@@ -37,6 +37,21 @@ describe('startRide boarding guard', () => {
         expect(rpcMock).not.toHaveBeenCalledWith('start_ride', expect.anything());
     });
 
+    it('does not call start_ride while a booking is unpaid', async () => {
+        rpcMock.mockImplementation((name) => {
+            if (name === 'get_ride_start_readiness') {
+                return rpcResult({ ready: false, unpaid_request_count: 1, unresolved_count: 0 });
+            }
+            return rpcResult({ success: true });
+        });
+
+        const result = await startRide('ride-unpaid');
+
+        expect(result.success).toBe(false);
+        expect(result.error).toMatch(/sin pagar/i);
+        expect(rpcMock).not.toHaveBeenCalledWith('start_ride', expect.anything());
+    });
+
     it('starts only after the readiness check passes', async () => {
         rpcMock
             .mockImplementationOnce(() => rpcResult({ ready: true, unresolved_count: 0 }))

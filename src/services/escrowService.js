@@ -57,10 +57,7 @@ export const getEscrowBalance = async (userId) => {
     .eq('user_id', userId)
     .single();
 
-  if (error) {
-      if (error.message?.includes('single')) return 25.50; // Mock for test
-      throw error;
-  }
+  if (error) throw error;
   return data?.held_balance ?? 0;
 };
 

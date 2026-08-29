@@ -25,9 +25,10 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
-import { getRideDetailsSecure, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
+import { getRideDetailsSecure, getRideStartReadiness, getMyRidePin, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking, completeRide as completeRideService, isRideBookable } from '../services/rideService.js';
 import { triggerSOS } from '../services/safetyService.js';
+import { canPresentStartRide, getStartBlockReason, normalizeBoardingPin } from '../utils/rideBoarding.js';
 
 const formatMoney = (value) => {
     const numericValue = Number(value);
@@ -65,6 +66,8 @@ const RideDetails = () => {
     const [isSOSLoading, setIsSOSLoading] = useState(false);
     const [secureAction, setSecureAction] = useState(null);
     const [isSecureActionLoading, setIsSecureActionLoading] = useState(false);
+    const [startReadiness, setStartReadiness] = useState(null);
+    const [fetchedPin, setFetchedPin] = useState(null);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -78,13 +81,64 @@ const RideDetails = () => {
         try {
             const response = await getRideDetailsSecure(rideId);
             const rpcPayload = response.data;
-            if (rpcPayload?.success) {
-                const rideData = rpcPayload.data;
-                setRide(rideData);
-
+            const rideData = rpcPayload?.success === false
+                ? null
+                : (rpcPayload?.data || rpcPayload);
+            if (rideData?.id || rideData?.driver_id) {
+                let nextRide = rideData;
+                const isCurrentDriver = user?.id && String(rideData.driver_id) === String(user.id);
                 const myEntry = rideData.passengers?.find(
                     p => p.id?.toString().toLowerCase() === user?.id?.toString().toLowerCase()
                 );
+
+                if (isCurrentDriver && rideData.status === 'scheduled') {
+                    try {
+                        const readinessResponse = await getRideStartReadiness(rideId);
+                        if (readinessResponse?.success) {
+                            setStartReadiness(readinessResponse.data);
+                        } else {
+                            setStartReadiness({
+                                ready: false,
+                                unavailable: true,
+                                error: readinessResponse?.error || 'No se pudo comprobar el embarque.',
+                            });
+                        }
+                    } catch (readinessError) {
+                        setStartReadiness({
+                            ready: false,
+                            unavailable: true,
+                            error: readinessError?.message || 'No se pudo comprobar el embarque.',
+                        });
+                    }
+
+                    try {
+                        const unpaidResponse = await supabase
+                            .from('ride_requests')
+                            .select('id,status,requester_id')
+                            .eq('ride_id', rideId)
+                            .in('status', ['pending', 'requested', 'awaiting_payment', 'processing', 'unpaid']);
+
+                        if (!unpaidResponse.error && Array.isArray(unpaidResponse.data)) {
+                            nextRide = { ...rideData, ride_requests: unpaidResponse.data };
+                        }
+                    } catch (requestError) {
+                        console.warn('No se pudieron cargar reservas pendientes:', requestError);
+                    }
+                } else {
+                    setStartReadiness(null);
+                }
+
+                if (myEntry && !['verified', 'completed'].includes(String(myEntry.status || '').toLowerCase())) {
+                    try {
+                        const pinResponse = await getMyRidePin(rideId);
+                        const pinValue = pinResponse?.data?.pin || pinResponse?.data?.data?.pin || rideData.user_pin;
+                        if (pinValue) setFetchedPin(pinValue);
+                    } catch (pinError) {
+                        console.warn('No se pudo cargar el PIN del pasajero:', pinError);
+                    }
+                }
+
+                setRide(nextRide);
 
                 if (rideData.status === 'completed' &&
                     myEntry?.status === 'verified' &&
@@ -145,6 +199,12 @@ const RideDetails = () => {
     };
 
     const handleStartRide = async () => {
+        const reason = getStartBlockReason({ ride, now: new Date(), readiness: startReadiness });
+        if (reason) {
+            toast.error('No se puede iniciar el viaje', { description: reason });
+            return;
+        }
+
         setIsStarting(true);
         try {
             const { success, error } = await startRide(rideId);
@@ -214,10 +274,12 @@ const RideDetails = () => {
     const handleVerifyPin = async (pin) => {
         setIsVerifying(true);
         try {
-            const res = await verifyPassenger(rideId, pin, selectedPassenger?.id ?? null);
+            const cleanPin = normalizeBoardingPin(pin);
+            const res = await verifyPassenger(rideId, cleanPin, selectedPassenger?.id ?? null);
+            const failureText = `${res.error || ''} ${res.message || ''} ${res.data?.error || ''} ${res.data?.message || ''}`;
 
             if (!res.success) {
-                if (res.error === 'DEMASIADO_PRONTO' || res.message?.includes('antes de la salida')) {
+                if (failureText.includes('DEMASIADO_PRONTO') || failureText.includes('antes de la salida')) {
                     toast.error('¡Es demasiado pronto!', {
                         description: 'Solo puedes verificar el PIN del pasajero 15 minutos antes de la hora de salida programada.',
                         duration: 5000
@@ -226,10 +288,10 @@ const RideDetails = () => {
                     return;
                 }
 
-                if (res.error?.includes('PIN_INCORRECTO') || res.message?.includes('incorrecto')) {
+                if (failureText.includes('PIN_INCORRECTO') || failureText.includes('incorrecto')) {
                     throw new Error('El PIN introducido no coincide. Solicítalo de nuevo al pasajero.');
                 }
-                throw new Error(res.error || res.message || 'Error al verificar');
+                throw new Error(res.error || res.message || res.data?.message || 'Error al verificar');
             }
 
             toast.success(`¡${getPassengerName(selectedPassenger)} verificado!`, {
@@ -400,12 +462,15 @@ const RideDetails = () => {
     const minutesToDeparture = differenceInMinutes(departureDate, currentTime);
     const isTooLate = differenceInMinutes(currentTime, departureDate) > 120;
     const isDelayed = ride.status === 'scheduled' && hasDeparted && !isTooLate;
-    const canStartRide = ride.status === 'scheduled' && (minutesToDeparture <= 15 || hasDeparted) && !isRideActive && !isRideCancelled && !isTooLate;
-    const canVerifyPassenger = isRideActive || canStartRide;
+    const startBlockReason = getStartBlockReason({ ride, now: currentTime, readiness: startReadiness });
+    const canStartRide = isDriver && canPresentStartRide({ ride, now: currentTime, readiness: startReadiness });
+    const isStartWindowOpen = ride.status === 'scheduled' && (minutesToDeparture <= 15 || hasDeparted) && !isRideActive && !isRideCancelled && !isTooLate;
+    const canVerifyPassenger = isRideActive || isStartWindowOpen;
     const isRideBookableNow = isRideBookable(ride, currentTime);
     const myPassengerEntry = passengers.find(p => p.id?.toString().toLowerCase() === currentUserId);
     const isRated = myPassengerEntry?.rated === true || myPassengerEntry?.rated === 'true';
-    const myPin = myPassengerEntry?.pin;
+    const rawPin = fetchedPin || ride.user_pin || myPassengerEntry?.pin;
+    const myPin = rawPin && String(rawPin).replace(/\*/g, '') ? rawPin : null;
     const ridePrice = formatMoney(ride.price) || '0.00€';
     const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
 
@@ -632,6 +697,16 @@ const RideDetails = () => {
                         </div>
                     </div>
                 </Card>
+
+                {isDriver && ride.status === 'scheduled' && startBlockReason && (
+                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-amber-700">
+                        <Lock size={28} className="shrink-0" />
+                        <div>
+                            <p className="font-black uppercase italic leading-none">Inicio bloqueado</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1 opacity-80">{startBlockReason}</p>
+                        </div>
+                    </div>
+                )}
 
                 {(isDriver || isPassenger) && confirmedPassengers.length > 0 && (
                     <div className="space-y-4 pt-4">

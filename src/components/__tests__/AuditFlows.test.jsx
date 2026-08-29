@@ -9,8 +9,12 @@ import * as rideService from '../../services/rideService';
 // --- MOCKS DE INFRAESTRUCTURA ---
 vi.mock('../../lib/supabaseRPC', () => ({
   getRideDetailsSecure: vi.fn(),
+  getRideStartReadiness: vi.fn().mockResolvedValue({ success: true, data: { ready: true, unresolved_count: 0 } }),
+  getMyRidePin: vi.fn().mockResolvedValue({ success: true, data: { pin: '8899' } }),
   startRide: vi.fn(),
-  verifyPassenger: vi.fn()
+  verifyPassenger: vi.fn(),
+  handlePassengerNoShow: vi.fn(),
+  getOrCreateChat: vi.fn(),
 }));
 
 vi.mock('../../services/rideService', () => ({

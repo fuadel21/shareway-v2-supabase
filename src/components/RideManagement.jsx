@@ -21,6 +21,7 @@ import {
 } from '@/services/rideService';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { canPresentStartRide, getStartBlockReason, normalizeBoardingPin } from '@/utils/rideBoarding.js';
 
 const toLocalDateInput = (value) => {
     const date = new Date(value);
@@ -122,6 +123,8 @@ const RideManagement = ({ ride, onRefresh }) => {
 
     const isRideStarted = ride.status === 'active' || ride.status === 'in_progress';
     const isRideScheduled = ride.status === 'scheduled';
+    const startBlockReason = getStartBlockReason({ ride });
+    const canStartRide = canPresentStartRide({ ride });
 
     const passengers = useMemo(() => ride.passengers || [], [ride.passengers]);
     const pendingRequests = useMemo(() => passengers.filter((p) => p.status === 'pending'), [passengers]);
@@ -493,6 +496,11 @@ const RideManagement = ({ ride, onRefresh }) => {
                     <Button
                         onClick={async () => {
                             try {
+                                const reason = getStartBlockReason({ ride });
+                                if (reason) {
+                                    toast.error(reason);
+                                    return;
+                                }
                                 setIsLoading(true);
                                 await startRide(ride.id);
                                 onRefresh();
@@ -502,10 +510,17 @@ const RideManagement = ({ ride, onRefresh }) => {
                                 setIsLoading(false);
                             }
                         }}
-                        disabled={onboardPassengers.length === 0 || isLoading}
-                        className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none"
+                        disabled={!canStartRide || isLoading}
+                        className={cn(
+                            'w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none',
+                            canStartRide ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                        )}
                     >
-                        INICIAR VIAJE <PlayCircle className="ml-3 text-primary h-6 w-6" />
+                        {canStartRide ? (
+                            <>INICIAR VIAJE <PlayCircle className="ml-3 text-primary h-6 w-6" /></>
+                        ) : (
+                            startBlockReason || 'NO SE PUEDE INICIAR'
+                        )}
                     </Button>
                 )}
 
@@ -553,7 +568,8 @@ const RideManagement = ({ ride, onRefresh }) => {
                 onConfirm={async (pin) => {
                     if (!selectedPassenger?.id) return;
                     try {
-                        await verifyPassenger(ride.id, selectedPassenger.id, pin);
+                        await verifyPassenger(ride.id, selectedPassenger.id, normalizeBoardingPin(pin));
+                        toast.success(`${selectedPassenger.displayName || 'Pasajero'} verificado`);
                         setIsPinDialogOpen(false);
                         onRefresh();
                     } catch (error) {

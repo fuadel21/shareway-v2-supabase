@@ -786,36 +786,6 @@ function Dashboard() {
             </div>
 
             <div className="flex-1 relative h-full">
-                <div className="lg:hidden absolute top-20 left-4 right-4 z-[40] flex flex-col gap-3 animate-in slide-in-from-top duration-700">
-                    <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
-                    <SearchPanel {...searchPanelProps} compact />
-                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
-                        {filters.map((f) => (
-                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
-                                {f.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                <Button onClick={handleLocateMe} className="absolute bottom-40 left-4 z-[1000] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 flex items-center gap-2 hover:bg-white transition-all active:scale-90 group">
-                    <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest pr-1">{copy.nearMe}</span>
-                </Button>
-
-                {isMobile && (
-                    <div className="absolute bottom-40 right-4 z-[1000] flex flex-col gap-3 animate-in fade-in zoom-in duration-500">
-                        <Button onClick={() => navigate('/publish')} className="h-14 w-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5" size="icon">
-                            <Plus className="h-6 w-6 text-primary" />
-                            <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.publish')}</span>
-                        </Button>
-                        <Button onClick={() => navigateToRequestWithSearch()} className="h-14 w-14 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-xl border border-slate-100 active:scale-90 transition-all flex flex-col items-center justify-center gap-0.5" size="icon">
-                            <Megaphone className="h-6 w-6 text-amber-500" />
-                            <span className="text-[7px] font-black uppercase tracking-tighter shrink-0">{t('nav.request')}</span>
-                        </Button>
-                    </div>
-                )}
-
                 <MapComponent
                     center={{ lat: mapCenter[0], lng: mapCenter[1] }}
                     zoom={zoom}
@@ -824,12 +794,64 @@ function Dashboard() {
                     onItemSelected={(item) => handleSelection(item, true)}
                 />
 
+                <div className="lg:hidden absolute top-16 left-3 right-3 z-[1100] flex flex-col gap-2 pointer-events-none [transform:translateZ(0)]">
+                    <div className="pointer-events-auto">
+                        <SearchPanel {...searchPanelProps} compact />
+                    </div>
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
+                            {filters.map((f) => (
+                                <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
+                                    {f.label}
+                                </button>
+                            ))}
+                        </div>
+                        <Button
+                            onClick={handleLocateMe}
+                            className="h-10 w-10 shrink-0 rounded-2xl bg-white/95 text-slate-900 shadow-lg border border-white/50"
+                            size="icon"
+                            aria-label={copy.nearMe}
+                        >
+                            <Navigation className="h-4 w-4 text-primary" />
+                        </Button>
+                    </div>
+                </div>
+
+                <Button
+                    onClick={handleLocateMe}
+                    className="hidden lg:flex absolute bottom-8 left-4 z-[1100] h-14 px-4 rounded-2xl bg-white/95 backdrop-blur-xl text-slate-900 shadow-2xl border border-white/50 items-center gap-2 hover:bg-white transition-all active:scale-90 group"
+                >
+                    <Navigation className="h-5 w-5 text-primary rotate-45 group-hover:rotate-0 transition-transform duration-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest pr-1">{copy.nearMe}</span>
+                </Button>
+
+                {isMobile && (
+                    <div
+                        className="fixed inset-x-3 z-[1100] flex gap-2 lg:hidden [transform:translateZ(0)]"
+                        style={{ bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))' }}
+                    >
+                        <Button
+                            onClick={() => navigate('/publish')}
+                            className="flex-1 h-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2"
+                        >
+                            <Plus size={16} className="text-primary" /> {t('create_ride.title')}
+                        </Button>
+                        <Button
+                            onClick={() => navigateToRequestWithSearch()}
+                            className="flex-1 h-14 rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2"
+                        >
+                            <Megaphone size={16} className="text-amber-500" /> {t('create_request.title')}
+                        </Button>
+                    </div>
+                )}
+
                 {isMobile && (
                     <div className="lg:hidden">
                         <DraggableSheet activeSnap={selectedItem ? 1 : undefined}>
                             <div className="px-6 py-4 space-y-4 text-left">
                                 {!selectedItem ? (
                                     <>
+                                        <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                                         <div className="flex items-center justify-between mb-4">
                                             <div>
                                                 <h3 className="text-base font-black text-slate-900 uppercase italic tracking-widest">{activeSearch ? copy.activeSearch : copy.nearYouTitle}</h3>
