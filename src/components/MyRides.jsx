@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { differenceInMinutes, format, isBefore, isValid, subMinutes } from 'date-fns';
+import { differenceInMinutes, format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +22,7 @@ import {
     Calendar,
     Car,
     CheckCircle,
+    Clock,
     ChevronLeft,
     Eye,
     Flag,
@@ -42,6 +43,11 @@ import {
     completeRide as completeRideService,
 } from '@/services/rideService.js';
 import { canPresentStartRide } from '@/utils/rideBoarding.js';
+import {
+    filterActivityByTab,
+    getEffectiveActivityStatus,
+    RIDE_EXPIRATION_GRACE_MINUTES,
+} from '@/utils/activityFilters.js';
 
 const copyByLanguage = {
     es: {
@@ -91,6 +97,7 @@ const copyByLanguage = {
             requested: 'Solicitudes',
             history: 'Historial',
             cancelled: 'Cancelados',
+            expired: 'Caducados',
         },
         status: {
             scheduled: 'PROGRAMADO',
@@ -156,6 +163,7 @@ const copyByLanguage = {
             requested: 'Requests',
             history: 'History',
             cancelled: 'Cancelled',
+            expired: 'Expired',
         },
         status: {
             scheduled: 'SCHEDULED',
@@ -221,6 +229,7 @@ const copyByLanguage = {
             requested: 'الطلبات',
             history: 'السجل',
             cancelled: 'الملغاة',
+            expired: 'المنتهية',
         },
         status: {
             scheduled: 'مجدولة',
@@ -246,17 +255,6 @@ const getLanguage = (language) => {
     if (language?.startsWith('en')) return 'en';
     return 'es';
 };
-
-const OPEN_RIDE_STATUSES_TIME_EXPIRABLE = new Set(['scheduled', 'active', 'in_progress']);
-const RIDE_EXPIRATION_GRACE_MINUTES = 120;
-
-function isStaleOpenRidePastGrace(ride, now = new Date()) {
-    const raw = ride?.status;
-    if (!ride?.departure_time || !OPEN_RIDE_STATUSES_TIME_EXPIRABLE.has(raw)) return false;
-    const departureDate = new Date(ride.departure_time);
-    if (Number.isNaN(departureDate.getTime())) return false;
-    return isBefore(departureDate, subMinutes(now, RIDE_EXPIRATION_GRACE_MINUTES));
-}
 
 const countPendingRequests = (ride) => {
     const directCount = Number(ride?.pending_requests_count ?? ride?.request_count ?? ride?.requests_count ?? 0);
@@ -310,6 +308,9 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
     const isDriver = String(ride.driver_id || '') === String(currentUserId || '');
     const myPassengerEntry = getMyPassengerEntry(ride, currentUserId);
     const isPassenger = !isDriver && (ride.role === 'passenger' || Boolean(myPassengerEntry));
+    const detailsPath = ride.role === 'requester' && ride.request_id
+        ? `/request/${ride.request_id}`
+        : `/ride/${ride.id}`;
     const dateObj = ride.departure_time ? new Date(ride.departure_time) : null;
 
     const STATUS_THEMES = {
@@ -323,14 +324,13 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
         rejected: { text: copy.status.rejected, bg: 'bg-red-50 text-red-500 border-red-100', dot: 'bg-red-500' },
     };
 
-    const isActuallyExpired = isStaleOpenRidePastGrace(ride);
-    const effectiveStatus = isActuallyExpired ? 'expired' : (ride.status || 'scheduled');
+    const now = new Date();
+    const effectiveStatus = ride.effective_status || getEffectiveActivityStatus(ride, { now });
     const currentTheme = STATUS_THEMES[effectiveStatus] || STATUS_THEMES.scheduled;
     const isClosed = ['completed', 'cancelled', 'expired', 'rejected'].includes(effectiveStatus);
     const isActive = ['active', 'in_progress'].includes(effectiveStatus);
     const pendingRequestCount = countPendingRequests(ride);
     const confirmedPassengerCount = getConfirmedPassengerCount(ride);
-    const now = new Date();
     const minutesToDeparture = dateObj && isValid(dateObj) ? differenceInMinutes(dateObj, now) : 999999;
     const hasDeparted = dateObj && isValid(dateObj) ? dateObj <= now : false;
     const isTooLate = dateObj && isValid(dateObj)
@@ -369,7 +369,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
     return (
         <div
             className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white flex flex-col mb-4"
-            onClick={() => navigate(`/ride/${ride.id}`)}
+            onClick={() => navigate(detailsPath)}
         >
             <div className="absolute top-4 right-4 flex gap-2 z-20">
                 {pendingRequestCount > 0 && isDriver && (
@@ -463,7 +463,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
                     <QuickActionButton
                         icon={Eye}
                         label={copy.actions.view}
-                        onClick={(event) => stopAndRun(event, () => navigate(`/ride/${ride.id}`))}
+                        onClick={(event) => stopAndRun(event, () => navigate(detailsPath))}
                     />
                     {canOpenChat && (
                         <QuickActionButton
@@ -601,37 +601,24 @@ const MyRides = () => {
     }, []);
 
     const filteredRides = useMemo(() => {
-        const list = Array.isArray(rides) ? rides : [];
         const now = new Date();
+        const filtered = filterActivityByTab(rides, activeTab, { now });
 
-        return list
-            .filter((ride) => {
-                const isActuallyExpired = isStaleOpenRidePastGrace(ride, now);
-                let status = ride.status;
-                if (isActuallyExpired && status !== 'requested') status = 'expired';
-
-                switch (activeTab) {
-                    case 'active':
-                        return ['scheduled', 'active', 'in_progress'].includes(status)
-                            && (ride.role === 'driver' || ride.role === 'passenger');
-                    case 'requested':
-                        return ride.role === 'requester'
-                            && !['completed', 'expired', 'cancelled', 'rejected'].includes(status);
-                    case 'history':
-                        return ['completed', 'expired'].includes(status);
-                    case 'cancelled':
-                        return ['cancelled', 'rejected'].includes(status);
-                    default:
-                        return false;
-                }
-            })
-            .sort((a, b) => {
-                const dateA = new Date(a.departure_time);
-                const dateB = new Date(b.departure_time);
-                if (['history', 'cancelled'].includes(activeTab)) return dateB - dateA;
-                return dateA - dateB;
-            });
+        return filtered.sort((a, b) => {
+            const dateA = new Date(a.departure_time);
+            const dateB = new Date(b.departure_time);
+            if (['history', 'cancelled', 'expired'].includes(activeTab)) return dateB - dateA;
+            return dateA - dateB;
+        });
     }, [rides, activeTab]);
+
+    const rideTabCounts = useMemo(() => {
+        const now = new Date();
+        return ['active', 'requested', 'history', 'cancelled', 'expired'].reduce((counts, tab) => {
+            counts[tab] = filterActivityByTab(rides, tab, { now }).length;
+            return counts;
+        }, {});
+    }, [rides]);
 
     const openActionConfirm = (type, ride) => {
         const actionCopy = {
@@ -713,6 +700,7 @@ const MyRides = () => {
         { id: 'requested', label: copy.tabs.requested, icon: Users },
         { id: 'history', label: copy.tabs.history, icon: CheckCircle },
         { id: 'cancelled', label: copy.tabs.cancelled, icon: XCircle },
+        { id: 'expired', label: copy.tabs.expired, icon: Clock },
     ];
 
     return (
@@ -760,9 +748,12 @@ const MyRides = () => {
                             >
                                 <Icon size={14} className={isActiveTab ? 'text-primary' : 'text-slate-400'} />
                                 <span className="text-[10px] font-black uppercase tracking-wider">{tab.label}</span>
-                                {isActiveTab && filteredRides.length > 0 && (
-                                    <span className="ml-1 bg-white/20 px-1.5 py-0.5 rounded-full text-[8px]">{filteredRides.length}</span>
-                                )}
+                                <span className={cn(
+                                    'ml-1 px-1.5 py-0.5 rounded-full text-[8px]',
+                                    isActiveTab ? 'bg-white/20' : 'bg-slate-100 text-slate-400'
+                                )}>
+                                    {rideTabCounts[tab.id] || 0}
+                                </span>
                             </button>
                         );
                     })}
