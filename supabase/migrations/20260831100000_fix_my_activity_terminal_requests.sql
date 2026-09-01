@@ -6,6 +6,12 @@
 -- still present in ride_requests. The client applies the same effective-status
 -- normalization to this payload, so terminal request statuses are preserved
 -- instead of being hidden by the RPC.
+--
+-- The return type of older installations may be JSON rather than JSONB. Drop
+-- the exact signature first because PostgreSQL does not allow CREATE OR REPLACE
+-- to change a function's return type.
+
+DROP FUNCTION IF EXISTS public.fetch_my_activity_v2(UUID);
 
 CREATE OR REPLACE FUNCTION public.fetch_my_activity_v2(p_user_id UUID)
 RETURNS SETOF JSONB
