@@ -103,5 +103,10 @@ describe('activity filters', () => {
       .toBe('expired');
     expect(getEffectiveRequestStatus({ status: 'cancelled', departure_time: hoursFromNow(4) }, { now }))
       .toBe('cancelled');
+    expect(getEffectiveRequestStatus({
+      status: 'pending',
+      departure_time: hoursFromNow(8),
+      expires_at: hoursFromNow(-1),
+    }, { now })).toBe('expired');
   });
 });

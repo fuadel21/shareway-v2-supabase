@@ -33,6 +33,19 @@ const isValidDate = (value) => {
   return !Number.isNaN(date.getTime());
 };
 
+const isPastExplicitExpiration = (expirationTime, now) => {
+  if (!expirationTime || !isValidDate(expirationTime) || !isValidDate(now)) return false;
+
+  const expiration = expirationTime instanceof Date ? expirationTime : new Date(expirationTime);
+  const current = now instanceof Date ? now : new Date(now);
+  return expiration.getTime() <= current.getTime();
+};
+
+const isPastRequestExpiration = (request, now, graceMinutes) => (
+  isPastExplicitExpiration(request?.expires_at, now)
+  || isPastExpirationGrace(request?.departure_time, now, graceMinutes)
+);
+
 export const isPastExpirationGrace = (
   departureTime,
   now = new Date(),
@@ -76,7 +89,7 @@ export const getEffectiveActivityStatus = (
     if (CLOSED_ACTIVITY_STATUSES.has(parentRideStatus)) return parentRideStatus;
 
     if (['pending', 'requested'].includes(rawStatus)) {
-      return isPastExpirationGrace(activity?.departure_time, now, graceMinutes)
+      return isPastRequestExpiration(activity, now, graceMinutes)
         ? 'expired'
         : 'requested';
     }
@@ -104,7 +117,7 @@ export const getEffectiveRequestStatus = (
 
   if (CLOSED_ACTIVITY_STATUSES.has(status)) return status;
   if (OPEN_REQUEST_STATUSES.has(status)
-    && isPastExpirationGrace(request?.departure_time, now, graceMinutes)) {
+    && isPastRequestExpiration(request, now, graceMinutes)) {
     return 'expired';
   }
 

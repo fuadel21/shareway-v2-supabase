@@ -359,6 +359,18 @@ const MyRequests = () => {
     if (!profile?.id) return;
     setLoading(true);
     try {
+      // Persist the same 120-minute expiration rule used by the local filters.
+      // This is best effort so an older project without the automation RPC can
+      // still render the effective status from departure_time/expires_at.
+      const { error: expirationError } = await supabase.rpc(
+        'sw_expire_past_ride_requests',
+        {
+          p_grace_minutes: RIDE_EXPIRATION_GRACE_MINUTES,
+          p_limit: 100,
+        },
+      );
+      if (expirationError) console.warn('Request expiration sync skipped:', expirationError);
+
       const { data, error } = await supabase
         .from('ride_requests')
         .select('*')
