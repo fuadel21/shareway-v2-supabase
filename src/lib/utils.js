@@ -54,14 +54,18 @@ export function decodePolyline(str, precision = 5) {
  * Calcula la distancia entre dos puntos en la tierra usando la fórmula Haversine (en KM)
  */
 export function calculateDistance(lat1, lon1, lat2, lon2) {
-  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
+  const coordinates = [lat1, lon1, lat2, lon2].map(Number);
+  if (coordinates.some((value) => !Number.isFinite(value))) return 0;
 
+  const [safeLat1, safeLon1, safeLat2, safeLon2] = coordinates;
+  if (safeLat1 < -90 || safeLat1 > 90 || safeLat2 < -90 || safeLat2 > 90
+    || safeLon1 < -180 || safeLon1 > 180 || safeLon2 < -180 || safeLon2 > 180) return 0;
   const R = 6371; // Radio de la Tierra en km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const dLat = (safeLat2 - safeLat1) * Math.PI / 180;
+  const dLon = (safeLon2 - safeLon1) * Math.PI / 180;
   const a =
     Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.cos(safeLat1 * Math.PI / 180) * Math.cos(safeLat2 * Math.PI / 180) *
     Math.sin(dLon/2) * Math.sin(dLon/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;

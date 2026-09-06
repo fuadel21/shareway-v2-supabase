@@ -509,8 +509,9 @@ const CreateRide = () => {
                             )}
                             <div className="relative">
                                 <Euro className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-primary" />
-                                <Input type="number" step="0.5" value={price} onChange={(e) => { setPrice(e.target.value); isPriceManualRef.current = true; }} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
+                                <Input type="number" step="0.01" min={RIDE_RULES.MIN_PRICE} value={price} onChange={(e) => { setPrice(e.target.value); isPriceManualRef.current = true; }} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
                             </div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('create_ride.price_per_seat')}</p>
                         </Card>
                     </div>
 

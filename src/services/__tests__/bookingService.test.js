@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { confirmTripAndPay } from '../bookingService';
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
+import { calculateRefundAmount, confirmTripAndPay } from '../bookingService';
 import * as rpc from '@/lib/supabaseRPC';
 
 // REGLA 4: Mock de RPC para control total del estado
@@ -68,6 +70,53 @@ describe('BookingService - Motor de Reservas y Concurrencia', () => {
             
             // Verificamos que se llamó al RPC dos veces
             expect(rpc.confirmTripAndPay).toHaveBeenCalledTimes(2);
+        });
+    });
+
+    describe('Estimación de reembolso para la UI', () => {
+        const baseTime = new Date('2026-09-01T12:00:00.000Z');
+        const booking = {
+            payment_amount: 100,
+            booked_price: 50,
+            seats_booked: 2,
+        };
+
+        it.each([
+            [25, 100],
+            [24, 50],
+            [2, 50],
+            [1.99, 0],
+        ])('applies the cancellation policy at %s hours (%s%%)', (hours, percentage) => {
+            vi.useFakeTimers();
+            vi.setSystemTime(baseTime);
+            try {
+                const result = calculateRefundAmount({
+                    departure_time: new Date(baseTime.getTime() + hours * 60 * 60 * 1000).toISOString(),
+                }, booking);
+
+                expect(result.percentage).toBe(percentage);
+                expect(result.amount).toBe(percentage === 100 ? 100 : percentage === 50 ? 50 : 0);
+                expect(result.serverAuthoritative).toBe(false);
+                expect(result.presentationOnly).toBe(true);
+            } finally {
+                vi.useRealTimers();
+            }
+        });
+
+        it('uses the persisted multi-seat payment amount instead of ride.price', () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(baseTime);
+            try {
+                const result = calculateRefundAmount({
+                    price: 10,
+                    departure_time: new Date(baseTime.getTime() + 25 * 60 * 60 * 1000).toISOString(),
+                }, booking);
+
+                expect(result.total).toBe(100);
+                expect(result.amount).toBe(100);
+            } finally {
+                vi.useRealTimers();
+            }
         });
     });
 

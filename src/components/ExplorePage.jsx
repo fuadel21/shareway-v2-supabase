@@ -37,7 +37,7 @@ const ItemCard = ({ item }) => {
                     </div>
                     <div className="text-right shrink-0">
                         <p className="font-black text-lg text-primary italic tracking-tighter">{item.price || item.suggested_price}€</p>
-                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">por plaza</p>
+                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">por plaza · comisión incluida</p>
                     </div>
                 </div>
             </Card>

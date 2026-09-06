@@ -41,7 +41,8 @@ const copyByLanguage = {
         nearMe: 'CERCA DE TI',
         nearYouTitle: 'Cerca de ti',
         noNearbyResults: 'Sin resultados cerca',
-        seatPrice: 'Precio Plaza',
+        seatPrice: 'Precio por plaza',
+        commissionIncluded: 'Comisión incluida',
         viewRequest: 'Ver Solicitud',
         viewDetails: 'Ver Detalles',
         searchTitle: 'Buscar viaje',
@@ -94,7 +95,8 @@ const copyByLanguage = {
         nearMe: 'NEAR ME',
         nearYouTitle: 'Near you',
         noNearbyResults: 'No nearby results',
-        seatPrice: 'Seat Price',
+        seatPrice: 'Price per seat',
+        commissionIncluded: 'Commission included',
         viewRequest: 'View Request',
         viewDetails: 'View Details',
         searchTitle: 'Find a ride',
@@ -148,6 +150,7 @@ const copyByLanguage = {
         nearYouTitle: 'بالقرب منك',
         noNearbyResults: 'لا توجد نتائج قريبة',
         seatPrice: 'سعر المقعد',
+        commissionIncluded: 'العمولة مشمولة',
         viewRequest: 'عرض الطلب',
         viewDetails: 'عرض التفاصيل',
         searchTitle: 'ابحث عن رحلة',
@@ -325,6 +328,7 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
                 </div>
                 <div className="text-right shrink-0 pl-2">
                     <p className="text-lg font-black text-primary tracking-tighter leading-none">{item.price || item.suggested_price || 0}€</p>
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{copy.seatPrice}</p>
                     {!isRequest && <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">{availableSeats} {copy.freeSeats}</p>}
                 </div>
             </div>
@@ -919,6 +923,7 @@ function Dashboard() {
                                                 <div className="text-right">
                                                     <p className="text-3xl font-black text-primary tracking-tighter leading-none">{selectedItem.price || selectedItem.suggested_price || 0}€</p>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{copy.seatPrice}</p>
+                                                    <p className="text-[8px] font-bold text-slate-300 uppercase tracking-widest mt-1">{copy.commissionIncluded}</p>
                                                 </div>
                                             </div>
                                         </div>

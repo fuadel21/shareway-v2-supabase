@@ -1,65 +1,108 @@
 /**
- * Reglas de precios para viajes compartidos.
- * Extraído de componentes UI para facilitar testing puro.
+ * Canonical client-side pricing and settlement constants.
+ *
+ * The database migration
+ * `20260901120000_reconcile_ride_financial_rules.sql` is the authoritative
+ * enforcement layer. Keep these values aligned with that migration so the UI
+ * can preview exactly what the server will accept.
  */
 
-export const PRICING_CONSTANTS = {
-    MAX_RATE_PER_KM: 0.60,
-    // SUGGESTED_RATE_PER_KM no se usa más, se usa lógica progresiva en rideService.js
-    // Mantenemos esta referencia para legacy si es necesario, pero actualizamos calculateSuggestedPrice
-};
+export const PRICING_CONSTANTS = Object.freeze({
+    MIN_PRICE: 0.50,
+    MAX_PRICE: 300,
+    MIN_SEATS: 1,
+    MAX_SEATS: 8,
+});
 
-// IMPORTANTE: Mantener sincronizado con src/services/rideService.js
-export const RIDE_PRICING_CONFIG = {
-    TIERS: [
-        { maxKm: 15, rate: 0.25 },   // Trayectos muy cortos (hasta 15km): ~3.75€
-        { maxKm: 50, rate: 0.18 },   // Trayectos medios (ej: ciudad a ciudad próxima): +0.18€/km
-        { maxKm: 200, rate: 0.12 },  // Trayectos largos: +0.12€/km
-        { maxKm: 500, rate: 0.09 },  // Muy larga distancia: +0.09€/km
-        { maxKm: Infinity, rate: 0.07 }
-    ]
+export const FINANCIAL_RULES = Object.freeze({
+    PLATFORM_COMMISSION_RATE: 0.10,
+    DRIVER_PAYOUT_RATE: 0.90,
+    DETOUR_THRESHOLD_KM: 3,
+    PICKUP_SUPPLEMENT: 1.50,
+    PASSENGER_REFUND_FULL_AFTER_HOURS: 24,
+    PASSENGER_REFUND_HALF_AFTER_HOURS: 2,
+    DRIVER_CANCELLATION_PENALTY_UNDER_TWO_HOURS: 5.00,
+    DRIVER_CANCELLATION_PENALTY_UNDER_24_HOURS: 2.00,
+});
+
+// Progressive tiers used by both ride publication and request publication.
+export const RIDE_PRICING_CONFIG = Object.freeze({
+    TIERS: Object.freeze([
+        { maxKm: 15, rate: 0.25 },
+        { maxKm: 50, rate: 0.18 },
+        { maxKm: 200, rate: 0.12 },
+        { maxKm: 500, rate: 0.09 },
+        { maxKm: Infinity, rate: 0.07 },
+    ]),
+});
+
+export const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
+
+/**
+ * Calculate the progressive suggested price for a distance in kilometres.
+ * Invalid/non-positive distances return 0.00 so forms can show that a route
+ * still needs to be calculated. A valid short trip is never below 0.50 EUR.
+ */
+export const calculateSuggestedPrice = (distanceKm) => {
+    if (!Number.isFinite(Number(distanceKm)) || Number(distanceKm) <= 0) return '0.00';
+
+    let remainingDistance = Number(distanceKm);
+    let totalPrice = 0;
+    let previousMaxKm = 0;
+
+    for (const tier of RIDE_PRICING_CONFIG.TIERS) {
+        if (remainingDistance <= 0) break;
+
+        const tierRange = tier.maxKm - previousMaxKm;
+        const kmInThisTier = Math.min(remainingDistance, tierRange);
+        totalPrice += kmInThisTier * tier.rate;
+        remainingDistance -= kmInThisTier;
+        previousMaxKm = tier.maxKm;
+    }
+
+    return roundMoney(Math.max(
+        PRICING_CONSTANTS.MIN_PRICE,
+        Math.min(PRICING_CONSTANTS.MAX_PRICE, totalPrice),
+    )).toFixed(2);
 };
 
 /**
- * Valida si el precio propuesto cumple con las regulaciones de coste compartido.
- * @param {number} price - Precio total por asiento propuesto
- * @param {number} distanceKm - Distancia del viaje en KM
- * @returns {Object} { valid: boolean, error?: string, maxPrice?: number, details?: string }
+ * Validate a driver's/requester's per-seat offer.
+ * Offers may be lower than the suggestion, never higher than it (apart from
+ * the 0.05 EUR rounding tolerance).
  */
 export const validateRidePrice = (price, distanceKm) => {
-    if (typeof distanceKm !== 'number' || distanceKm <= 0) {
+    if (!Number.isFinite(Number(distanceKm)) || Number(distanceKm) <= 0) {
         return { valid: false, error: 'Distancia inválida' };
     }
 
-    if (typeof price !== 'number' || price < 0) {
+    if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) {
         return { valid: false, error: 'Precio inválido' };
     }
 
-    // NUEVA REGLA: No se permite subir el precio sugerido (solo bajarlo)
-    const suggestedPrice = parseFloat(calculateSuggestedPrice(distanceKm));
-    
-    // Permitimos un pequeño margen por redondeo (e.g. 0.05)
+    if (price < PRICING_CONSTANTS.MIN_PRICE) {
+        return {
+            valid: false,
+            error: 'Precio inferior al mínimo',
+            minPrice: PRICING_CONSTANTS.MIN_PRICE,
+        };
+    }
+
+    if (price > PRICING_CONSTANTS.MAX_PRICE) {
+        return {
+            valid: false,
+            error: 'Precio superior al máximo',
+            maxPrice: PRICING_CONSTANTS.MAX_PRICE,
+        };
+    }
+
+    const suggestedPrice = Number(calculateSuggestedPrice(distanceKm));
     if (price > suggestedPrice + 0.05) {
         return {
             valid: false,
             error: 'Precio superior al sugerido',
             maxPrice: suggestedPrice,
-            details: `Para garantizar precios justos, no puedes superar el precio recomendado de ${suggestedPrice}€ para este trayecto.`
-        };
-    }
-
-    // Mantenemos la validación de seguridad (MAX_RATE_PER_KM) por si acaso, 
-    // aunque la regla de suggestedPrice suele ser más restrictiva.
-    const absoluteMaxPrice = distanceKm * PRICING_CONSTANTS.MAX_RATE_PER_KM;
-
-    // Usamos un pequeño margen de error para comparaciones flotantes si fuera necesario,
-    // pero para moneda simple > funciona.
-    if (price > absoluteMaxPrice) {
-        return {
-            valid: false,
-            error: 'Precio excesivo detectado',
-            maxPrice: parseFloat(absoluteMaxPrice.toFixed(2)),
-            details: `El máximo absoluto para esta distancia (${distanceKm.toFixed(1)}km) es de ${absoluteMaxPrice.toFixed(2)}€. Por favor, ajusta tu oferta.`
+            details: `Para garantizar precios justos, no puedes superar el precio recomendado de ${suggestedPrice}€ para este trayecto.`,
         };
     }
 
@@ -67,27 +110,36 @@ export const validateRidePrice = (price, distanceKm) => {
 };
 
 /**
- * Calcula el precio sugerido basado en la distancia.
- * @param {number} distanceKm 
- * @returns {string} Precio formateado a 2 decimales string (para inputs) o number si lo prefieres.
+ * Quote a passenger booking using the same geometry-independent arithmetic as
+ * the server RPC. Distances are supplied by the caller after being calculated
+ * from coordinates; the server recomputes them before accepting payment.
  */
-export const calculateSuggestedPrice = (distanceKm) => {
-    if (!distanceKm || distanceKm < 0) return "0.00";
-    
-    let remainingDistance = distanceKm;
-    let totalPrice = 0;
-    let previousMaxKm = 0;
+export const calculateBookingTotal = ({
+    ridePrice,
+    rideDistanceKm,
+    passengerDistanceKm,
+    detourDistanceKm,
+    numSeats = 1,
+}) => {
+    const seats = Math.trunc(Number(numSeats));
+    const safeRidePrice = Number(ridePrice);
+    const safeRideDistance = Math.max(Number(rideDistanceKm) || 0, 1);
+    const safePassengerDistance = Math.max(Number(passengerDistanceKm) || 0, 0.5);
+    const safeDetourDistance = Math.max(Number(detourDistanceKm) || 0, 0);
+    const supplement = safeDetourDistance > FINANCIAL_RULES.DETOUR_THRESHOLD_KM
+        ? FINANCIAL_RULES.PICKUP_SUPPLEMENT
+        : 0;
+    const total = roundMoney(Math.max(
+        PRICING_CONSTANTS.MIN_PRICE * Math.max(seats, 1),
+        ((safeRidePrice / safeRideDistance) * safePassengerDistance + supplement) * Math.max(seats, 1),
+    ));
 
-    for (const tier of RIDE_PRICING_CONFIG.TIERS) {
-        if (remainingDistance <= 0) break;
-        
-        const tierRange = tier.maxKm - previousMaxKm;
-        const kmInThisTier = Math.min(remainingDistance, tierRange);
-        
-        totalPrice += kmInThisTier * tier.rate;
-        remainingDistance -= kmInThisTier;
-        previousMaxKm = tier.maxKm;
-    }
-
-    return totalPrice.toFixed(2);
+    return {
+        total,
+        pricePerSeat: roundMoney(total / Math.max(seats, 1)),
+        supplement,
+        passengerDistanceKm: safePassengerDistance,
+        detourDistanceKm: safeDetourDistance,
+        numSeats: Math.max(seats, 1),
+    };
 };

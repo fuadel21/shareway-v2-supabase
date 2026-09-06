@@ -32,7 +32,7 @@ const copyByLanguage = {
         accepted: '¡Solicitud aceptada!',
         pageTitle: 'Detalle de Solicitud',
         activeRequest: 'Solicitud activa',
-        budget: 'Presupuesto',
+        budget: 'Presupuesto / plaza',
         call: 'Llamar',
         passengerElite: 'Pasajero Élite',
         viewProfile: 'Ver Perfil',
@@ -47,7 +47,9 @@ const copyByLanguage = {
         ownRequest: 'Esta es tu propia solicitud',
         acceptPassenger: '¿Aceptar pasajero?',
         acceptDescription: 'Confirmarás tu compromiso de recoger a {{name}}.',
-        finalPrice: 'Precio final acordado (€)',
+        finalPrice: 'Precio por plaza (€)',
+        totalAgreed: 'Total para {{seats}} plazas',
+        commissionIncluded: 'Comisión de plataforma incluida',
         totalCapacity: 'Tu Capacidad Total (Asientos)',
         includingSeats: 'Incluyendo las {{seats}} plazas del pasajero',
         confirmJoin: 'Confirmar incorporación',
@@ -100,7 +102,7 @@ const copyByLanguage = {
         accepted: 'Request accepted!',
         pageTitle: 'Request Details',
         activeRequest: 'Active request',
-        budget: 'Budget',
+        budget: 'Budget / seat',
         call: 'Call',
         passengerElite: 'Elite Passenger',
         viewProfile: 'View Profile',
@@ -115,7 +117,9 @@ const copyByLanguage = {
         ownRequest: 'This is your own request',
         acceptPassenger: 'Accept passenger?',
         acceptDescription: 'You will confirm your commitment to pick up {{name}}.',
-        finalPrice: 'Final agreed price (€)',
+        finalPrice: 'Price per seat (€)',
+        totalAgreed: 'Total for {{seats}} seats',
+        commissionIncluded: 'Platform commission included',
         totalCapacity: 'Your Total Capacity (Seats)',
         includingSeats: 'Including the passenger’s {{seats}} requested seats',
         confirmJoin: 'Confirm passenger',
@@ -168,7 +172,7 @@ const copyByLanguage = {
         accepted: 'تم قبول الطلب!',
         pageTitle: 'تفاصيل الطلب',
         activeRequest: 'طلب نشط',
-        budget: 'الميزانية',
+        budget: 'الميزانية / المقعد',
         call: 'اتصال',
         passengerElite: 'راكب مميز',
         viewProfile: 'عرض الملف',
@@ -183,7 +187,9 @@ const copyByLanguage = {
         ownRequest: 'هذا هو طلبك الخاص',
         acceptPassenger: 'قبول الراكب؟',
         acceptDescription: 'ستؤكد التزامك باستلام {{name}}.',
-        finalPrice: 'السعر النهائي المتفق عليه (€)',
+        finalPrice: 'السعر لكل مقعد (€)',
+        totalAgreed: 'الإجمالي لـ {{seats}} مقاعد',
+        commissionIncluded: 'عمولة المنصة مشمولة',
         totalCapacity: 'السعة الإجمالية لديك (مقاعد)',
         includingSeats: 'بما في ذلك {{seats}} من مقاعد الراكب',
         confirmJoin: 'تأكيد الإضافة',
@@ -255,7 +261,10 @@ const formatRequestTime = (date, copy) => {
 };
 
 const getLocationLabel = (location, fallback = '') => location?.name || location?.address || location?.formatted_address || fallback;
-const getRequestedSeats = (request) => Number(request?.requested_seats ?? request?.seats_needed ?? request?.seats ?? 1);
+const getRequestedSeats = (request) => {
+    const seats = Number(request?.requested_seats ?? request?.seats_needed ?? request?.seats ?? 1);
+    return Number.isInteger(seats) && seats >= 1 && seats <= 8 ? seats : 1;
+};
 const getLinkedRideId = (request) => request?.ride_id || request?.matched_ride_id || request?.accepted_ride_id || null;
 
 const getEffectiveStatus = (request) => {
@@ -320,6 +329,7 @@ const RequestDetails = () => {
 
             if (error) throw error;
 
+            const requestedSeats = getRequestedSeats(data);
             setRequest({
                 ...data,
                 dateTime: data.departure_time ? new Date(data.departure_time) : new Date(),
@@ -331,7 +341,8 @@ const RequestDetails = () => {
                     phone: data.requester?.phone
                 }
             });
-            setPrice(String(data.suggested_price || data.price || ''));
+            setPrice(String(data.suggested_price ?? data.price ?? ''));
+            setTotalSeats(String(Math.max(4, requestedSeats)));
         } catch (error) {
             console.error('Request details load error:', error);
             toast.error(copy.loadError);
@@ -399,12 +410,14 @@ const RequestDetails = () => {
     };
 
     const handleConfirmAcceptance = async () => {
-        const numericPrice = Number(price.replace(',', '.'));
-        if (isNaN(numericPrice) || numericPrice <= 0) return toast.error(copy.invalidPrice);
+        const numericPrice = Number(String(price).replace(',', '.'));
+        if (!Number.isFinite(numericPrice) || numericPrice < 0.50 || numericPrice > 300) {
+            return toast.error(copy.invalidPrice);
+        }
 
-        const numericSeats = parseInt(totalSeats);
+        const numericSeats = Number.parseInt(totalSeats, 10);
         const requestedSeats = getRequestedSeats(request);
-        if (isNaN(numericSeats) || numericSeats < requestedSeats) {
+        if (!Number.isInteger(numericSeats) || numericSeats < requestedSeats || numericSeats > 8) {
             return toast.error(interpolate(copy.minSeats, { seats: requestedSeats }));
         }
 
@@ -439,6 +452,8 @@ const RequestDetails = () => {
     if (loading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-primary" /></div>;
     if (!request) return null;
 
+    const agreedPricePerSeat = Number(String(price).replace(',', '.')) || 0;
+    const agreedTotal = agreedPricePerSeat * computed.requestedSeats;
     const StatusIcon = computed.statusConfig.icon;
 
     return (
@@ -606,10 +621,20 @@ const RequestDetails = () => {
                         <div className="relative">
                             <Euro className="absolute left-6 top-1/2 -translate-y-1/2 text-primary" size={20} />
                             <Input
+                                type="number"
+                                min="0.50"
+                                max="300"
+                                step="0.01"
                                 value={price}
                                 onChange={(e) => setPrice(e.target.value)}
                                 className="h-16 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
                             />
+                        </div>
+                        <div className="text-center space-y-1">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                                {interpolate(copy.totalAgreed, { seats: computed.requestedSeats })}: {agreedTotal.toFixed(2)}€
+                            </p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-emerald-600">{copy.commissionIncluded}</p>
                         </div>
                     </div>
 

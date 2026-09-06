@@ -7,8 +7,8 @@ import { Card } from '@/components/ui/card.jsx';
 const buildShareText = (ride, rideUrl) => {
   const origin = ride?.origin_address || 'origen cercano';
   const destination = ride?.destination_address || 'destino compatible';
-  const price = Number.isFinite(Number(ride?.price)) ? `${Number(ride.price).toFixed(2)}€` : 'precio disponible en ShareWay';
-  return `He encontrado un viaje compartido en ShareWay: ${origin} → ${destination}. Precio: ${price}. Ver ruta: ${rideUrl}`;
+  const price = Number.isFinite(Number(ride?.price)) ? `${Number(ride.price).toFixed(2)}€ por plaza` : 'precio disponible en ShareWay';
+  return `He encontrado un viaje compartido en ShareWay: ${origin} → ${destination}. Precio por plaza (comisión incluida): ${price}. Ver ruta: ${rideUrl}`;
 };
 
 const ShareRideCard = ({ ride, rideId }) => {

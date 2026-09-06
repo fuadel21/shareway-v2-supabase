@@ -1,6 +1,5 @@
 const DEFAULT_CRITICAL_RPCS = new Set([
   'confirm_trip_and_pay',
-  'confirm_stripe_booking',
   'create_ride',
   'fulfill_ride_request',
   'start_ride',
@@ -15,9 +14,7 @@ const DEFAULT_CRITICAL_RPCS = new Set([
   'complete_passenger_dropoff',
   'trigger_emergency_alert',
   'trigger_emergency_alert_v2',
-  'add_funds',
   'request_payout',
-  'request_platform_payout',
   'process_payout',
 ]);
 

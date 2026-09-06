@@ -318,6 +318,7 @@
         "destination_label": "Destination",
         "section_datetime": "Date & Time",
         "section_seats_price": "Seats & Price",
+        "price_per_seat": "Price per seat · commission included",
         "section_preferences": "Preferences",
         "women_only": "Women Only",
         "note_placeholder": "E.g.: Large trunk, punctual departure...",

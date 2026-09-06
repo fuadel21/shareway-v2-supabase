@@ -11,10 +11,13 @@ const extraOrigins = (Deno.env.get('ALLOWED_ORIGINS') || '')
   .filter(Boolean)
 
 const allowedOrigins = new Set([...DEFAULT_ALLOWED_ORIGINS, ...extraOrigins])
+const isArenaPreviewOrigin = (origin: string) => /^https:\/\/[a-z0-9-]+-[a-z0-9]+\.e2b\.app$/i.test(origin)
 
 export const getCorsHeaders = (req?: Request) => {
   const origin = req?.headers.get('origin') || ''
-  const allowOrigin = allowedOrigins.has(origin) ? origin : 'https://www.shareway.es'
+  const allowOrigin = allowedOrigins.has(origin) || isArenaPreviewOrigin(origin)
+    ? origin
+    : 'https://www.shareway.es'
 
   return {
     'Access-Control-Allow-Origin': allowOrigin,

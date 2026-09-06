@@ -39,22 +39,22 @@ describe('🌍 COMPREHENSIVE PRODUCTION READINESS SUITE', () => {
     });
 
     describe('1. Pricing Integrity & Rules', () => {
-        it('should validate cumulative pricing logic (100km -> 38.00€)', () => {
+        it('should validate canonical progressive pricing logic (100km -> 16.05€)', () => {
             const price = calculateRecommendedPrice(100000); // 100km in meters
-            expect(price).toBe(38.00);
+            expect(price).toBe(16.05);
         });
 
         it('should BLOCK price hikes above suggested', () => {
             const distanceKm = 100;
-            const suggested = 38.00;
-            
-            // Try 40€
-            const invalid = validateRidePrice(40.00, distanceKm);
+            const suggested = 16.05;
+
+            // Try 16.20€
+            const invalid = validateRidePrice(16.20, distanceKm);
             expect(invalid.valid).toBe(false);
             expect(invalid.error).toMatch(/Precio superior al sugerido/);
 
-            // Try 20€ (Lower is OK)
-            const valid = validateRidePrice(20.00, distanceKm);
+            // Try 10€ (Lower is OK)
+            const valid = validateRidePrice(10.00, distanceKm);
             expect(valid.valid).toBe(true);
         });
     });
@@ -69,7 +69,7 @@ describe('🌍 COMPREHENSIVE PRODUCTION READINESS SUITE', () => {
                 p_destination: { address: 'Valencia', lat: 39.4697, lng: -0.3763 },
                 p_departure_time: departure.toISOString(),
                 p_seats: 3,
-                p_price: 30.00, // < 38€ suggested (360km approx)
+                p_price: 30.00, // < 42.45€ suggested (360km approx)
                 p_distance: 360, // ~360km
                 p_details: 'Viaje de prueba Deep Test',
                 p_waypoints: []

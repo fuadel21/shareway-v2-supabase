@@ -108,8 +108,8 @@ const AdminStats = () => {
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <StatCard title="Beneficio plataforma" value={`${Number(stats?.platform_profit || 0).toFixed(2)}€`} icon={DollarSign} color="bg-emerald-500" subtitle="Comisión neta ShareWay" />
-                    <StatCard title="Volumen total" value={`${Number(stats?.total_revenue || 0).toFixed(2)}€`} icon={TrendingUp} color="bg-indigo-500" subtitle="Total transaccionado" />
+                    <StatCard title="Comisiones realizadas" value={`${Number(stats?.realized_platform_fees || 0).toFixed(2)}€`} icon={DollarSign} color="bg-emerald-500" subtitle="10% incluido en el bruto" />
+                    <StatCard title="Volumen liquidado" value={`${Number(stats?.total_revenue || 0).toFixed(2)}€`} icon={TrendingUp} color="bg-indigo-500" subtitle="Cobros confirmados, sin reservas duplicadas" />
                     <StatCard title="Huella de carbono" value={`${Number(stats?.co2_saved_kg || 0).toFixed(1)}kg`} icon={Leaf} color="bg-teal-500" subtitle="CO₂ evitado al compartir" />
                 </div>
 

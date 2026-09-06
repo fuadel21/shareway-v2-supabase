@@ -320,6 +320,7 @@
         "destination_label": "نقطة الوصول",
         "section_datetime": "التاريخ والوقت",
         "section_seats_price": "المقاعد والسعر",
+        "price_per_seat": "السعر لكل مقعد · العمولة مشمولة",
         "section_preferences": "التفضيلات",
         "women_only": "نساء فقط",
         "note_placeholder": "مثال: مساحة أمتعة واسعة، أنطلق في الموعد...",

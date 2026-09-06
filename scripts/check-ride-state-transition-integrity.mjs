@@ -37,7 +37,10 @@ if (!fs.existsSync(migrationDir)) {
 
   const startRideDefinition = findLatestFunction(['start_ride', 'start_ride_v2', 'start_ride_unified']);
   const completeRideDefinition = findLatestFunction(['complete_ride', 'complete_ride_v2', 'complete_ride_unified']);
-  const cancelRideDefinition = findLatestFunction(['cancel_ride', 'cancel_ride_unified', 'cancel_ride_v2']);
+  // cancel_ride is only a compatibility wrapper. Inspect the delegated
+  // implementation so the audit checks the actual authorization and state
+  // transition rather than the wrapper's one-line RETURN.
+  const cancelRideDefinition = findLatestFunction(['cancel_ride_unified']);
 
   const startRide = startRideDefinition.body;
   const completeRide = completeRideDefinition.body;
@@ -69,8 +72,8 @@ if (!fs.existsSync(migrationDir)) {
     if (!/completed/i.test(completeRide)) failures.push(`${completeRideDefinition.name} no fija estado completed`);
 
     const allowsStartedStates =
-      /v_ride_status\s+not\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
-      || /v_ride_status\s+not\s+in\s*\(\s*['"]in_progress['"]\s*,\s*['"]active['"]\s*\)/i.test(completeRide);
+      /(?:v_ride_status|v_ride\.status)[\s\S]{0,80}not\s+in\s*\(\s*['"]active['"]\s*,\s*['"]in_progress['"]\s*\)/i.test(completeRide)
+      || /(?:v_ride_status|v_ride\.status)[\s\S]{0,80}not\s+in\s*\(\s*['"]in_progress['"]\s*,\s*['"]active['"]\s*\)/i.test(completeRide);
     const explicitlyAllowsScheduled =
       /v_ride_status\s+not\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide)
       || /v_ride_status\s+in\s*\([^)]*['"]scheduled['"][^)]*\)/i.test(completeRide);
