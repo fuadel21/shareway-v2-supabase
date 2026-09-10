@@ -40,7 +40,7 @@ const formatMoney = (value) => {
 const formatRate = (value) => {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue <= 0) return null;
-    return `${numericValue.toFixed(3)}€/km`;
+    return `${numericValue.toFixed(4)}€/km`;
 };
 
 const formatRating = (value) => {
@@ -653,7 +653,7 @@ const RideDetails = () => {
                                 <span className="text-[9px] font-black uppercase block leading-none opacity-60 tracking-widest mb-1.5">Precio por plaza</span>
                                 <span className="text-3xl font-black tracking-tighter leading-none">{ridePrice}</span>
                                 <span className="text-[8px] font-bold uppercase tracking-widest opacity-50 block mt-1">Comisión incluida</span>
-                                {ridePricePerKm && <span className="text-[9px] font-black uppercase tracking-widest opacity-70 block mt-2">{ridePricePerKm}</span>}
+                                {ridePricePerKm && <span className="text-[9px] font-black uppercase tracking-widest opacity-70 block mt-2">Precio exacto: {ridePricePerKm}</span>}
                             </div>
                         </div>
                     </div>
