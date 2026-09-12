@@ -131,14 +131,14 @@
 ### 2.1 Cálculo de Precio Sugerido
 
 - **RN-P001:** Precio dinámico por distancia (sistema de tiers):
-  - Desde 50 km se aplica una tarifa marginal fija de **0,15 €/km**, sin un límite superior de distancia.
+  - Desde 100 km se aplica una tarifa marginal fija de **0,15 €/km**, sin un límite superior de distancia.
   ```
   0-15 km:     0.30€/km
-  15-50 km:    0.216€/km
-  +50 km:      0.15€/km (sin límite de distancia)
+  15-100 km:   0.22€/km
+  +100 km:     0.15€/km (sin límite de distancia)
   ```
   - Código: `RIDE_PRICING_CONFIG.TIERS` en `pricingRules.js`
-  - Cálculo progresivo (ej: 150km = 15×0.30 + 35×0.216 + 100×0.15 = 27.06€)
+  - Cálculo progresivo (ej: 150km = 15×0.30 + 85×0.22 + 50×0.15 = 30.70€)
 
 - **RN-P002:** Precio mínimo absoluto: **0.50€**
   - `RIDE_RULES.MIN_PRICE = 0.50`
@@ -924,8 +924,8 @@ PLATFORM_COMMISSION = 10%
 
 // Pricing Tiers (acumulativos)
 0-15km:    0.30€/km
-15-50km:   0.216€/km
-+50km:     0.15€/km (sin límite de distancia)
+15-100km:  0.22€/km
++100km:    0.15€/km (sin límite de distancia)
 
 // Cancelaciones (Conductor)
 < 2h:   5.00€

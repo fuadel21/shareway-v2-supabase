@@ -6,7 +6,7 @@
 --
 -- Canonical rules:
 --   * Ride price is EUR per seat, from the progressive distance tiers used by
---     the current client: 15km/0.30, 50km/0.216, then 0.15 EUR/km
+--     the current client: 15km/0.30, 100km/0.22, then 0.15 EUR/km
 --     without an upper distance tier.
 --   * Suggested ride price is clamped to 0.50..300.00 EUR per seat. A driver
 --     may offer less, but never more than suggested price + 0.05 EUR.
@@ -1311,8 +1311,8 @@ BEGIN
   v_remaining := v_remaining - v_segment;
 
   IF v_remaining > 0 THEN
-    v_segment := LEAST(v_remaining, 35);
-    v_total := v_total + v_segment * 0.216;
+    v_segment := LEAST(v_remaining, 85);
+    v_total := v_total + v_segment * 0.22;
     v_remaining := v_remaining - v_segment;
   END IF;
 

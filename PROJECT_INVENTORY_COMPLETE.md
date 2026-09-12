@@ -586,8 +586,8 @@ VIEW → wallet_transactions (para retrocompatibilidad)
 - ✅ Asientos: 1-8 por viaje
 - ✅ Precio dinámico por distancia (tramos acumulativos):
   - 0-15km: 0.30€/km
-  - 15-50km: 0.216€/km
-  - +50km: 0.15€/km sin límite superior de distancia
+  - 15-100km: 0.22€/km
+  - +100km: 0.15€/km sin límite superior de distancia
 - ✅ Comisión de plataforma: 10% incluida en el precio bruto
 - ✅ Viajes solo mujeres: verificación de género
 

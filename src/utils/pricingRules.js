@@ -26,12 +26,12 @@ export const FINANCIAL_RULES = Object.freeze({
 });
 
 // Progressive tiers used by both ride publication and request publication.
-// From 50 km onward, the marginal rate is fixed at 0.15 EUR/km with no
+// From 100 km onward, the marginal rate is fixed at 0.15 EUR/km with no
 // further distance tier.
 export const RIDE_PRICING_CONFIG = Object.freeze({
     TIERS: Object.freeze([
         { maxKm: 15, rate: 0.30 },
-        { maxKm: 50, rate: 0.216 },
+        { maxKm: 100, rate: 0.22 },
         { maxKm: Infinity, rate: 0.15 },
     ]),
 });

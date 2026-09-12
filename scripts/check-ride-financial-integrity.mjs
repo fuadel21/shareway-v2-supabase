@@ -123,8 +123,8 @@ if (sql) checkSqlLexicalIntegrity(sql);
 
 requireAll(sql, [
   [/sw_progressive_price\s*\(/i, 'precio progresivo server-side'],
-  [/15[\s\S]{0,80}0\.30[\s\S]{0,80}50[\s\S]{0,80}0\.216/i, 'tramos 15/0.30 y 50/0.216'],
-  [/v_remaining\s*\*\s*0\.15/i, 'tramo ilimitado desde 50 km a 0.15'],
+  [/15[\s\S]{0,80}0\.30[\s\S]{0,80}100[\s\S]{0,80}0\.22/i, 'tramos 15/0.30 y 100/0.22'],
+  [/v_remaining\s*\*\s*0\.15/i, 'tramo ilimitado desde 100 km a 0.15'],
   [/least\(300/i, 'tope server-side de 300 EUR'],
   [/p_num_seats\s*<\s*1\s+OR\s+p_num_seats\s*>\s*8/i, 'límite server-side de 1..8 plazas'],
   [/pickup_supplement_per_seat/i, 'suplemento de recogida por asiento'],
@@ -157,8 +157,8 @@ requireAll(sql, [
 
 requireAll(pricing, [
   [/maxKm:\s*15[\s\S]{0,60}rate:\s*0\.30/, 'configuración 15/0.30'],
-  [/maxKm:\s*50[\s\S]{0,60}rate:\s*0\.216/, 'configuración 50/0.216'],
-  [/maxKm:\s*Infinity[\s\S]{0,60}rate:\s*0\.15/, 'configuración ilimitada desde 50 km a 0.15'],
+  [/maxKm:\s*100[\s\S]{0,60}rate:\s*0\.22/, 'configuración 100/0.22'],
+  [/maxKm:\s*Infinity[\s\S]{0,60}rate:\s*0\.15/, 'configuración ilimitada desde 100 km a 0.15'],
   [/calculateBookingTotal\s*=\s*\(/, 'cálculo de total multi-plaza'],
   [/PICKUP_SUPPLEMENT:\s*1\.50/, 'suplemento local de 1.50 EUR'],
   [/PLATFORM_COMMISSION_RATE:\s*0\.10/, 'comisión local del 10%'],

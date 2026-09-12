@@ -10,7 +10,7 @@
 ## Reglas financieras
 
 - El precio publicado es **por plaza** y sigue los tramos progresivos:
-  0–15 km: 0,30 €/km; 15–50: 0,216; desde 50 km: 0,15 €/km sin límite
+  0–15 km: 0,30 €/km; 15–100: 0,22; desde 100 km: 0,15 €/km sin límite
   superior de distancia. Se mantiene el tope global de 300 € por plaza.
 - El precio por plaza está entre 0,50 € y 300 €. Se permite una oferta inferior
   a la sugerencia y una tolerancia de 0,05 € por redondeo.

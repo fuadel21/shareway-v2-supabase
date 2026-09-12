@@ -39,17 +39,17 @@ describe('🌍 COMPREHENSIVE PRODUCTION READINESS SUITE', () => {
     });
 
     describe('1. Pricing Integrity & Rules', () => {
-        it('should validate canonical progressive pricing logic (100km -> 19.56€)', () => {
+        it('should validate canonical progressive pricing logic (100km -> 23.20€)', () => {
             const price = calculateRecommendedPrice(100000); // 100km in meters
-            expect(price).toBe(19.56);
+            expect(price).toBe(23.20);
         });
 
         it('should BLOCK price hikes above suggested', () => {
             const distanceKm = 100;
-            const suggested = 19.56;
+            const suggested = 23.20;
 
-            // Try 19.66€
-            const invalid = validateRidePrice(19.66, distanceKm);
+            // Try 23.30€
+            const invalid = validateRidePrice(23.30, distanceKm);
             expect(invalid.valid).toBe(false);
             expect(invalid.error).toMatch(/Precio superior al sugerido/);
 
