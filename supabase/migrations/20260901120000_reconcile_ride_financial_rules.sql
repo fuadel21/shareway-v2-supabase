@@ -6,8 +6,8 @@
 --
 -- Canonical rules:
 --   * Ride price is EUR per seat, from the progressive distance tiers used by
---     the current client: 15km/0.25, 50km/0.18, 200km/0.12, 500km/0.09,
---     then 0.07 EUR/km.
+--     the current client: 15km/0.30, 50km/0.216, 200km/0.144, 500km/0.108,
+--     then 0.084 EUR/km (the previous rates increased by 20%).
 --   * Suggested ride price is clamped to 0.50..300.00 EUR per seat. A driver
 --     may offer less, but never more than suggested price + 0.05 EUR.
 --   * Booking total = (ride price / ride distance * passenger distance +
@@ -1307,29 +1307,29 @@ BEGIN
   v_remaining := p_distance_km;
 
   v_segment := LEAST(v_remaining, 15);
-  v_total := v_total + v_segment * 0.25;
+  v_total := v_total + v_segment * 0.30;
   v_remaining := v_remaining - v_segment;
 
   IF v_remaining > 0 THEN
     v_segment := LEAST(v_remaining, 35);
-    v_total := v_total + v_segment * 0.18;
+    v_total := v_total + v_segment * 0.216;
     v_remaining := v_remaining - v_segment;
   END IF;
 
   IF v_remaining > 0 THEN
     v_segment := LEAST(v_remaining, 150);
-    v_total := v_total + v_segment * 0.12;
+    v_total := v_total + v_segment * 0.144;
     v_remaining := v_remaining - v_segment;
   END IF;
 
   IF v_remaining > 0 THEN
     v_segment := LEAST(v_remaining, 300);
-    v_total := v_total + v_segment * 0.09;
+    v_total := v_total + v_segment * 0.108;
     v_remaining := v_remaining - v_segment;
   END IF;
 
   IF v_remaining > 0 THEN
-    v_total := v_total + v_remaining * 0.07;
+    v_total := v_total + v_remaining * 0.084;
   END IF;
 
   RETURN round(greatest(0.50::NUMERIC, least(300::NUMERIC, v_total)), 2);

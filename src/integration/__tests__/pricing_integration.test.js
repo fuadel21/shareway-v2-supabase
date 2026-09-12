@@ -24,8 +24,8 @@ describe('Pricing Integration & Consistency', () => {
 
         const priceFromService = calculateRecommendedPrice(distMeters);
         
-        // 100km = 15*0.25 + 35*0.18 + 50*0.12 = 16.05€
-        expect(priceFromService).toBe(16.05);
+        // 100km = 15*0.30 + 35*0.216 + 50*0.144 = 19.26€
+        expect(priceFromService).toBe(19.26);
     });
 
     it('should respect max price cap in Service', () => {

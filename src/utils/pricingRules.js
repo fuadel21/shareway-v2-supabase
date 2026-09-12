@@ -26,13 +26,14 @@ export const FINANCIAL_RULES = Object.freeze({
 });
 
 // Progressive tiers used by both ride publication and request publication.
+// These rates are the previous canonical rates increased by 20%.
 export const RIDE_PRICING_CONFIG = Object.freeze({
     TIERS: Object.freeze([
-        { maxKm: 15, rate: 0.25 },
-        { maxKm: 50, rate: 0.18 },
-        { maxKm: 200, rate: 0.12 },
-        { maxKm: 500, rate: 0.09 },
-        { maxKm: Infinity, rate: 0.07 },
+        { maxKm: 15, rate: 0.30 },
+        { maxKm: 50, rate: 0.216 },
+        { maxKm: 200, rate: 0.144 },
+        { maxKm: 500, rate: 0.108 },
+        { maxKm: Infinity, rate: 0.084 },
     ]),
 });
 
