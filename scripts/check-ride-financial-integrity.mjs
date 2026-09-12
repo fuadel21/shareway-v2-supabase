@@ -181,7 +181,6 @@ requireAll(bookingModal, [
   [/isQuoteReady/, 'bloqueo de cobro sin cotización server-side'],
   [/quotedPricePerSeat/, 'precio por plaza devuelto por la cotización'],
   [/quotedPricePerKm/, 'precio efectivo por kilómetro de la cotización'],
-  [/quotedRidePricePerKm/, 'tarifa base por kilómetro de la cotización'],
   [/quotedPlatformFee/, 'comisión monetaria devuelta por la cotización'],
   [/quotedDriverPayout/, 'neto del conductor devuelto por la cotización'],
   [/quoteError/, 'presentación explícita de error de cotización'],
