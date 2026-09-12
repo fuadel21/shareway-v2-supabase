@@ -37,12 +37,6 @@ const formatMoney = (value) => {
     return `${numericValue.toFixed(2)}€`;
 };
 
-const formatRate = (value) => {
-    const numericValue = Number(value);
-    if (!Number.isFinite(numericValue) || numericValue <= 0) return null;
-    return `${numericValue.toFixed(3)}€/km`;
-};
-
 const formatRating = (value) => {
     const numericValue = Number(value);
     if (!Number.isFinite(numericValue) || numericValue <= 0) return 'Nuevo';
@@ -517,7 +511,6 @@ const RideDetails = () => {
     const myPin = rawPin && String(rawPin).replace(/\*/g, '') ? rawPin : null;
     const ridePrice = formatMoney(ride.price) || '0.00€';
     const ridePricing = ride?.pricing || {};
-    const ridePricePerKm = formatRate(ridePricing.price_per_km);
     const platformFeePerSeat = formatMoney(ridePricing.platform_fee_per_seat);
     const driverPayoutPerSeat = formatMoney(ridePricing.driver_payout_per_seat);
     const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
@@ -653,7 +646,6 @@ const RideDetails = () => {
                                 <span className="text-[9px] font-black uppercase block leading-none opacity-60 tracking-widest mb-1.5">Precio por plaza</span>
                                 <span className="text-3xl font-black tracking-tighter leading-none">{ridePrice}</span>
                                 <span className="text-[8px] font-bold uppercase tracking-widest opacity-50 block mt-1">Comisión incluida</span>
-                                {ridePricePerKm && <span className="text-[9px] font-black uppercase tracking-widest opacity-70 block mt-2">{ridePricePerKm}</span>}
                             </div>
                         </div>
                     </div>

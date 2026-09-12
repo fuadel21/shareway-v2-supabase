@@ -66,7 +66,6 @@ const copyByLanguage = {
         totalToPay: 'Total a pagar',
         pricePerSeat: 'Precio medio por plaza',
         selectedSeats: 'Plazas seleccionadas',
-        pricePerKm: 'Precio efectivo por km',
         platformCommission: 'Comisión plataforma (10%)',
         driverPayout: 'Neto conductor (90%)',
         cancellationPolicy: 'Política de cancelación',
@@ -140,7 +139,6 @@ const copyByLanguage = {
         totalToPay: 'Total to pay',
         pricePerSeat: 'Average price per seat',
         selectedSeats: 'Selected seats',
-        pricePerKm: 'Effective price per km',
         platformCommission: 'Platform commission (10%)',
         driverPayout: 'Driver net (90%)',
         cancellationPolicy: 'Cancellation policy',
@@ -214,7 +212,6 @@ const copyByLanguage = {
         totalToPay: 'الإجمالي للدفع',
         pricePerSeat: 'متوسط السعر لكل مقعد',
         selectedSeats: 'المقاعد المحددة',
-        pricePerKm: 'السعر الفعلي لكل كم',
         platformCommission: 'عمولة المنصة (10٪)',
         driverPayout: 'صافي السائق (90٪)',
         cancellationPolicy: 'سياسة الإلغاء',
@@ -556,7 +553,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [numSeats, setNumSeats] = useState(1);
     const [dynamicAmount, setDynamicAmount] = useState(0);
     const [quotedPricePerSeat, setQuotedPricePerSeat] = useState(0);
-    const [quotedPricePerKm, setQuotedPricePerKm] = useState(0);
     const [quotedPlatformFee, setQuotedPlatformFee] = useState(0);
     const [quotedDriverPayout, setQuotedDriverPayout] = useState(0);
     const [tripDistance, setTripDistance] = useState(0);
@@ -598,7 +594,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         && quotedInputSignature === quoteInputSignature
         && roundMoney(dynamicAmount) > 0
         && Number(quotedPricePerSeat) > 0
-        && Number(quotedPricePerKm) > 0
         && Number(quotedPlatformFee) > 0
         && Number(quotedDriverPayout) > 0;
     const isPaymentContextReady = Boolean(
@@ -689,7 +684,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setQuoteError(false);
                 setDynamicAmount(0);
                 setQuotedPricePerSeat(0);
-                setQuotedPricePerKm(0);
                 setQuotedPlatformFee(0);
                 setQuotedDriverPayout(0);
                 setTripDistance(0);
@@ -706,7 +700,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setQuoteError(true);
                 setDynamicAmount(0);
                 setQuotedPricePerSeat(0);
-                setQuotedPricePerKm(0);
                 setQuotedPlatformFee(0);
                 setQuotedDriverPayout(0);
                 setIsCalculatingDistance(false);
@@ -740,7 +733,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setAppliedSupplement(Number(quote.pickup_supplement_per_seat) || 0);
                 setDynamicAmount(roundMoney(quote.total));
                 setQuotedPricePerSeat(Number(quote.price_per_seat) || 0);
-                setQuotedPricePerKm(Number(quote.price_per_km) || 0);
                 setQuotedPlatformFee(Number(quote.platform_fee) || 0);
                 setQuotedDriverPayout(Number(quote.driver_payout) || 0);
                 setQuotedInputSignature(quoteInputSignature);
@@ -753,8 +745,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     setQuoteError(true);
                     setDynamicAmount(0);
                     setQuotedPricePerSeat(0);
-                    setQuotedPricePerKm(0);
-                    setQuotedPlatformFee(0);
+                        setQuotedPlatformFee(0);
                     setQuotedDriverPayout(0);
                     setTripDistance(0);
                     setAppliedSupplement(0);
@@ -1024,15 +1015,9 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                         <p className="mt-1 text-sm font-black text-white">{Number(numSeats)}</p>
                                     </div>
                                 </div>
-                                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
-                                    <div>
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.pricePerKm}</p>
-                                        <p className="mt-1 text-sm font-black text-white">{isQuoteCurrent ? `${Number(quotedPricePerKm).toFixed(3)}€/km` : '—'}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.platformCommission}</p>
-                                        <p className="mt-1 text-sm font-black text-amber-300">{isQuoteCurrent ? `${Number(quotedPlatformFee).toFixed(2)}€` : '—'}</p>
-                                    </div>
+                                <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.platformCommission}</p>
+                                    <p className="text-sm font-black text-amber-300">{isQuoteCurrent ? `${Number(quotedPlatformFee).toFixed(2)}€` : '—'}</p>
                                 </div>
                                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
                                     <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.driverPayout}</p>

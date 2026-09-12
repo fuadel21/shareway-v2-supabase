@@ -1561,8 +1561,6 @@ BEGIN
     'ride_distance_km', round(v_ride_distance, 3),
     'passenger_distance_km', round(v_passenger_distance, 3),
     'detour_distance_km', round(v_detour_distance, 3),
-    'price_per_km', round((v_total / p_num_seats) / v_passenger_distance, 4),
-    'ride_price_per_km', round(v_ride.price / v_ride_distance, 4),
     'pickup_supplement_per_seat', v_supplement,
     'num_seats', p_num_seats,
     'price_per_seat', v_price_per_seat,
@@ -5512,10 +5510,6 @@ BEGIN
       'platform_fee_rate', 0.10,
       'pricing', json_build_object(
         'price_per_seat', round(v_ride.price, 2),
-        'price_per_km', CASE
-          WHEN v_ride.distance IS NULL OR v_ride.distance <= 0 THEN NULL
-          ELSE round(v_ride.price / greatest(v_ride.distance, 1), 4)
-        END,
         'platform_fee_per_seat', round(v_ride.price * 0.10, 2),
         'driver_payout_per_seat', round(v_ride.price - round(v_ride.price * 0.10, 2), 2),
         'commission_included', TRUE,
