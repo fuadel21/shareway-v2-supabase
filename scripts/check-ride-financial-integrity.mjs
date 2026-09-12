@@ -124,8 +124,7 @@ if (sql) checkSqlLexicalIntegrity(sql);
 requireAll(sql, [
   [/sw_progressive_price\s*\(/i, 'precio progresivo server-side'],
   [/15[\s\S]{0,80}0\.30[\s\S]{0,80}50[\s\S]{0,80}0\.216/i, 'tramos 15/0.30 y 50/0.216'],
-  [/200[\s\S]{0,80}0\.144[\s\S]{0,80}500[\s\S]{0,80}0\.108/i, 'tramos 200/0.144 y 500/0.108'],
-  [/v_remaining\s*\*\s*0\.084/i, 'tramo excedente a 0.084'],
+  [/v_remaining\s*\*\s*0\.15/i, 'tramo ilimitado desde 50 km a 0.15'],
   [/least\(300/i, 'tope server-side de 300 EUR'],
   [/p_num_seats\s*<\s*1\s+OR\s+p_num_seats\s*>\s*8/i, 'límite server-side de 1..8 plazas'],
   [/pickup_supplement_per_seat/i, 'suplemento de recogida por asiento'],
@@ -159,9 +158,7 @@ requireAll(sql, [
 requireAll(pricing, [
   [/maxKm:\s*15[\s\S]{0,60}rate:\s*0\.30/, 'configuración 15/0.30'],
   [/maxKm:\s*50[\s\S]{0,60}rate:\s*0\.216/, 'configuración 50/0.216'],
-  [/maxKm:\s*200[\s\S]{0,60}rate:\s*0\.144/, 'configuración 200/0.144'],
-  [/maxKm:\s*500[\s\S]{0,60}rate:\s*0\.108/, 'configuración 500/0.108'],
-  [/rate:\s*0\.084/, 'configuración excedente 0.084'],
+  [/maxKm:\s*Infinity[\s\S]{0,60}rate:\s*0\.15/, 'configuración ilimitada desde 50 km a 0.15'],
   [/calculateBookingTotal\s*=\s*\(/, 'cálculo de total multi-plaza'],
   [/PICKUP_SUPPLEMENT:\s*1\.50/, 'suplemento local de 1.50 EUR'],
   [/PLATFORM_COMMISSION_RATE:\s*0\.10/, 'comisión local del 10%'],
@@ -266,7 +263,7 @@ requireAll(bookingService, [
   [/cancelBookingAndRefund/, 'delegación de cancelación al servidor'],
 ], 'bookingService');
 
-if (/0\.35|0\.20|0\.15/.test(pricing)) {
+if (/0\.35|0\.20/.test(pricing)) {
   warnings.push('pricingRules contiene tasas históricas; comprobar que no sean reglas activas.');
 }
 if (/fetchRoute/.test(bookingModal)) {

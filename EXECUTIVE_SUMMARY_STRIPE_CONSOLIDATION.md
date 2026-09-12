@@ -9,9 +9,9 @@
 
 ## Reglas financieras
 
-- El precio publicado es **por plaza** y sigue los tramos progresivos (tarifas incrementadas un 20% respecto a la tabla anterior)
-  acumulativos 0–15 km: 0,30 €/km; 15–50: 0,216; 50–200: 0,144; 200–500:
-  0,108; más de 500: 0,084.
+- El precio publicado es **por plaza** y sigue los tramos progresivos:
+  0–15 km: 0,30 €/km; 15–50: 0,216; desde 50 km: 0,15 €/km sin límite
+  superior de distancia. Se mantiene el tope global de 300 € por plaza.
 - El precio por plaza está entre 0,50 € y 300 €. Se permite una oferta inferior
   a la sugerencia y una tolerancia de 0,05 € por redondeo.
 - La comisión del 10% está incluida en el precio bruto mostrado al pasajero;

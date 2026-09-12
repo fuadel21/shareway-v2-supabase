@@ -587,9 +587,7 @@ VIEW → wallet_transactions (para retrocompatibilidad)
 - ✅ Precio dinámico por distancia (tramos acumulativos):
   - 0-15km: 0.30€/km
   - 15-50km: 0.216€/km
-  - 50-200km: 0.144€/km
-  - 200-500km: 0.108€/km
-  - +500km: 0.084€/km
+  - +50km: 0.15€/km sin límite superior de distancia
 - ✅ Comisión de plataforma: 10% incluida en el precio bruto
 - ✅ Viajes solo mujeres: verificación de género
 

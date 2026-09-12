@@ -36,8 +36,9 @@ mover fondos.
 ### Precio y cobro
 
 - Precio publicado: EUR por plaza, entre 0,50 € y 300 €.
-- Precio sugerido acumulativo: 0–15 km a 0,30 €/km; 15–50 a 0,216; 50–200
-  a 0,144; 200–500 a 0,108; más de 500 a 0,084 (20% por encima de la tabla anterior).
+- Precio sugerido acumulativo: 0–15 km a 0,30 €/km; 15–50 a 0,216; desde 50 km
+  a 0,15 €/km sin límite superior de distancia. Se mantiene el tope global de
+  300 € por plaza.
 - El conductor puede ofrecer menos que la sugerencia, no más de sugerencia +
   0,05 € por redondeo. Una reserva nueva también rechaza un viaje programado
   legacy cuyo precio almacenado esté por encima de esa banda; no se cambia el

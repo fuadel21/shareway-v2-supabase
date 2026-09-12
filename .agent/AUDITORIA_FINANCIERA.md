@@ -22,15 +22,13 @@
 
 ## Precio y reservas
 
-La fórmula progresiva por distancia de la ruta publicada es acumulativa. Las tarifas actuales son un 20% superiores a la tabla anterior:
+La fórmula progresiva por distancia de la ruta publicada es acumulativa. La tarifa desde 50 km queda fijada en 0,15 €/km sin límite superior de distancia:
 
 | Tramo | Tarifa marginal |
 |---|---:|
 | 0–15 km | 0,30 €/km |
 | 15–50 km | 0,216 €/km |
-| 50–200 km | 0,144 €/km |
-| 200–500 km | 0,108 €/km |
-| Más de 500 km | 0,084 €/km |
+| Más de 50 km | 0,15 €/km, sin límite superior de distancia |
 
 El precio por plaza queda limitado a 0,50–300,00 €. Se permite una oferta
 inferior a la sugerencia y una tolerancia de 0,05 € por redondeo, pero no una
