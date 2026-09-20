@@ -161,6 +161,23 @@ export const triggerEmergencyAlert = (rideId, details) =>
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
 
+export const createRideShareToken = (rideId, ttlHours = 168) =>
+    safeCall(() => supabase.rpc('create_ride_share_token', {
+        p_ride_id: rideId,
+        p_ttl_hours: ttlHours,
+    }), 'create_ride_share_token');
+
+export const revokeRideShareToken = (tokenId) =>
+    safeCall(() => supabase.rpc('revoke_ride_share_token', {
+        p_token_id: tokenId,
+    }), 'revoke_ride_share_token');
+
+export const verifyShareToken = (rideId, token) =>
+    safeCall(() => supabase.rpc('verify_share_token', {
+        p_ride_id: rideId,
+        p_token: token,
+    }), 'verify_share_token');
+
 export const verifyPassenger = async (rideId, pin, passengerId = null) => {
     const cleanPin = String(pin || '').replace(/\D/g, '');
     const primary = await safeCall(() => supabase.rpc('verify_passenger_boarding', {

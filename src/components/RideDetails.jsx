@@ -10,6 +10,7 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import MapComponent from './MapComponent';
+import ShareRideCard from './share/ShareRideCard.jsx';
 import BookingPaymentModal from './BookingPaymentModal';
 import PinVerificationDialog from './PinVerificationDialog.jsx';
 import RideRatingModal from './RideRatingModal.jsx';
@@ -711,6 +712,10 @@ const RideDetails = () => {
                         </button>
                     )}
                 </div>
+
+                {(ride.status === 'scheduled' || isRideActive) && (isDriver || isPassenger) && (
+                    <ShareRideCard ride={ride} rideId={rideId} />
+                )}
 
                 <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8 space-y-6">
                     <div className="flex justify-between items-start gap-4">

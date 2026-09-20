@@ -28,6 +28,7 @@ import Dashboard from './components/Dashboard.jsx';
 import CreateRide from './components/CreateRide.jsx';
 import CreateRequest from './components/CreateRequest.jsx';
 import RideDetails from './components/RideDetails.jsx';
+import PublicTrackingPage from './components/PublicTrackingPage.jsx';
 import RequestDetails from './components/RequestDetails.jsx';
 import MyRides from './components/MyRides.jsx';
 import MyRequests from './components/MyRequests.jsx';
@@ -368,6 +369,7 @@ function App() {
                         <Route key={route} path={`/${route}`} element={<SEOLandingPage />} />
                     ))}
                     <Route path="/invite/:code" element={<InviteLandingPage />} />
+                    <Route path="/track/:rideId" element={<PublicTrackingPage />} />
                     <Route path="/ciudades/:slug" element={<GrowthSEOPage pageType="city" />} />
                     <Route path="/rutas/:origin/:destination" element={<GrowthSEOPage pageType="route" />} />
                     <Route path="/aeropuertos/:slug" element={<GrowthSEOPage pageType="airport" />} />
