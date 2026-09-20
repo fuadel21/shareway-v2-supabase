@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format, differenceInMinutes, isBefore } from 'date-fns';
@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
+import { useDriverTracking } from '../hooks/useDriverTracking.js';
 import { getRideDetailsSecure, getRideStartReadiness, getMyRidePin, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking, completeRide as completeRideService, isRideBookable } from '../services/rideService.js';
 import { calculateRefundAmount } from '../services/bookingService.js';
@@ -69,11 +70,95 @@ const RideDetails = () => {
     const [isSecureActionLoading, setIsSecureActionLoading] = useState(false);
     const [startReadiness, setStartReadiness] = useState(null);
     const [fetchedPin, setFetchedPin] = useState(null);
+    const [driverLocation, setDriverLocation] = useState(null);
+    const { isTracking, startTracking, stopTracking } = useDriverTracking(rideId);
+
+    const currentUserId = user?.id?.toString()?.toLowerCase();
+    const driverId = ride?.driver_id?.toString()?.toLowerCase();
+    const isDriver = Boolean(currentUserId && driverId && currentUserId === driverId);
+    const passengersForTracking = Array.isArray(ride?.passengers)
+        ? ride.passengers.filter((passenger) => passenger.status !== 'cancelled')
+        : [];
+    const isPassenger = Boolean(currentUserId && passengersForTracking.some(
+        (passenger) => passenger.id?.toString()?.toLowerCase() === currentUserId,
+    ));
+    const isRideActive = ride?.status === 'active' || ride?.status === 'in_progress';
+    const mapItems = useMemo(() => {
+        if (!ride) return [];
+        if (!driverLocation) return [ride];
+
+        return [
+            ride,
+            {
+                id: `${ride.id}-live-location`,
+                type: 'live-location',
+                current_location: driverLocation,
+                driver_photo_url: ride.driver?.avatar_url || ride.driver?.photo_url,
+            },
+        ];
+    }, [ride, driverLocation]);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        if (isDriver && isRideActive) {
+            startTracking();
+        } else {
+            stopTracking();
+        }
+
+        return () => stopTracking();
+    }, [isDriver, isRideActive, startTracking, stopTracking]);
+
+    useEffect(() => {
+        if (!rideId || !isRideActive || (!isDriver && !isPassenger)) {
+            setDriverLocation(null);
+            return undefined;
+        }
+
+        let mounted = true;
+        const applyLocation = (row) => {
+            const latitude = Number(row?.latitude);
+            const longitude = Number(row?.longitude);
+            if (!mounted || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+            setDriverLocation({
+                lat: latitude,
+                lng: longitude,
+                heading: Number.isFinite(Number(row?.heading)) ? Number(row.heading) : 0,
+                updated_at: row?.updated_at || null,
+            });
+        };
+
+        const loadInitialLocation = async () => {
+            const { data, error } = await supabase
+                .from('ride_locations')
+                .select('latitude, longitude, heading, updated_at')
+                .eq('ride_id', rideId)
+                .maybeSingle();
+
+            if (!error && data) applyLocation(data);
+        };
+
+        loadInitialLocation();
+
+        const channel = supabase
+            .channel(`ride_details_location_${rideId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'ride_locations',
+                filter: `ride_id=eq.${rideId}`,
+            }, (payload) => applyLocation(payload.new))
+            .subscribe();
+
+        return () => {
+            mounted = false;
+            supabase.removeChannel(channel);
+        };
+    }, [rideId, isRideActive, isDriver, isPassenger]);
 
     const fetchRide = useCallback(async () => {
         if (!rideId || rideId === 'undefined') return;
@@ -211,6 +296,7 @@ const RideDetails = () => {
             const { success, error } = await startRide(rideId);
             if (!success) throw new Error(error);
             toast.success('¡Viaje iniciado! Buen camino.');
+            startTracking();
             fetchRide();
         } catch (error) {
             toast.error(error.message || 'No se pudo iniciar');
@@ -226,6 +312,8 @@ const RideDetails = () => {
             if (!result?.success) {
                 throw new Error(result?.error || result?.message || 'Error inesperado al finalizar');
             }
+
+            stopTracking();
 
             const payoutLabel = formatMoney(result.payout);
             const platformFeeLabel = formatMoney(result.platformFee);
@@ -313,6 +401,7 @@ const RideDetails = () => {
         try {
             const result = await cancelRide(rideId);
             if (result.success) {
+                stopTracking();
                 const penaltyLabel = formatMoney(result.driverPenalty);
                 const compensationLabel = formatMoney(result.passengerCompensationTotal);
                 const platformPenaltyLabel = formatMoney(result.platformPenalty);
@@ -484,14 +573,9 @@ const RideDetails = () => {
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-primary" /></div>;
     if (!ride) return <SubPageHeader title="No encontrado" backPath="/dashboard" />;
 
-    const currentUserId = user?.id?.toString()?.toLowerCase();
-    const driverId = ride?.driver_id?.toString()?.toLowerCase();
-    const isDriver = currentUserId && driverId && currentUserId === driverId;
-    const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
-    const isPassenger = passengers.some(p => p.id?.toString()?.toLowerCase() === currentUserId);
+    const passengers = passengersForTracking;
     const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
-    const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
     const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled' || ride.status === 'expired';
 
     const departureDate = new Date(ride.departure_time);
@@ -584,9 +668,10 @@ const RideDetails = () => {
 
                 <div className="h-56 w-full rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white relative group">
                     <MapComponent
-                        center={selectedPickupLocation || ride.origin}
-                        itemsToDisplay={[ride]}
+                        center={isRideActive && driverLocation ? driverLocation : (selectedPickupLocation || ride.origin)}
+                        itemsToDisplay={mapItems}
                         zoom={12}
+                        followLocation={isRideActive && Boolean(driverLocation)}
                         interactive={true}
                         pickupLocation={selectedPickupLocation}
                         onLocationSelect={(loc) => {
@@ -599,6 +684,16 @@ const RideDetails = () => {
                             }
                         }}
                     />
+                    {isRideActive && (
+                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5 shadow-sm z-[10] pointer-events-none">
+                            <span className={`size-2 rounded-full ${driverLocation ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                            <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">
+                                {driverLocation
+                                    ? (isTracking ? 'Conductor en tiempo real' : 'Ubicación del conductor')
+                                    : 'Esperando ubicación del conductor'}
+                            </span>
+                        </div>
+                    )}
                     {!isPassenger && isRideBookableNow && (
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm z-[10] pointer-events-none">
                             <MapPin className="size-3 text-primary animate-pulse" />
