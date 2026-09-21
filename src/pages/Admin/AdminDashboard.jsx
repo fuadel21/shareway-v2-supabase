@@ -4,7 +4,6 @@ import {
     AlertCircle,
     AlertTriangle,
     ArrowRight,
-    Banknote,
     BarChart3,
     BellRing,
     Building2,
@@ -13,7 +12,6 @@ import {
     CheckCircle2,
     DollarSign,
     Leaf,
-    Loader2,
     RefreshCw,
     TimerReset,
     UserCheck,
@@ -28,7 +26,7 @@ import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx';
 import { Skeleton } from '@/components/ui/skeleton.jsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx';
-import { getPlatformAuditLogs, getPlatformStats, requestPlatformPayout } from '@/lib/supabaseRPC';
+import { getPlatformAuditLogs, getPlatformStats } from '@/lib/supabaseRPC';
 import { supabase } from '@/lib/supabase';
 import { getRealAdminMetrics } from '@/services/adminMetricsService.js';
 
@@ -60,7 +58,7 @@ const adminTabs = [
 
 const sourceLabels = {
     rides: 'Viajes',
-    walletTransactions: 'Monedero',
+    walletTransactions: 'Ledger financiero',
     profiles: 'Perfiles',
     rideRequests: 'Solicitudes',
 };
@@ -94,7 +92,6 @@ function AdminDashboard() {
     const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isRetrying, setIsRetrying] = useState(false);
-    const [isPayoutLoading, setIsPayoutLoading] = useState(false);
     const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
     const fetchPlatformData = useCallback(async ({ retry = false } = {}) => {
@@ -153,26 +150,9 @@ function AdminDashboard() {
         };
     }, [fetchPlatformData]);
 
-    const handlePayout = async () => {
-        setIsPayoutLoading(true);
-        try {
-            const result = await requestPlatformPayout();
-            if (result?.success) {
-                toast.success('Retiro solicitado con éxito');
-                await fetchPlatformData({ retry: true });
-            } else {
-                toast.error('Error al retirar', { description: result?.error || 'No se pudo completar la operación.' });
-            }
-        } catch {
-            toast.error('Error al retirar');
-        } finally {
-            setIsPayoutLoading(false);
-        }
-    };
-
     const chartData = realMetrics?.chartData?.length ? realMetrics.chartData : emptyChartData;
     const metricTotals = realMetrics?.totals || {};
-    const treasuryTotal = Number(stats?.platform_profit ?? metricTotals.realProfitLastDays ?? 0);
+    const treasuryTotal = Number(stats?.treasury_balance ?? 0);
     const currentTab = adminTabs.find((item) => item.val === tab) || adminTabs[0];
     const sourceHealth = realMetrics?.sourceHealth || {};
     const unavailableSources = realMetrics?.unavailableSources || [];
@@ -282,12 +262,15 @@ function AdminDashboard() {
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
                 <Card className="rounded-[2rem] border-none shadow-2xl overflow-hidden bg-slate-900 text-white relative">
                     <CardHeader className="p-6 pb-4">
-                        <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tesorería Total</CardTitle>
+                        <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tesorería disponible</CardTitle>
                         <div className="text-4xl font-black italic tracking-tighter mt-2">{loading ? <Skeleton className="h-12 w-32 bg-slate-800" /> : treasuryTotal.toFixed(2)}<span className="text-2xl ml-1 text-slate-500">€</span></div>
                     </CardHeader>
-                    <CardContent className="px-6 pb-6">
-                        <Button onClick={handlePayout} disabled={isPayoutLoading || treasuryTotal <= 0} className="w-full h-12 rounded-2xl bg-white text-slate-900 hover:bg-primary hover:text-white font-black uppercase text-xs gap-3">
-                            {isPayoutLoading ? <Loader2 className="animate-spin" /> : <Banknote className="size-5" />} Liquidar Fondos
+                    <CardContent className="px-6 pb-6 space-y-3">
+                        <p className="text-[10px] leading-relaxed font-bold uppercase tracking-wide text-slate-400">
+                            Saldo real de la tesorería. Los retiros se autorizan y ejecutan desde el flujo seguro de finanzas.
+                        </p>
+                        <Button onClick={() => navigate('/admin/finance')} className="w-full h-12 rounded-2xl bg-white text-slate-900 hover:bg-primary hover:text-white font-black uppercase text-xs gap-3">
+                            Ver liquidaciones <ArrowRight className="size-4" />
                         </Button>
                     </CardContent>
                 </Card>

@@ -1,8 +1,14 @@
 import { supabase } from '@/lib/supabase.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const PLATFORM_FEE_RATE = 0.10;
 const QUERY_TIMEOUT_MS = 12000;
+
+const SETTLEMENT_EVENTS = new Set([
+  'ride_settlement',
+  'no_show_penalty',
+  'passenger_cancellation_penalty',
+  'driver_cancellation_penalty',
+]);
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -61,38 +67,21 @@ const safeSelect = async (table, select, options = {}) => {
   }
 };
 
-const isPlatformFeeTransaction = (transaction) => {
-  const searchable = [
-    transaction.type,
-    transaction.transaction_type,
-    transaction.category,
-    transaction.description,
-    transaction.reason,
-    JSON.stringify(transaction.metadata || {}),
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  return searchable.includes('platform')
-    || searchable.includes('fee')
-    || searchable.includes('commission')
-    || searchable.includes('comision')
-    || searchable.includes('comisión');
-};
-
 export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
   const safeDays = Math.max(1, Math.min(Number(days) || 7, 31));
   const buckets = makeDailyBuckets(safeDays);
   const bucketMap = new Map(buckets.map((bucket) => [bucket.key, bucket]));
   const since = new Date(Date.now() - safeDays * DAY_MS).toISOString();
 
-  const [ridesRes, transactionsRes, profilesRes, requestsRes] = await Promise.all([
+  const [ridesRes, ledgerRes, profilesRes, requestsRes] = await Promise.all([
     safeSelect('rides', '*', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
-    safeSelect('wallet_transactions', '*', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
+    safeSelect('ride_financial_ledger', 'event_type,platform_fee,created_at', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
     safeSelect('profiles', 'id,created_at', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
     safeSelect('ride_requests', '*', { gte: { column: 'created_at', value: since }, order: { column: 'created_at', ascending: false }, limit: 5000 }),
   ]);
 
   const rides = ridesRes.data;
-  const transactions = transactionsRes.data;
+  const ledger = ledgerRes.data;
   const profiles = profilesRes.data;
   const requests = requestsRes.data;
 
@@ -123,37 +112,25 @@ export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
     bucket.bookings += 1;
   });
 
-  let realFeeTotal = 0;
-  transactions.forEach((transaction) => {
-    if (!isPlatformFeeTransaction(transaction)) return;
-    const amount = Math.abs(toNumber(transaction.amount));
-    realFeeTotal += amount;
-    const key = normalizeDateKey(transaction.created_at);
+  let realizedPlatformFees = 0;
+  ledger.forEach((entry) => {
+    if (!SETTLEMENT_EVENTS.has(String(entry.event_type || '').toLowerCase())) return;
+    const amount = Math.max(toNumber(entry.platform_fee), 0);
+    realizedPlatformFees += amount;
+    const key = normalizeDateKey(entry.created_at);
     const bucket = bucketMap.get(key);
     if (bucket) bucket.profit += amount;
   });
 
-  const estimatedFeeTotal = realFeeTotal > 0
-    ? 0
-    : rides
-      .filter((ride) => ['completed', 'in_progress', 'active'].includes(ride.status))
-      .reduce((sum, ride) => sum + (toNumber(ride.price) * PLATFORM_FEE_RATE), 0);
-
-  if (realFeeTotal === 0) {
-    rides
-      .filter((ride) => ['completed', 'in_progress', 'active'].includes(ride.status))
-      .forEach((ride) => {
-        const key = normalizeDateKey(ride.created_at || ride.departure_time);
-        const bucket = bucketMap.get(key);
-        if (bucket) bucket.profit += toNumber(ride.price) * PLATFORM_FEE_RATE;
-      });
-  }
-
-  const totalProfit = realFeeTotal || estimatedFeeTotal;
+  // Do not project fees from rides.price. That field is a per-seat offer and
+  // cannot prove a charge, a seat count, a refund, or a completed settlement.
+  // When the ledger has no event, the truthful value is zero and the dashboard
+  // must show that no realized fee was recorded yet.
+  const totalProfit = realizedPlatformFees;
   const activeRides = (statusCounts.scheduled || 0) + (statusCounts.active || 0) + (statusCounts.in_progress || 0);
   const sourceHealth = {
     rides: !ridesRes.error,
-    walletTransactions: !transactionsRes.error,
+    walletTransactions: !ledgerRes.error,
     profiles: !profilesRes.error,
     rideRequests: !requestsRes.error,
   };
@@ -176,11 +153,11 @@ export const getRealAdminMetrics = async ({ days = 7 } = {}) => {
       newUsers: profiles.length,
       rideRequests: requests.length,
       ridesCreated: rides.length,
-      usedEstimatedProfit: realFeeTotal === 0,
+      usedEstimatedProfit: false,
     },
     sources: {
       rides: rides.length,
-      walletTransactions: transactions.length,
+      walletTransactions: ledger.length,
       profiles: profiles.length,
       rideRequests: requests.length,
     },

@@ -1,79 +1,36 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders } from '../_shared/cors.ts'
 
-// Define a constant for the platform's commission rate (e.g., 15%)
-// IMPORTANT: Adjust this value to match your actual commission rate.
-const COMMISSION_RATE = 0.15;
+const jsonResponse = (payload: unknown, headers: Record<string, string>, status = 200) => new Response(
+  JSON.stringify(payload),
+  { status, headers: { ...headers, 'Content-Type': 'application/json' } },
+)
 
-Deno.serve(async (req) => {
-  // This is needed to handle the preflight request for CORS.
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+// This file is kept as a non-deployed compatibility source. If the function is
+// enabled, it delegates to the same admin-gated SQL read model as the dashboard
+// instead of projecting commissions from rides.price.
+serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonResponse({ error: 'Método no permitido' }, corsHeaders, 405)
+
+  const authorization = req.headers.get('Authorization')
+  if (!authorization) return jsonResponse({ error: 'No autorizado' }, corsHeaders, 401)
 
   try {
-    // Create a Supabase client with the service_role key to bypass RLS.
-    const supabaseAdmin = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authorization } } },
+    )
+    const { data, error } = await supabase.rpc('get_platform_admin_stats')
+    if (error) return jsonResponse({ error: error.message }, corsHeaders, 403)
 
-    // We run the queries in parallel to be more efficient.
-    const [
-      { count: totalUsers, error: usersError },
-      { data: ridesData, error: ridesError },
-      { data: recentRides, error: recentError }
-    ] = await Promise.all([
-      // Query 1: Get the total number of users.
-      supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
-      // Query 2: Get the price of all completed rides.
-      supabaseAdmin.from('rides').select('price').eq('status', 'completed'),
-      // Query 3: Get recent completed rides for transactions list
-      supabaseAdmin.from('rides')
-        .select('id, price, completed_at, passengers')
-        .eq('status', 'completed')
-        .order('completed_at', { ascending: false })
-        .limit(10)
-    ]);
-
-    if (usersError) throw usersError;
-    if (ridesError) throw ridesError;
-    if (recentError) throw recentError;
-
-    // --- Calculate statistics ---
-    const totalCompletedRides = ridesData?.length || 0;
-    const grossTotalVolume = ridesData?.reduce((sum, ride) => sum + (ride.price || 0), 0) || 0;
-    
-    // In this simulation, we consider all completed volume * rate as uncollected till payout
-    const totalUncollectedFees = grossTotalVolume * COMMISSION_RATE;
-
-    const recentFeeTransactions = (recentRides || []).map(ride => ({
-        id: `fee_${ride.id}`,
-        date: ride.completed_at,
-        description: `Comisión viaje ${ride.id.substring(0,8)}`,
-        rideId: ride.id,
-        amount: (ride.price || 0) * COMMISSION_RATE
-    }));
-
-    const stats = {
-      totalUsers,
-      totalCompletedRides,
-      grossTotalVolume,
-      totalUncollectedFees,
-      recentFeeTransactions
-    };
-
-    // Return the statistics in a JSON response.
-    return new Response(JSON.stringify({ success: true, stats }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
+    return jsonResponse(data, corsHeaders)
   } catch (error) {
-    // If any error occurs, return an error response.
-    return new Response(JSON.stringify({ success: false, message: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
+    return jsonResponse({
+      error: error instanceof Error ? error.message : 'No se pudieron cargar las estadísticas.',
+    }, corsHeaders, 500)
   }
-});
+})

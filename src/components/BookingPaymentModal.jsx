@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase.js';
-import { confirmTripAndPay } from '../lib/supabaseRPC.js';
+import { confirmTripAndPay, getRideDetailsSecure } from '../lib/supabaseRPC.js';
 import { useWallet } from '../hooks/useWallet.js';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog.jsx';
 import { Button } from './ui/button.jsx';
@@ -22,8 +22,7 @@ import {
     TrendingUp,
     Wallet,
 } from 'lucide-react';
-import { cn, calculateDistance } from '../lib/utils.js';
-import { RIDE_RULES, fetchRoute } from '../services/rideService.js';
+import { cn } from '../lib/utils.js';
 import MapComponent from './MapComponent';
 import { useTranslation } from 'react-i18next';
 
@@ -48,6 +47,7 @@ const copyByLanguage = {
         stripeError: 'Error Stripe',
         invalidPrice: 'Precio no válido',
         connectionError: 'Error de conexión con el servidor.',
+        quoteUnavailable: 'No se pudo calcular el importe seguro. Revisa la ruta o inténtalo de nuevo.',
         bookingDenied: 'Reserva no disponible',
         bookingProcessError: 'No se pudo procesar la reserva.',
         title: 'Finalizar reserva',
@@ -63,9 +63,21 @@ const copyByLanguage = {
         seats: 'Plazas',
         securePayment: 'Pago seguro',
         yourTrip: 'Tu trayecto',
+        totalToPay: 'Total a pagar',
+        pricePerSeat: 'Precio medio por plaza',
+        selectedSeats: 'Plazas seleccionadas',
+        platformCommission: 'Comisión plataforma (10%)',
+        driverPayout: 'Neto conductor (90%)',
+        cancellationPolicy: 'Política de cancelación',
+        passengerCancellation: 'Pasajero: >24 h 100% · 2–24 h 50% · <2 h 0%',
+        passengerPenaltySplit: 'Parte no reembolsada: 80% conductor · 20% plataforma',
+        driverCancellation: 'Conductor: reembolso total al pasajero',
+        driverPenaltyPolicy: 'Penalización conductor: 0€ ≥24 h · 2€ entre 2 y <24 h · 5€ <2 h',
+        driverPenaltySplit: 'Con pasajeros: 50% compensación · 50% plataforma · sin pasajeros: 100% plataforma',
         detourDetected: 'Desvío detectado',
-        supplement: 'Supl.',
+        supplement: 'Supl. / plaza',
         noDetour: 'Sin desvío',
+        commissionIncluded: 'Comisión de plataforma incluida en el precio',
         wallet: 'Billetera',
         card: 'Tarjeta',
         availableBalance: 'Saldo disponible',
@@ -108,6 +120,7 @@ const copyByLanguage = {
         stripeError: 'Stripe error',
         invalidPrice: 'Invalid price',
         connectionError: 'Server connection error.',
+        quoteUnavailable: 'We could not calculate the secure amount. Check the route or try again.',
         bookingDenied: 'Booking unavailable',
         bookingProcessError: 'Could not process the booking.',
         title: 'Complete booking',
@@ -123,9 +136,21 @@ const copyByLanguage = {
         seats: 'Seats',
         securePayment: 'Secure payment',
         yourTrip: 'Your trip',
+        totalToPay: 'Total to pay',
+        pricePerSeat: 'Average price per seat',
+        selectedSeats: 'Selected seats',
+        platformCommission: 'Platform commission (10%)',
+        driverPayout: 'Driver net (90%)',
+        cancellationPolicy: 'Cancellation policy',
+        passengerCancellation: 'Passenger: >24 h 100% · 2–24 h 50% · <2 h 0%',
+        passengerPenaltySplit: 'Non-refunded share: 80% driver · 20% platform',
+        driverCancellation: 'Driver: full passenger refund',
+        driverPenaltyPolicy: 'Driver penalty: €0 ≥24 h · €2 at 2 to <24 h · €5 <2 h',
+        driverPenaltySplit: 'With passengers: 50% compensation · 50% platform · no passengers: 100% platform',
         detourDetected: 'Detour detected',
-        supplement: 'Suppl.',
+        supplement: 'Suppl. / seat',
         noDetour: 'No detour',
+        commissionIncluded: 'Platform commission included in the price',
         wallet: 'Wallet',
         card: 'Card',
         availableBalance: 'Available balance',
@@ -168,6 +193,7 @@ const copyByLanguage = {
         stripeError: 'خطأ في Stripe',
         invalidPrice: 'السعر غير صالح',
         connectionError: 'خطأ في الاتصال بالخادم.',
+        quoteUnavailable: 'تعذر حساب المبلغ الآمن. تحقق من المسار أو حاول مرة أخرى.',
         bookingDenied: 'الحجز غير متاح',
         bookingProcessError: 'تعذر معالجة الحجز.',
         title: 'إتمام الحجز',
@@ -183,9 +209,21 @@ const copyByLanguage = {
         seats: 'مقاعد',
         securePayment: 'دفع آمن',
         yourTrip: 'رحلتك',
+        totalToPay: 'الإجمالي للدفع',
+        pricePerSeat: 'متوسط السعر لكل مقعد',
+        selectedSeats: 'المقاعد المحددة',
+        platformCommission: 'عمولة المنصة (10٪)',
+        driverPayout: 'صافي السائق (90٪)',
+        cancellationPolicy: 'سياسة الإلغاء',
+        passengerCancellation: 'الراكب: أكثر من 24 ساعة 100٪ · من 2 إلى 24 ساعة 50٪ · أقل من ساعتين 0٪',
+        passengerPenaltySplit: 'الجزء غير المسترد: 80٪ للسائق · 20٪ للمنصة',
+        driverCancellation: 'السائق: استرداد كامل للراكب',
+        driverPenaltyPolicy: 'غرامة السائق: 0€ عند 24 ساعة أو أكثر · 2€ من ساعتين إلى أقل من 24 ساعة · 5€ لأقل من ساعتين',
+        driverPenaltySplit: 'مع وجود ركاب: 50٪ تعويض · 50٪ للمنصة · دون ركاب: 100٪ للمنصة',
         detourDetected: 'تم اكتشاف انحراف',
-        supplement: 'إضافة',
+        supplement: 'إضافة / مقعد',
         noDetour: 'لا يوجد انحراف',
+        commissionIncluded: 'عمولة المنصة مشمولة في السعر',
         wallet: 'المحفظة',
         card: 'بطاقة',
         availableBalance: 'الرصيد المتاح',
@@ -222,12 +260,14 @@ const getLanguage = (language) => {
 
 const getLat = (loc) => Number(loc?.lat ?? loc?.latitude ?? loc?.coordinates?.lat ?? loc?.coordinates?.latitude);
 const getLng = (loc) => Number(loc?.lng ?? loc?.longitude ?? loc?.coordinates?.lng ?? loc?.coordinates?.longitude);
-const isValidLocation = (loc) => Number.isFinite(getLat(loc)) && Number.isFinite(getLng(loc));
+const isValidCoordinates = (lat, lng) => Number.isFinite(lat) && Number.isFinite(lng)
+    && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+const isValidLocation = (loc) => isValidCoordinates(getLat(loc), getLng(loc));
 const normalizeMapLocation = (loc) => {
     if (!loc) return null;
     const lat = getLat(loc);
     const lng = getLng(loc);
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (!isValidCoordinates(lat, lng)) return null;
     return { ...loc, lat, lng };
 };
 const locationSignature = (loc) => {
@@ -290,18 +330,19 @@ const friendlyBookingError = (error, copy) => {
 };
 
 const isUserParticipant = (ride, userId) => {
+    if (ride?.is_participant === true) return true;
     const participantIds = Array.isArray(ride?.participant_ids) ? ride.participant_ids : [];
     return participantIds.map(String).includes(String(userId));
 };
 
 const fetchRidePaymentState = async (rideId) => {
-    const { data, error } = await supabase
-        .from('rides')
-        .select('id,participant_ids,status,seats_available,departure_time')
-        .eq('id', rideId)
-        .single();
-    if (error) throw error;
-    return data;
+    const response = await getRideDetailsSecure(rideId);
+    if (!response?.success) throw new Error(response?.error || 'No se pudo comprobar el estado de la reserva.');
+
+    const payload = response.data?.success === false ? null : (response.data?.data || response.data);
+    if (!payload) throw new Error('No se pudo comprobar el estado de la reserva.');
+
+    return payload;
 };
 
 const PendingRecoveryNotice = ({ copy, isChecking, onCheck, onViewRide, onClear }) => (
@@ -496,7 +537,6 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const { wallet, refreshWallet } = useWallet(user);
 
     const rideId = ride?.id;
-    const baseAmount = Number(ride?.price) || 0;
     const seatsAvailable = Number(ride?.seats_available ?? ride?.available_seats ?? 0);
 
     const [paymentMethod, setPaymentMethod] = useState('wallet');
@@ -512,15 +552,36 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [dropoffLocation, setDropoffLocation] = useState(null);
     const [dropoffAddress, setDropoffAddress] = useState('');
     const [numSeats, setNumSeats] = useState(1);
-    const [dynamicAmount, setDynamicAmount] = useState(baseAmount);
+    const [dynamicAmount, setDynamicAmount] = useState(0);
+    const [quotedPricePerSeat, setQuotedPricePerSeat] = useState(0);
+    const [quotedPlatformFee, setQuotedPlatformFee] = useState(0);
+    const [quotedDriverPayout, setQuotedDriverPayout] = useState(0);
     const [tripDistance, setTripDistance] = useState(0);
     const [appliedSupplement, setAppliedSupplement] = useState(0);
     const [isCalculatingDistance, setIsCalculatingDistance] = useState(false);
+    const [isQuoteReady, setIsQuoteReady] = useState(false);
+    const [quotedInputSignature, setQuotedInputSignature] = useState(null);
+    const [quoteError, setQuoteError] = useState(false);
+
+    useEffect(() => {
+        const maxSeats = Math.min(8, Math.max(1, seatsAvailable));
+        setNumSeats((current) => Math.min(Math.max(Number(current) || 1, 1), maxSeats));
+    }, [rideId, seatsAvailable]);
 
     const bookingBlockedMessage = useMemo(
         () => getBookingBlockedMessage(ride, copy),
         [ride?.status, ride?.departure_time, ride?.departureTime, ride?.seats_available, ride?.available_seats, copy]
     );
+
+    const quoteInputSignature = useMemo(() => JSON.stringify({
+        rideId,
+        ridePrice: Number(ride?.price),
+        rideDistance: Number(ride?.distance),
+        seatsAvailable,
+        seats: Number(numSeats),
+        pickup: locationSignature(pickupLocation),
+        dropoff: locationSignature(dropoffLocation),
+    }), [rideId, ride?.price, ride?.distance, seatsAvailable, numSeats, pickupLocation, dropoffLocation]);
 
     const bookingSignature = useMemo(() => JSON.stringify({
         rideId,
@@ -530,6 +591,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         dropoff: locationSignature(dropoffLocation),
     }), [rideId, dynamicAmount, numSeats, pickupLocation, dropoffLocation]);
 
+    const isQuoteCurrent = isQuoteReady
+        && quotedInputSignature === quoteInputSignature
+        && roundMoney(dynamicAmount) > 0
+        && Number(quotedPricePerSeat) > 0
+        && Number(quotedPlatformFee) > 0
+        && Number(quotedDriverPayout) > 0;
     const isPaymentContextReady = Boolean(
         rideId &&
         user &&
@@ -538,7 +605,9 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         isValidLocation(dropoffLocation) &&
         Number(numSeats) > 0 &&
         Number(numSeats) <= seatsAvailable &&
+        isQuoteCurrent &&
         roundMoney(dynamicAmount) > 0 &&
+        quotedPricePerSeat > 0 &&
         !isCalculatingDistance
     );
 
@@ -603,39 +672,95 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     }, [bookingBlockedMessage]);
 
     useEffect(() => {
+        let cancelled = false;
+
         const updatePrice = async () => {
-            if (!pickupLocation || !dropoffLocation || !ride || bookingBlockedMessage) return;
+            // Never present a client-side estimate as the amount to be charged.
+            // The same authenticated RPC is used by wallet booking and by the
+            // Stripe PaymentIntent Edge Function, so a missing quote fails
+            // closed instead of showing a misleading total.
+            if (!pickupLocation || !dropoffLocation || !ride || bookingBlockedMessage) {
+                setIsQuoteReady(false);
+                setQuotedInputSignature(null);
+                setQuoteError(false);
+                setDynamicAmount(0);
+                setQuotedPricePerSeat(0);
+                setQuotedPlatformFee(0);
+                setQuotedDriverPayout(0);
+                setTripDistance(0);
+                setAppliedSupplement(0);
+                setIsCalculatingDistance(false);
+                return;
+            }
 
             const pickup = normalizeMapLocation(pickupLocation);
             const dropoff = normalizeMapLocation(dropoffLocation);
-            const rideOrigin = normalizeMapLocation(ride.origin);
-            if (!pickup || !dropoff) return;
+            if (!pickup || !dropoff) {
+                setIsQuoteReady(false);
+                setQuotedInputSignature(null);
+                setQuoteError(true);
+                setDynamicAmount(0);
+                setQuotedPricePerSeat(0);
+                setQuotedPlatformFee(0);
+                setQuotedDriverPayout(0);
+                setIsCalculatingDistance(false);
+                return;
+            }
 
             setIsCalculatingDistance(true);
+            setIsQuoteReady(false);
+            setQuotedInputSignature(null);
+            setQuoteError(false);
+            setDynamicAmount(0);
+            setQuotedPricePerSeat(0);
+            setQuotedPricePerKm(0);
+            setQuotedPlatformFee(0);
+            setQuotedDriverPayout(0);
             try {
-                const coords = `${pickup.lng},${pickup.lat};${dropoff.lng},${dropoff.lat}`;
-                const data = await fetchRoute(coords, 'false');
-                const distanceKm = data?.code === 'Ok' && data?.routes?.[0]
-                    ? data.routes[0].distance / 1000
-                    : calculateDistance(pickup.lat, pickup.lng, dropoff.lat, dropoff.lng);
+                const { data: serverQuote, error: serverQuoteError } = await supabase.rpc('quote_ride_booking', {
+                    p_ride_id: rideId,
+                    p_pickup_location: pickup,
+                    p_dropoff_location: dropoff,
+                    p_num_seats: Number(numSeats),
+                });
 
-                setTripDistance(distanceKm);
-                const rideTotalDistance = Number(ride.distance) || distanceKm;
-                const driverPricePerKm = Number(ride.price) / Math.max(rideTotalDistance, 1);
-                const passengerBasePrice = driverPricePerKm * distanceKm;
-                const detourDistance = rideOrigin ? calculateDistance(rideOrigin.lat, rideOrigin.lng, pickup.lat, pickup.lng) : 0;
-                const supplement = detourDistance > 3 ? RIDE_RULES.PICKUP_SUPPLEMENT : 0;
-                setAppliedSupplement(supplement);
-                setDynamicAmount(roundMoney((passengerBasePrice + supplement) * numSeats));
+                const quote = Array.isArray(serverQuote) ? serverQuote[0] : serverQuote;
+                if (serverQuoteError || !quote?.success) {
+                    throw serverQuoteError || new Error(quote?.error || copy.quoteUnavailable);
+                }
+
+                if (cancelled) return;
+                setTripDistance(Number(quote.passenger_distance_km) || 0);
+                setAppliedSupplement(Number(quote.pickup_supplement_per_seat) || 0);
+                setDynamicAmount(roundMoney(quote.total));
+                setQuotedPricePerSeat(Number(quote.price_per_seat) || 0);
+                setQuotedPlatformFee(Number(quote.platform_fee) || 0);
+                setQuotedDriverPayout(Number(quote.driver_payout) || 0);
+                setQuotedInputSignature(quoteInputSignature);
+                setIsQuoteReady(true);
             } catch (error) {
-                console.error('Error updating price:', error);
+                console.error('Error updating server quote:', error);
+                if (!cancelled) {
+                    setIsQuoteReady(false);
+                    setQuotedInputSignature(null);
+                    setQuoteError(true);
+                    setDynamicAmount(0);
+                    setQuotedPricePerSeat(0);
+                        setQuotedPlatformFee(0);
+                    setQuotedDriverPayout(0);
+                    setTripDistance(0);
+                    setAppliedSupplement(0);
+                }
             } finally {
-                setIsCalculatingDistance(false);
+                if (!cancelled) setIsCalculatingDistance(false);
             }
         };
 
         updatePrice();
-    }, [pickupLocation, dropoffLocation, ride, numSeats, bookingBlockedMessage]);
+        return () => {
+            cancelled = true;
+        };
+    }, [pickupLocation, dropoffLocation, ride, rideId, numSeats, quoteInputSignature, bookingBlockedMessage, copy.quoteUnavailable]);
 
     useEffect(() => {
         if (isOpen && wallet && !bookingBlockedMessage && !pendingRecovery) {
@@ -665,7 +790,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                         dropoffLocation: normalizeMapLocation(dropoffLocation),
                         dropoffAddress,
                         totalAmount: cleanTotal,
-                        pricePerSeat: roundMoney(cleanTotal / Math.max(Number(numSeats), 1)),
+                        pricePerSeat: roundMoney(quotedPricePerSeat),
                         numSeats: Number(numSeats),
                         bookingSignature,
                         departure_time: ride?.departure_time || ride?.departureTime || null,
@@ -685,7 +810,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
         };
 
         prepareStripe();
-    }, [isOpen, paymentMethod, clientSecret, isPaymentContextReady, pendingRecovery, rideId, pickupLocation, pickupAddress, dropoffLocation, dropoffAddress, dynamicAmount, numSeats, bookingSignature, copy]);
+    }, [isOpen, paymentMethod, clientSecret, isPaymentContextReady, pendingRecovery, rideId, pickupLocation, pickupAddress, dropoffLocation, dropoffAddress, dynamicAmount, quotedPricePerSeat, numSeats, bookingSignature, copy]);
 
     const handleLocationSelect = (loc) => {
         setPickupLocation(normalizeMapLocation(loc));
@@ -794,6 +919,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 </div>
                             )}
 
+                            {quoteError && !bookingBlockedMessage && isValidLocation(pickupLocation) && isValidLocation(dropoffLocation) && (
+                                <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-center text-[10px] font-black uppercase tracking-widest text-red-700">
+                                    {copy.quoteUnavailable}
+                                </div>
+                            )}
+
                             <div className="space-y-3">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
                                     <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">1</span>
@@ -829,7 +960,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 {copy.seatsQuestion}
                             </p>
                             <div className="flex bg-white p-1.5 rounded-3xl border-2 border-slate-100 gap-1 shadow-sm">
-                                {[1, 2, 3, 4].map((n) => {
+                                {Array.from({ length: Math.min(8, Math.max(0, seatsAvailable)) }, (_, index) => index + 1).map((n) => {
                                     const isAvailable = n <= seatsAvailable;
                                     return (
                                         <button
@@ -858,10 +989,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform"><ShieldCheck size={80} /></div>
                                 <div className="flex justify-between items-start">
                                     <div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">{copy.yourTrip} ({tripDistance.toFixed(1)} km)</p>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">{copy.totalToPay}</p>
                                         <p className="text-4xl font-black italic tracking-tighter">
-                                            {isCalculatingDistance ? <Loader2 className="h-8 w-8 animate-spin inline" /> : <>{roundMoney(dynamicAmount).toFixed(2)}<span className="text-xl ml-1">€</span></>}
+                                            {isCalculatingDistance ? <Loader2 className="h-8 w-8 animate-spin inline" /> : isQuoteCurrent ? <>{roundMoney(dynamicAmount).toFixed(2)}<span className="text-xl ml-1">€</span></> : '—'}
                                         </p>
+                                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">{copy.yourTrip} · {tripDistance.toFixed(1)} km</p>
                                     </div>
                                     <div className="text-right">
                                         {appliedSupplement > 0 ? (
@@ -873,6 +1005,35 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                             <div className="flex items-center justify-end gap-1 text-slate-400 text-[10px] font-black uppercase tracking-tighter opacity-50"><CheckCircle2 size={10} /> {copy.noDetour}</div>
                                         )}
                                     </div>
+                                </div>
+                                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-white/10 pt-3">
+                                    <div>
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.pricePerSeat}</p>
+                                        <p className="mt-1 text-sm font-black text-white">{isQuoteCurrent ? `${roundMoney(quotedPricePerSeat).toFixed(2)}€` : '—'}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.selectedSeats}</p>
+                                        <p className="mt-1 text-sm font-black text-white">{Number(numSeats)}</p>
+                                    </div>
+                                </div>
+                                <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.platformCommission}</p>
+                                    <p className="text-sm font-black text-amber-300">{isQuoteCurrent ? `${Number(quotedPlatformFee).toFixed(2)}€` : '—'}</p>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{copy.driverPayout}</p>
+                                    <p className="text-sm font-black text-emerald-300">{isQuoteCurrent ? `${Number(quotedDriverPayout).toFixed(2)}€` : '—'}</p>
+                                </div>
+                                <p className="mt-3 text-[9px] font-bold uppercase tracking-widest text-slate-400">
+                                    {copy.commissionIncluded}
+                                </p>
+                                <div className="mt-4 space-y-1.5 border-t border-white/10 pt-3 text-[8px] font-bold uppercase tracking-wider text-slate-400">
+                                    <p className="text-slate-300">{copy.cancellationPolicy}</p>
+                                    <p>{copy.passengerCancellation}</p>
+                                    <p>{copy.passengerPenaltySplit}</p>
+                                    <p>{copy.driverCancellation}</p>
+                                    <p>{copy.driverPenaltyPolicy}</p>
+                                    <p>{copy.driverPenaltySplit}</p>
                                 </div>
                             </div>
 

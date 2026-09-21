@@ -87,8 +87,13 @@ export default function RideEmergencyQuickAction() {
         const userId = normalizeId(user.id);
         const driverId = normalizeId(rideData.driver_id);
         const passengers = Array.isArray(rideData.passengers) ? rideData.passengers : [];
+        const participantIds = Array.isArray(rideData.participant_ids) ? rideData.participant_ids : [];
         const isDriver = userId && driverId && userId === driverId;
-        const isPassenger = passengers.some((passenger) => normalizeId(passenger.id) === userId);
+        const isPassenger = participantIds.some((participantId) => normalizeId(participantId) === userId)
+          || passengers.some((passenger) => {
+            const passengerId = passenger.id || passenger.user_id || passenger.passenger_id;
+            return normalizeId(passengerId) === userId && normalizeId(passenger.status) !== 'cancelled';
+          });
         const canUseSOS = isActiveRideStatus(rideData.status) && (isDriver || isPassenger);
 
         setRide(rideData);

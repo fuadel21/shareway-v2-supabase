@@ -35,8 +35,8 @@ function AudioRecording() {
                         <div className="flex items-start gap-4">
                             <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full"><ShieldCheck className="h-6 w-6" /></div>
                             <div>
-                                <h3 className="font-semibold">Confidencial y Seguro</h3>
-                                <p className="text-muted-foreground">Las grabaciones son encriptadas y solo serán accedidas por nuestro equipo de soporte en caso de que envíes un reporte.</p>
+                                <h3 className="font-semibold">Confidencial y restringido</h3>
+                                <p className="text-muted-foreground">Las grabaciones se guardan en un bucket privado. Solo el equipo autorizado puede revisarlas cuando existe un reporte.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4">
@@ -51,8 +51,8 @@ function AudioRecording() {
                 
                 <Card className="border-dashed">
                     <CardHeader>
-                        <CardTitle>Próximamente</CardTitle>
-                        <CardDescription>Esta función estará disponible durante un viaje activo para garantizar tu tranquilidad. ¡Estamos ultimando los detalles!</CardDescription>
+                        <CardTitle>Cómo abrir la grabación</CardTitle>
+                        <CardDescription>Durante un viaje activo, abre el canal SOS y utiliza Caja Negra de Audio. El archivo solo se registra para tu viaje y no se publica.</CardDescription>
                     </CardHeader>
                 </Card>
             </main>

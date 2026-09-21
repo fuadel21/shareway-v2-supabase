@@ -1,51 +1,46 @@
 import { describe, it, expect } from 'vitest';
-import { validateRidePrice, calculateSuggestedPrice } from '../pricingRules';
+import {
+    calculateBookingTotal,
+    calculateSuggestedPrice,
+    validateRidePrice,
+} from '../pricingRules';
 
 describe('Pricing Rules (Pure Logic) - Tramos Acumulativos', () => {
 
     describe('calculateSuggestedPrice', () => {
-        // Tramos actuales:
-        // 0-3km: 1.00€/km
-        // 3-10km: 0.50€/km
-        // 10-100km: 0.35€/km
-        // 100-400km: 0.20€/km
-        // +400km: 0.15€/km
+        // Tramos canónicos:
+        // 0-15km: 0.30€/km
+        // 15-100km: 0.22€/km
+        // +100km: 0.15€/km without an upper distance tier
 
-        it('should return correct price for 0-3km tier (3km)', () => {
-            // 3 * 1.00 = 3.00
-            expect(calculateSuggestedPrice(3)).toBe("3.00");
+        it('should return correct price for the first tier (3km)', () => {
+            expect(calculateSuggestedPrice(3)).toBe("0.90");
         });
 
-        it('should return correct price for 3-10km tier (10km)', () => {
-            // (3 * 1.00) + (7 * 0.50) = 3.00 + 3.50 = 6.50
-            expect(calculateSuggestedPrice(10)).toBe("6.50");
+        it('should return correct price inside the second tier (10km)', () => {
+            // (15 * 0.30) is not reached; 10 * 0.30 = 3.00
+            expect(calculateSuggestedPrice(10)).toBe("3.00");
         });
 
-        it('should return correct price for 10-100km tier (100km)', () => {
-            // (3 * 1.00) + (7 * 0.50) + (90 * 0.35) 
-            // 3 + 3.5 + 31.5 = 38.00
-            expect(calculateSuggestedPrice(100)).toBe("38.00");
+        it('should apply the 0.22 rate through 100km', () => {
+            // 4.50 + 85 * 0.22 = 23.20
+            expect(calculateSuggestedPrice(100)).toBe("23.20");
         });
 
-        it('should return correct price for 100-400km tier (200km)', () => {
-            // Base 100km = 38.00
-            // + 100km * 0.20 = 20.00
-            // Total = 58.00
-            expect(calculateSuggestedPrice(200)).toBe("58.00");
+        it('should apply the unlimited 0.15 rate after 100km (200km)', () => {
+            expect(calculateSuggestedPrice(200)).toBe("38.20");
         });
 
-        it('should return correct price for 100-400km tier limit (400km)', () => {
-            // Base 100km = 38.00
-            // + 300km * 0.20 = 60.00
-            // Total = 98.00
-            expect(calculateSuggestedPrice(400)).toBe("98.00");
+        it('should keep the 0.15 rate through 400km', () => {
+            expect(calculateSuggestedPrice(400)).toBe("68.20");
         });
 
-        it('should return correct price for +400km tier (500km)', () => {
-            // Base 400km = 98.00
-            // + 100km * 0.15 = 15.00
-            // Total = 113.00
-            expect(calculateSuggestedPrice(500)).toBe("113.00");
+        it('should keep the 0.15 rate through 500km', () => {
+            expect(calculateSuggestedPrice(500)).toBe("83.20");
+        });
+
+        it('should keep the 0.15 rate with no upper distance tier', () => {
+            expect(calculateSuggestedPrice(1500)).toBe("233.20");
         });
 
         it('should return 0.00 for invalid distance', () => {
@@ -59,9 +54,8 @@ describe('Pricing Rules (Pure Logic) - Tramos Acumulativos', () => {
         // Regla: Sí se puede bajar el precio
         
         it('should allow prices lower than suggested', () => {
-            const distance = 100; 
-            const suggested = 38.00; // Según tests anteriores
-            const price = 20.00; // Más barato
+            const distance = 100;
+            const price = 10.00; // Más barato
 
             const result = validateRidePrice(price, distance);
             expect(result.valid).toBe(true);
@@ -69,35 +63,74 @@ describe('Pricing Rules (Pure Logic) - Tramos Acumulativos', () => {
 
         it('should allow exact suggested price', () => {
             const distance = 100;
-            const suggested = 38.00;
-            
+            const suggested = 23.20;
+
             const result = validateRidePrice(suggested, distance);
             expect(result.valid).toBe(true);
         });
 
         it('should allow tiny rounding difference (0.05)', () => {
             const distance = 100;
-            const price = 38.05;
+            const price = 23.25;
             
             const result = validateRidePrice(price, distance);
             expect(result.valid).toBe(true);
         });
 
         it('should REJECT prices higher than suggested', () => {
-            const distance = 100; // Sugerido 38.00
-            const price = 38.10; // +0.10 (fuera de margen)
+            const distance = 100; // Sugerido 23.20
+            const price = 23.30; // +0.10 (fuera de margen)
 
             const result = validateRidePrice(price, distance);
             
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Precio superior al sugerido');
-            expect(result.maxPrice).toBe(38.00);
+            expect(result.maxPrice).toBe(23.20);
         });
 
         it('should reject negative prices', () => {
             const result = validateRidePrice(-5, 100);
             expect(result.valid).toBe(false);
             expect(result.error).toBe('Precio inválido');
+        });
+    });
+
+    describe('calculateBookingTotal', () => {
+        it('scales the server quote preview by requested seats', () => {
+            expect(calculateBookingTotal({
+                ridePrice: 23.20,
+                rideDistanceKm: 100,
+                passengerDistanceKm: 100,
+                detourDistanceKm: 0,
+                numSeats: 2,
+            })).toMatchObject({
+                total: 46.40,
+                pricePerSeat: 23.20,
+                supplement: 0,
+            });
+        });
+
+        it('adds the pickup supplement per seat after the 3km threshold', () => {
+            expect(calculateBookingTotal({
+                ridePrice: 23.20,
+                rideDistanceKm: 100,
+                passengerDistanceKm: 100,
+                detourDistanceKm: 3.01,
+                numSeats: 2,
+            })).toMatchObject({
+                total: 49.40,
+                supplement: 1.50,
+            });
+        });
+
+        it('never drops below the 0.50 EUR per-seat floor', () => {
+            expect(calculateBookingTotal({
+                ridePrice: 0.50,
+                rideDistanceKm: 500,
+                passengerDistanceKm: 0.5,
+                detourDistanceKm: 0,
+                numSeats: 3,
+            }).total).toBe(1.50);
         });
     });
 });

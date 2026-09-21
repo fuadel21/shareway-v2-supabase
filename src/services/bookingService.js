@@ -2,29 +2,57 @@
  * Servicio de Reservas - Blindaje Antifraude v3.1
  * Optimización: Atomicidad garantizada vía safeCall RPC.
  */
-import { supabase } from '@/lib/supabase';
 import * as rpc from '@/lib/supabaseRPC';
 
 /**
- * Calcula el monto de reembolso basado en reglas de tiempo.
+ * Estimates the refund for presentation only.
+ *
+ * The cancellation RPC recalculates the amount from the locked booking and is
+ * the only authority allowed to move money. In particular, ride.price is a
+ * per-seat driver price and must not be used as the total when passengerInfo
+ * contains the persisted booking amount.
  */
 export const calculateRefundAmount = (ride, passengerInfo = null) => {
-  if (!ride || !ride.departure_time) return { amount: 0, percentage: 0 };
+  if (!ride?.departure_time) return { amount: 0, percentage: 0, serverAuthoritative: false, presentationOnly: true };
 
   const departureDate = new Date(ride.departure_time);
-  const now = new Date();
-  const hoursUntilDeparture = (departureDate - now) / (1000 * 60 * 60);
-  const price = parseFloat(ride.price) || 0;
-
-  // Si el viaje ya pasó y no se inició, reembolso total (Seguridad de Plataforma)
-  if (hoursUntilDeparture < 0 && ride.status === 'scheduled') {
-    return { amount: price, percentage: 100, message: "Reembolso total (Viaje Caducado)" };
+  if (Number.isNaN(departureDate.getTime())) {
+    return { amount: 0, percentage: 0, serverAuthoritative: false, presentationOnly: true };
   }
 
-  if (hoursUntilDeparture > 24) return { amount: price, percentage: 100 };
-  if (hoursUntilDeparture >= 2) return { amount: price * 0.5, percentage: 50 };
+  const hoursUntilDeparture = (departureDate.getTime() - Date.now()) / (1000 * 60 * 60);
+  const requestedSeats = Number(passengerInfo?.seats_booked ?? passengerInfo?.num_seats ?? 1);
+  const seats = Number.isFinite(requestedSeats) && requestedSeats >= 1
+    ? Math.min(8, Math.floor(requestedSeats))
+    : 1;
+  const persistedTotal = Number(passengerInfo?.payment_amount);
+  const bookedPrice = Number(passengerInfo?.booked_price);
+  const derivedTotal = Number.isFinite(bookedPrice) && bookedPrice >= 0
+    ? Math.round(bookedPrice * seats * 100) / 100
+    : null;
+  const persistedAmountMismatch = derivedTotal !== null
+    && Number.isFinite(persistedTotal)
+    && persistedTotal !== derivedTotal;
+  // Show the persisted amount actually attached to the booking whenever it is
+  // available. The mutation endpoint still validates it against booked_price ×
+  // seats atomically; this estimate can never authorize a refund.
+  const total = Number.isFinite(persistedTotal) && persistedTotal >= 0
+    ? Math.round(persistedTotal * 100) / 100
+    : derivedTotal !== null
+      ? derivedTotal
+      : Math.max(0, Number(ride.price) || 0) * seats;
 
-  return { amount: 0, percentage: 0 };
+  const percentage = hoursUntilDeparture > 24 ? 100 : hoursUntilDeparture >= 2 ? 50 : 0;
+  const amount = Math.round(total * percentage) / 100;
+
+  return {
+    amount,
+    percentage,
+    total,
+    persistedAmountMismatch,
+    serverAuthoritative: false,
+    presentationOnly: true,
+  };
 };
 
 /**

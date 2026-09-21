@@ -105,10 +105,13 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
 
         setIsUploading(true);
         try {
-            const fileName = `blackbox/${rideId}/${Date.now()}.webm`;
+            const fileName = `blackbox/${rideId}/${crypto.randomUUID()}.webm`;
             const { data, error } = await supabase.storage
                 .from('safety-vault')
-                .upload(fileName, audioBlob);
+                .upload(fileName, audioBlob, {
+                    contentType: audioBlob.type || 'audio/webm',
+                    upsert: false,
+                });
 
             if (error) throw error;
 
@@ -123,7 +126,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
             if (dbError) throw dbError;
 
             toast.success("Evidencia protegida", {
-                description: "La grabación se ha encriptado y guardado en la bóveda de seguridad."
+                description: "La grabación se ha guardado en una bóveda privada para revisión autorizada."
             });
 
             if (onRecordingComplete) onRecordingComplete(data.path);
@@ -164,7 +167,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
                     <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
                         <Volume2 className="size-10 text-slate-200 mb-4" />
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-10">
-                            Pulsa para iniciar una grabación preventiva encriptada
+                            Pulsa para iniciar una grabación preventiva en una bóveda privada
                         </p>
                         <Button
                             onClick={startRecording}
@@ -241,7 +244,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
             <div className="mt-6 p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
                 <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
                 <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider leading-relaxed">
-                    Las grabaciones se encriptan localmente y solo son accesibles por el equipo de seguridad judicial de ShareWay en caso de reporte oficial.
+                    Las grabaciones se almacenan en un bucket privado y solo el equipo autorizado de seguridad puede revisarlas cuando existe un reporte oficial.
                 </p>
             </div>
         </Card>

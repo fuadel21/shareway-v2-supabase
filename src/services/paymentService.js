@@ -5,45 +5,22 @@ import { supabase } from '@/lib/supabase';
 import { safeCall } from '@/lib/supabaseRPC';
 
 /**
- * Procesa un pago entre usuarios (Pasajero -> Conductor)
+ * Legacy arbitrary user-to-user payments are intentionally unavailable.
+ * Ride payments must go through confirm_trip_and_pay (wallet) or the Stripe
+ * booking PaymentIntent + webhook flow so the server can derive the ride,
+ * quote, seats and commission.
  */
-export const processPayment = async (paymentData) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Usuario no autenticado');
-
-  const { fromUserId, toUserId, amount, rideId, description, commission = 0 } = paymentData;
-
-  const { data, success, error } = await safeCall(
-    () => supabase.rpc('process_payment', {
-      p_from_user_id: fromUserId,
-      p_to_user_id: toUserId,
-      p_amount: amount,
-      p_ride_id: rideId,
-      p_description: description,
-      p_commission: commission
-    }),
-    'process_payment'
-  );
-
-  if (!success) throw new Error(error || 'Error al procesar el pago');
-  return data;
+export const processPayment = async () => {
+  throw new Error('LEGACY_PAYMENT_FLOW_DISABLED: usa el flujo de reserva del viaje.');
 };
 
 /**
- * Procesa un reembolso de pago
+ * Legacy transaction-id refunds are intentionally unavailable. Refunds must be
+ * initiated by the canonical booking/ride cancellation flow, which validates
+ * the stored passenger amount and Stripe payment before recording the refund.
  */
-export const refundPayment = async (transactionId, amount = null, reason = '') => {
-  const { data, success, error } = await safeCall(
-    () => supabase.rpc('refund_payment', {
-      p_transaction_id: transactionId,
-      p_amount: amount,
-      p_reason: reason
-    }),
-    'refund_payment'
-  );
-
-  if (!success) throw new Error(error || 'Error al procesar el reembolso');
-  return data;
+export const refundPayment = async () => {
+  throw new Error('LEGACY_REFUND_FLOW_DISABLED: usa la cancelación de la reserva o del viaje.');
 };
 
 /**
@@ -56,31 +33,33 @@ export const getWalletBalance = async (userId) => {
     .eq('user_id', userId)
     .single();
 
-  if (error) {
-    // Para compatibilidad con tests que esperan el número directamente
-    if (error.message?.includes('single')) return 100.00;
-    throw error;
-  }
-  return data?.balance ?? 0;
+  if (error) throw error;
+  return Number(data?.balance ?? 0);
 };
 
 /**
- * Añade fondos a la wallet
+ * Starts a wallet top-up. The client receives a PaymentIntent only; the
+ * Stripe webhook performs the actual wallet credit after verifying the event.
  */
 export const addFunds = async (addFundsData) => {
-  const { userId, amount, method = 'manual', description = '' } = addFundsData || {};
+  const payload = typeof addFundsData === 'number'
+    ? { amount: addFundsData }
+    : (addFundsData || {});
+  const amount = Number(payload.amount);
+  const packageId = typeof payload.packageId === 'string' ? payload.packageId : null;
+  const idempotencyKey = payload.idempotencyKey
+    || globalThis.crypto?.randomUUID?.()
+    || `wallet-topup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   const { data, success, error } = await safeCall(
-    () => supabase.rpc('add_funds', {
-      p_user_id: userId,
-      p_amount: amount,
-      p_payment_method_id: method,
-      p_description: description
+    () => supabase.functions.invoke('create-payment-intent', {
+      body: { amount, packageId, idempotencyKey },
     }),
-    'add_funds'
+    'create-payment-intent'
   );
 
-  if (!success) throw new Error(error || 'Error al añadir fondos');
+  if (!success) throw new Error(error || 'Error al iniciar la recarga');
+  if (data?.error) throw new Error(String(data.error));
   return data;
 };
 
@@ -88,18 +67,19 @@ export const addFunds = async (addFundsData) => {
  * Retira fondos de la wallet
  */
 export const withdrawFunds = async (withdrawFundsData) => {
-  const { userId, amount, method = 'bank_account' } = withdrawFundsData || {};
+  const { amount } = withdrawFundsData || {};
+  const idempotencyKey = globalThis.crypto?.randomUUID?.()
+    || `payout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   const { data, success, error } = await safeCall(
-    () => supabase.rpc('request_payout', {
-      p_user_id: userId,
-      p_amount: amount,
-      p_method: method
+    () => supabase.functions.invoke('request-payout', {
+      body: { amount, idempotencyKey },
     }),
-    'request_payout'
+    'request-payout'
   );
 
-  if (!success) throw new Error(error || 'Error al retirar fondos');
+  if (!success) throw new Error(error || data?.error || 'Error al solicitar el retiro');
+  if (data?.error) throw new Error(String(data.error));
   return data;
 };
 
@@ -129,62 +109,29 @@ export const getTransactionHistory = async (userId, filters = {}) => {
  * Valida un pago antes de procesarlo
  */
 export const validatePayment = async (paymentData) => {
-  const { userId, amount, fromUserId } = paymentData;
+  const { userId, amount, fromUserId } = paymentData || {};
   const targetId = userId || fromUserId;
+  const requestedAmount = Number(amount);
 
-  try {
-    const { data, success, error } = await safeCall(
-      () => supabase.rpc('validate_payment_v2', {
-        p_user_id: targetId,
-        p_amount: amount
-      }),
-      'validate_payment_v2'
-    );
-
-    if (success) return data;
-  } catch (e) {
-    console.warn("Falling back to manual validation");
+  if (!targetId || !Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+    return { valid: false, canPay: false, shortfall: 0 };
   }
 
-  const balance = await getWalletBalance(targetId);
-
-  if (balance < amount) {
-    return { valid: false, canPay: false, shortfall: amount - balance };
+  // This helper is only a UI pre-check. The canonical booking RPC re-reads the
+  // wallet and quote under lock; never treat this response as authorization to
+  // move money.
+  const balance = Number(await getWalletBalance(targetId));
+  if (balance < requestedAmount) {
+    return { valid: false, canPay: false, shortfall: requestedAmount - balance };
   }
 
   return { valid: true, canPay: true };
 };
 
 /**
- * Procesa pagos en lote
+ * Arbitrary batch settlement is intentionally unavailable. Each booking must
+ * be settled by its own idempotent canonical ride transition.
  */
-export const processBatchPayments = async (batchData) => {
-  const payments = Array.isArray(batchData) ? batchData : batchData.payments;
-
-  try {
-    const { data, success, error } = await safeCall(
-        () => supabase.rpc('process_batch_payments', {
-            p_payments: payments,
-            p_ride_id: batchData.rideId
-        }),
-        'process_batch_payments'
-    );
-    if (success) return data;
-  } catch (e) {}
-
-  const results = await Promise.all(
-    payments.map(payment =>
-      processPayment(payment)
-        .then(data => ({ success: true, data }))
-        .catch(error => ({ success: false, error: error.message }))
-    )
-  );
-
-  return Array.isArray(batchData) ? results : {
-      success: true,
-      processed: results.filter(r => r.success).length,
-      failed: results.filter(r => !r.success).length,
-      totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
-      transactions: results.map((r, i) => ({ paymentIndex: i, success: r.success, ...r }))
-  };
+export const processBatchPayments = async () => {
+  throw new Error('LEGACY_BATCH_PAYMENT_FLOW_DISABLED: usa la liquidación canónica del viaje.');
 };

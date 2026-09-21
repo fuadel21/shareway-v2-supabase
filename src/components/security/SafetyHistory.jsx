@@ -130,7 +130,7 @@ const SafetyHistory = () => {
 
                             <div className="mt-4 flex items-center justify-between gap-3">
                                 <p className="text-[9px] font-medium text-slate-400 leading-tight italic max-w-[70%]">
-                                    Esta evidencia está encriptada. Solo puede ser solicitada por autoridades judiciales mediante el protocolo de Seguridad ShareWay.
+                                    Esta evidencia se almacena en una bóveda privada. Solo el equipo autorizado puede revisarla cuando existe un reporte oficial.
                                 </p>
                                 <Lock className="size-4 text-slate-300" />
                             </div>

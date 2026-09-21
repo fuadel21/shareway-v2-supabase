@@ -85,7 +85,7 @@ function EventCard({ event, compact = false }) {
                 <Users className="h-3 w-3" /> {event.seats} plaza{Number(event.seats) === 1 ? '' : 's'}
               </span>
               {event.price > 0 && (
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-600">{Number(event.price).toFixed(2)}€</span>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-black text-emerald-600">{Number(event.price).toFixed(2)}€ / plaza</span>
               )}
             </div>
           )}

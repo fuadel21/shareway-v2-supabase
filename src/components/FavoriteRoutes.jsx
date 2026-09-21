@@ -203,7 +203,7 @@ const FavoriteRoutes = () => {
                                                     <span className="text-xs font-black text-primary">{route.departure_time?.slice(0, 5) || '--:--'}</span>
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-[9px] font-bold text-gray-400 uppercase">Precio</span>
+                                                    <span className="text-[9px] font-bold text-gray-400 uppercase">Precio / plaza</span>
                                                     <span className="text-xs font-black text-primary">{route.price || 0}€</span>
                                                 </div>
                                             </div>

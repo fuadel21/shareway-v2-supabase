@@ -23,7 +23,7 @@ const getBusinessFailure = (data) => {
  * as failed operations, so the UI cannot report a rejected mutation as successful.
  */
 export const safeCall = async (rpcCall, functionName, retries = 2) => {
-    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'add_funds', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund', 'trigger_emergency_alert'];
+    const CRITICAL_FUNCTIONS = ['confirm_trip_and_pay', 'create-payment-intent', 'process_payout', 'create_ride', 'start_ride', 'handle_passenger_no_show', 'cancel_ride', 'cancel_booking_and_refund', 'cancel-booking-and-refund', 'cancel-ride-and-refund', 'trigger_emergency_alert', 'trigger_emergency_alert_v2'];
     const TIMEOUT_MS = CRITICAL_FUNCTIONS.includes(functionName) ? 25000 : 15000;
 
     const executeCall = async (attempt) => {
@@ -144,17 +144,46 @@ export const completeRide = (rideId) =>
 /**
  * Cancela el viaje (Conductor). Unificado.
  */
-export const cancelRide = (rideId) =>
-    safeCall(() => supabase.rpc('cancel_ride', { p_ride_id: rideId }), 'cancel_ride');
+export const cancelRide = (rideId, reason = '') =>
+    safeCall(
+        () => supabase.functions.invoke('cancel-ride-and-refund', {
+            body: { rideId, reason },
+        }),
+        'cancel_ride',
+    );
 
-export const triggerEmergencyAlert = (rideId, details) =>
-    safeCall(() => supabase.rpc('trigger_emergency_alert', {
+export const triggerEmergencyAlert = (rideId, details = null) => {
+    const metadata = details && typeof details === 'object'
+        ? details
+        : { reason: details || null };
+    const currentLocation = metadata.location || metadata.current_location || null;
+
+    return safeCall(() => supabase.rpc('trigger_emergency_alert_v2', {
         p_ride_id: rideId,
-        p_details: details
-    }), 'trigger_emergency_alert');
+        p_current_location: currentLocation,
+        p_metadata: metadata,
+    }), 'trigger_emergency_alert_v2');
+};
 
 export const getRideDetailsSecure = (rideId) =>
     safeCall(() => supabase.rpc('get_ride_details_secure', { p_ride_id: rideId }), 'get_ride_details_secure');
+
+export const createRideShareToken = (rideId, ttlHours = 168) =>
+    safeCall(() => supabase.rpc('create_ride_share_token', {
+        p_ride_id: rideId,
+        p_ttl_hours: ttlHours,
+    }), 'create_ride_share_token');
+
+export const revokeRideShareToken = (tokenId) =>
+    safeCall(() => supabase.rpc('revoke_ride_share_token', {
+        p_token_id: tokenId,
+    }), 'revoke_ride_share_token');
+
+export const verifyShareToken = (rideId, token) =>
+    safeCall(() => supabase.rpc('verify_share_token', {
+        p_ride_id: rideId,
+        p_token: token,
+    }), 'verify_share_token');
 
 export const verifyPassenger = async (rideId, pin, passengerId = null) => {
     const cleanPin = String(pin || '').replace(/\D/g, '');
@@ -231,10 +260,29 @@ export const confirmTripAndPay = (rideId, requestId = null, { pickupLocation = n
     }), 'confirm_trip_and_pay');
 
 export const cancelBookingAndRefund = (rideId) =>
-    safeCall(() => supabase.rpc('cancel_booking_and_refund', { p_ride_id: rideId }), 'cancel_booking_and_refund');
+    safeCall(
+        () => supabase.functions.invoke('cancel-booking-and-refund', {
+            body: { rideId },
+        }),
+        'cancel_booking_and_refund',
+    );
 
-export const confirmPassengerArrival = (rideId) =>
-    safeCall(() => supabase.rpc('confirm_passenger_arrival', { p_ride_id: rideId }), 'confirm_passenger_arrival');
+/**
+ * The historical no-op arrival RPC never settled money and is not an
+ * operational payment route. Use complete_passenger_dropoff from the driver
+ * UI when a passenger's stop is actually completed.
+ */
+export const confirmPassengerArrival = async () => ({
+    data: null,
+    success: false,
+    error: 'LEGACY_ARRIVAL_FLOW_DISABLED: usa la finalización de parada canónica.',
+});
+
+export const completePassengerDropoff = (rideId, passengerId) =>
+    safeCall(() => supabase.rpc('complete_passenger_dropoff', {
+        p_ride_id: rideId,
+        p_passenger_id: passengerId,
+    }), 'complete_passenger_dropoff');
 
 export const searchRides = (origin, destination, date = null, seats = 1, maxPrice = 999.99, radius = 15000) =>
     safeCall(() => supabase.rpc('search_rides_secure', {
@@ -300,22 +348,26 @@ export const updatePlatformSetting = (key, value) =>
 export const getPlatformAuditLogs = (category = 'all', limit = 50) =>
     safeCall(() => supabase.rpc('get_filtered_audit_logs', { p_category: category, p_limit: limit }), 'get_filtered_audit_logs');
 
-export const requestPlatformPayout = () =>
-    safeCall(() => supabase.rpc('request_platform_payout'), 'request_platform_payout');
-
-export const processPayout = (payoutId, status, errorMessage = null) =>
+export const processPayout = (payoutId, status, stripeTransferId = null) =>
     safeCall(() => supabase.rpc('process_payout', {
         p_payout_id: payoutId,
         p_status: status,
-        p_error_message: errorMessage
+        p_stripe_transfer_id: stripeTransferId
     }), 'process_payout');
 
-export const processPayoutElite = (payoutId, action, notes = null) =>
-    safeCall(() => supabase.rpc('process_payout_elite', {
-        p_payout_id: payoutId,
-        p_action: action,
-        p_notes: notes
-    }), 'process_payout_elite');
+export const rejectPayout = (payoutId, reason = null) =>
+    processPayout(payoutId, 'rejected', reason);
+
+export const processStripePayout = (payoutId) =>
+    safeCall(
+        () => supabase.functions.invoke('process-stripe-payout', {
+            body: { payoutId },
+        }),
+        'process-stripe-payout',
+    );
+
+// Removed historical process_payout_elite: it could deduct a wallet without
+// Stripe idempotency or the canonical reservation transition.
 
 export const getPayoutRequests = () =>
     safeCall(() => supabase
@@ -360,19 +412,35 @@ export const resolveDispute = (disputeId, status, adminNotes = null) =>
         p_admin_notes: adminNotes
     }), 'resolve_dispute_v2');
 
-export const addFunds = (amount, paymentMethodId) =>
-    safeCall(() => supabase.rpc('add_funds', { p_amount: amount, p_payment_method_id: paymentMethodId }), 'add_funds');
+/**
+ * Starts the canonical Stripe wallet top-up. The webhook is the only code
+ * allowed to credit the wallet; this wrapper deliberately never calls the
+ * historical add_funds RPC.
+ */
+export const addFunds = (amount, packageId = null, idempotencyKey = null) =>
+    safeCall(
+        () => supabase.functions.invoke('create-payment-intent', {
+            body: {
+                amount,
+                packageId: typeof packageId === 'string' && packageId.startsWith('price_') ? packageId : null,
+                idempotencyKey,
+            },
+        }),
+        'create-payment-intent',
+    );
 
-export const confirmStripeBooking = (rideId, paymentIntentId, pickupLocation = null, pickupAddress = null) =>
-    safeCall(() => supabase.rpc('confirm_stripe_booking', {
-        p_ride_id: rideId,
-        p_payment_intent_id: paymentIntentId,
-        p_pickup_location: pickupLocation,
-        p_pickup_address: pickupAddress
-    }), 'confirm_stripe_booking');
+export const requestPayout = (amount, idempotencyKey = null) => {
+    const stableKey = idempotencyKey
+        || globalThis.crypto?.randomUUID?.()
+        || `payout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-export const requestPayout = (amount) =>
-    safeCall(() => supabase.rpc('request_payout', { p_amount: amount }), 'request_payout');
+    return safeCall(
+        () => supabase.functions.invoke('request-payout', {
+            body: { amount, idempotencyKey: stableKey },
+        }),
+        'request-payout',
+    );
+};
 
 export const createPayoutRequest = requestPayout;
 

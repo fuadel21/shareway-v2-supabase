@@ -320,6 +320,7 @@
         "destination_label": "Punto de llegada",
         "section_datetime": "Fecha y Hora",
         "section_seats_price": "Plazas y Precio",
+        "price_per_seat": "Precio por plaza · comisión incluida",
         "section_preferences": "Preferencias",
         "women_only": "Solo Mujeres",
         "note_placeholder": "Ej: Maletero amplio, salgo puntual...",

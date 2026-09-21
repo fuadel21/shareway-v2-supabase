@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '../lib/supabase';
 import { toast } from 'sonner';
+import { updateRideLocation } from '../lib/supabaseRPC.js';
 
 /**
  * Hook personalizado para el seguimiento de la ubicación de un conductor durante un viaje.
@@ -19,12 +19,17 @@ export function useDriverTracking(rideId) {
     }, []);
 
     const startTracking = useCallback(() => {
-        if (!rideId) return;
+        if (!rideId || watchIdRef.current !== null) return;
+
+        if (typeof navigator === 'undefined' || !navigator.geolocation?.watchPosition) {
+            toast.error('Este dispositivo no permite compartir ubicación.');
+            return;
+        }
 
         const options = {
             enableHighAccuracy: true,
             timeout: 10000,
-            maximumAge: 5000
+            maximumAge: 5000,
         };
 
         watchIdRef.current = navigator.geolocation.watchPosition(
@@ -32,22 +37,27 @@ export function useDriverTracking(rideId) {
                 const { latitude, longitude, heading } = position.coords;
 
                 try {
-                    const { updateRideLocation } = await import('@/lib/supabaseRPC');
-                    const result = await updateRideLocation(rideId, latitude, longitude, heading || 0);
+                    const result = await updateRideLocation(
+                        rideId,
+                        latitude,
+                        longitude,
+                        Number.isFinite(heading) ? heading : 0,
+                    );
 
-                    if (!result.success) throw new Error(result.error || "Error al actualizar ubicación");
-
+                    if (!result?.success) {
+                        throw new Error(result?.error || 'Error al actualizar ubicación');
+                    }
                 } catch (error) {
-                    console.error("Tracking error:", error);
+                    console.error('Tracking error:', error);
                 }
             },
             (error) => {
-                toast.error("No se pudo obtener tu ubicación en tiempo real.", {
-                    description: error.message
+                toast.error('No se pudo obtener tu ubicación en tiempo real.', {
+                    description: error.message,
                 });
                 stopTracking();
             },
-            options
+            options,
         );
 
         setIsTracking(true);

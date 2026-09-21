@@ -260,8 +260,8 @@ const RideManagement = ({ ride, onRefresh }) => {
 
     const handleCancelRide = async () => {
         const warning = confirmedSeatCount > 0
-            ? `Este viaje tiene ${confirmedSeatCount} pasajero${confirmedSeatCount === 1 ? '' : 's'} confirmado${confirmedSeatCount === 1 ? '' : 's'}. La cancelación aplicará la política de reembolso correspondiente. ¿Cancelar igualmente?`
-            : '¿Seguro que quieres cancelar este viaje programado? Esta acción no se puede deshacer.';
+            ? `Este viaje tiene ${confirmedSeatCount} pasajero${confirmedSeatCount === 1 ? '' : 's'} confirmado${confirmedSeatCount === 1 ? '' : 's'}. Se devolverá el 100% de cada pago; la penalización del conductor es 0€ (≥24 h), 2€ (2–<24 h) o 5€ (<2 h). Con pasajeros activos, el 50% compensa a los pasajeros y el 50% va a la plataforma; además puede aplicarse impacto reputacional. ¿Cancelar igualmente?`
+            : '¿Seguro que quieres cancelar este viaje programado? Esta acción no se puede deshacer y el servidor aplicará la penalización vigente si corresponde.';
 
         if (!window.confirm(warning)) return;
 

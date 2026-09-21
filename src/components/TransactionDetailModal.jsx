@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { FINANCIAL_RULES } from '@/utils/pricingRules.js';
 
 const copyByLanguage = {
     es: {
@@ -105,7 +106,7 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
     };
 
     const getTypeLabel = () => {
-        if (tx.type === 'payout') return t('wallet.tx_types.payout');
+        if (tx.type === 'payout' || tx.type === 'earning') return t('wallet.tx_types.payout');
         if (tx.type === 'withdrawal') return t('wallet.tx_types.withdrawal');
         if (tx.type === 'hold') return t('wallet.tx_types.ride_escrow');
         if (tx.type === 'refund') return t('wallet.tx_types.refund');
@@ -200,16 +201,16 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
                             </div>
                         )}
 
-                        {tx.type === 'payout' && (
+                        {(tx.type === 'payout' || tx.type === 'earning') && (
                             <div className="mt-4 p-5 bg-slate-900 rounded-[2rem] text-white space-y-3">
                                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{copy.liquidationBreakdown}</p>
                                 <div className="flex justify-between items-center text-[11px]">
                                     <span className="text-slate-400 font-bold uppercase">{t('wallet.breakdown.total_gross')}</span>
-                                    <span className="font-black italic">{(amount / 0.9).toFixed(2)}€</span>
+                                    <span className="font-black italic">{(amount / FINANCIAL_RULES.DRIVER_PAYOUT_RATE).toFixed(2)}€</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[11px]">
                                     <span className="text-slate-400 font-bold uppercase">{t('wallet.breakdown.platform_fee')}</span>
-                                    <span className="text-red-400 font-black italic">-{(amount / 0.9 * 0.1).toFixed(2)}€</span>
+                                    <span className="text-red-400 font-black italic">-{(amount / FINANCIAL_RULES.DRIVER_PAYOUT_RATE * FINANCIAL_RULES.PLATFORM_COMMISSION_RATE).toFixed(2)}€</span>
                                 </div>
                                 <div className="pt-2 border-t border-white/10 flex justify-between items-center">
                                     <span className="text-primary font-black uppercase text-[10px] tracking-tight">{t('wallet.breakdown.driver_payout')}</span>

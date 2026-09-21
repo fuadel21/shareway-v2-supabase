@@ -1,3 +1,5 @@
+> ESTADO: este documento queda alineado con la migración canónica del 02/09/2026. Las referencias históricas a porcentajes, tiempos o tramos antiguos se sustituyen por las reglas vigentes descritas abajo.
+
 # 📜 REGLAS DE NEGOCIO COMPLETAS: SHAREWAY V2
 ## Documentación Exhaustiva de Todas las Políticas y Restricciones
 
@@ -34,8 +36,8 @@
 ### 1.1 Creación de Viajes (Conductor)
 
 #### Temporalidad
-- **RN-V001:** Un viaje debe programarse con **mínimo 10 minutos de anticipación** desde el momento actual
-  - Código: `RIDE_RULES.MIN_ADVANCE_MINUTES = 10`
+- **RN-V001:** Un viaje debe programarse con **mínimo 20 minutos de anticipación** desde el momento actual
+  - Código: `RIDE_RULES.MIN_ADVANCE_MINUTES = 20`
   - Validación: Frontend + Backend (RPC)
   - Excepción: Ninguna
 
@@ -108,7 +110,7 @@
   - Origen (obligatorio)
   - Destino (opcional - puede ser "hacia X dirección")
   - Fecha/hora de salida deseada
-  - Número de asientos necesarios (1-4)
+  - Número de asientos necesarios (1-8)
   - Precio sugerido
 
 - **RN-V013:** Estados de solicitud:
@@ -129,13 +131,14 @@
 ### 2.1 Cálculo de Precio Sugerido
 
 - **RN-P001:** Precio dinámico por distancia (sistema de tiers):
+  - Desde 100 km se aplica una tarifa marginal fija de **0,15 €/km**, sin un límite superior de distancia.
   ```
-  0-100 km:    0.25€/km
-  100-400 km:  0.17€/km
-  +400 km:     0.14€/km
+  0-15 km:     0.30€/km
+  15-100 km:   0.22€/km
+  +100 km:     0.15€/km (sin límite de distancia)
   ```
   - Código: `RIDE_PRICING_CONFIG.TIERS` en `pricingRules.js`
-  - Cálculo progresivo (ej: 150km = 100×0.25 + 50×0.17)
+  - Cálculo progresivo (ej: 150km = 15×0.30 + 85×0.22 + 50×0.15 = 30.70€)
 
 - **RN-P002:** Precio mínimo absoluto: **0.50€**
   - `RIDE_RULES.MIN_PRICE = 0.50`
@@ -156,26 +159,26 @@
   - Sin límite inferior (excepto MIN_PRICE)
   - Permite viajes solidarios o compartidos entre conocidos
 
-- **RN-P006:** Tasa máxima de emergencia: **0.60€/km**
-  - `PRICING_CONSTANTS.MAX_RATE_PER_KM = 0.60`
-  - Validación secundaria de seguridad
+- **RN-P006:** La fórmula progresiva es la única tarifa de referencia.
+  - Sus límites absolutos son 0,50–300,00 € por plaza.
+  - El servidor valida la distancia y el precio; no se mantiene una tarifa paralela por km.
 
 ### 2.3 Comisiones de Plataforma
 
-- **RN-P007:** Comisión estándar: **15%** sobre el precio del viaje
-  - Aplicada automáticamente al completar viaje
-  - Conductor recibe: 85%
-  - Plataforma recibe: 15%
+- **RN-P007:** Comisión estándar: **10%** sobre el importe bruto realmente pagado
+  - Está incluida en el precio por plaza mostrado al pasajero; no se añade como cargo separado
+  - Conductor recibe: 90%
+  - Plataforma recibe: 10%
 
 - **RN-P008:** Distribución al completar viaje:
   ```
   Por cada pasajero:
     - Pasajero pagó: X€ (retenido en held_balance)
-    - Conductor recibe: X × 0.85€
-    - Plataforma recibe: X × 0.15€
-    - Pasajero: held_balance -= X, registra trip_payment
-    - Conductor: balance += X × 0.85, registra trip_earning
-    - Tesorería: balance += X × 0.15, registra platform_fee
+    - Conductor recibe: X × 0.90€
+    - Plataforma recibe: X × 0.10€
+    - Pasajero: se libera el hold wallet; Stripe no se acredita dos veces
+    - Conductor: balance += X × 0.90, registra trip_earning
+    - Tesorería: balance += X × 0.10, registra platform_fee
   ```
 
 - **RN-P009:** La comisión se calcula sobre el precio **efectivamente pagado**
@@ -358,9 +361,10 @@
   - Previene que el usuario gaste el mismo dinero dos veces
 
 - **RN-F005:** Al completar viaje:
-  - `held_balance` del pasajero → 0
-  - `balance` del conductor += precio × 0.85
-  - `balance` de tesorería += precio × 0.15
+  - La wallet solo libera el hold de pagos wallet; Stripe no se acredita dos veces
+  - `balance` del conductor += bruto × 0.90
+  - `balance` de tesorería += bruto × 0.10
+  - El bruto es precio por plaza × plazas, redondeado a céntimos
 
 - **RN-F006:** Al cancelar:
   - `held_balance` → `balance` (reembolso)
@@ -916,12 +920,12 @@ MAX_SEATS = 8
 // Precios
 MIN_PRICE = 0.50€
 MAX_PRICE = 300€
-PLATFORM_COMMISSION = 15%
+PLATFORM_COMMISSION = 10%
 
-// Pricing Tiers
-0-100km:   0.25€/km
-100-400km: 0.17€/km
-+400km:    0.14€/km
+// Pricing Tiers (acumulativos)
+0-15km:    0.30€/km
+15-100km:  0.22€/km
++100km:    0.15€/km (sin límite de distancia)
 
 // Cancelaciones (Conductor)
 < 2h:   5.00€

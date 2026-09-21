@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format, differenceInMinutes, isBefore } from 'date-fns';
@@ -10,6 +10,7 @@ import {
     AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import MapComponent from './MapComponent';
+import ShareRideCard from './share/ShareRideCard.jsx';
 import BookingPaymentModal from './BookingPaymentModal';
 import PinVerificationDialog from './PinVerificationDialog.jsx';
 import RideRatingModal from './RideRatingModal.jsx';
@@ -25,8 +26,10 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 import { supabase } from '../lib/supabase.js';
+import { useDriverTracking } from '../hooks/useDriverTracking.js';
 import { getRideDetailsSecure, getRideStartReadiness, getMyRidePin, startRide, verifyPassenger, handlePassengerNoShow, getOrCreateChat } from '../lib/supabaseRPC.js';
 import { cancelRide, cancelBooking, completeRide as completeRideService, isRideBookable } from '../services/rideService.js';
+import { calculateRefundAmount } from '../services/bookingService.js';
 import { triggerSOS } from '../services/safetyService.js';
 import { canPresentStartRide, getStartBlockReason, normalizeBoardingPin } from '../utils/rideBoarding.js';
 
@@ -68,11 +71,101 @@ const RideDetails = () => {
     const [isSecureActionLoading, setIsSecureActionLoading] = useState(false);
     const [startReadiness, setStartReadiness] = useState(null);
     const [fetchedPin, setFetchedPin] = useState(null);
+    const [driverLocation, setDriverLocation] = useState(null);
+    const { isTracking, startTracking, stopTracking } = useDriverTracking(rideId);
+
+    const currentUserId = user?.id?.toString()?.toLowerCase();
+    const driverId = ride?.driver_id?.toString()?.toLowerCase();
+    const isDriver = Boolean(currentUserId && driverId && currentUserId === driverId);
+    const passengersForTracking = Array.isArray(ride?.passengers)
+        ? ride.passengers.filter((passenger) => passenger.status !== 'cancelled')
+        : [];
+    const isPassenger = Boolean(currentUserId && (
+        (Array.isArray(ride?.participant_ids) && ride.participant_ids.some(
+            (participantId) => participantId?.toString()?.toLowerCase() === currentUserId,
+        ))
+        || passengersForTracking.some((passenger) => {
+            const passengerId = passenger.id || passenger.user_id || passenger.passenger_id;
+            return passengerId?.toString()?.toLowerCase() === currentUserId;
+        })
+    ));
+    const isRideActive = ride?.status === 'active' || ride?.status === 'in_progress';
+    const mapItems = useMemo(() => {
+        if (!ride) return [];
+        if (!driverLocation) return [ride];
+
+        return [
+            ride,
+            {
+                id: `${ride.id}-live-location`,
+                type: 'live-location',
+                current_location: driverLocation,
+                driver_photo_url: ride.driver?.avatar_url || ride.driver?.photo_url,
+            },
+        ];
+    }, [ride, driverLocation]);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000);
         return () => clearInterval(timer);
     }, []);
+
+    useEffect(() => {
+        if (isDriver && isRideActive) {
+            startTracking();
+        } else {
+            stopTracking();
+        }
+
+        return () => stopTracking();
+    }, [isDriver, isRideActive, startTracking, stopTracking]);
+
+    useEffect(() => {
+        if (!rideId || !isRideActive || (!isDriver && !isPassenger)) {
+            setDriverLocation(null);
+            return undefined;
+        }
+
+        let mounted = true;
+        const applyLocation = (row) => {
+            const latitude = Number(row?.latitude);
+            const longitude = Number(row?.longitude);
+            if (!mounted || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+            setDriverLocation({
+                lat: latitude,
+                lng: longitude,
+                heading: Number.isFinite(Number(row?.heading)) ? Number(row.heading) : 0,
+                updated_at: row?.updated_at || null,
+            });
+        };
+
+        const loadInitialLocation = async () => {
+            const { data, error } = await supabase
+                .from('ride_locations')
+                .select('latitude, longitude, heading, updated_at')
+                .eq('ride_id', rideId)
+                .maybeSingle();
+
+            if (!error && data) applyLocation(data);
+        };
+
+        loadInitialLocation();
+
+        const channel = supabase
+            .channel(`ride_details_location_${rideId}`)
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'ride_locations',
+                filter: `ride_id=eq.${rideId}`,
+            }, (payload) => applyLocation(payload.new))
+            .subscribe();
+
+        return () => {
+            mounted = false;
+            supabase.removeChannel(channel);
+        };
+    }, [rideId, isRideActive, isDriver, isPassenger]);
 
     const fetchRide = useCallback(async () => {
         if (!rideId || rideId === 'undefined') return;
@@ -210,6 +303,7 @@ const RideDetails = () => {
             const { success, error } = await startRide(rideId);
             if (!success) throw new Error(error);
             toast.success('¡Viaje iniciado! Buen camino.');
+            startTracking();
             fetchRide();
         } catch (error) {
             toast.error(error.message || 'No se pudo iniciar');
@@ -225,6 +319,8 @@ const RideDetails = () => {
             if (!result?.success) {
                 throw new Error(result?.error || result?.message || 'Error inesperado al finalizar');
             }
+
+            stopTracking();
 
             const payoutLabel = formatMoney(result.payout);
             const platformFeeLabel = formatMoney(result.platformFee);
@@ -312,7 +408,15 @@ const RideDetails = () => {
         try {
             const result = await cancelRide(rideId);
             if (result.success) {
-                toast.success('Viaje cancelado correctamente');
+                stopTracking();
+                const penaltyLabel = formatMoney(result.driverPenalty);
+                const compensationLabel = formatMoney(result.passengerCompensationTotal);
+                const platformPenaltyLabel = formatMoney(result.platformPenalty);
+                toast.success('Viaje cancelado correctamente', {
+                    description: penaltyLabel
+                        ? `Penalización aplicada: ${penaltyLabel}${compensationLabel ? ` · Compensación a pasajeros: ${compensationLabel}` : ''}${platformPenaltyLabel ? ` · Plataforma: ${platformPenaltyLabel}` : ''}.`
+                        : 'Se han procesado los reembolsos y las compensaciones según la política vigente.',
+                });
                 fetchRide();
             } else {
                 throw new Error(result.message || 'Error al cancelar');
@@ -323,10 +427,26 @@ const RideDetails = () => {
     };
 
     const askCancelRide = () => {
+        const departureTimestamp = new Date(ride?.departure_time).getTime();
+        const hoursUntilDeparture = Number.isFinite(departureTimestamp)
+            ? (departureTimestamp - Date.now()) / 3600000
+            : null;
+        const driverPenalty = hoursUntilDeparture == null
+            ? 0
+            : hoursUntilDeparture < 2 ? 5 : hoursUntilDeparture < 24 ? 2 : 0;
+        const activePassengerCount = passengers.filter((passenger) => [
+            'confirmed', 'accepted', 'pending_boarding', 'verified', 'on_board', 'confirmed_by_pin',
+        ].includes(String(passenger?.status || '').toLowerCase())).length;
+        const passengerCompensation = activePassengerCount > 0 ? driverPenalty / 2 : 0;
+        const platformPenalty = driverPenalty - passengerCompensation;
+        const reputationImpact = driverPenalty === 0
+            ? 'sin penalización reputacional'
+            : hoursUntilDeparture < 2 ? '−20 confianza y −0,5 de valoración' : '−10 confianza y −0,2 de valoración';
+
         openSecureAction({
             tone: 'danger',
             title: '¿Cancelar este viaje?',
-            description: 'Esta acción notificará a todos los pasajeros y no se puede deshacer. Se aplicarán las políticas de cancelación vigentes.',
+            description: `Esta acción devolverá el 100% a cada pasajero. Penalización económica del conductor: ${driverPenalty.toFixed(2)}€. Plataforma: ${platformPenalty.toFixed(2)}€; compensación a pasajeros: ${passengerCompensation.toFixed(2)}€. Impacto reputacional: ${reputationImpact}.`,
             confirmLabel: 'Sí, cancelar viaje',
             errorTitle: 'No se pudo cancelar el viaje',
             onConfirm: performCancelRide,
@@ -425,16 +545,30 @@ const RideDetails = () => {
     };
 
     const askCancelBooking = () => {
+        const refundEstimate = calculateRefundAmount(ride, myPassengerEntry);
+        const estimatedRefund = formatMoney(refundEstimate.amount) || '0.00€';
+        const estimatedTotal = formatMoney(refundEstimate.total) || 'el importe almacenado';
+        const estimatedPenalty = Math.max(0, Number(refundEstimate.total || 0) - Number(refundEstimate.amount || 0));
+        const estimatedDriverShare = estimatedPenalty * 0.80;
+        const estimatedPlatformShare = estimatedPenalty - estimatedDriverShare;
         openSecureAction({
             tone: 'danger',
             title: '¿Cancelar tu reserva?',
-            description: 'Se intentará cancelar tu plaza y aplicar la política de devolución correspondiente. Esta acción puede no estar disponible si el viaje ya está demasiado avanzado.',
+            description: `Reembolso estimado: ${estimatedRefund} (${refundEstimate.percentage}% de ${estimatedTotal}). Parte no reembolsada: ${formatMoney(estimatedPenalty)}; conductor: ${formatMoney(estimatedDriverShare)} y plataforma: ${formatMoney(estimatedPlatformShare)}. La política es 100% con más de 24 h, 50% entre 2 h y 24 h y 0% con menos de 2 h. El servidor volverá a calcularlo usando tu pago y tus plazas antes de mover fondos.`,
             confirmLabel: 'Cancelar reserva',
             errorTitle: 'No se pudo cancelar la reserva',
             onConfirm: async () => {
                 const res = await cancelBooking(rideId);
                 if (res === true || res?.success) {
-                    toast.success('Reserva cancelada');
+                    const refundLabel = formatMoney(res?.refunded);
+                    const penaltyLabel = formatMoney(res?.penalty);
+                    const driverShareLabel = formatMoney(res?.driverCompensation);
+                    const platformShareLabel = formatMoney(res?.platformPenalty);
+                    toast.success('Reserva cancelada', {
+                        description: refundLabel
+                            ? `Reembolso procesado: ${refundLabel}${Number(res?.penalty || 0) > 0 ? ` · Parte no reembolsada: ${penaltyLabel || '0.00€'} · Conductor: ${driverShareLabel || '0.00€'} · Plataforma: ${platformShareLabel || '0.00€'}` : ''}.`
+                            : 'El servidor ha aplicado la política de reembolso a tu pago almacenado.',
+                    });
                     fetchRide();
                     return;
                 }
@@ -446,14 +580,9 @@ const RideDetails = () => {
     if (loading) return <div className="h-screen flex items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-primary" /></div>;
     if (!ride) return <SubPageHeader title="No encontrado" backPath="/dashboard" />;
 
-    const currentUserId = user?.id?.toString()?.toLowerCase();
-    const driverId = ride?.driver_id?.toString()?.toLowerCase();
-    const isDriver = currentUserId && driverId && currentUserId === driverId;
-    const passengers = Array.isArray(ride.passengers) ? ride.passengers.filter(p => p.status !== 'cancelled') : [];
-    const isPassenger = passengers.some(p => p.id?.toString()?.toLowerCase() === currentUserId);
+    const passengers = passengersForTracking;
     const confirmedPassengers = passengers.filter(p => ['confirmed', 'verified', 'completed'].includes(p.status));
     const isRideCancelled = ride.status === 'cancelled';
-    const isRideActive = ride.status === 'active' || ride.status === 'in_progress';
     const isRideClosed = ride.status === 'completed' || ride.status === 'cancelled' || ride.status === 'expired';
 
     const departureDate = new Date(ride.departure_time);
@@ -472,6 +601,9 @@ const RideDetails = () => {
     const rawPin = fetchedPin || ride.user_pin || myPassengerEntry?.pin;
     const myPin = rawPin && String(rawPin).replace(/\*/g, '') ? rawPin : null;
     const ridePrice = formatMoney(ride.price) || '0.00€';
+    const ridePricing = ride?.pricing || {};
+    const platformFeePerSeat = formatMoney(ridePricing.platform_fee_per_seat);
+    const driverPayoutPerSeat = formatMoney(ridePricing.driver_payout_per_seat);
     const seatsAvailable = Number(ride.seats_available ?? ride.available_seats ?? 0);
 
     const bookingBlockedLabel = (() => {
@@ -543,9 +675,10 @@ const RideDetails = () => {
 
                 <div className="h-56 w-full rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white relative group">
                     <MapComponent
-                        center={selectedPickupLocation || ride.origin}
-                        itemsToDisplay={[ride]}
+                        center={isRideActive && driverLocation ? driverLocation : (selectedPickupLocation || ride.origin)}
+                        itemsToDisplay={mapItems}
                         zoom={12}
+                        followLocation={isRideActive && Boolean(driverLocation)}
                         interactive={true}
                         pickupLocation={selectedPickupLocation}
                         onLocationSelect={(loc) => {
@@ -558,6 +691,16 @@ const RideDetails = () => {
                             }
                         }}
                     />
+                    {isRideActive && (
+                        <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1.5 rounded-xl border border-emerald-100 flex items-center gap-1.5 shadow-sm z-[10] pointer-events-none">
+                            <span className={`size-2 rounded-full ${driverLocation ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'}`} />
+                            <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">
+                                {driverLocation
+                                    ? (isTracking ? 'Conductor en tiempo real' : 'Ubicación del conductor')
+                                    : 'Esperando ubicación del conductor'}
+                            </span>
+                        </div>
+                    )}
                     {!isPassenger && isRideBookableNow && (
                         <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm z-[10] pointer-events-none">
                             <MapPin className="size-3 text-primary animate-pulse" />
@@ -575,6 +718,10 @@ const RideDetails = () => {
                         </button>
                     )}
                 </div>
+
+                {(ride.status === 'scheduled' || isRideActive) && (isDriver || isPassenger) && (
+                    <ShareRideCard ride={ride} rideId={rideId} />
+                )}
 
                 <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8 space-y-6">
                     <div className="flex justify-between items-start gap-4">
@@ -602,11 +749,28 @@ const RideDetails = () => {
                         </div>
                         <div className="text-right shrink-0">
                             <div className="bg-emerald-50 text-emerald-600 px-4 py-3 rounded-2xl inline-block border border-emerald-100 shadow-sm">
-                                <span className="text-[9px] font-black uppercase block leading-none opacity-60 tracking-widest mb-1.5">Precio</span>
+                                <span className="text-[9px] font-black uppercase block leading-none opacity-60 tracking-widest mb-1.5">Precio por plaza</span>
                                 <span className="text-3xl font-black tracking-tighter leading-none">{ridePrice}</span>
+                                <span className="text-[8px] font-bold uppercase tracking-widest opacity-50 block mt-1">Comisión incluida</span>
                             </div>
                         </div>
                     </div>
+                    {(platformFeePerSeat || driverPayoutPerSeat) && (
+                        <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4">
+                            {platformFeePerSeat && (
+                                <div className="rounded-2xl bg-amber-50 p-3 text-left border border-amber-100">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-amber-700">Comisión plataforma · 10%</p>
+                                    <p className="mt-1 text-sm font-black text-amber-700">{platformFeePerSeat} / plaza</p>
+                                </div>
+                            )}
+                            {driverPayoutPerSeat && (
+                                <div className="rounded-2xl bg-emerald-50 p-3 text-left border border-emerald-100">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-emerald-700">Neto conductor · 90%</p>
+                                    <p className="mt-1 text-sm font-black text-emerald-700">{driverPayoutPerSeat} / plaza</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1 bg-slate-50 p-4 rounded-3xl border border-slate-100">
@@ -622,6 +786,28 @@ const RideDetails = () => {
                                 <ShieldCheck size={12} /> Seguro
                             </p>
                             <p className="text-sm font-bold text-slate-700">Protección ShareWay</p>
+                        </div>
+                    </div>
+                </Card>
+
+                <Card className="rounded-[2.5rem] border-none shadow-xl bg-slate-900 p-6 text-white">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Política económica</p>
+                            <p className="mt-1 text-xs font-bold text-slate-300">Importes aplicados por el servidor</p>
+                        </div>
+                        <ShieldCheck className="text-primary" size={22} />
+                    </div>
+                    <div className="grid gap-3 text-[9px] font-bold uppercase tracking-wider text-slate-400 sm:grid-cols-2">
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-1.5">
+                            <p className="text-slate-200">Cancelación del pasajero</p>
+                            <p>&gt;24 h: reembolso 100% · 2–24 h: 50% · &lt;2 h: 0%</p>
+                            <p>Parte no reembolsada: 80% conductor · 20% plataforma</p>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-1.5">
+                            <p className="text-slate-200">Cancelación del conductor</p>
+                            <p>Pasajero: reembolso 100% · penalización: 0€ ≥24 h, 2€ de 2 a &lt;24 h, 5€ &lt;2 h</p>
+                            <p>Con pasajeros: 50% compensación · 50% plataforma; sin pasajeros: 100% plataforma + impacto reputacional</p>
                         </div>
                     </div>
                 </Card>

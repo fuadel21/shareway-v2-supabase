@@ -5,16 +5,22 @@
 import { supabase } from '../lib/supabase';
 import * as rpc from '@/lib/supabaseRPC';
 import { addMinutes, isBefore } from 'date-fns';
-import { RIDE_PRICING_CONFIG } from '../utils/pricingRules';
+import { calculateDistance } from '../lib/utils.js';
+import {
+    calculateSuggestedPrice,
+    FINANCIAL_RULES,
+    PRICING_CONSTANTS,
+    RIDE_PRICING_CONFIG
+} from '../utils/pricingRules';
 
 // REGLAS DE NEGOCIO CENTRALIZADAS
 export const RIDE_RULES = {
     MIN_ADVANCE_MINUTES: 20,
-    MAX_PRICE: 300,
-    MIN_PRICE: 0.50,
-    MAX_SEATS: 8,
-    MIN_SEATS: 1,
-    PICKUP_SUPPLEMENT: 1.50
+    MAX_PRICE: PRICING_CONSTANTS.MAX_PRICE,
+    MIN_PRICE: PRICING_CONSTANTS.MIN_PRICE,
+    MAX_SEATS: PRICING_CONSTANTS.MAX_SEATS,
+    MIN_SEATS: PRICING_CONSTANTS.MIN_SEATS,
+    PICKUP_SUPPLEMENT: FINANCIAL_RULES.PICKUP_SUPPLEMENT
 };
 
 const BOOKABLE_RIDE_STATUSES = new Set(['scheduled']);
@@ -36,28 +42,13 @@ export const filterBookableRides = (rides = []) => {
 export { RIDE_PRICING_CONFIG };
 
 /**
- * Calcula el precio recomendado basado en la distancia (metros)
+ * Calcula el precio recomendado basado en la distancia (metros).
+ * The utility function and the SQL migration use kilometres; this adapter is
+ * kept for the existing form API.
  */
 export const calculateRecommendedPrice = (distanceInMeters) => {
-    const distanceKm = distanceInMeters / 1000;
-    if (distanceKm <= 0) return RIDE_RULES.MIN_PRICE;
-
-    let remainingDistance = distanceKm;
-    let totalPrice = 0;
-    let previousMaxKm = 0;
-
-    for (const tier of RIDE_PRICING_CONFIG.TIERS) {
-        if (remainingDistance <= 0) break;
-
-        const tierRange = tier.maxKm - previousMaxKm;
-        const kmInThisTier = Math.min(remainingDistance, tierRange);
-
-        totalPrice += kmInThisTier * tier.rate;
-        remainingDistance -= kmInThisTier;
-        previousMaxKm = tier.maxKm;
-    }
-
-    return Math.max(RIDE_RULES.MIN_PRICE, Math.min(RIDE_RULES.MAX_PRICE, parseFloat(totalPrice.toFixed(2))));
+    const distanceKm = Number(distanceInMeters) / 1000;
+    return Number(calculateSuggestedPrice(distanceKm));
 };
 
 export const calculateRideDetour = async (rideId, paxOrigin, paxDestination) => {
@@ -113,6 +104,30 @@ const normalizeLocation = (loc) => ({
     lat: parseFloat(loc?.coordinates?.lat ?? loc?.coordinates?.latitude ?? loc?.lat ?? 0),
     lng: parseFloat(loc?.coordinates?.lng ?? loc?.coordinates?.longitude ?? loc?.lng ?? 0)
 });
+
+const getLocationCoordinates = (location) => {
+    const coordinates = location?.coordinates || location || {};
+    const lat = Number(coordinates.lat ?? coordinates.latitude);
+    const lng = Number(coordinates.lng ?? coordinates.longitude);
+    const validRange = lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+    return Number.isFinite(lat) && Number.isFinite(lng) && validRange ? { lat, lng } : null;
+};
+
+const resolveDistanceKm = (distance, origin, destination) => {
+    const explicitDistance = Number(distance);
+    if (Number.isFinite(explicitDistance) && explicitDistance > 0) return explicitDistance;
+
+    const originCoordinates = getLocationCoordinates(origin);
+    const destinationCoordinates = getLocationCoordinates(destination);
+    if (!originCoordinates || !destinationCoordinates) return 0;
+
+    return calculateDistance(
+        originCoordinates.lat,
+        originCoordinates.lng,
+        destinationCoordinates.lat,
+        destinationCoordinates.lng,
+    );
+};
 
 const clampSeats = (value) => Math.max(RIDE_RULES.MIN_SEATS, Math.min(RIDE_RULES.MAX_SEATS, Number(value || 1)));
 
@@ -191,6 +206,10 @@ const validateRidePayload = (data) => {
     if ([oLat, oLng, dLat, dLng].some((v) => Number.isNaN(v) || !Number.isFinite(v))) {
         throw new Error("Datos de itinerario incompletos: Coordenadas GPS no detectadas.");
     }
+    if ([oLat, dLat].some((value) => value < -90 || value > 90)
+        || [oLng, dLng].some((value) => value < -180 || value > 180)) {
+        throw new Error('Coordenadas GPS fuera de rango.');
+    }
 
     const tripDate = new Date(data.dateTime || data.departure_time);
     if (isNaN(tripDate.getTime())) throw new Error("Fecha de viaje inválida.");
@@ -202,12 +221,14 @@ const validateRidePayload = (data) => {
     if (isNaN(price) || price < RIDE_RULES.MIN_PRICE) throw new Error(`El precio debe ser al menos ${RIDE_RULES.MIN_PRICE}€.`);
     if (price > RIDE_RULES.MAX_PRICE) throw new Error(`El precio excede el límite de seguridad (${RIDE_RULES.MAX_PRICE}€).`);
 
-    if (data.distance && data.distance > 0) {
-        const distanceMeters = data.distance * 1000;
-        const recommendedMax = calculateRecommendedPrice(distanceMeters);
-        if (price > recommendedMax + 0.05) {
-            throw new Error(`El precio no puede superar el recomendado (${recommendedMax}€).`);
-        }
+    const distanceKm = Number(data.distance);
+    if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+        throw new Error('La distancia de la ruta es obligatoria para validar el precio.');
+    }
+
+    const recommendedMax = calculateRecommendedPrice(distanceKm * 1000);
+    if (price > recommendedMax + 0.05) {
+        throw new Error(`El precio no puede superar el recomendado (${recommendedMax}€).`);
     }
 
     const seats = parseInt(data.seats);
@@ -218,7 +239,8 @@ const validateRidePayload = (data) => {
 
 export const createSingleRide = async (rideData) => {
     try {
-        validateRidePayload(rideData);
+        const distanceKm = resolveDistanceKm(rideData.distance, rideData.origin, rideData.destination);
+        validateRidePayload({ ...rideData, distance: distanceKm });
         const idempotencyKey = crypto.randomUUID();
         const vehicleSnapshot = normalizeVehicleSnapshot(
             rideData.vehicle || rideData.vehicle_snapshot || rideData.preferences?.vehicle_snapshot
@@ -232,6 +254,7 @@ export const createSingleRide = async (rideData) => {
             },
             origin: normalizeLocation(rideData.origin),
             destination: normalizeLocation(rideData.destination),
+            distance: distanceKm,
             waypoints: (rideData.waypoints || []).map(normalizeLocation),
             dateTime: rideData.dateTime instanceof Date ? rideData.dateTime : new Date(rideData.dateTime || rideData.departure_time),
             idempotency_key: idempotencyKey
@@ -252,10 +275,12 @@ export const createSingleRide = async (rideData) => {
 
 export const createRideRequest = async (requestData) => {
     try {
+        const distanceKm = resolveDistanceKm(requestData.distance, requestData.origin, requestData.destination);
         validateRidePayload({
             ...requestData,
             seats: requestData.seats || requestData.seats_needed,
-            price: requestData.price || requestData.suggested_price || requestData.suggestedPrice
+            price: requestData.price || requestData.suggested_price || requestData.suggestedPrice,
+            distance: distanceKm,
         });
 
         const payload = {
@@ -266,7 +291,7 @@ export const createRideRequest = async (requestData) => {
             price: parseFloat(requestData.price || requestData.suggested_price || requestData.suggestedPrice || 0),
             details: (requestData.note || requestData.details || '').trim(),
             isWomenOnly: !!requestData.isWomenOnly || !!requestData.is_women_only,
-            distance: parseFloat(requestData.distance || 0),
+            distance: distanceKm,
             overview_polyline: requestData.overview_polyline || ''
         };
 
@@ -368,16 +393,29 @@ export const searchRides = async ({ origin, destination, date, maxDetour = 2500 
     }
 };
 
-export const fulfillRequest = async (request, customPrice, totalSeats = null) => {
+export const fulfillRequest = async (request, customPrice = null, totalSeats = null) => {
+    if (!request?.id) throw new Error('Solicitud de viaje no encontrada.');
+
+    const requestedSeats = Number(request.requested_seats ?? request.seats_needed ?? request.seats ?? 1);
+    const capacity = totalSeats === null || totalSeats === undefined
+        ? Math.max(requestedSeats, 4)
+        : Number(totalSeats);
+    const distanceKm = resolveDistanceKm(request.distance, request.origin, request.destination);
+    const pricePerSeat = customPrice === null || customPrice === undefined
+        ? Number(request.suggested_price ?? request.price)
+        : Number(customPrice);
+
     const rideData = {
         requestId: request.id,
+        // The RPC uses the locked request row as its source of truth. These
+        // fields are retained for the stable public signature only.
         origin: request.origin,
         destination: request.destination,
         dateTime: new Date(request.departure_time),
-        seats: totalSeats || Math.max(request.requested_seats || request.seats_needed || 1, 4),
-        price: customPrice || request.suggested_price,
-        details: `Aceptado desde solicitud de pasajero`,
-        distance: request.distance || 0,
+        seats: capacity,
+        price: pricePerSeat,
+        details: 'Aceptado desde solicitud de pasajero',
+        distance: distanceKm,
         overview_polyline: request.overview_polyline || '',
         waypoints: []
     };
@@ -385,10 +423,13 @@ export const fulfillRequest = async (request, customPrice, totalSeats = null) =>
     validateRidePayload(rideData);
     const { data, success, error } = await rpc.fulfillRideRequest(rideData);
     if (!success) {
-        if (error?.includes('no está disponible')) throw new Error('Esta solicitud ya fue aceptada por otro conductor.');
+        if (error?.includes('REQUEST_NOT_AVAILABLE') || error?.includes('no está disponible')) {
+            throw new Error('Esta solicitud ya fue aceptada por otro conductor.');
+        }
         throw new Error(error || 'No se pudo aceptar la solicitud.');
     }
-    return data.rideId;
+    if (!data?.success) throw new Error(data?.error || 'No se pudo aceptar la solicitud.');
+    return data.rideId || data.ride_id;
 };
 
 export const startRide = async (rideId, currentLocation = null) => {
@@ -428,7 +469,7 @@ export const completeRide = async (rideId) => {
             escrowReleased: result?.escrow_released ?? result?.escrowReleased ?? null,
             paymentsProcessed: result?.payments_processed ?? result?.paymentsProcessed ?? null,
             payout: result?.payout ?? result?.driver_payout ?? result?.driverPayout ?? null,
-            platformFee: result?.platform_fee ?? result?.platformFee ?? null,
+            platformFee: result?.platform_fee ?? result?.platform_fee_total ?? result?.platformFee ?? result?.fee ?? null,
             metrics: result?.metrics ?? null,
             raw: result ?? null
         };
@@ -440,22 +481,27 @@ export const completeRide = async (rideId) => {
 
 export const cancelRide = async (rideId, reason = '') => {
     try {
-        const { data, success, error } = await rpc.cancelRide(rideId);
+        const { data, success, error } = await rpc.cancelRide(rideId, reason);
         if (!success) throw new Error(error);
-        const result = assertBusinessSuccess(data, 'No se pudo cancelar el viaje');
+        const response = assertBusinessSuccess(data, 'No se pudo cancelar el viaje');
+        const result = response?.details || response;
+        assertBusinessSuccess(result, 'No se pudo cancelar el viaje');
         return {
             success: result?.success ?? true,
             rideId: result?.ride_id || result?.rideId || rideId,
             status: result?.status || 'cancelled',
             cancelledAt: result?.cancelled_at || result?.cancelledAt || new Date().toISOString(),
             reason: result?.reason ?? reason,
-            refundsProcessed: result?.refunds_processed ?? result?.refundsProcessed ?? null,
+            refundsProcessed: result?.refunds_processed ?? result?.refundsProcessed ?? (result?.passenger_compensation_total != null),
             escrowReleased: result?.escrow_released ?? result?.escrowReleased ?? null,
             escrowRefunded: result?.escrow_refunded ?? result?.escrowRefunded ?? null,
             lastMinuteCancellation: result?.last_minute_cancellation ?? result?.lastMinuteCancellation ?? null,
-            driverPenalty: result?.driver_penalty ?? result?.driverPenalty ?? null,
+            driverPenalty: result?.driver_penalty ?? result?.driverPenalty ?? result?.penalty ?? null,
+            passengerCompensationTotal: result?.passenger_compensation_total ?? result?.passengerCompensationTotal ?? null,
+            platformPenalty: result?.platform_penalty ?? result?.platformPenalty ?? null,
+            stripeRefunded: response?.stripeRefunded ?? result?.stripeRefunded ?? null,
             refundAmounts: result?.refund_amounts ?? result?.refundAmounts ?? {},
-            raw: result ?? null
+            raw: response ?? null
         };
     } catch (err) {
         console.error("🛡️ [Ride Lifecycle] cancelRide failed:", err);
@@ -466,8 +512,21 @@ export const cancelRide = async (rideId, reason = '') => {
 export const cancelBooking = async (rideId) => {
     const { data, success, error } = await rpc.cancelBookingAndRefund(rideId);
     if (!success) throw new Error(error);
-    if (data && data.success === false) throw new Error(data.message || 'No se pudo cancelar la reserva');
-    return true;
+    const response = assertBusinessSuccess(data, 'No se pudo cancelar la reserva');
+    const result = response?.details || response;
+    assertBusinessSuccess(result, 'No se pudo cancelar la reserva');
+    return {
+        success: result?.success ?? true,
+        status: result?.status || 'cancelled',
+        refunded: result?.refunded ?? result?.refund_amount ?? result?.refundAmount ?? null,
+        penalty: result?.penalty ?? result?.penalty_amount ?? result?.penaltyAmount ?? null,
+        driverCompensation: result?.driver_compensation ?? result?.driverCompensation ?? null,
+        platformPenalty: result?.platform_penalty ?? result?.platformPenalty ?? null,
+        stripeRefunded: response?.stripeRefunded ?? result?.stripeRefunded ?? null,
+        alreadyCancelled: result?.already_cancelled ?? result?.alreadyCancelled ?? false,
+        data: result,
+        raw: response ?? null,
+    };
 };
 
 export const verifyPassenger = async (rideId, passengerId, pin) => {

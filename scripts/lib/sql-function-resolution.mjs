@@ -30,7 +30,7 @@ export const getEffectiveFunctionBody = (definitions, name) => {
 
 const referencedFunctionNames = (body) => {
   const references = new Set();
-  const callPattern = /(?:select|perform|return\s+query\s+select)\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\(/gi;
+  const callPattern = /(?:select|perform|return(?:\s+query)?\s+select|return)\s+(?:public\.)?([a-z_][a-z0-9_]*)\s*\(/gi;
 
   for (const match of body.matchAll(callPattern)) {
     references.add(match[1].toLowerCase());

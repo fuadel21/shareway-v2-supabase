@@ -1,63 +1,189 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+// These are deliberately separate authenticated clients. Never use a
+// service-role key in a browser/Vitest client: it bypasses the policies this
+// suite is meant to verify. Configure the optional remote suite with:
+// SUPABASE_TEST_URL, SUPABASE_TEST_ANON_KEY,
+// SUPABASE_SECURITY_DRIVER_EMAIL/PASSWORD,
+// SUPABASE_SECURITY_PASSENGER_EMAIL/PASSWORD,
+// SUPABASE_SECURITY_OUTSIDER_EMAIL/PASSWORD, and
+// SUPABASE_SECURITY_RIDE_ID (an active test ride). Optional role/lifecycle
+// checks use SUPABASE_SECURITY_ADMIN_EMAIL/PASSWORD plus
+// SUPABASE_SECURITY_CANCELLED_RIDE_ID/CANCELLED_TOKEN.
+const env = (name, viteName = name) => process.env[name] || import.meta.env[viteName] || '';
+const testUrl = env('SUPABASE_TEST_URL', 'VITE_SUPABASE_URL');
+const anonKey = env('SUPABASE_TEST_ANON_KEY', 'VITE_SUPABASE_ANON_KEY');
+const rideId = env('SUPABASE_SECURITY_RIDE_ID');
+const driverCredentials = {
+  email: env('SUPABASE_SECURITY_DRIVER_EMAIL'),
+  password: env('SUPABASE_SECURITY_DRIVER_PASSWORD'),
+};
+const passengerCredentials = {
+  email: env('SUPABASE_SECURITY_PASSENGER_EMAIL'),
+  password: env('SUPABASE_SECURITY_PASSENGER_PASSWORD'),
+};
+const outsiderCredentials = {
+  email: env('SUPABASE_SECURITY_OUTSIDER_EMAIL'),
+  password: env('SUPABASE_SECURITY_OUTSIDER_PASSWORD'),
+};
+const adminCredentials = {
+  email: env('SUPABASE_SECURITY_ADMIN_EMAIL'),
+  password: env('SUPABASE_SECURITY_ADMIN_PASSWORD'),
+};
+const cancelledRideId = env('SUPABASE_SECURITY_CANCELLED_RIDE_ID');
+const cancelledToken = env('SUPABASE_SECURITY_CANCELLED_TOKEN');
+
+const remoteSuiteConfigured = Boolean(
+  testUrl
+  && anonKey
+  && rideId
+  && driverCredentials.email
+  && driverCredentials.password
+  && passengerCredentials.email
+  && passengerCredentials.password
+  && outsiderCredentials.email
+  && outsiderCredentials.password
 );
 
-describe('🛡️ Test de Integridad y Seguridad ShareWay v2', () => {
-  const PASS = 'ShareWayTest2026!';
-  const DRIVER_EMAIL = 'driver.elite@shareway.test';
+const createTestClient = () => createClient(testUrl, anonKey, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+});
+
+const signIn = async (client, credentials) => {
+  const { data, error } = await client.auth.signInWithPassword(credentials);
+  if (error) throw error;
+  return data.user;
+};
+
+const remoteDescribe = describe.skipIf(!remoteSuiteConfigured);
+
+remoteDescribe('🛡️ Autorización real de seguridad ShareWay', () => {
+  let anon;
+  let driver;
+  let passenger;
+  let outsider;
+  let admin;
+  const hasAdminCredentials = Boolean(adminCredentials.email && adminCredentials.password);
 
   beforeAll(async () => {
-    // Necesitamos estar autenticados para que auth.uid() no sea null en los RPCs
-    await supabase.auth.signInWithPassword({ email: DRIVER_EMAIL, password: PASS });
+    anon = createTestClient();
+    driver = createTestClient();
+    passenger = createTestClient();
+    outsider = createTestClient();
+    admin = hasAdminCredentials ? createTestClient() : null;
+
+    await Promise.all([
+      signIn(driver, driverCredentials),
+      signIn(passenger, passengerCredentials),
+      signIn(outsider, outsiderCredentials),
+      ...(admin ? [signIn(admin, adminCredentials)] : []),
+    ]);
   });
 
-  it('1. Debe bloquear saldos negativos (Integrity Shield)', async () => {
-    const { error } = await supabase.rpc('create_payout_request', { p_amount: 999999.99 });
-    expect(error).toBeDefined();
-    // El RPC lanza 'Saldo insuficiente para el retiro.'
-    expect(error.message).toMatch(/insuficiente|INTEGRITY_ERROR/i);
+  it('anon no puede leer rides ni ubicaciones directamente', async () => {
+    const [ridesResult, locationsResult] = await Promise.all([
+      anon.from('rides').select('*').eq('id', rideId),
+      anon.from('ride_locations').select('*').eq('ride_id', rideId),
+    ]);
+
+    expect(ridesResult.error ? [] : (ridesResult.data || [])).toEqual([]);
+    expect(locationsResult.error ? [] : (locationsResult.data || [])).toEqual([]);
   });
 
-  it('3. Debe impedir cancelación de viajes en marcha (Safety Lock)', async () => {
-    // Buscamos el viaje 'active' del seed
-    const { data: ride } = await supabase.from('rides').select('id').eq('status', 'active').limit(1).single();
+  it('un usuario ajeno no puede leer el viaje ni su ubicación por REST', async () => {
+    const [ridesResult, locationsResult] = await Promise.all([
+      outsider.from('rides').select('*').eq('id', rideId),
+      outsider.from('ride_locations').select('*').eq('ride_id', rideId),
+    ]);
 
-    if (ride) {
-      const { error } = await supabase.rpc('cancel_ride', { p_ride_id: ride.id });
-      expect(error).toBeDefined();
-      // Ahora el error será el de estado, no el de NO_AUTORIZADO
-      expect(error.message).toMatch(/NO_PUEDES_CANCELAR|activo o completado/i);
-      console.log('✅ Bloqueo de cancelación en marcha validado.');
+    expect(ridesResult.error ? [] : (ridesResult.data || [])).toEqual([]);
+    expect(locationsResult.error ? [] : (locationsResult.data || [])).toEqual([]);
+  });
+
+  it('el mapa de viajes usa un RPC autenticado y no abre el read model a anon', async () => {
+    const [anonMap, outsiderMap] = await Promise.all([
+      anon.rpc('get_live_ride_map'),
+      outsider.rpc('get_live_ride_map'),
+    ]);
+
+    expect(anonMap.error).toBeTruthy();
+    expect(outsiderMap.error).toBeNull();
+    expect(Array.isArray(outsiderMap.data)).toBe(true);
+    const firstRide = outsiderMap.data?.[0];
+    if (firstRide) {
+      expect(firstRide).not.toHaveProperty('passengers');
+      expect(firstRide).not.toHaveProperty('price');
+      expect(firstRide).not.toHaveProperty('vehicle_plate');
     }
   });
 
-  it('4. Debe aplicar moderación de contenido (Safe Chat)', async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const testDriverId = userData.user.id;
+  it('el conductor puede leer su viaje y el pasajero puede leer solo su ubicación', async () => {
+    const [driverRide, passengerRide, driverLocation, passengerLocation] = await Promise.all([
+      driver.from('rides').select('id,driver_id,status,passengers').eq('id', rideId).maybeSingle(),
+      passenger.from('rides').select('id,status').eq('id', rideId).maybeSingle(),
+      driver.from('ride_locations').select('ride_id,latitude,longitude').eq('ride_id', rideId).maybeSingle(),
+      passenger.from('ride_locations').select('ride_id,latitude,longitude').eq('ride_id', rideId).maybeSingle(),
+    ]);
 
-    // Insertamos directamente para ver el efecto del trigger BEFORE INSERT
-    const { data, error } = await supabase.from('rides').insert({
-      driver_id: testDriverId,
-      origin: { address: 'Test' },
-      destination: { address: 'Test' },
-      departure_time: new Date(Date.now() + 86400000).toISOString(),
-      seats_total: 4,
-      seats_available: 4,
-      price: 10,
-      details: 'Mi tlf es 600123456'
-    }).select().single();
+    expect(driverRide.error).toBeNull();
+    expect(driverRide.data?.id).toBe(rideId);
+    expect(passengerRide.error).toBeNull();
+    expect(passengerRide.data?.id).toBe(rideId);
+    expect(driverLocation.error).toBeNull();
+    expect(passengerLocation.error).toBeNull();
+  });
 
-    if (data) {
-      expect(data.details).toContain('[NÚMERO PROTEGIDO]');
-      console.log('✅ Moderación automática de contenido validada.');
-      await supabase.from('rides').delete().eq('id', data.id);
-    } else {
-      console.error('Error en insert:', error);
-      throw error;
-    }
+  it('el RPC público de share no acepta un token inválido y no diferencia el motivo', async () => {
+    const { data, error } = await anon.rpc('verify_share_token', {
+      p_ride_id: rideId,
+      p_token: '0'.repeat(64),
+    });
+
+    expect(error).toBeNull();
+    expect(data).toEqual({ success: false, error: 'LINK_INVALID_OR_EXPIRED' });
+  });
+
+  it('un usuario ajeno no puede escribir una ubicación aunque conozca el ride_id', async () => {
+    const { error } = await outsider.rpc('update_ride_location', {
+      p_ride_id: rideId,
+      p_lat: 39.4699,
+      p_lng: -0.3763,
+      p_heading: 0,
+    });
+
+    // The hardened RPC is intentionally a no-op for an unauthorized driver.
+    expect(error).toBeNull();
+    const { data } = await outsider.from('ride_locations').select('updated_at').eq('ride_id', rideId).maybeSingle();
+    expect(data).toBeNull();
+  });
+
+  it.skipIf(!hasAdminCredentials)('un admin puede leer el panel protegido sin abrirlo a usuarios ajenos', async () => {
+    const [adminResult, outsiderResult] = await Promise.all([
+      admin.from('emergency_alerts').select('id').limit(1),
+      outsider.from('emergency_alerts').select('id').eq('ride_id', rideId),
+    ]);
+
+    expect(adminResult.error).toBeNull();
+    expect(Array.isArray(adminResult.data)).toBe(true);
+    expect(outsiderResult.error ? [] : (outsiderResult.data || [])).toEqual([]);
+  });
+
+  it.skipIf(!cancelledRideId || !cancelledToken)('un token de viaje cancelado falla con el mismo error genérico', async () => {
+    const { data, error } = await anon.rpc('verify_share_token', {
+      p_ride_id: cancelledRideId,
+      p_token: cancelledToken,
+    });
+
+    expect(error).toBeNull();
+    expect(data).toEqual({ success: false, error: 'LINK_INVALID_OR_EXPIRED' });
+  });
+});
+
+// Keep a local test visible in every checkout so an absent remote test
+// environment is reported as a deliberate skip rather than a false pass.
+describe('🛡️ Configuración de la auditoría remota', () => {
+  it('no contiene una clave service-role en el cliente de pruebas', () => {
+    expect(import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
   });
 });

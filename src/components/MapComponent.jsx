@@ -179,7 +179,7 @@ const createPassengerBubble = (photoUrl, price, isSelected = false) => {
                     border: 1.5px solid white;
                     white-space: nowrap;
                 ">
-                    ${price}€
+                    ${price}€ / plaza
                 </div>
                 <!-- Foto del Pasajero -->
                 <div style="

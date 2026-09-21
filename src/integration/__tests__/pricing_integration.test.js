@@ -1,4 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
 import { RIDE_PRICING_CONFIG as ConfigFromUtils } from '../../utils/pricingRules';
 import { RIDE_PRICING_CONFIG as ConfigFromService, calculateRecommendedPrice } from '../../services/rideService';
 
@@ -11,20 +14,18 @@ describe('Pricing Integration & Consistency', () => {
     });
 
     it('should calculate identical prices via Service and Utils logic', () => {
-        // Aunque la lógica está duplicada (calculateRecommendedPrice vs calculateSuggestedPrice),
-        // deben dar el mismo resultado.
+        // El servicio usa el adaptador de la misma configuración canónica que la utilidad;
+        // ambos deben dar el mismo resultado.
         
         // rideService.calculateRecommendedPrice toma METROS
         // pricingRules.calculateSuggestedPrice toma KM
         
-        const distKm = 100;
         const distMeters = 100000;
 
         const priceFromService = calculateRecommendedPrice(distMeters);
         
-        // Importamos dinámicamente para comparar o usamos el valor esperado
-        // Sabemos que 100km = 38.00€
-        expect(priceFromService).toBe(38.00); 
+        // 100km = 15*0.30 + 85*0.22 = 23.20€
+        expect(priceFromService).toBe(23.20);
     });
 
     it('should respect max price cap in Service', () => {
