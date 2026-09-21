@@ -27,7 +27,7 @@ BEGIN
         RETURN '[]'::JSONB;
     END IF;
 
-    SELECT jsonb_agg(rides_data ORDER BY (rides_data ->> 'departure_time')::TIMESTAMPTZ DESC)
+    SELECT jsonb_agg(ride_rows.rides_data ORDER BY (ride_rows.rides_data ->> 'departure_time')::TIMESTAMPTZ DESC)
       INTO v_result
       FROM (
           SELECT jsonb_build_object(
@@ -69,7 +69,7 @@ BEGIN
                   )
               )
           )
-      ) AS rides_data;
+      ) AS ride_rows;
 
     RETURN COALESCE(v_result, '[]'::JSONB);
 END;
