@@ -68,6 +68,12 @@ export const safeCall = async (rpcCall, functionName, retries = 2) => {
     return executeCall(0);
 };
 
+export const getPublicRegisteredUserCount = () =>
+    safeCall(
+        () => supabase.rpc('get_public_registered_user_count'),
+        'get_public_registered_user_count'
+    );
+
 const normalizeRideStartError = (error, readiness = null) => {
     const raw = String(error || '');
     const unpaidCount = Number(readiness?.unpaid_count || 0) + Number(readiness?.unpaid_request_count || 0);

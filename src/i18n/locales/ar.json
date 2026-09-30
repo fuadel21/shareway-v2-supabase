@@ -7,6 +7,15 @@
         "save": "حفظ",
         "back": "رجوع"
     },
+    "landing": {
+        "community_title": "مجتمع ShareWay ينمو",
+        "registered_users": "مستخدمين مسجلين",
+        "registered_users_one": "مستخدم مسجل",
+        "registered_users_loading": "جارٍ تحميل المجتمع...",
+        "registered_users_error": "تعذر تحميل العداد",
+        "registered_users_live": "يتم التحديث تلقائيًا",
+        "map_title": "التنقل المشترك في الوقت الفعلي"
+    },
     "nav": {
         "explore": "استكشاف",
         "my_rides": "رحلاتي",

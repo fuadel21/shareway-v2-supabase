@@ -1,3 +1,110 @@
+import { createElement, useEffect, useState } from 'react';
+import { Radio, Users } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import MapComponent from './MapComponent.jsx';
+import { supabase } from '../lib/supabase.js';
+import { getPublicRegisteredUserCount } from '../lib/supabaseRPC.js';
+
+const LANDING_MAP_CENTER = { lat: 41.3874, lng: 2.1687 };
+
+const readRegisteredUserCount = (data) => {
+  const payload = data && typeof data === 'object' && !Array.isArray(data) ? data : { count: data };
+  const count = Number(payload?.count);
+  return Number.isFinite(count) && count >= 0 ? Math.floor(count) : null;
+};
+
+function PublicCommunityMap() {
+  const { t, i18n } = useTranslation();
+  const [registeredUsers, setRegisteredUsers] = useState(null);
+  const [countError, setCountError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const refreshCount = async () => {
+      const response = await getPublicRegisteredUserCount();
+      if (!isMounted) return;
+
+      const count = response.success ? readRegisteredUserCount(response.data) : null;
+      if (count === null) {
+        setCountError(true);
+        return;
+      }
+
+      setRegisteredUsers(count);
+      setCountError(false);
+    };
+
+    refreshCount();
+
+    // Realtime carries only an aggregate stats row. The client deliberately
+    // asks the allow-listed RPC for the value instead of using any row payload.
+    const channel = supabase
+      .channel('public-registered-user-count')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'public_platform_stats' },
+        refreshCount
+      )
+      .subscribe();
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshCount();
+    };
+    const interval = window.setInterval(refreshCount, 30000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const locale = i18n.language?.startsWith('ar')
+    ? 'ar'
+    : i18n.language?.startsWith('en')
+      ? 'en'
+      : 'es';
+  const formattedCount = registeredUsers === null
+    ? null
+    : new Intl.NumberFormat(locale).format(registeredUsers);
+  const countLabel = registeredUsers === 1
+    ? t('landing.registered_users_one')
+    : t('landing.registered_users');
+
+  return (
+    <div className="relative h-[390px] overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-200 shadow-xl sm:h-[470px]">
+      {createElement(MapComponent, { center: LANDING_MAP_CENTER, zoom: 6, itemsToDisplay: [] })}
+      <div className="pointer-events-none absolute inset-x-4 top-4 z-10 flex justify-end sm:inset-x-6 sm:top-6">
+        <div className="max-w-xs rounded-3xl border border-white/70 bg-white/95 px-5 py-4 text-right shadow-xl backdrop-blur-md sm:max-w-sm sm:px-6 sm:py-5">
+          <div className="flex items-center justify-end gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-orange-600">
+            {createElement(Radio, { className: 'h-4 w-4', 'aria-hidden': true })}
+            <span>{t('landing.map_title')}</span>
+          </div>
+          <p className="mt-2 text-lg font-black leading-tight text-slate-950 sm:text-xl">{t('landing.community_title')}</p>
+          <div className="mt-3 flex items-center justify-end gap-2 text-slate-600" aria-live="polite">
+            {createElement(Users, { className: 'h-5 w-5 shrink-0 text-orange-500', 'aria-hidden': true })}
+            {formattedCount === null ? (
+              <span className="text-sm font-bold">
+                {countError ? t('landing.registered_users_error') : t('landing.registered_users_loading')}
+              </span>
+            ) : (
+              <span className="text-base font-black text-slate-950 sm:text-lg">
+                {formattedCount} {countLabel}
+              </span>
+            )}
+          </div>
+          {formattedCount !== null && (
+            <p className="mt-2 text-[10px] font-bold uppercase tracking-widest text-emerald-600">{t('landing.registered_users_live')}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LandingPage() {
   const quickBenefits = [
     ['Carpooling flexible', 'Comparte coche, taxi o trayecto con personas de ruta compatible.'],
@@ -119,7 +226,8 @@ function LandingPage() {
 
       <section className="px-6 pb-16">
         <div className="mx-auto max-w-5xl">
-          <div className="grid gap-4 md:grid-cols-4">
+          {createElement(PublicCommunityMap)}
+          <div className="mt-8 grid gap-4 md:grid-cols-4">
             {quickBenefits.map(([title, text]) => (
               <article key={title} className="rounded-3xl border border-orange-100 bg-orange-50 p-5">
                 <p className="text-sm font-black text-orange-600">{title}</p>

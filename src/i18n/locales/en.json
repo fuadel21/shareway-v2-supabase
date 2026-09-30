@@ -7,6 +7,15 @@
         "save": "Save",
         "back": "Back"
     },
+    "landing": {
+        "community_title": "The ShareWay community is growing",
+        "registered_users": "registered users",
+        "registered_users_one": "registered user",
+        "registered_users_loading": "Loading community...",
+        "registered_users_error": "Could not load the counter",
+        "registered_users_live": "Updated automatically",
+        "map_title": "Shared mobility in real time"
+    },
     "nav": {
         "explore": "Explore",
         "my_rides": "My Rides",
