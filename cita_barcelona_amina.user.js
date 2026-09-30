@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Bot Cita Previa Barcelona - Version 9.0 Ultra-Fiable (Amina Chair)
+// @name         Bot Cita Previa Barcelona - Version 9.1 (Amina Chair - Anti-Error 0301)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.0
-// @description  Buscador automatizado de alta precisión para Amina Chair (NIE Y2086361E, Barcelona) con auto-rellenado de Teléfono 698233413 y Email fuadel21@hotmail.com.
+// @version      9.1
+// @description  Buscador automatizado con recuperación nativa de Error 0301 para Amina Chair (NIE Y2086361E, Barcelona).
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-end
 // @grant        none
@@ -15,7 +15,6 @@
   var NOMBRE = "AMINA CHAIR";
   var NIE = "Y2086361E";
   var NACIONALIDAD_VAL = "248"; // MARRUECOS
-  var NACIONALIDAD_TXT = "MARRUECOS";
   var PROVINCIA_VAL = "8"; // BARCELONA
   var TELEFONO = "698233413";
   var EMAIL = "fuadel21@hotmail.com";
@@ -99,7 +98,7 @@
     if (banner) {
       banner.innerHTML = 
         "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-          "<span>🤖 BOT BARCELONA v9.0 🟢</span>" +
+          "<span>🤖 BOT BARCELONA v9.1 🟢</span>" +
           "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + attemptCount + "</span>" +
         "</div>" +
         "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -155,6 +154,7 @@
     window.botSubmitting = true;
     try {
       btn.style.outline = "4px solid #22c55e";
+      if (typeof btn.focus === "function") btn.focus();
       btn.click();
     } catch(e) {
       window.botSubmitting = false;
@@ -168,7 +168,7 @@
     var href = window.location.href.toLowerCase();
     var body = document.body ? document.body.innerText : "";
 
-    // 0. DETECCIÓN Y AUTO-RECUPERACIÓN DE ERRORES O CADUCIDAD DE SESIÓN
+    // 0. AUTO-RECUPERACIÓN DE ERROR 0301 / CADUCIDAD DE SESIÓN
     if (body.indexOf("Se ha producido un error") !== -1 ||
         body.indexOf("0301") !== -1 ||
         body.indexOf("caducado") !== -1 ||
@@ -176,11 +176,24 @@
         body.indexOf("Too Many Requests") !== -1 ||
         body.indexOf("rejected") !== -1) {
       
-      createBanner("⚠️ Error de sesión/servidor detectado. Reiniciando secuencia en 2 segundos...");
+      createBanner("🔄 Limpiando Error 0301 y reiniciando formulario...");
+
+      // 1º Pulsar el botón naranja "Aceptar" de la pantalla de error si existe
+      var btnAceptarError = document.querySelector("input[value='Aceptar']") ||
+                            document.querySelector("button[value='Aceptar']") ||
+                            document.querySelector(".btn-primary") ||
+                            document.querySelector("input[type='submit']") ||
+                            document.querySelector("button");
+
+      if (btnAceptarError) {
+        try { btnAceptarError.click(); } catch(e){}
+      }
+
+      // 2º Redirigir limpiamente a la URL inicial
       setTimeout(function() {
         localStorage.removeItem("bot_target_timestamp");
         window.location.href = BASE_URL;
-      }, 2000);
+      }, 1200);
       return;
     }
 
@@ -188,7 +201,7 @@
     var selProv = document.querySelector("select[name*='provincia']") || document.querySelector("select");
     var btnProvAceptar = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
 
-    if (selProv && btnProvAceptar && (body.indexOf("PROVINCIAS DISPONIBLES") !== -1 || body.indexOf("Selecciona Provincia") !== -1 || href.indexOf("acopcdirect") !== -1 || href.indexOf("acprovincias") !== -1 && body.indexOf("TRÁMITE") === -1)) {
+    if (selProv && btnProvAceptar && (body.indexOf("PROVINCIAS DISPONIBLES") !== -1 || body.indexOf("Selecciona Provincia") !== -1 || href.indexOf("acopcdirect") !== -1 || (href.indexOf("acprovincias") !== -1 && body.indexOf("TRÁMITE") === -1))) {
       createBanner("📍 Paso 1/5: Seleccionando Provincia BARCELONA...");
       var foundP = false;
       for (var i = 0; i < selProv.options.length; i++) {
@@ -200,7 +213,7 @@
         }
       }
       if (foundP) {
-        setTimeout(function() { submitFormWithBtn(btnProvAceptar); }, 400);
+        setTimeout(function() { submitFormWithBtn(btnProvAceptar); }, 800);
         return;
       }
     }
@@ -231,7 +244,7 @@
         tramiteSel.dispatchEvent(new Event("change", { bubbles: true }));
 
         var btnAceptarTramite = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
-        setTimeout(function() { submitFormWithBtn(btnAceptarTramite); }, 500);
+        setTimeout(function() { submitFormWithBtn(btnAceptarTramite); }, 900);
         return;
       }
     }
@@ -240,7 +253,7 @@
     var btnEntrar = document.querySelector("#btnEntrar") || document.querySelector("input[value*='Entrar']");
     if (btnEntrar) {
       createBanner("🚪 Paso 3/5: Entrando al formulario de datos...");
-      setTimeout(function() { submitFormWithBtn(btnEntrar); }, 400);
+      setTimeout(function() { submitFormWithBtn(btnEntrar); }, 700);
       return;
     }
 
@@ -259,9 +272,11 @@
 
       inputNie.value = NIE;
       inputNie.dispatchEvent(new Event("input", { bubbles: true }));
+      inputNie.dispatchEvent(new Event("change", { bubbles: true }));
 
       inputNombre.value = NOMBRE;
       inputNombre.dispatchEvent(new Event("input", { bubbles: true }));
+      inputNombre.dispatchEvent(new Event("change", { bubbles: true }));
 
       var selPais = document.querySelector("#txtPaisNac") || document.querySelector("select[name*='txtPaisNac']") || document.querySelector("#idPais");
       if (selPais) {
@@ -275,7 +290,7 @@
       }
 
       var btnEnviarDatos = document.querySelector("#btnEnviar") || document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
-      setTimeout(function() { submitFormWithBtn(btnEnviarDatos); }, 500);
+      setTimeout(function() { submitFormWithBtn(btnEnviarDatos); }, 900);
       return;
     }
 
@@ -283,7 +298,7 @@
     var btnSolicitar = document.querySelector("#btnEnviar") || document.querySelector("input[value*='Solicitar']");
     if (btnSolicitar && (body.indexOf("Solicitar Cita") !== -1 || body.indexOf("Identidad del usuario") !== -1)) {
       createBanner("⚡ Paso 5/5: Comprobando disponibilidad de citas en Barcelona...");
-      setTimeout(function() { submitFormWithBtn(btnSolicitar); }, 400);
+      setTimeout(function() { submitFormWithBtn(btnSolicitar); }, 700);
       return;
     }
 
@@ -323,7 +338,7 @@
       setTimeout(function() {
         var btnFinal = document.querySelector("#btnSiguiente") || document.querySelector("#btnEnviar") || document.querySelector("input[value*='Confirmar']");
         submitFormWithBtn(btnFinal);
-      }, 500);
+      }, 600);
       return;
     }
 
@@ -368,11 +383,11 @@
   }
 
   // EJECUCIÓN INICIAL Y BUCLE SEGURO DE VERIFICACIÓN
-  setTimeout(runStep, 600);
+  setTimeout(runStep, 800);
   setInterval(function() {
     if (!window.botTimerActive && !window.botSubmitting) {
       runStep();
     }
-  }, 2000);
+  }, 2500);
 
 })();
