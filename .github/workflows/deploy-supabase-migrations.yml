@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - arena/01a05950-shareway-v2-supabase
     paths:
       - 'supabase/migrations/**'
       - 'supabase/config.toml'
