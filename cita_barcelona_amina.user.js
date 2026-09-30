@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Bot Cita Previa Barcelona - Version 8.4 (Reserva Automática + Envío de Email Justificante)
+// @name         Bot Cita Previa Barcelona - Version 8.5 (Auto-Reserva + Envió de Justificante a fuadel21@hotmail.com)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      8.4
-// @description  Buscador automático para Amina Chair con auto-rellenado de Teléfono/Email para confirmación oficial y envío de correo.
+// @version      8.5
+// @description  Buscador automático para Amina Chair con auto-rellenado de Teléfono 698233413 y Email fuadel21@hotmail.com.
 // @match        *://icp.administracionelectronica.gob.es/*
 // @grant        none
 // ==/UserScript==
@@ -13,8 +13,8 @@
   var NOMBRE = "AMINA CHAIR";
   var NIE = "Y2086361E";
   var NACIONALIDAD = "MARRUECOS";
-  var TELEFONO = localStorage.getItem("bot_telefono") || "";
-  var EMAIL = localStorage.getItem("bot_email") || "";
+  var TELEFONO = "698233413";
+  var EMAIL = "fuadel21@hotmail.com";
   var RETRY_SEC = 600; // BÚSQUEDA CADA 10 MINUTOS (600 segundos) TODA LA SEMANA (24/7)
   var BASE_URL = "https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDirect";
 
@@ -112,12 +112,12 @@
       banner.style.borderColor = "#3b82f6";
       banner.innerHTML = 
         "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>" +
-          "<span>🤖 BOT BARCELONA v8.4 🟢 (Reserva + Email)</span>" +
+          "<span>🤖 BOT BARCELONA v8.5 🟢</span>" +
           "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + attemptCount + "</span>" +
         "</div>" +
         "<div style='font-size:12px;color:#cbd5e1;'>" +
           "👤 <b>Amina Chair</b> | 📍 <b>Barcelona</b> (Toma Huellas)<br>" +
-          "⚡ <b>Reserva auto e integración de email justificante</b><br>" +
+          "📱 <b>" + TELEFONO + "</b> | ✉️ <b>" + EMAIL + "</b><br>" +
           "⏱️ Próxima revisión en: <b style='color:#facc15;font-size:15px;'>" + min + "m " + secStr + "s</b>" +
         "</div>";
     }
@@ -476,7 +476,7 @@
       return;
     }
 
-    // PASO 9: CITA RESERVADA -> AUTO-RELLENAR TELÉFONO Y EMAIL PARA ENVIAR EL JUSTIFICANTE OFICIAL POR CORREO
+    // PASO 9: CITA RESERVADA -> AUTO-RELLENAR TELÉFONO 698233413 Y EMAIL fuadel21@hotmail.com PARA RECIBIR EL CORREO
     var inTel = document.querySelector("#txtTelefonoCitado") || document.querySelector("input[name*='Telefono']");
     var inMail1 = document.querySelector("#email") || document.querySelector("#txtEmail") || document.querySelector("input[name*='email']");
     var inMail2 = document.querySelector("#emailConfirm") || document.querySelector("#txtEmailConfirmar") || document.querySelector("input[name*='Confirm']");
@@ -484,22 +484,28 @@
     if (inTel || inMail1) {
       document.body.style.backgroundColor = "#86efac";
 
-      if (TELEFONO && inTel) {
+      if (inTel) {
         inTel.value = TELEFONO;
         inTel.dispatchEvent(new Event("input", { bubbles: true }));
       }
-      if (EMAIL && inMail1) {
+      if (inMail1) {
         inMail1.value = EMAIL;
         inMail1.dispatchEvent(new Event("input", { bubbles: true }));
       }
-      if (EMAIL && inMail2) {
+      if (inMail2) {
         inMail2.value = EMAIL;
         inMail2.dispatchEvent(new Event("input", { bubbles: true }));
       }
 
+      // AUTO-CLICK EN ENVIAR CONFIRMACIÓN SI ESTÁ EL BOTÓN
+      setTimeout(function() {
+        var btnConfirm = document.querySelector("#btnSiguiente") || document.querySelector("#btnEnviar") || findButtonByKeywords(["Siguiente", "Confirmar", "Aceptar"]);
+        if (btnConfirm) clickBtn(btnConfirm);
+      }, 500);
+
       sendMobileNotification(
         "🎉 ¡¡¡CITA RESERVADA EN BARCELONA!!!",
-        "¡Atención Amina Chair! Cita localizada en Barcelona. Revisa el correo electrónico para ver el justificante."
+        "¡Atención Amina Chair! Cita localizada en Barcelona. Revisa fuadel21@hotmail.com para ver el justificante."
       );
 
       // VIBRACIÓN INTENSA
@@ -531,7 +537,7 @@
         }
       } catch(e){}
 
-      alert("🎉 ¡¡¡CITA LOCALIZADA Y RESERVADA EN BARCELONA PARA AMINA CHAIR!!! EXTRANJERÍA ENVIARÁ EL JUSTIFICANTE OFICIAL A TU CORREO ELECTRÓNICO.");
+      alert("🎉 ¡¡¡CITA LOCALIZADA Y RESERVADA EN BARCELONA PARA AMINA CHAIR!!! REVISA TU EMAIL fuadel21@hotmail.com CON EL JUSTIFICANTE OFICIAL.");
     }
   }
 
