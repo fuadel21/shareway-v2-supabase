@@ -1,0 +1,76 @@
+{
+  "_readme": "Tests aislados del run unitario (pnpm test) porque NO son fiables hoy. No se han borrado: ejecútalos con `pnpm run test:quarantined`. Al arreglar uno, quítalo de esta lista.",
+  "categories": {
+    "live-db": {
+      "reason": "Necesitan Supabase real (service-role key / red). No pueden correr en CI con credenciales de test.",
+      "files": [
+        "src/integration-tests/bookingFlow.test.js",
+        "src/integration-tests/walletCheck.test.js",
+        "src/integration/__tests__/comprehensive_production.test.js",
+        "src/integration/__tests__/full_lifecycle_e2e.test.js",
+        "src/services/__tests__/chaos_engineering.test.js",
+        "src/services/__tests__/communication_and_security.integration.test.js",
+        "src/services/__tests__/endToEndIntegration.test.js",
+        "src/services/__tests__/platform_commissions.integration.test.js",
+        "src/services/__tests__/production_readiness_final.test.js",
+        "src/services/__tests__/ride_lifecycle.integration.test.js",
+        "src/services/__tests__/visibility_and_reviews.integration.test.js",
+        "src/services/__tests__/wallet_transactions.integration.test.js",
+        "src/services/bookingFlow.integration.test.js",
+        "src/services/businessRules.integration.test.js",
+        "src/services/cancellation.integration.test.js",
+        "src/services/carpoolingFlow.comprehensive.test.js",
+        "src/services/concurrency.integration.test.js",
+        "src/services/gps-enforcement.integration.test.js",
+        "src/test/matching_and_reservations.test.js",
+        "src/test/production_chaos.test.js"
+      ]
+    },
+    "missing-helpers-or-deps": {
+      "reason": "Importan ../helpers.js (createTestUser, futureDate... ya no existen; hoy solo hay src/test/helpers.js) o @tanstack/react-query (no es dependencia).",
+      "files": [
+        "src/components/__tests__/LeaveReview.test.js",
+        "src/components/__tests__/LeaveReviewEnhanced.test.js",
+        "src/components/__tests__/ui.integration.test.js",
+        "src/pages/Admin/__tests__/AdminDashboard.test.js",
+        "src/services/__tests__/businessValidations.test.js",
+        "src/services/__tests__/concurrency.test.js",
+        "src/services/__tests__/criticalBugs.test.js",
+        "src/services/__tests__/criticalFixes.test.js",
+        "src/services/__tests__/fulfillRequest.integration.test.js",
+        "src/services/__tests__/gamification.test.js",
+        "src/services/__tests__/gamificationSystem.test.js",
+        "src/services/__tests__/notificationSystem.test.js",
+        "src/services/__tests__/notifications.test.js",
+        "src/services/__tests__/requestRide.integration.test.js",
+        "src/services/__tests__/states.test.js",
+        "src/services/__tests__/wallet.test.js"
+      ]
+    },
+    "stale-mocks-or-expectations": {
+      "reason": "Mocks/expectativas de antes del hardening del backend (create_ride RPC, PIN, nuevos props). Hay que reescribirlos contra el contrato actual.",
+      "files": [
+        "src/components/__tests__/AuditFlows.test.jsx",
+        "src/components/__tests__/BookingLogic.test.jsx",
+        "src/components/__tests__/CreateRide.test.jsx",
+        "src/components/__tests__/FixIntegrity.test.jsx",
+        "src/services/__tests__/businessValidation.test.js",
+        "src/services/__tests__/concurrencyRaceConditions.test.js",
+        "src/services/__tests__/createRide.simple.test.js",
+        "src/services/__tests__/createRide.test.js",
+        "src/services/__tests__/createRideRequest.test.js",
+        "src/services/__tests__/errorHandlingEdgeCases.test.js",
+        "src/services/__tests__/fulfillRideRequest.test.js",
+        "src/services/__tests__/rideLifecycle.test.js",
+        "src/services/__tests__/rideService.test.js"
+      ]
+    },
+    "legacy-disabled-flows": {
+      "reason": "Prueban flujos que el código desactiva a propósito (escrow genérico, pago legacy). Sustituir por tests del flujo canónico de reserva.",
+      "files": [
+        "src/services/__tests__/escrowSystem.test.js",
+        "src/services/__tests__/paymentSystem.test.js"
+      ]
+    }
+  }
+}

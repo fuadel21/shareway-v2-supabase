@@ -8,6 +8,7 @@
         "build": "vite build",
         "preview": "vite preview",
         "test": "node scripts/run-vitest-ci.mjs",
+        "test:quarantined": "RUN_QUARANTINED=1 node scripts/run-vitest-ci.mjs",
         "test:watch": "vitest",
         "test:coverage": "vitest run --coverage",
         "test:e2e": "playwright test",
