@@ -2,7 +2,11 @@ import urllib.request
 import urllib.parse
 import time
 import http.cookiejar
+import ssl
 from datetime import datetime
+
+# DESACTIVAR VERIFICACIÓN SSL PARA EVITAR ERRORES DE CERTIFICADOS EN TERMUX
+ssl._create_default_https_context = ssl._create_unverified_context
 
 CONFIG = {
     "nombre": "AMINA CHAIR",
@@ -36,11 +40,9 @@ def check_citas():
     ]
 
     try:
-        # Step 1
         req1 = urllib.request.Request(BASE_URL)
         resp1 = opener.open(req1)
 
-        # Step 2
         post_data = urllib.parse.urlencode({
             'form': 'form',
             'form:provincia': CONFIG['provincia'],
