@@ -9,6 +9,8 @@ export default defineConfig({
     server: {
         port: 5173,
         strictPort: true,
+        // Arena previews are proxied through an e2b.app hostname.
+        allowedHosts: ['.e2b.app', 'localhost'],
         hmr: {
             protocol: 'ws',
             host: 'localhost',
