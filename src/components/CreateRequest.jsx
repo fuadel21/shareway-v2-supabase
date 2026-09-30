@@ -16,6 +16,7 @@ import { es, enUS } from 'date-fns/locale';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
 import MapComponent from './MapComponent.jsx';
 import { createRideRequest, RIDE_RULES, calculateRecommendedPrice, fetchRoute } from '@/services/rideService';
+import { validateRidePrice } from '@/utils/pricingRules';
 import { cn, decodePolyline } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -297,9 +298,22 @@ const CreateRequest = () => {
             });
         }
 
+        if (isCalculatingRoute || !Number.isFinite(Number(routeInfo.distance)) || Number(routeInfo.distance) <= 0) {
+            return toast.error(t('common.error'), {
+                description: copy.routeUnavailable || 'No se pudo calcular la distancia de la ruta.'
+            });
+        }
+
         const numPrice = parseFloat(price.toString().replace(',', '.'));
         if (isNaN(numPrice) || numPrice < RIDE_RULES.MIN_PRICE) {
             return toast.error(t('create_request_extra.min_price', { price: RIDE_RULES.MIN_PRICE }));
+        }
+
+        const priceValidation = validateRidePrice(numPrice, Number(routeInfo.distance));
+        if (!priceValidation.valid) {
+            return toast.error(priceValidation.error, {
+                description: priceValidation.details
+            });
         }
 
         setIsSubmitting(true);
@@ -459,8 +473,9 @@ const CreateRequest = () => {
                             </div>
                             <div className="relative">
                                 <Euro className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-primary font-bold" />
-                                <Input type="number" step="0.5" value={price} onChange={(e) => setPrice(e.target.value)} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
+                                <Input type="number" step="0.01" min={RIDE_RULES.MIN_PRICE} value={price} onChange={(e) => setPrice(e.target.value)} className="h-14 pl-9 rounded-2xl border-none bg-slate-50 font-black text-lg text-center" />
                             </div>
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">{t('create_ride.price_per_seat')}</p>
                             <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-left">
                                 <div className="flex items-start gap-2">
                                     <Sparkles className="size-4 text-emerald-600 mt-0.5 shrink-0" />

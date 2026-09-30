@@ -7,6 +7,15 @@
         "save": "حفظ",
         "back": "رجوع"
     },
+    "landing": {
+        "community_title": "مجتمع ShareWay ينمو",
+        "registered_users": "مستخدمين مسجلين",
+        "registered_users_one": "مستخدم مسجل",
+        "registered_users_loading": "جارٍ تحميل المجتمع...",
+        "registered_users_error": "تعذر تحميل العداد",
+        "registered_users_live": "يتم التحديث تلقائيًا",
+        "map_title": "التنقل المشترك في الوقت الفعلي"
+    },
     "nav": {
         "explore": "استكشاف",
         "my_rides": "رحلاتي",
@@ -320,6 +329,7 @@
         "destination_label": "نقطة الوصول",
         "section_datetime": "التاريخ والوقت",
         "section_seats_price": "المقاعد والسعر",
+        "price_per_seat": "السعر لكل مقعد · العمولة مشمولة",
         "section_preferences": "التفضيلات",
         "women_only": "نساء فقط",
         "note_placeholder": "مثال: مساحة أمتعة واسعة، أنطلق في الموعد...",

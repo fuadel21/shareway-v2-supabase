@@ -18,6 +18,26 @@ create table if not exists public.emergency_alerts (
   updated_at timestamptz not null default now()
 );
 
+-- Earlier SOS migrations created this table with `location` only. `CREATE TABLE
+-- IF NOT EXISTS` does not reconcile an existing table, so add every column used
+-- by this migration before comments, indexes, triggers, and the RPC are parsed.
+-- Keeping `location` is intentional for backwards compatibility with historic
+-- alerts; new writes use `current_location`.
+alter table public.emergency_alerts
+  add column if not exists chat_id uuid,
+  add column if not exists current_location jsonb,
+  add column if not exists metadata jsonb not null default '{}'::jsonb,
+  add column if not exists acknowledged_by uuid,
+  add column if not exists acknowledged_at timestamptz,
+  add column if not exists resolved_by uuid,
+  add column if not exists resolved_at timestamptz,
+  add column if not exists updated_at timestamptz not null default now();
+
+update public.emergency_alerts
+set current_location = location
+where current_location is null
+  and location is not null;
+
 comment on table public.emergency_alerts is 'SOS/emergency alert log for ShareWay rides. Stores the triggering user, ride, status, optional GPS location and operational metadata.';
 comment on column public.emergency_alerts.current_location is 'Optional JSON GPS payload, usually {lat,lng}. Stored only when the client grants location permission.';
 comment on column public.emergency_alerts.metadata is 'Extra event details such as source, user agent, channel or future automation data.';

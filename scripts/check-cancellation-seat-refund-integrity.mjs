@@ -8,6 +8,7 @@ import {
 const root = process.cwd();
 const migrationsDir = path.join(root, 'supabase', 'migrations');
 const srcDir = path.join(root, 'src');
+const functionsDir = path.join(root, 'supabase', 'functions');
 const failures = [];
 const warnings = [];
 
@@ -63,8 +64,8 @@ if (bookingCancelSql) {
   );
   requirePattern(
     bookingCancelSql,
-    /(seats_available|available_seats)/,
-    'La implementación efectiva de cancel_booking_and_refund no referencia plazas disponibles.',
+    /(seats_available|available_seats|seats_recovered|enforce_ride_booking_seat_integrity)/,
+    'La implementación efectiva de cancel_booking_and_refund no referencia ni devuelve el contrato de plazas.',
   );
   requirePattern(
     bookingCancelSql,
@@ -119,11 +120,26 @@ if (requiredClientFiles.every((file) => fs.existsSync(path.join(root, file)))) {
   const service = fs.readFileSync(path.join(root, 'src/services/rideService.js'), 'utf8');
   const details = fs.readFileSync(path.join(root, 'src/components/RideDetails.jsx'), 'utf8');
 
-  if (!rpc.includes("supabase.rpc('cancel_booking_and_refund'")) {
-    failures.push('El cliente no usa la RPC cancel_booking_and_refund.');
+  const bookingCancelEdge = fs.existsSync(path.join(functionsDir, 'cancel-booking-and-refund', 'index.ts'))
+    ? fs.readFileSync(path.join(functionsDir, 'cancel-booking-and-refund', 'index.ts'), 'utf8')
+    : '';
+  const rideCancelEdge = fs.existsSync(path.join(functionsDir, 'cancel-ride-and-refund', 'index.ts'))
+    ? fs.readFileSync(path.join(functionsDir, 'cancel-ride-and-refund', 'index.ts'), 'utf8')
+    : '';
+
+  if (!rpc.includes("supabase.rpc('cancel_booking_and_refund'")
+    && !rpc.includes("supabase.functions.invoke('cancel-booking-and-refund'")) {
+    failures.push('El cliente no usa la RPC/Edge Function cancel_booking_and_refund.');
   }
-  if (!rpc.includes("supabase.rpc('cancel_ride'")) {
-    failures.push('El cliente no usa la RPC cancel_ride.');
+  if (!rpc.includes("supabase.rpc('cancel_ride'")
+    && !rpc.includes("supabase.functions.invoke('cancel-ride-and-refund'")) {
+    failures.push('El cliente no usa la RPC/Edge Function cancel_ride.');
+  }
+  if (!bookingCancelEdge.includes("rpc('cancel_booking_and_refund'")) {
+    failures.push('La Edge Function de cancelación de pasajero no delega en cancel_booking_and_refund.');
+  }
+  if (!rideCancelEdge.includes("rpc('cancel_ride_unified'")) {
+    failures.push('La Edge Function de cancelación de conductor no delega en cancel_ride_unified.');
   }
   if (!service.includes('cancelBookingAndRefund')) {
     failures.push('rideService no delega la cancelación del pasajero en cancelBookingAndRefund.');

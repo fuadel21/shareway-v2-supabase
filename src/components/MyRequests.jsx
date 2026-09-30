@@ -9,17 +9,23 @@ import {
   Search, Route, Euro, Users
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, isBefore, subMinutes } from 'date-fns';
+import { format } from 'date-fns';
 import { es, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import {
+  getEffectiveRequestStatus,
+  isAcceptedRequestStatus,
+  isClosedActivityStatus,
+  RIDE_EXPIRATION_GRACE_MINUTES,
+} from '@/utils/activityFilters.js';
 
 const copyByLanguage = {
   es: {
     title: 'Solicitudes',
     origin: 'Origen',
     destination: 'Destino',
-    budget: 'Presupuesto',
+    budget: 'Presupuesto / plaza',
     seats: 'Plazas',
     cancelling: 'CANCELANDO...',
     cancelRequest: 'CANCELAR',
@@ -35,8 +41,9 @@ const copyByLanguage = {
     active: 'ACTIVAS',
     accepted: 'ACEPTADAS',
     history: 'HISTORIAL',
+    cancelled: 'CANCELADAS',
+    expired: 'CADUCADAS',
     all: 'TODAS',
-    expired: 'EXPIRADAS',
     scanning: 'Escaneando radar...',
     noRequests: 'Sin solicitudes',
     noRequestsDesc: 'Lanza una petición al sistema y los conductores podrán encontrarte.',
@@ -68,7 +75,7 @@ const copyByLanguage = {
     title: 'Requests',
     origin: 'Origin',
     destination: 'Destination',
-    budget: 'Budget',
+    budget: 'Budget / seat',
     seats: 'Seats',
     cancelling: 'CANCELLING...',
     cancelRequest: 'CANCEL',
@@ -84,8 +91,9 @@ const copyByLanguage = {
     active: 'ACTIVE',
     accepted: 'ACCEPTED',
     history: 'HISTORY',
-    all: 'ALL',
+    cancelled: 'CANCELLED',
     expired: 'EXPIRED',
+    all: 'ALL',
     scanning: 'Scanning radar...',
     noRequests: 'No requests',
     noRequestsDesc: 'Post a request so drivers can find you.',
@@ -117,7 +125,7 @@ const copyByLanguage = {
     title: 'الطلبات',
     origin: 'نقطة الانطلاق',
     destination: 'الوجهة',
-    budget: 'الميزانية',
+    budget: 'الميزانية / المقعد',
     seats: 'المقاعد',
     cancelling: 'جارٍ الإلغاء...',
     cancelRequest: 'إلغاء',
@@ -133,8 +141,9 @@ const copyByLanguage = {
     active: 'النشطة',
     accepted: 'المقبولة',
     history: 'السجل',
-    all: 'الكل',
+    cancelled: 'الملغاة',
     expired: 'المنتهية',
+    all: 'الكل',
     scanning: 'جارٍ فحص الرادار...',
     noRequests: 'لا توجد طلبات',
     noRequestsDesc: 'أنشئ طلبًا ليتمكن السائقون من العثور عليك.',
@@ -172,19 +181,11 @@ const getLanguage = (language) => {
 
 const getLocale = (language) => language === 'es' ? es : enUS;
 
-const isClosedStatus = (status) => ['expired', 'cancelled', 'rejected', 'completed'].includes(status);
-const isAcceptedStatus = (status) => ['accepted', 'confirmed', 'on_board'].includes(status);
-
-const getEffectiveStatus = (request) => {
-  const status = request?.status || 'pending';
-  if (!isClosedStatus(status) && request?.departure_time) {
-    const departure = new Date(request.departure_time);
-    if (!Number.isNaN(departure.getTime()) && isBefore(departure, subMinutes(new Date(), 120))) {
-      return 'expired';
-    }
-  }
-  return status;
-};
+const isClosedStatus = isClosedActivityStatus;
+const isAcceptedStatus = isAcceptedRequestStatus;
+const getEffectiveStatus = (request) => getEffectiveRequestStatus(request, {
+  graceMinutes: RIDE_EXPIRATION_GRACE_MINUTES,
+});
 
 const getLocationName = (location, fallback) => location?.name || location?.address || fallback;
 const getRequestPrice = (request) => Number(request?.suggested_price ?? request?.price ?? 0);
@@ -358,6 +359,18 @@ const MyRequests = () => {
     if (!profile?.id) return;
     setLoading(true);
     try {
+      // Persist the same 120-minute expiration rule used by the local filters.
+      // This is best effort so an older project without the automation RPC can
+      // still render the effective status from departure_time/expires_at.
+      const { error: expirationError } = await supabase.rpc(
+        'sw_expire_past_ride_requests',
+        {
+          p_grace_minutes: RIDE_EXPIRATION_GRACE_MINUTES,
+          p_limit: 100,
+        },
+      );
+      if (expirationError) console.warn('Request expiration sync skipped:', expirationError);
+
       const { data, error } = await supabase
         .from('ride_requests')
         .select('*')
@@ -391,8 +404,10 @@ const MyRequests = () => {
   const stats = useMemo(() => {
     const active = enrichedRequests.filter(r => r.effective_status === 'pending').length;
     const accepted = enrichedRequests.filter(r => isAcceptedStatus(r.effective_status)).length;
+    const cancelled = enrichedRequests.filter(r => ['cancelled', 'rejected'].includes(r.effective_status)).length;
+    const expired = enrichedRequests.filter(r => r.effective_status === 'expired').length;
     const closed = enrichedRequests.filter(r => isClosedStatus(r.effective_status)).length;
-    return { active, accepted, closed, total: enrichedRequests.length };
+    return { active, accepted, cancelled, expired, closed, total: enrichedRequests.length };
   }, [enrichedRequests]);
 
   const filteredRequests = useMemo(() => {
@@ -401,6 +416,10 @@ const MyRequests = () => {
         return enrichedRequests.filter(r => isAcceptedStatus(r.effective_status));
       case 'history':
         return enrichedRequests.filter(r => isClosedStatus(r.effective_status));
+      case 'cancelled':
+        return enrichedRequests.filter(r => ['cancelled', 'rejected'].includes(r.effective_status));
+      case 'expired':
+        return enrichedRequests.filter(r => r.effective_status === 'expired');
       case 'active':
         return enrichedRequests.filter(r => r.effective_status === 'pending');
       default:
@@ -437,6 +456,8 @@ const MyRequests = () => {
     { id: 'active', label: copy.active, value: stats.active, icon: Megaphone },
     { id: 'accepted', label: copy.accepted, value: stats.accepted, icon: CheckCircle2 },
     { id: 'history', label: copy.history, value: stats.closed, icon: Filter },
+    { id: 'cancelled', label: copy.cancelled, value: stats.cancelled, icon: XCircle },
+    { id: 'expired', label: copy.expired, value: stats.expired, icon: Clock },
   ];
 
   return (

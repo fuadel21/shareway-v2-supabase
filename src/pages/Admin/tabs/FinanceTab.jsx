@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, XCircle, Wallet, History, ArrowUpRight, ReceiptText, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
-import { getPayoutRequests, processPayoutElite } from '@/lib/supabaseRPC';
+import { getPayoutRequests, processPayout, processStripePayout } from '@/lib/supabaseRPC';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
@@ -21,13 +21,21 @@ const locationLabel = (location) => {
 
 const eventLabel = (type) => {
     const labels = {
-        booking_paid: 'Reserva pagada',
+        booking_hold: 'Reserva retenida',
+        booking_paid: 'Reserva cobrada',
+        booking_payment_refund: 'Reembolso de reserva',
         platform_fee: 'Comisión plataforma',
         driver_payout: 'Pago conductor',
+        ride_settlement: 'Liquidación del viaje',
+        passenger_refund: 'Reembolso pasajero',
+        driver_cancellation_refund: 'Reembolso por cancelación',
+        passenger_cancellation_penalty: 'Penalización pasajero',
+        driver_cancellation_penalty: 'Penalización conductor',
         refund: 'Reembolso',
         cancellation: 'Cancelación',
+        no_show_penalty: 'No-show liquidado',
         no_show: 'No-show',
-        wallet_transaction: 'Wallet transaction'
+        wallet_transaction: 'Movimiento wallet'
     };
     return labels[type] || String(type || 'Movimiento').replace(/_/g, ' ');
 };
@@ -38,6 +46,28 @@ const eventBadgeClass = (type) => {
     if (normalized.includes('fee') || normalized.includes('commission') || normalized.includes('comision')) return 'bg-blue-50 text-blue-600';
     if (normalized.includes('payout') || normalized.includes('driver')) return 'bg-emerald-50 text-emerald-600';
     return 'bg-slate-100 text-slate-600';
+};
+
+const collectionEvents = new Set(['booking_hold', 'booking_paid']);
+const settlementEvents = new Set(['ride_settlement', 'no_show_penalty']);
+const penaltyEvents = new Set(['passenger_cancellation_penalty', 'driver_cancellation_penalty']);
+const refundEvents = new Set(['passenger_refund', 'driver_cancellation_refund', 'booking_payment_refund', 'refund']);
+
+const ledgerCategory = (eventType) => {
+    const normalized = String(eventType || '').toLowerCase();
+    if (collectionEvents.has(normalized)) return 'collection';
+    if (refundEvents.has(normalized) || normalized.includes('refund')) return 'refund';
+    if (penaltyEvents.has(normalized)) return 'penalty';
+    if (settlementEvents.has(normalized)) return 'settlement';
+    return 'other';
+};
+
+const ledgerResult = (entry) => {
+    const category = ledgerCategory(entry.event_type);
+    if (category === 'collection') return null;
+    if (category === 'refund') return -Math.abs(Number(entry.refund_amount || 0));
+    if (category === 'settlement' || category === 'penalty') return Number(entry.driver_amount || 0);
+    return Number(entry.net_amount || 0);
 };
 
 /**
@@ -85,13 +115,14 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
 
     const handleProcessPayout = async (payoutId, action) => {
         const isApproval = action === 'completed' || action === 'approve';
-        const rpcAction = isApproval ? 'completed' : 'rejected';
         setProcessingId(payoutId);
         const toastId = toast.loading(isApproval ? "Procesando liquidación..." : "Rechazando retiro...");
         try {
-            const { success, error } = await processPayoutElite(payoutId, rpcAction, 'Procesado por el panel administrativo');
+            const result = isApproval
+                ? await processStripePayout(payoutId)
+                : await processPayout(payoutId, 'rejected', 'Procesado por el panel administrativo');
 
-            if (!success) throw new Error(error);
+            if (!result?.success) throw new Error(result?.error || 'La operación financiera fue rechazada');
 
             toast.success(isApproval ? "Pago liquidado y wallet actualizada" : "Retiro rechazado", { id: toastId });
             fetchFinanceData();
@@ -112,13 +143,32 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
     }
 
     const transactions = stats?.recentFeeTransactions || [];
+    // Ledger rows are events, not a balance sheet. booking_paid/booking_hold
+    // and ride_settlement contain the same gross booking at different stages;
+    // summing both would double count revenue. Keep each stage separate and
+    // only count settlement/penalty shares as realized platform/driver money.
     const ledgerTotals = ledger.reduce((acc, entry) => {
-        acc.gross += Number(entry.gross_amount || 0);
-        acc.fees += Number(entry.platform_fee || 0);
-        acc.drivers += Number(entry.driver_amount || 0);
-        acc.refunds += Number(entry.refund_amount || 0);
+        const category = ledgerCategory(entry.event_type);
+        const gross = Number(entry.gross_amount || 0);
+        const platformFee = Number(entry.platform_fee || 0);
+        const driverAmount = Number(entry.driver_amount || 0);
+        const refund = Number(entry.refund_amount || 0);
+
+        if (category === 'collection') acc.collections += gross;
+        if (category === 'settlement') {
+            acc.settledGross += gross;
+            acc.fees += platformFee;
+            acc.drivers += driverAmount;
+        }
+        if (category === 'penalty') {
+            acc.penalties += gross;
+            acc.fees += platformFee;
+            acc.drivers += driverAmount;
+        }
+        if (category === 'refund') acc.refunds += refund;
         return acc;
-    }, { gross: 0, fees: 0, drivers: 0, refunds: 0 });
+    }, { collections: 0, settledGross: 0, fees: 0, drivers: 0, refunds: 0, penalties: 0 });
+
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -220,13 +270,15 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
                             <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
                                 <ReceiptText className="h-6 w-6 text-primary" /> Ledger financiero por viaje
                             </CardTitle>
-                            <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Auditoría por ride: bruto, comisión, conductor y reembolsos.</CardDescription>
+                            <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">Eventos por viaje; cobros, liquidaciones, penalizaciones y reembolsos se muestran por separado.</CardDescription>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <Badge className="justify-center bg-slate-100 text-slate-600 border-none font-black px-3 py-2">Bruto {money(ledgerTotals.gross)}</Badge>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                            <Badge className="justify-center bg-slate-100 text-slate-600 border-none font-black px-3 py-2">Cobrado/ret. {money(ledgerTotals.collections)}</Badge>
+                            <Badge className="justify-center bg-violet-50 text-violet-600 border-none font-black px-3 py-2">Liquidado {money(ledgerTotals.settledGross)}</Badge>
                             <Badge className="justify-center bg-blue-50 text-blue-600 border-none font-black px-3 py-2">Comisión {money(ledgerTotals.fees)}</Badge>
                             <Badge className="justify-center bg-emerald-50 text-emerald-600 border-none font-black px-3 py-2">Conductor {money(ledgerTotals.drivers)}</Badge>
-                            <Badge className="justify-center bg-red-50 text-red-600 border-none font-black px-3 py-2">Refund {money(ledgerTotals.refunds)}</Badge>
+                            <Badge className="justify-center bg-amber-50 text-amber-600 border-none font-black px-3 py-2">Penalizaciones {money(ledgerTotals.penalties)}</Badge>
+                            <Badge className="justify-center bg-red-50 text-red-600 border-none font-black px-3 py-2">Reembolsos {money(ledgerTotals.refunds)}</Badge>
                         </div>
                     </div>
                 </CardHeader>
@@ -239,7 +291,7 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-center">Evento</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-right">Bruto</TableHead>
                                 <TableHead className="font-black text-[10px] uppercase tracking-widest text-right">Comisión</TableHead>
-                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-right pr-8">Neto</TableHead>
+                                <TableHead className="font-black text-[10px] uppercase tracking-widest text-right pr-8">Resultado</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -268,8 +320,8 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
                                         <TableCell className="text-right font-black text-blue-600 italic">{money(entry.platform_fee)}</TableCell>
                                         <TableCell className="text-right pr-8">
                                             <div className="flex items-center justify-end gap-1 font-black text-emerald-600 italic">
-                                                {money(entry.net_amount)}
-                                                <ShieldCheck className="h-3 w-3" />
+                                                {ledgerResult(entry) === null ? '—' : money(ledgerResult(entry))}
+                                                {ledgerCategory(entry.event_type) !== 'collection' && <ShieldCheck className="h-3 w-3" />}
                                             </div>
                                         </TableCell>
                                     </TableRow>

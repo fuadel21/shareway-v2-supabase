@@ -1,72 +1,68 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card.jsx';
-import { ArrowLeft, Share2, Map, Lock } from 'lucide-react';
+import { ArrowLeft, Share2, Map, Lock, Link2 } from 'lucide-react';
 
 function ShareMyTrip() {
     const navigate = useNavigate();
 
     return (
         <div className="min-h-screen bg-background text-foreground">
-            <header className="bg-card border-b sticky top-0 z-10">
-                <div className="container mx-auto p-4 flex items-center gap-4">
-                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft /></Button>
-                    <h1 className="text-xl font-bold">Compartir Mi Viaje</h1>
+            <header className="sticky top-0 z-10 border-b bg-card">
+                <div className="container mx-auto flex items-center gap-4 p-4">
+                    <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Volver">
+                        <ArrowLeft />
+                    </Button>
+                    <h1 className="text-xl font-bold">Compartir mi viaje</h1>
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 max-w-2xl space-y-8">
-                <Card className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800">
+            <main className="container mx-auto max-w-2xl space-y-8 p-4">
+                <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-3"><Share2 className="text-blue-600" /><span>Tranquilidad para todos</span></CardTitle>
+                        <CardTitle className="flex items-center gap-3">
+                            <Share2 className="text-blue-600" />
+                            <span>Comparte solo lo necesario</span>
+                        </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            La función "Compartir Mi Viaje" te permite enviar un enlace privado y seguro a tus contactos de confianza. Con este enlace, podrán ver tu ubicación y el progreso de tu viaje en tiempo real en un mapa.
+                            Desde el detalle de un viaje programado, activo o en curso puedes generar un enlace temporal para una persona de confianza.
+                            El enlace muestra únicamente el estado, la ruta, la salida, el conductor público y la última ubicación disponible.
                         </p>
                     </CardContent>
                 </Card>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>¿Cómo funciona?</CardTitle>
+                        <CardTitle>Usar un enlace seguro</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full">
-                                <Map className="h-6 w-6" />
-                            </div>
+                            <div className="rounded-full bg-primary/10 p-3 text-primary"><Map className="h-6 w-6" /></div>
                             <div>
-                                <h3 className="font-semibold">1. Inicia un Viaje</h3>
-                                <p className="text-muted-foreground">Durante cualquier viaje que realices o conduzcas, verás un botón para compartir en la pantalla del mapa.</p>
+                                <h3 className="font-semibold">1. Abre el detalle del viaje</h3>
+                                <p className="text-muted-foreground">Entra en Mis viajes y selecciona el viaje que quieres compartir.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full">
-                                <Share2 className="h-6 w-6" />
-                            </div>
+                            <div className="rounded-full bg-primary/10 p-3 text-primary"><Link2 className="h-6 w-6" /></div>
                             <div>
-                                <h3 className="font-semibold">2. Genera un Enlace Seguro</h3>
-                                <p className="text-muted-foreground">Al pulsar el botón, se generará un enlace único. Solo las personas con este enlace podrán ver los detalles de tu viaje.</p>
+                                <h3 className="font-semibold">2. Genera y comparte el enlace</h3>
+                                <p className="text-muted-foreground">El servidor genera un token aleatorio; solo se guarda su hash y el token se muestra una vez al crearlo.</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0 bg-primary/10 text-primary p-3 rounded-full">
-                                <Lock className="h-6 w-6" />
-                            </div>
+                            <div className="rounded-full bg-primary/10 p-3 text-primary"><Lock className="h-6 w-6" /></div>
                             <div>
-                                <h3 className="font-semibold">3. El Enlace Expira Automáticamente</h3>
-                                <p className="text-muted-foreground">Por tu seguridad, el enlace dejará de funcionar poco después de que tu viaje haya finalizado.</p>
+                                <h3 className="font-semibold">3. Revócalo cuando quieras</h3>
+                                <p className="text-muted-foreground">El enlace caduca automáticamente, se invalida al cancelar el viaje y deja de funcionar dos horas después de finalizarlo.</p>
                             </div>
                         </div>
+                        <Button type="button" onClick={() => navigate('/my-rides')} className="w-full">
+                            Ver mis viajes
+                        </Button>
                     </CardContent>
-                </Card>
-
-                 <Card className="border-dashed">
-                    <CardHeader>
-                        <CardTitle>Próximamente</CardTitle>
-                        <CardDescription>Esta función se activará desde la pantalla de un viaje en curso. ¡Estamos trabajando en ello!</CardDescription>
-                    </CardHeader>
                 </Card>
             </main>
         </div>

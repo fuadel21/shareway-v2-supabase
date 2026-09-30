@@ -1,194 +1,92 @@
-# 🎯 RESUMEN EJECUTIVO: CONSOLIDACIÓN STRIPE PAYMENTS
+# Resumen ejecutivo vigente: pagos Stripe y liquidaciones
 
-## 🚨 PROBLEMA DETECTADO
+**Actualizado:** 2 de septiembre de 2026
+**Migración canónica:** `supabase/migrations/20260901120000_reconcile_ride_financial_rules.sql`
 
-Durante la auditoría del sistema de pagos, identifiqué **4 fallos críticos** que ponían en riesgo la integridad financiera de ShareWay:
+> Este resumen sustituye el informe histórico que describía un 15%, una
+> liquidación 85/15 y el RPC client-callable `confirm_stripe_booking`. Esos
+> caminos no son parte del flujo vigente.
 
-### 1. **Fuga de Comisiones (Tesorería Fantasma)** 💸
-- **Síntoma:** El sistema calculaba el 15% de comisión en `complete_ride` pero no lo enviaba a ninguna parte.
-- **Impacto:** Pérdida de ingresos de la plataforma, imposibilidad de auditar ganancias.
-- **Solución:** Redirigir todas las comisiones a la wallet de tesorería (`00000000-0000-0000-0000-000000000000`).
+## Reglas financieras
 
-### 2. **Reserva Fantasma (Bug de Stripe)** 👻
-- **Síntoma:** Al pagar con tarjeta, el sistema registraba el pago pero **no añadía al pasajero al viaje**.
-- **Impacto:** Usuario pagaba pero seguía viendo "RESERVAR", conductor no veía al pasajero.
-- **Solución:** Crear RPC `confirm_stripe_booking` que consolida el pago en el registro oficial del viaje.
+- El precio publicado es **por plaza** y sigue los tramos progresivos:
+  0–15 km: 0,30 €/km; 15–100: 0,22; desde 100 km: 0,15 €/km sin límite
+  superior de distancia. Se mantiene el tope global de 300 € por plaza.
+- El precio por plaza está entre 0,50 € y 300 €. Se permite una oferta inferior
+  a la sugerencia y una tolerancia de 0,05 € por redondeo.
+- La comisión del 10% está incluida en el precio bruto mostrado al pasajero;
+  no se suma como cargo independiente.
+- El total de la reserva es la cotización segura del servidor multiplicada por
+  las plazas. El servidor deriva la distancia del trayecto personalizado y
+  aplica 1,50 € por plaza cuando la recogida está a más de 3 km del origen.
+- Una liquidación completada conserva el bruto: 90% al conductor y 10% a la
+  plataforma, con el fee como remanente redondeado a céntimos.
 
-### 3. **Fragmentación de Datos** 📊
-- **Síntoma:** Coexistían `transactions` y `wallet_transactions`, causando historial incompleto.
-- **Impacto:** Usuarios veían transacciones diferentes según qué parte de la app consultaran.
-- **Solución:** Unificar en `wallet_transactions` como fuente única de verdad, `transactions` como vista.
+## Pago de reserva con tarjeta
 
-### 4. **Inconsistencia en Versiones RPC** 🔄
-- **Síntoma:** Funciones de reserva variaban entre scripts, perdiendo capacidad de múltiples asientos.
-- **Impacto:** Imposibilidad de reservar más de un asiento, puntos de recogida personalizados no se guardaban.
-- **Solución:** Estandarizar todos los RPCs bajo `FINAL_UNIFIED_FINANCIAL_ENGINE.sql`.
-
----
-
-## ✅ SOLUCIONES IMPLEMENTADAS
-
-### 📦 Archivos Creados
-
-| Archivo | Propósito |
-|---------|-----------|
-| `FINAL_UNIFIED_FINANCIAL_ENGINE.sql` | Motor principal: pagos, comisiones, escrow |
-| `FINAL_CANCELLATION_ENGINE.sql` | Cancelaciones con penalizaciones dinámicas |
-| `STRIPE_CONSOLIDATION_ENGINE.sql` | Puente entre Stripe y sistema de viajes |
-| `MASTER_FINANCIAL_HANDLERS.sql` | Handlers para webhooks y pagos externos |
-| `FINAL_REFUND_ENGINE.sql` | Resolución de disputas y reembolsos |
-| `MASTER_REFUND_SYSTEM.sql` | Reembolsos administrativos con auditoría |
-| `MASTER_PAYOUT_ENGINE.sql` | Retiros a banco con tracking |
-| `DEPLOY_FINANCIAL_SYSTEM.sql` | Script maestro de despliegue |
-| `DEPLOYMENT_GUIDE_FINANCIAL_SYSTEM.md` | Guía completa de implementación |
-
-### 🔧 Componentes Frontend Actualizados
-
-| Archivo | Cambios |
-|---------|---------|
-| `BookingPaymentModal.jsx` | Ahora pasa `pickupLocation` y `pickupAddress` a Stripe |
-| `RideDetails.jsx` | Pasa ubicación de recogida a ambos métodos de pago |
-| `supabaseRPC.js` | Añadido wrapper `confirmStripeBooking` |
-| `create-booking-payment-intent/index.ts` | Guarda pickup details en `ride_requests` |
-
----
-
-## 🎯 FLUJOS FINANCIEROS GARANTIZADOS
-
-### A. Pago con Saldo (Wallet)
-```
-Usuario → confirm_trip_and_pay() → Verificar saldo → 
-balance → held_balance (escrow) → Añadir a viaje → 
-Registrar transacción tipo 'hold'
+```text
+BookingPaymentModal
+  -> quote_ride_booking (preview server-side)
+  -> create-booking-payment-intent (recalcula y valida total/plazas)
+  -> Stripe PaymentIntent
+  -> stripe-webhook payment_intent.succeeded
+  -> fulfill_booking_after_payment (service role, idempotente)
+  -> pasajero confirmado + ledger auditable
 ```
 
-### B. Pago con Tarjeta (Stripe)
-```
-Usuario → Edge Function (create-booking-payment-intent) → 
-Stripe Payment Intent → Usuario paga → 
-Webhook recibe success → fulfill_booking_after_payment() → 
-held_balance (escrow interno) → Añadir a viaje → 
-Registrar transacción tipo 'stripe_booking_escrow'
-```
+El cliente puede enviar un importe para comprobar que su vista no quedó
+obsoleta, pero el PaymentIntent siempre usa el quote del servidor. El webhook
+vuelve a validar importe, plazas, viaje y PaymentIntent antes de incorporar al
+pasajero. El antiguo `confirm_stripe_booking` se elimina porque permitía
+intentar confirmar desde el cliente sin probar que Stripe hubiera capturado el
+cobro.
 
-### C. Completar Viaje
-```
-Conductor → complete_ride() → Para cada pasajero:
-  held_balance → 0
-  Conductor.balance += (precio × 0.85)
-  Tesorería.balance += (precio × 0.15)
-  Registrar 'trip_payment' y 'trip_earning'
-```
+## Pago con wallet
 
-### D. Cancelación con Penalización
-```
-Conductor cancela → Calcular penalización según urgencia →
-  < 2h: 5€ | < 24h: 2€ | > 24h: 0€
-  50% → Pasajeros (compensación)
-  50% → Tesorería
-Pasajeros reciben 100% reembolso + compensación
+```text
+confirm_trip_and_pay
+  -> bloquea ride y wallet
+  -> obtiene quote_ride_booking
+  -> balance -> held_balance por el total
+  -> persiste seats_booked y booking_hold en el ledger
 ```
 
-### E. Reembolso Extraordinario
-```
-Admin → admin_force_refund() → 
-Verificar escrow o tesorería → 
-Devolver 100% a usuario → 
-Registrar en refund_logs
-```
+La wallet no recibe el importe de una reserva Stripe. Al completar, no se
+acredita dos veces: se liquida el bruto almacenado de cada reserva, y solo se
+libera `held_balance` cuando el origen fue wallet.
 
----
+## Cancelaciones y no-show
 
-## 🛡️ GARANTÍAS DE SEGURIDAD
+- Pasajero: más de 24 h 100%; entre 2 h y 24 h 50%; menos de 2 h 0%.
+  La parte no reembolsada se reparte 80% conductor / 20% plataforma.
+- Conductor: reembolso total de pasajeros activos; penalización 5 € (<2 h),
+  2 € (2–24 h) o 0 € (24 h o más). La mitad se reparte entre pasajeros y el
+  resto va a plataforma; además se actualiza la reputación según la ventana.
+- No-show: solo desde la hora de salida y antes de verificar al pasajero; el
+  bruto se liquida 90/10, se persiste el evento y el reintento es un no-op.
 
-### 1. Bloqueos Pesimistas
-- Todas las operaciones usan `FOR UPDATE` en wallets y rides
-- Previene race conditions y double-spending
+Los importes se derivan de `booked_price`, `payment_amount` y las plazas
+persistidas. Para tarjeta, las Edge Functions ejecutan el refund Stripe con
+una clave estable y entregan a SQL el importe externo exacto; SQL no acredita
+una wallet como sustituto del refund.
 
-### 2. Idempotencia
-- Verificación de `payment_intent_id` duplicado
-- Verificación de status antes de procesar
+## Recargas y retiros
 
-### 3. Auditoría Completa
-- `wallet_transactions`: Registro de TODAS las transacciones
-- `refund_logs`: Registro de reembolsos manuales
-- `payout_requests`: Tracking de retiros
+- Recarga: `create-payment-intent` solo admite los cuatro Price IDs publicados
+  o un importe custom entre 5 € y 3.000 €, persiste `payment_intents` y solo
+  el webhook `settle_wallet_deposit` acredita la wallet.
+- Retiro: `request_payout` deriva el usuario del JWT, bloquea la wallet,
+  reserva el saldo y es idempotente por usuario/clave. El administrador usa
+  `process-stripe-payout`, que crea la transferencia con una clave estable y
+  cierra `process_payout`.
+- La auditoría combina `transactions` y `ride_financial_ledger`, incluyendo
+  bruto, fee, payout, refunds, plazas y los identificadores de Stripe.
 
-### 4. Validaciones de Negocio
-- No reservar propio viaje
-- Verificar asientos disponibles
-- Verificar saldo suficiente
-- Viajes solo mujeres verifican género
+## Garantías y límite conocido
 
----
-
-## 📊 MÉTRICAS DE INTEGRIDAD
-
-### Balance Total del Sistema
-```sql
--- Debe ser siempre >= 0
-SELECT SUM(balance + held_balance) as total_system_balance
-FROM public.wallets;
-```
-
-### Comisiones Acumuladas
-```sql
-SELECT balance as platform_earnings
-FROM public.wallets
-WHERE user_id = '00000000-0000-0000-0000-000000000000';
-```
-
-### Dinero en Escrow (Viajes Activos)
-```sql
-SELECT SUM(held_balance) as total_escrow
-FROM public.wallets;
-```
-
----
-
-## 🚀 PRÓXIMOS PASOS
-
-### 1. Despliegue en Supabase
-```bash
-# En el SQL Editor de Supabase, ejecutar:
-\i supabase/DEPLOY_FINANCIAL_SYSTEM.sql
-```
-
-### 2. Configurar Variables de Entorno
-```bash
-# Edge Functions
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Frontend (.env)
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
-```
-
-### 3. Configurar Webhook de Stripe
-- URL: `https://[PROJECT].supabase.co/functions/v1/stripe-webhook`
-- Eventos: `payment_intent.succeeded`, `account.updated`
-
-### 4. Testing
-- [ ] Pago con saldo
-- [ ] Pago con tarjeta
-- [ ] Completar viaje
-- [ ] Cancelación conductor
-- [ ] Cancelación pasajero
-- [ ] Reembolso manual
-- [ ] Solicitud de retiro
-
----
-
-## 📞 SOPORTE
-
-Para cualquier duda sobre la implementación:
-1. Revisar `DEPLOYMENT_GUIDE_FINANCIAL_SYSTEM.md`
-2. Verificar logs de Edge Functions en Supabase Dashboard
-3. Consultar sección Troubleshooting de la guía
-
----
-
-**Estado:** ✅ Listo para Despliegue  
-**Versión:** 4.0  
-**Fecha:** 2026-02-09  
-**Prioridad:** CRÍTICA
+Las transiciones SQL bloquean las filas críticas y son atómicas. Stripe y
+PostgreSQL no comparten una transacción ACID: si Stripe confirma un refund o
+transferencia y el cierre SQL falla, la clave de Stripe permite repetir el
+llamado y el webhook/endpoint devuelve 5xx para reintentar. Debe existir
+monitorización y reconciliación de esos estados pendientes antes de declarar
+la operación completamente autónoma.

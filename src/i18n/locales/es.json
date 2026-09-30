@@ -7,6 +7,15 @@
         "save": "Guardar",
         "back": "Volver"
     },
+    "landing": {
+        "community_title": "La comunidad ShareWay crece",
+        "registered_users": "usuarios registrados",
+        "registered_users_one": "usuario registrado",
+        "registered_users_loading": "Cargando comunidad...",
+        "registered_users_error": "No se pudo cargar el contador",
+        "registered_users_live": "Actualizado automáticamente",
+        "map_title": "Movilidad compartida en tiempo real"
+    },
     "nav": {
         "explore": "Explorar",
         "my_rides": "Viajes",
@@ -320,6 +329,7 @@
         "destination_label": "Punto de llegada",
         "section_datetime": "Fecha y Hora",
         "section_seats_price": "Plazas y Precio",
+        "price_per_seat": "Precio por plaza · comisión incluida",
         "section_preferences": "Preferencias",
         "women_only": "Solo Mujeres",
         "note_placeholder": "Ej: Maletero amplio, salgo puntual...",

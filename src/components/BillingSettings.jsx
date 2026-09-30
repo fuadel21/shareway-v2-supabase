@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -30,6 +30,8 @@ const BillingSettings = () => {
     const [isProcessing, setIsProcessing] = useState(false);
     const [isCreatingLink, setIsCreatingLink] = useState(false);
     const [isRequestingPayout, setIsRequestingPayout] = useState(false);
+    const creditPurchaseKeyRef = useRef(null);
+    const payoutRequestKeyRef = useRef(null);
 
     const handlePackageSelect = async (pkg) => {
         if (!profile) {
@@ -39,10 +41,11 @@ const BillingSettings = () => {
 
         setSelectedPackage(pkg);
         setIsProcessing(true);
+        creditPurchaseKeyRef.current = globalThis.crypto?.randomUUID?.() || `credits-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
         try {
             const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-                body: { packageId: pkg.id, userId: user.id }
+                body: { packageId: pkg.id, idempotencyKey: creditPurchaseKeyRef.current }
             });
 
             if (error) throw error;
@@ -55,6 +58,7 @@ const BillingSettings = () => {
         } catch (error) {
             console.error("Error al crear la intención de pago:", error);
             toast.error("Error al iniciar el pago", { description: error.message });
+            creditPurchaseKeyRef.current = null;
             setSelectedPackage(null);
         } finally {
             setIsProcessing(false);
@@ -82,15 +86,18 @@ const BillingSettings = () => {
         if (!payoutAmount || isNaN(payoutAmount)) return toast.error("Introduce una cantidad válida.");
 
         setIsRequestingPayout(true);
+        payoutRequestKeyRef.current = globalThis.crypto?.randomUUID?.() || `payout-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         try {
-            const { error } = await supabase.functions.invoke('request-payout', {
-                body: { userId: user.id, amount: parseFloat(payoutAmount) }
+            const { data, error } = await supabase.functions.invoke('request-payout', {
+                body: { amount: parseFloat(payoutAmount), idempotencyKey: payoutRequestKeyRef.current }
             });
 
             if (error) throw error;
+            if (!data?.success) throw new Error(data?.error || 'No se pudo crear la solicitud de retiro.');
 
             toast.success("¡Solicitud de pago enviada!", { description: "Recibirás tu dinero en unos días." });
             setPayoutAmount('');
+            payoutRequestKeyRef.current = null;
         } catch (error) {
             toast.error("Error al solicitar el pago", { description: error.message });
         } finally {
@@ -104,6 +111,7 @@ const BillingSettings = () => {
         });
         setPaymentClientSecret(null);
         setSelectedPackage(null);
+        creditPurchaseKeyRef.current = null;
     };
 
     const stripeOptions = { clientSecret: paymentClientSecret };

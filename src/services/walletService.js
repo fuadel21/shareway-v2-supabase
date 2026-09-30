@@ -35,11 +35,14 @@ export const addFundsToWallet = async (amount, paymentMethodId) => {
 
     try {
         activeTransactions.add(txKey);
-        const { data, success, error } = await addFunds(amount, paymentMethodId);
+        const idempotencyKey = globalThis.crypto?.randomUUID?.()
+            || `wallet-topup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const { data, success, error } = await addFunds(amount, paymentMethodId, idempotencyKey);
 
-        if (!success) {
-            if (error?.includes('LIMIT_EXCEEDED')) throw new Error("La recarga supera el límite permitido.");
-            throw new Error(error || 'La recarga no pudo procesarse.');
+        if (!success || data?.error) {
+            const message = error || data?.error;
+            if (message?.includes('LIMIT_EXCEEDED')) throw new Error("La recarga supera el límite permitido.");
+            throw new Error(message || 'La recarga no pudo iniciarse.');
         }
 
         return data;
@@ -62,7 +65,8 @@ export const requestPayout = async (amount) => {
 
     try {
         activeTransactions.add(txKey);
-        const { data, success, error } = await requestPayoutRPC(amount);
+        const idempotencyKey = globalThis.crypto?.randomUUID?.() || null;
+        const { data, success, error } = await requestPayoutRPC(amount, idempotencyKey);
 
         if (!success) {
             if (error?.includes('INSUFFICIENT_FUNDS')) throw new Error("No tienes saldo suficiente para este retiro.");
@@ -109,22 +113,10 @@ export const subscribeToTransactions = (userId, onUpdate) => {
 };
 
 /**
- * Lógica de Liquidación: Confirma la llegada y libera fondos.
- * Este método es el puente final entre el viaje y el dinero.
+ * @deprecated The old arrival RPC was a no-op and could not safely settle a
+ * multi-seat booking. Complete the ride or a passenger stop through the
+ * canonical, idempotent lifecycle RPC instead.
  */
-export const settleRideFunds = async (rideId) => {
-    try {
-        const { data, success, error } = await supabase.rpc('confirm_passenger_arrival', { p_ride_id: rideId });
-        if (!success) throw new Error(error);
-
-        // Blindaje: Verificar éxito lógico del negocio
-        if (data && data.success === false) {
-            throw new Error(data.message || 'No se pudo liquidar el viaje');
-        }
-
-        return data;
-    } catch (error) {
-        console.error("🛡️ [Wallet] Settlement failed:", error);
-        throw error;
-    }
+export const settleRideFunds = async () => {
+    throw new Error('LEGACY_ARRIVAL_FLOW_DISABLED: usa complete_ride o complete_passenger_dropoff.');
 };

@@ -21,6 +21,26 @@ import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import AddressAutocomplete from './AddressAutocomplete.jsx';
 import { createSingleRequest } from '../services/requestService.js';
+import { calculateSuggestedPrice, validateRidePrice, PRICING_CONSTANTS } from '../utils/pricingRules.js';
+
+const haversineKm = (lat1, lon1, lat2, lon2) => {
+  const coordinates = [lat1, lon1, lat2, lon2].map(Number);
+  if (coordinates.some((value) => !Number.isFinite(value))) return 0;
+
+  const [safeLat1, safeLon1, safeLat2, safeLon2] = coordinates;
+  if (safeLat1 < -90 || safeLat1 > 90 || safeLat2 < -90 || safeLat2 > 90
+    || safeLon1 < -180 || safeLon1 > 180 || safeLon2 < -180 || safeLon2 > 180) return 0;
+
+  const R = 6371;
+  const toRad = (value) => (value * Math.PI) / 180;
+  const dLat = toRad(safeLat2 - safeLat1);
+  const dLon = toRad(safeLon2 - safeLon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(safeLat1)) * Math.cos(toRad(safeLat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
   const { profile } = useOutletContext();
@@ -34,19 +54,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
   const [price, setPrice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [distanceKm, setDistanceKm] = useState(0);
-  const [pricePerKm, setPricePerKm] = useState(null);
-
-  const haversineKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const toRad = (v) => (v * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  const [isPriceManual, setIsPriceManual] = useState(false);
 
   const updateDerived = useCallback(() => {
     if (userLocation && destination?.coordinates) {
@@ -57,13 +65,12 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
         destination.coordinates.lng
       );
       setDistanceKm(km);
-      const p = price ? parseFloat(price) : 0;
-      setPricePerKm(km > 0 ? p / km : null);
+      if (!isPriceManual && km > 0) setPrice(calculateSuggestedPrice(km));
     } else {
       setDistanceKm(0);
-      setPricePerKm(null);
+      if (!isPriceManual) setPrice('');
     }
-  }, [userLocation, destination, price]);
+  }, [userLocation, destination, isPriceManual]);
 
   React.useEffect(() => {
     updateDerived();
@@ -76,7 +83,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
       return;
     }
 
-    let departureTime = new Date();
+    let departureTime = new Date(Date.now() + 21 * 60 * 1000);
     if (requestType === 'later') {
       if (!scheduledDate || !scheduledTime) {
         toast.error('Error', { description: 'Elige fecha y hora.' });
@@ -87,14 +94,15 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
       departureTime.setHours(hours, minutes, 0, 0);
     }
 
-    if (departureTime.getTime() <= Date.now() + 5 * 60 * 1000) {
-      toast.error('Error', { description: 'La hora del viaje debe ser al menos 5 minutos a futuro.' });
+    if (departureTime.getTime() <= Date.now() + 20 * 60 * 1000) {
+      toast.error('Error', { description: 'La hora del viaje debe ser al menos 20 minutos a futuro.' });
       return;
     }
 
-    const suggestedPrice = price ? parseFloat(price) : 0;
-    if (suggestedPrice < 0) {
-      toast.error('Error', { description: 'El precio no puede ser negativo.' });
+    const suggestedPrice = Number.parseFloat(String(price).replace(',', '.'));
+    const priceValidation = validateRidePrice(suggestedPrice, distanceKm);
+    if (!priceValidation.valid) {
+      toast.error('Error', { description: priceValidation.details || priceValidation.error });
       return;
     }
 
@@ -108,8 +116,9 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
         },
         destination: destination,
         dateTime: departureTime,
-        seats: Math.max(1, Math.min(4, seats)),
-        suggestedPrice: suggestedPrice,
+        seats: Math.max(PRICING_CONSTANTS.MIN_SEATS, Math.min(PRICING_CONSTANTS.MAX_SEATS, Number(seats))),
+        suggestedPrice,
+        distance: distanceKm,
         details: notes.trim(),
       };
 
@@ -209,8 +218,8 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 rounded-full hover:bg-slate-100"
-                    onClick={() => setSeats(Math.min(4, seats + 1))}
-                    disabled={seats >= 4}
+                    onClick={() => setSeats(Math.min(PRICING_CONSTANTS.MAX_SEATS, Number(seats) + 1))}
+                    disabled={seats >= PRICING_CONSTANTS.MAX_SEATS}
                   >
                     +
                   </Button>
@@ -219,22 +228,25 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Tu Oferta (€)</Label>
+              <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Oferta por plaza (€)</Label>
               <div className="relative">
                 <Euro className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground" />
                 <Input
                   type="number"
                   value={price}
-                  onChange={(e) => setPrice(e.target.value)}
+                  onChange={(e) => {
+                    setPrice(e.target.value);
+                    setIsPriceManual(true);
+                  }}
                   placeholder="Ej: 5.00"
                   className="pl-10 h-12 rounded-xl border-2 font-bold bg-white/50"
-                  min="0"
-                  step="0.5"
+                  min={PRICING_CONSTANTS.MIN_PRICE}
+                  step="0.01"
                 />
               </div>
               {distanceKm > 0 && (
-                <p className={`text-[10px] font-bold mt-1 ml-1 ${pricePerKm && pricePerKm > 1 ? 'text-red-600' : 'text-slate-500'}`}>
-                  Precio por km: {pricePerKm?.toFixed(2)}€/km • Máx recomendado: 1€/km
+                <p className="text-[10px] font-bold mt-1 ml-1 text-slate-500">
+                  Trayecto: {distanceKm.toFixed(1)} km · Máx. recomendado: {calculateSuggestedPrice(distanceKm)}€/plaza
                 </p>
               )}
             </div>
@@ -251,7 +263,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
           </div>
 
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">
-            Límite de asientos: 4 • Evita ofertas abusivas
+            Límite de asientos: {PRICING_CONSTANTS.MAX_SEATS} • La oferta es por plaza y la comisión ya está incluida
           </p>
         </div>
 

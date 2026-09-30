@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import * as rpc from '@/lib/supabaseRPC';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button.jsx';
@@ -81,17 +80,10 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose, copy }) => {
             if (confirmError) throw confirmError;
 
             if (paymentIntent?.status === 'succeeded') {
-                const { success } = await rpc.safeCall(
-                    () => supabase.rpc('credit_wallet_on_success', {
-                        p_payment_intent_id: paymentIntent.id,
-                        p_amount: amount
-                    }),
-                    'credit_wallet_on_success'
-                );
-
-                if (!success) throw new Error(copy.balanceDelay);
-
-                toast.success(copy.completed);
+                // The Stripe webhook is the only authority allowed to credit the
+                // wallet. Do not let the browser submit an amount or duplicate
+                // credit after a successful card confirmation.
+                toast.success(copy.completed, { description: copy.balanceDelay });
                 onSuccessfulPayment();
             }
         } catch (err) {
@@ -132,16 +124,20 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
     const [step, setStep] = useState('amount');
     const [clientSecret, setClientSecret] = useState(null);
     const [isPreparing, setIsPreparing] = useState(false);
+    const topUpKeyRef = useRef(null);
 
     const handleContinue = async () => {
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount < 5) return toast.error(copy.minAmount);
         setIsPreparing(true);
+        topUpKeyRef.current = globalThis.crypto?.randomUUID?.() || `topup-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         try {
             const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-                body: { amount: numAmount, user_id: user.id },
+                body: { amount: numAmount, idempotencyKey: topUpKeyRef.current },
             });
-            if (error || !data?.clientSecret) throw new Error(copy.paymentUnavailable);
+            if (error || data?.error || !data?.clientSecret) {
+                throw new Error(data?.error?.message || data?.error || copy.paymentUnavailable);
+            }
             setClientSecret(data.clientSecret);
             setStep('payment');
         } catch (e) {
@@ -154,6 +150,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
     const resetAndClose = () => {
         setStep('amount');
         setClientSecret(null);
+        topUpKeyRef.current = null;
         onClose();
     };
 

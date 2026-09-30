@@ -576,19 +576,19 @@ VIEW → wallet_transactions (para retrocompatibilidad)
 
 ---
 
+> **Actualización financiera (02/09/2026):** para los flujos desplegables prevalece la migración `20260901120000_reconcile_ride_financial_rules.sql`. Este inventario conserva nombres históricos, pero los porcentajes y tramos indicados en esta sección están alineados con la regla vigente.
+
 ## 🎮 REGLAS DE NEGOCIO IMPLEMENTADAS
 
 ### 1. **Reglas de Viajes**
-- ✅ Mínimo 10 minutos de anticipación para publicar viaje
-- ✅ Precio mínimo: 0.50€, máximo: 300€
+- ✅ Mínimo 20 minutos de anticipación para publicar viaje
+- ✅ Precio mínimo: 0.50€, máximo: 300€ por plaza
 - ✅ Asientos: 1-8 por viaje
-- ✅ Precio dinámico por distancia (5 tiers):
-  - 0-3km: 1.00€/km
-  - 3-10km: 0.50€/km
-  - 10-100km: 0.40€/km
-  - 100-400km: 0.25€/km
-  - +400km: 0.15€/km
-- ✅ Comisión de plataforma: 15% sobre cada viaje
+- ✅ Precio dinámico por distancia (tramos acumulativos):
+  - 0-15km: 0.30€/km
+  - 15-100km: 0.22€/km
+  - +100km: 0.15€/km sin límite superior de distancia
+- ✅ Comisión de plataforma: 10% incluida en el precio bruto
 - ✅ Viajes solo mujeres: verificación de género
 
 ### 2. **Reglas de Reservas**
@@ -616,7 +616,7 @@ VIEW → wallet_transactions (para retrocompatibilidad)
 
 ### 4. **Reglas de Pagos**
 - ✅ Escrow (held_balance): Dinero retenido hasta completar viaje
-- ✅ Comisión automática: 15% a tesorería en cada viaje completado
+- ✅ Comisión automática: 10% a tesorería en cada viaje completado
 - ✅ Idempotencia: Prevención de pagos duplicados
 - ✅ Bloqueos pesimistas: FOR UPDATE en operaciones críticas
 - ✅ Auditoría completa: Todas las transacciones registradas

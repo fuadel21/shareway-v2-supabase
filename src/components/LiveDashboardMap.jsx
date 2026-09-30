@@ -14,7 +14,12 @@ import { Loader2, Car } from 'lucide-react';
 const mapContainerStyle = { height: '100%', width: '100%' };
 const mapOptions = { disableDefaultUI: true, zoomControl: true, streetViewControl: false, mapTypeControl: false, fullscreenControl: false, zoomControlOptions: { position: 3 } };
 const SPAIN_CENTER = { lat: 40.416775, lng: -3.703790 };
-const toLatLng = (coords) => coords ? { lat: coords.latitude, lng: coords.longitude } : null;
+const toLatLng = (coords) => {
+    if (!coords) return null;
+    const lat = Number(coords.lat ?? coords.latitude);
+    const lng = Number(coords.lng ?? coords.longitude);
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+};
 
 const ItemCard = ({ item, navigate, isSelected, onClick }) => {
     const { origin, destination, departure_time, id, passenger_ids, seats_total, price } = item;
@@ -65,13 +70,13 @@ function LiveDashboardMap() {
         if (!mapsLoaded) return;
 
         const fetchInitialData = async () => {
+            // Never select public.rides directly here. The RPC returns only the
+            // route, lifecycle state, driver public identity, and live location.
             const { data: ridesData, error: ridesError } = await supabase
-                .from('rides')
-                .select('*')
-                .in('status', ['scheduled', 'in_progress']);
+                .rpc('get_live_ride_map');
 
             if (ridesError) toast.error("Error al cargar los viajes.");
-            else setAllRides(ridesData.map(r => ({ ...r, type: 'ride' })));
+            else setAllRides((ridesData || []).map(r => ({ ...r, type: 'ride' })));
 
             const { data: requestsData, error: requestsError } = await supabase
                 .from('ride_requests')
@@ -79,25 +84,22 @@ function LiveDashboardMap() {
                 .eq('status', 'pending');
 
             if (requestsError) toast.error("Error al cargar las solicitudes.");
-            else setAllRequests(requestsData.map(r => ({ ...r, type: 'request' })));
+            else setAllRequests((requestsData || []).map(r => ({ ...r, type: 'request' })));
         };
 
         fetchInitialData();
-
-        const ridesChannel = supabase.channel('public:rides')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
-                fetchInitialData(); // Re-fetch all for simplicity, could be optimized
-            })
-            .subscribe();
+        // Realtime events are filtered by RLS, so an unrelated user's ride may
+        // not emit a row to this session. Poll the curated read model as well.
+        const refreshInterval = window.setInterval(fetchInitialData, 15000);
 
         const requestsChannel = supabase.channel('public:ride_requests')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, (payload) => {
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => {
                 fetchInitialData();
             })
             .subscribe();
 
         return () => {
-            supabase.removeChannel(ridesChannel);
+            window.clearInterval(refreshInterval);
             supabase.removeChannel(requestsChannel);
         };
     }, [mapsLoaded]);
@@ -143,8 +145,10 @@ function LiveDashboardMap() {
                              try {
                                 const path = window.google.maps.geometry.encoding.decodePath(item.overview_polyline);
                                 const isSelected = item.id === selectedItemId;
+                                const livePosition = toLatLng(item.current_location);
                                 return (
                                     <React.Fragment key={`ride-${item.id}`}>
+                                        {livePosition && <MarkerF position={livePosition} onClick={() => setSelectedItemId(item.id)} />}
                                         <Polyline path={path} options={{ strokeColor: isSelected ? '#FF5733' : '#00A3FF', strokeOpacity: isSelected ? 1.0 : 0.4, strokeWeight: 8, zIndex: isSelected ? 99 : 50 }} onClick={() => setSelectedItemId(item.id)} />
                                     </React.Fragment>
                                 );
