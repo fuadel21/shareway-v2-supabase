@@ -13,7 +13,7 @@ The product core (RPC ride lifecycle, Stripe webhook signature verification, sta
 - Stripe Connect onboarding is bound to the authenticated user, not a client-supplied `userId`.
 - Escrow no longer returns a fake `25.50` balance.
 - Notification test page is admin-only.
-- Vercel security headers added. Auto-deploy remains **disabled** (`git.deploymentEnabled: false`) until secrets are rotated and functions are deployed.
+- Vercel security headers added. Git auto-deploy was re-enabled on 2026-09-30 (`git.deploymentEnabled` removed from `vercel.json`): production was frozen on a pre-2026-08-29 bundle serving CARTO tiles stamped "API KEY REQUIRED" while `main` already used OpenStreetMap. Pushes to `main` now redeploy production.
 - Edge Function deploy workflow still only publishes `send-push` (GitHub App cannot update workflow files). Deploy the rest with `supabase functions deploy`.
 
 ### Must do outside this repo
@@ -22,7 +22,7 @@ The product core (RPC ride lifecycle, Stripe webhook signature verification, sta
 2. Put `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, and VAPID keys in Supabase Edge Function secrets. Never in Vite `VITE_*` vars.
 3. Confirm GitHub secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`.
 4. Deploy Edge Functions (workflow or `supabase functions deploy`).
-5. Turn Vercel git deploys on only after the above.
+5. ~~Turn Vercel git deploys on only after the above.~~ Done 2026-09-30 (stale production forced the re-enable; keep secrets out of `VITE_*` regardless).
 
 ### Still open before public launch
 
