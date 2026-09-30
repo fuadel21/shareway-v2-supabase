@@ -12,6 +12,9 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 
+// La implementación lee el body (async) antes de llamar a baseFetch: hay que vaciar la cola de tareas, no un solo microtask.
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
 const jsonResponse = (payload = {}) => new Response(JSON.stringify(payload), { status: 200 });
 
 describe('createSingleFlightFetch', () => {
@@ -25,7 +28,7 @@ describe('createSingleFlightFetch', () => {
     const first = protectedFetch(url, init);
     const second = protectedFetch(url, init);
 
-    await Promise.resolve();
+    await flush();
     expect(baseFetch).toHaveBeenCalledTimes(1);
 
     pending.resolve(jsonResponse({ success: true }));
@@ -45,7 +48,7 @@ describe('createSingleFlightFetch', () => {
 
     const first = protectedFetch(url, init);
     const second = protectedFetch(url, init);
-    await Promise.resolve();
+    await flush();
 
     expect(baseFetch).toHaveBeenCalledTimes(1);
     pending.resolve(jsonResponse({ success: true }));
@@ -61,7 +64,7 @@ describe('createSingleFlightFetch', () => {
 
     const first = protectedFetch(url, { method: 'POST', body, headers: { Authorization: 'Bearer user-a' } });
     const second = protectedFetch(url, { method: 'POST', body, headers: { Authorization: 'Bearer user-b' } });
-    await Promise.resolve();
+    await flush();
 
     expect(baseFetch).toHaveBeenCalledTimes(2);
     pending.resolve(jsonResponse({ success: true }));
