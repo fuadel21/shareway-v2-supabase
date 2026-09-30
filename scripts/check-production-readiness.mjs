@@ -59,6 +59,10 @@ const BLOCKED_PATTERNS = [
   {
     pattern: /return\s+25\.50\s*;/,
     reason: 'Importe escrow simulado.'
+  },
+  {
+    pattern: /cartocdn\.com|basemaps\.carto/i,
+    reason: 'Tiles de CARTO requieren API key y pintan "API KEY REQUIRED". Usar OpenStreetMap (https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png).'
   }
 ];
 
