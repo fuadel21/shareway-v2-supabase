@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Bot Cita Previa Barcelona - Version 9.1 (Amina Chair - Anti-Error 0301)
+// @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.1
-// @description  Buscador automatizado con recuperación nativa de Error 0301 para Amina Chair (NIE Y2086361E, Barcelona).
+// @version      9.2
+// @description  Buscador de alta precisión con corrección de falsos positivos en avisos legales para Amina Chair.
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-end
 // @grant        none
@@ -98,7 +98,7 @@
     if (banner) {
       banner.innerHTML = 
         "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-          "<span>🤖 BOT BARCELONA v9.1 🟢</span>" +
+          "<span>🤖 BOT BARCELONA v9.2 🟢</span>" +
           "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + attemptCount + "</span>" +
         "</div>" +
         "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -168,28 +168,26 @@
     var href = window.location.href.toLowerCase();
     var body = document.body ? document.body.innerText : "";
 
-    // 0. AUTO-RECUPERACIÓN DE ERROR 0301 / CADUCIDAD DE SESIÓN
-    if (body.indexOf("Se ha producido un error") !== -1 ||
-        body.indexOf("0301") !== -1 ||
-        body.indexOf("caducado") !== -1 ||
-        body.indexOf("Not Found") !== -1 ||
-        body.indexOf("Too Many Requests") !== -1 ||
-        body.indexOf("rejected") !== -1) {
-      
-      createBanner("🔄 Limpiando Error 0301 y reiniciando formulario...");
+    // 0. AUTO-RECUPERACIÓN DE ERRORES REALES (SIN FALSOS POSITIVOS EN EL TEXTO LEGAL)
+    var isRealError = body.indexOf("Se ha producido un error en el sistema") !== -1 ||
+                      body.indexOf("Su sesión ha caducado") !== -1 ||
+                      body.indexOf("caducado por permanecer") !== -1 ||
+                      body.indexOf("404 Not Found") !== -1 ||
+                      body.indexOf("429 Too Many Requests") !== -1 ||
+                      body.indexOf("The requested URL was rejected") !== -1;
 
-      // 1º Pulsar el botón naranja "Aceptar" de la pantalla de error si existe
-      var btnAceptarError = document.querySelector("input[value='Aceptar']") ||
+    if (isRealError) {
+      createBanner("🔄 Limpiando error del servidor y reiniciando formulario...");
+
+      var btnAceptarError = document.querySelector("#btnAceptar") ||
+                            document.querySelector("input[value='Aceptar']") ||
                             document.querySelector("button[value='Aceptar']") ||
-                            document.querySelector(".btn-primary") ||
-                            document.querySelector("input[type='submit']") ||
-                            document.querySelector("button");
+                            document.querySelector(".btn-primary");
 
       if (btnAceptarError) {
         try { btnAceptarError.click(); } catch(e){}
       }
 
-      // 2º Redirigir limpiamente a la URL inicial
       setTimeout(function() {
         localStorage.removeItem("bot_target_timestamp");
         window.location.href = BASE_URL;
@@ -213,14 +211,14 @@
         }
       }
       if (foundP) {
-        setTimeout(function() { submitFormWithBtn(btnProvAceptar); }, 800);
+        setTimeout(function() { submitFormWithBtn(btnProvAceptar); }, 600);
         return;
       }
     }
 
     // PASO 2: SELECCIÓN DE TRÁMITE (TOMA DE HUELLAS)
     var selects = document.querySelectorAll("select");
-    if (selects.length > 0 && (body.indexOf("TRÁMITES") !== -1 || body.indexOf("TRÁMITE") !== -1 || body.indexOf("TOMA DE HUELLAS") !== -1)) {
+    if (selects.length > 0 && (body.indexOf("TRÁMITES") !== -1 || body.indexOf("TRÁMITE") !== -1 || body.indexOf("TOMA DE HUELLAS") !== -1) && body.indexOf("Identidad del usuario") === -1) {
       createBanner("📋 Paso 2/5: Seleccionando Trámite TOMA DE HUELLAS...");
 
       var tramiteSel = null;
@@ -244,16 +242,19 @@
         tramiteSel.dispatchEvent(new Event("change", { bubbles: true }));
 
         var btnAceptarTramite = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
-        setTimeout(function() { submitFormWithBtn(btnAceptarTramite); }, 900);
+        setTimeout(function() { submitFormWithBtn(btnAceptarTramite); }, 700);
         return;
       }
     }
 
-    // PASO 3: PULSAR "ENTRAR" EN LA PANTALLA DE INFORMACIÓN
-    var btnEntrar = document.querySelector("#btnEntrar") || document.querySelector("input[value*='Entrar']");
+    // PASO 3: PULSAR "ENTRAR" EN LA PANTALLA DE INFORMACIÓN AVISO LEGAL
+    var btnEntrar = document.querySelector("#btnEntrar") ||
+                    document.querySelector("input[value*='Entrar']") ||
+                    document.querySelector("button[id*='Entrar']");
+
     if (btnEntrar) {
-      createBanner("🚪 Paso 3/5: Entrando al formulario de datos...");
-      setTimeout(function() { submitFormWithBtn(btnEntrar); }, 700);
+      createBanner("🚪 Paso 3/5: Pulsando 'Entrar' en el aviso de información...");
+      setTimeout(function() { submitFormWithBtn(btnEntrar); }, 500);
       return;
     }
 
@@ -290,7 +291,7 @@
       }
 
       var btnEnviarDatos = document.querySelector("#btnEnviar") || document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
-      setTimeout(function() { submitFormWithBtn(btnEnviarDatos); }, 900);
+      setTimeout(function() { submitFormWithBtn(btnEnviarDatos); }, 800);
       return;
     }
 
@@ -298,7 +299,7 @@
     var btnSolicitar = document.querySelector("#btnEnviar") || document.querySelector("input[value*='Solicitar']");
     if (btnSolicitar && (body.indexOf("Solicitar Cita") !== -1 || body.indexOf("Identidad del usuario") !== -1)) {
       createBanner("⚡ Paso 5/5: Comprobando disponibilidad de citas en Barcelona...");
-      setTimeout(function() { submitFormWithBtn(btnSolicitar); }, 700);
+      setTimeout(function() { submitFormWithBtn(btnSolicitar); }, 600);
       return;
     }
 
@@ -383,11 +384,11 @@
   }
 
   // EJECUCIÓN INICIAL Y BUCLE SEGURO DE VERIFICACIÓN
-  setTimeout(runStep, 800);
+  setTimeout(runStep, 600);
   setInterval(function() {
     if (!window.botTimerActive && !window.botSubmitting) {
       runStep();
     }
-  }, 2500);
+  }, 2000);
 
 })();
