@@ -700,15 +700,21 @@
       injectMetaRefresh(Math.max(getRemainingSeconds(), 30), BASE_URL);
       var submitWatchStartedAt = Date.now();
       var inspectSubmitResult = function () {
-        if (!window.botSubmitting || window.botBooked) return;
+        if (!window.botSubmitting) return;
         var after = pageFingerprint();
         if (after !== before) {
           window.botSubmitting = false;
-          setStatus("✅ El portal respondió al envío; comprobando el siguiente paso...");
+          setStatus(window.botBooked
+            ? "✅ El portal respondió a la confirmación. Comprueba el resultado que muestra la página oficial."
+            : "✅ El portal respondió al envío; comprobando el siguiente paso...");
           return;
         }
         if (Date.now() - submitWatchStartedAt >= SUBMIT_TIMEOUT_MS) {
           window.botSubmitting = false;
+          if (window.botBooked) {
+            setStatus("⚠️ Detecté una cita, pero el portal no confirmó el último envío. Dejo la página abierta para verificarla.");
+            return;
+          }
           // No repetir clics ciegos: puede duplicar una operación o provocar un bloqueo.
           window.__botSubmitStalled = true;
           window.__botSubmitFingerprint = after;
