@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.6
-// @description  v9.6 - Amina Chair (NIE Y2086361E). Busqueda cada 7 minutos 24/7 con MODO SEGUNDO PLANO (audio silencioso + wake lock para que Android no congele Firefox) y recuperacion inmediata al volver. Recarga 100% automatica sin botones.
+// @version      9.7
+// @description  v9.7 - Amina Chair (NIE Y2086361E). Ciclo de 7 minutos, panel estable sin parpadeos, deteccion de controles y reintentos moderados; audio de fondo sujeto a permisos/limites del navegador.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
@@ -22,35 +22,33 @@
    ===================================================================================== */
 
 /* =====================================================================================
-   BOT CITA PREVIA BARCELONA - VERSION 9.5 "ANTI-CONGELAMIENTO"
+   BOT CITA PREVIA BARCELONA - VERSION 9.7 "ESTABLE"
    -------------------------------------------------------------------------------------
-   NOVEDADES v9.6 (arregla que con Firefox EN SEGUNDO PLANO no hiciera nada):
-   1) MODO SEGUNDO PLANO: reproduce un tono de 60 Hz practicamente inaudible en bucle.
-      Con audio en marcha, Firefox Android crea su servicio de reproduccion en primer
-      plano y Android NO congela la app => el temporizador del meta-refresh sigue
-      corriendo y la pagina se recarga sola cada 7 minutos aunque la pantalla este
-      apagada o el movil en el bolsillo.
-   2) WAKE LOCK (si el navegador lo soporta): mantiene la pantalla encendida mientras la
-      pestana esta visible, para que Android no duerma la app.
-   3) LATIDO + DETECCION DE CONGELAMIENTO: se guarda un latido cada segundo. Si al volver
-      a Firefox el latido lleva mas de 90 s parado, se avisa ("congelado N min") y la
-      busqueda se reanuda AL INSTANTE, sin esperar a que termine el contador.
+   NOVEDADES v9.7 (evita el parpadeo y permite diagnosticar el punto atascado):
+   1) El panel solo se redibuja cuando cambia el estado; ya no parpadea en cada sondeo.
+   2) El meta-refresh solo se inserta en <head>, se reemplaza de forma limpia y nunca
+      borra los meta-refresh propios del portal.
+   3) El envío del formulario tiene un watchdog: si la página no responde, el bot deja
+      de pulsar repetidamente y mantiene visible el motivo en vez de quedarse bloqueado.
+   4) Los reintentos de navegación se espacian para evitar una cascada de recargas.
+   -------------------------------------------------------------------------------------
+   HISTORIAL v9.6 (persistencia de la intención del modo segundo plano):
+   1) MODO SEGUNDO PLANO: intenta reproducir un tono bajo de 60 Hz para ayudar a mantener
+      Firefox activo. El sistema operativo todavía puede suspender o cerrar la aplicación.
+   2) WAKE LOCK (si el navegador lo soporta): intenta mantener la pantalla activa mientras
+      la pestaña está visible; Android puede liberarlo al cambiar de aplicación.
+   3) LATIDO + DETECCION DE CONGELAMIENTO: registra un latido cada segundo mientras el
+      script puede ejecutarse. Al volver a Firefox, intenta detectar la pausa y reanudar.
    -------------------------------------------------------------------------------------
    v9.4: la busqueda se repite CADA 7 MINUTOS (RETRY_SEC = 420) y la pagina se recarga
    SOLA al llegar el contador a 00:00, sin ningun boton.
    -------------------------------------------------------------------------------------
-   HISTORIAL v9.3 "Recarga Infalible" (en v9.2 el contador llegaba a 0 y NO recargaba):
-   1) El <meta http-equiv="refresh"> se inyecta al inicio (document-start), ANTES del
-      evento "load". Firefox/Gecko SOLO obedece un meta-refresh insertado antes de load;
-      en v9.2 se insertaba tarde => el motor nativo nunca se armaba.
-   2) La recarga ya NO depende del setInterval de JavaScript. Firefox Android congela los
-      timers JS en segundo plano, pero el timer del meta-refresh lo lleva el motor C++ del
-      navegador => la recarga ocurre aunque la pantalla este apagada.
-   3) Se anula window.onbeforeunload y el dialogo "¿Desea salir?" del portal, que bloquea
-      la navegacion cuando nadie puede pulsar "Salir".
-   4) Watchdog con fecha limite persistente (localStorage): recarga SIEMPRE cada 7 min.
-   5) Cascada de navegacion: top.location -> formulario GET oculto -> location.replace ->
-      assign -> href -> reload -> meta-refresh de 3 s, reintentando cada 4 segundos.
+   HISTORIAL v9.3-v9.6 (cambios previos de recarga y segundo plano):
+   - El script usa una fecha límite persistente y combina watchdog de JavaScript con un
+     meta-refresh de respaldo. El comportamiento real depende del navegador y de Android.
+   - Se neutralizan los handlers beforeunload del portal para evitar un diálogo al navegar.
+   - Las versiones anteriores probaron audio/wake lock para el segundo plano; eso no puede
+     impedir que Android suspenda o cierre Firefox.
    ===================================================================================== */
 
 (function () {
@@ -63,10 +61,11 @@
   var PROVINCIA_VAL = "8"; // BARCELONA
   var TELEFONO = "698233413";
   var EMAIL = "fuadel21@hotmail.com";
-  var RETRY_SEC = 420; // 7 MINUTOS, 24/7 TODA LA SEMANA
+  var RETRY_SEC = 420; // ciclo solicitado: 7 min; depende de que navegador y portal sigan activos
   var BASE_URL = "https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDirect";
-  var RELOAD_GUARD_MS = 4000;   // minimo entre intentos de recarga
+  var RELOAD_GUARD_MS = 10000;  // reintentos espaciados para evitar parpadeo/cascada
   var STEP_GRACE_MS = 25000;    // margen si el flujo del formulario esta en curso
+  var SUBMIT_TIMEOUT_MS = 30000; // no dejar el bot bloqueado si el portal no responde
   var FREEZE_GAP_MS = 90000;    // mas de 90 s sin latido = Firefox congelado en 2o plano
   var IS_TOP = (window.top === window.self);
 
@@ -156,38 +155,73 @@
   }
 
   // ============================== 2. MOTOR NATIVO META-REFRESH (C++) ==============================
-  // Se inyecta ANTES del evento load. Es el unico mecanismo que Firefox Android respeta
-  // con la pantalla apagada y los timers JS congelados.
+  // Se intenta inyectar antes de load como respaldo nativo. Firefox/Android puede
+  // suspender una pestaña aun con meta-refresh y audio; no existe garantía 24/7 del navegador.
   var metaEl = null;
+  var pendingMetaRefresh = null;
+  var metaRetryTimer = null;
+  var metaRetryCount = 0;
+
+  function removeOwnedMetaRefresh() {
+    try {
+      var owned = document.querySelectorAll("meta#bot-meta-refresh[data-bot-owner='shareway-v97']");
+      for (var i = 0; i < owned.length; i++) {
+        if (owned[i] && owned[i].parentNode) owned[i].parentNode.removeChild(owned[i]);
+      }
+      if (metaEl && metaEl.parentNode) metaEl.parentNode.removeChild(metaEl);
+    } catch (e) {}
+    metaEl = null;
+  }
+
+  function scheduleMetaRefreshRetry() {
+    if (metaRetryTimer || metaRetryCount >= 100 || window.botBooked) return;
+    metaRetryTimer = setTimeout(function () {
+      metaRetryTimer = null;
+      if (!pendingMetaRefresh || window.botBooked) return;
+      metaRetryCount++;
+      var pending = pendingMetaRefresh;
+      pendingMetaRefresh = null;
+      injectMetaRefresh(pending.sec, pending.url);
+    }, 50);
+  }
 
   function cancelMetaRefresh() {
-    try {
-      if (metaEl && metaEl.parentNode) metaEl.parentNode.removeChild(metaEl);
-      metaEl = null;
-    } catch (e) {}
-    try {
-      var all = document.querySelectorAll("meta[http-equiv='refresh']");
-      for (var i = 0; i < all.length; i++) { if (all[i] && all[i].parentNode) all[i].parentNode.removeChild(all[i]); }
-    } catch (e) {}
+    pendingMetaRefresh = null;
+    if (metaRetryTimer) { clearTimeout(metaRetryTimer); metaRetryTimer = null; }
+    metaRetryCount = 0;
+    removeOwnedMetaRefresh();
     window.__botMetaRefreshArmed = 0;
   }
 
   function injectMetaRefresh(sec, url) {
     if (window.botBooked) return false;
     try {
-      var head = document.head || document.getElementsByTagName("head")[0] || document.documentElement;
-      if (!head) { setTimeout(function () { injectMetaRefresh(sec, url); }, 25); return false; }
-
-      // Si el formulario se esta enviando en este momento, la recarga espera 20 s como
-      // minimo para no cortar la reserva a mitad de camino.
+      // Una meta-refresh en <html> o <body> no es fiable. Esperar a que exista <head>.
+      var head = document.head || document.getElementsByTagName("head")[0];
       var s = Math.max(1, Math.round(sec));
+      var target = url || BASE_URL;
+
+      // Si el formulario se esta enviando, no cortar el paso en curso.
       if (window.__botLastStepAt && (Date.now() - window.__botLastStepAt) < 60000) {
         s = Math.max(s, 20);
       }
 
+      if (!head) {
+        pendingMetaRefresh = { sec: s, url: target };
+        scheduleMetaRefreshRetry();
+        window.__botMetaRefreshArmed = 0;
+        return false;
+      }
+
+      if (metaRetryTimer) { clearTimeout(metaRetryTimer); metaRetryTimer = null; }
+      pendingMetaRefresh = null;
+      metaRetryCount = 0;
+      removeOwnedMetaRefresh();
+
       var m = document.createElement("meta");
       m.setAttribute("http-equiv", "refresh");
-      m.setAttribute("content", s + ";url=" + (url || BASE_URL));
+      m.setAttribute("content", s + ";url=" + target);
+      m.setAttribute("data-bot-owner", "shareway-v97");
       m.id = "bot-meta-refresh";
       head.appendChild(m);
       metaEl = m;
@@ -259,27 +293,25 @@
   function forceReload(reason) {
     if (window.botBooked) return;
     var now = Date.now();
-    if (now - lastReloadTry < RELOAD_GUARD_MS) return;
+    var backoff = Math.min(60000, RELOAD_GUARD_MS * Math.pow(2, Math.min(reloadTries, 3)));
+    if (now - lastReloadTry < backoff) return;
     lastReloadTry = now;
     reloadTries++;
+    window.__botReloadStarted = true;
 
     try { window.onbeforeunload = null; window.onunload = null; } catch (e) {}
 
-    // 1) Re-armar el motor nativo con 3 segundos: actua incluso con el JS congelado.
+    // No reiniciar el timer en cada tick: se deja un único respaldo nativo de 5 s.
     window.__botLastStepAt = 0;
-    injectMetaRefresh(3, BASE_URL);
+    injectMetaRefresh(5, BASE_URL);
+    hardNavigate(BASE_URL, false);
 
-    // 2) Cascada inmediata (con cache-buster cada 4 intentos para saltar la cache de Firefox).
-    hardNavigate(BASE_URL, (reloadTries % 4 === 0));
-
-    // 3) Ultimos recursos escalonados.
-    if (reloadTries % 3 === 0) {
-      setTimeout(function () { try { window.location.reload(); } catch (e) {} }, 2500);
-      setTimeout(function () { try { window.open(BASE_URL, "_self"); } catch (e) {} }, 4500);
+    if (reloadTries === 1) {
+      setStatus("🔄 Contador a cero (" + reason + "): intentando abrir de nuevo el formulario...");
+      sendNotification("🔄 Reiniciando búsqueda Barcelona", "Intento #" + getAttemptCount() + ": el portal está tardando en responder.");
+    } else {
+      setStatus("⚠️ El portal no ha navegado todavía. Nuevo intento espaciado; el temporizador sigue activo.");
     }
-
-    setStatus("🔄 Contador a cero (" + reason + ") → recargando la página para buscar de nuevo...");
-    sendNotification("🔄 Recargando búsqueda Barcelona", "Intento #" + getAttemptCount() + ": recargando la página para volver a buscar cita libre.");
   }
 
   // ============================== 4. WATCHDOG GLOBAL (cada 1 segundo) ==============================
@@ -310,7 +342,7 @@
   // Intervalo principal + intervalo de respaldo (por si el primero se degrada en segundo plano).
   setInterval(watchdog, 1000);
   setInterval(function () {
-    if (!window.botBooked && !window.botTimerPaused && getRemainingSeconds() <= 0) forceReload("watchdog de respaldo");
+    if (!window.botBooked && !window.botTimerPaused && !window.botSubmitting && getRemainingSeconds() <= 0) forceReload("watchdog de respaldo");
   }, 5000);
 
   // ============================== 5. PANEL DE ESTADO (UI) ==============================
@@ -318,6 +350,7 @@
   var bannerEl = null;
 
   function setStatus(txt) {
+    if (statusText === txt) return; // no reconstruir el panel en cada sondeo idéntico
     statusText = txt;
     render();
   }
@@ -347,7 +380,7 @@
 
     b.innerHTML =
       "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-        "<span>🤖 BOT BARCELONA v9.5" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
+        "<span>🤖 BOT BARCELONA v9.7" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
         "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + getAttemptCount() + "</span>" +
       "</div>" +
       "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -358,7 +391,7 @@
           "<span style='color:#94a3b8;font-size:11px;'> · " + (booked ? "en pausa (cita detectada)" : (paused ? "en pausa" : (armed ? "motor nativo armado ✅ (" + armed + "s)" : "motor nativo re-armándose..."))) + "</span>" +
         "</div>" +
         "<div style='margin-top:4px;font-size:11px;color:#94a3b8;'>🔊 Segundo plano: " +
-          (window.__botBgMode ? "<b style='color:#22c55e;'>ACTIVO ✅</b> (Android no congelará Firefox)" : (lsGet("bot_bg_intent") === "1" ? "<b style='color:#facc15;'>ESPERANDO TOQUE 🔑</b> (toca cualquier parte)" : "<b style='color:#f87171;'>INACTIVO</b> (toca el botón morado 🔊)")) +
+          (window.__botBgMode ? "<b style='color:#22c55e;'>ACTIVO ✅</b> (audio en marcha; Android aún puede suspender Firefox)" : (lsGet("bot_bg_intent") === "1" ? "<b style='color:#facc15;'>ESPERANDO TOQUE 🔑</b> (toca cualquier parte)" : "<b style='color:#f87171;'>INACTIVO</b> (toca el botón morado 🔊)")) +
           (window.__botLastFreeze ? " · ⚠️ congelado " + window.__botLastFreeze + " min la última vez" : "") +
         "</div>" +
       "</div>" +
@@ -484,14 +517,13 @@
   function vibrate(pattern) { try { if ("vibrate" in navigator) navigator.vibrate(pattern); } catch (e) {} }
 
   // ============================== 6b. MODO SEGUNDO PLANO (ANTI-CONGELAMIENTO) ==============================
-  // Android congela las apps en segundo plano y Firefox suspende las pestanas inactivas.
-  // CON AUDIO EN MARCHA, Firefox Android crea su servicio de reproduccion en primer plano
-  // y el proceso NO se congela => el temporizador del meta-refresh sigue corriendo y la
-  // pagina se recarga sola cada 7 minutos. El tono es un zumbido a 60 Hz de amplitud
-  // minima: en el altavoz del movil resulta practicamente inaudible.
+  // Android puede congelar las apps en segundo plano y Firefox puede suspender pestañas.
+  // El audio de fondo puede ayudar a mantener Firefox activo, pero depende de la versión,
+  // permisos, batería y fabricante del móvil; no garantiza ejecución continua. El tono es
+  // un zumbido a 60 Hz de amplitud baja y puede oírse según el dispositivo.
   var wakeLockObj = null;
 
-  function isBackgroundModeActive() { return !!window.__botBgMode || lsGet("bot_bg_intent") === "1"; }
+  function isBackgroundModeActive() { return !!window.__botBgMode; }
 
   function buildToneURL() {
     try {
@@ -545,8 +577,8 @@
         window.__botBgMode = ok;
         if (ok) {
           window.__botBgAudio = audio;
-          setStatus("🔊 Modo segundo plano ACTIVADO ✅ (Android ya no congelará Firefox)");
-          sendNotification("🔊 Modo segundo plano activado", "El bot seguirá buscando cita aunque cierres la pantalla o cambies de app.");
+          setStatus("🔊 Audio de fondo activo ✅ (el navegador aún puede suspender la pestaña)");
+          sendNotification("🔊 Audio de fondo activado", "Firefox intentará mantener la pestaña activa; Android todavía puede suspenderla.");
         } else {
           setStatus("⚠️ Audio bloqueado: toca el botón morado 🔊 y elige 'Permitir audio' (o activa Autoplay en Firefox).");
         }
@@ -580,11 +612,11 @@
   try {
     var armBgOnce = function () {
       try {
-        if (lsGet("bot_bg_intent") === "1") activateBackgroundMode();
+        if (lsGet("bot_bg_intent") === "1" && !window.__botBgMode) activateBackgroundMode();
       } catch (e) {}
     };
-    document.addEventListener("pointerdown", armBgOnce, { once: true, capture: true, passive: true });
-    document.addEventListener("touchstart", armBgOnce, { once: true, capture: true, passive: true });
+    document.addEventListener("pointerdown", armBgOnce, { capture: true, passive: true });
+    document.addEventListener("touchstart", armBgOnce, { capture: true, passive: true });
   } catch (e) {}
 
   // ============================== 6c. RECUPERACION AL VOLVER (DETECCION DE CONGELAMIENTO) ==============================
@@ -631,17 +663,67 @@
   try { window.addEventListener("pageshow", resumeCheck); } catch (e) {}
 
   // ============================== 7. FORMULARIO (PASOS 1 A 5) ==============================
+  function getPortalBodyText() {
+    try {
+      if (!document.body) return "";
+      var clone = document.body.cloneNode(true);
+      var botUi = clone.querySelectorAll("#bot-status-banner, #bot-notif-btn, #bot-nav-form");
+      for (var i = 0; i < botUi.length; i++) { if (botUi[i].parentNode) botUi[i].parentNode.removeChild(botUi[i]); }
+      return (typeof clone.innerText === "string") ? clone.innerText : (clone.textContent || "");
+    } catch (e) {
+      return document.body ? (document.body.textContent || "") : "";
+    }
+  }
+
+  function pageFingerprint() {
+    try {
+      var text = getPortalBodyText().replace(/\s+/g, " ").trim();
+      return String(window.location.pathname || "") + "|" + text.slice(0, 4000);
+    } catch (e) { return String(window.location.pathname || ""); }
+  }
+
   function submitFormWithBtn(btn) {
-    if (!btn || window.botSubmitting) return;
+    if (!btn || window.botSubmitting || window.__botSubmitStalled) return false;
+    if (btn.disabled || (btn.isConnected === false)) {
+      setStatus("⚠️ El botón del formulario está desactivado o ya no está en la página; esperando al portal.");
+      return false;
+    }
+
     window.botSubmitting = true;
     window.__botLastStepAt = Date.now();
+    var before = pageFingerprint();
     try {
       btn.style.outline = "4px solid #22c55e";
       if (typeof btn.focus === "function") btn.focus();
       btn.click();
-      // Proteger el envio: alejar la recarga automatica mientras el formulario viaja.
-      injectMetaRefresh(Math.max(getRemainingSeconds(), 20), BASE_URL);
-    } catch (e) { window.botSubmitting = false; }
+      // El tiempo restante es el margen principal; el meta-refresh evita cortar un POST.
+      injectMetaRefresh(Math.max(getRemainingSeconds(), 30), BASE_URL);
+      var submitWatchStartedAt = Date.now();
+      var inspectSubmitResult = function () {
+        if (!window.botSubmitting || window.botBooked) return;
+        var after = pageFingerprint();
+        if (after !== before) {
+          window.botSubmitting = false;
+          setStatus("✅ El portal respondió al envío; comprobando el siguiente paso...");
+          return;
+        }
+        if (Date.now() - submitWatchStartedAt >= SUBMIT_TIMEOUT_MS) {
+          window.botSubmitting = false;
+          // No repetir clics ciegos: puede duplicar una operación o provocar un bloqueo.
+          window.__botSubmitStalled = true;
+          window.__botSubmitFingerprint = after;
+          setStatus("⚠️ El portal no confirmó el envío. No repetiré clics; la recarga automática sigue armada.");
+          return;
+        }
+        setTimeout(inspectSubmitResult, 1000);
+      };
+      setTimeout(inspectSubmitResult, 1000);
+      return true;
+    } catch (e) {
+      window.botSubmitting = false;
+      setStatus("⚠️ No se pudo pulsar el botón del portal; se volverá a comprobar la página.");
+      return false;
+    }
   }
 
   function markBooked() {
@@ -655,23 +737,31 @@
 
   function runStep() {
     initHTML5KeepAlive();
+    if (window.botSubmitting || window.botBooked || window.botTimerPaused || window.__botReloadStarted) return;
+
+    // Si un POST no cambió el documento, no repetir el clic a ciegas. Si cambia el
+    // contenido más tarde, se reanuda el análisis automáticamente.
+    if (window.__botSubmitStalled) {
+      var currentFingerprint = pageFingerprint();
+      if (currentFingerprint === window.__botSubmitFingerprint) return;
+      window.__botSubmitStalled = false;
+      setStatus("✅ Ha llegado una respuesta nueva del portal; retomando la búsqueda.");
+    }
 
     var href = (window.location.href || "").toLowerCase();
-    // innerText respeta lo visible (evita falsos positivos del texto legal oculto);
-    // si el motor no lo soporta se usa textContent como respaldo.
-    var body = "";
-    if (document.body) {
-      body = (typeof document.body.innerText === "string") ? document.body.innerText : (document.body.textContent || "");
-    }
-    var lower = body.toLowerCase();
+    // Leer el texto del portal sin el panel del bot, para no confundir sus etiquetas
+    // (p. ej. "TOMA DE HUELLAS") con el contenido real del formulario.
+    var body = getPortalBodyText();
+    var normalizedBody = body.normalize ? body.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : body.toUpperCase();
+    var pageHint = "";
 
     // PASO 0: AUTO-RECUPERACION DE ERRORES REALES (sin falsos positivos del texto legal)
-    var isRealError = body.indexOf("Se ha producido un error en el sistema") !== -1 ||
-                      body.indexOf("Su sesión ha caducado") !== -1 ||
-                      body.indexOf("caducado por permanecer") !== -1 ||
-                      body.indexOf("404 Not Found") !== -1 ||
-                      body.indexOf("429 Too Many Requests") !== -1 ||
-                      body.indexOf("The requested URL was rejected") !== -1;
+    var isRealError = normalizedBody.indexOf("SE HA PRODUCIDO UN ERROR EN EL SISTEMA") !== -1 ||
+                      normalizedBody.indexOf("SU SESION HA CADUCADO") !== -1 ||
+                      normalizedBody.indexOf("CADUCADO POR PERMANECER") !== -1 ||
+                      normalizedBody.indexOf("404 NOT FOUND") !== -1 ||
+                      normalizedBody.indexOf("429 TOO MANY REQUESTS") !== -1 ||
+                      normalizedBody.indexOf("THE REQUESTED URL WAS REJECTED") !== -1;
 
     if (isRealError) {
       setStatus("🔄 Error del servidor detectado: limpiando sesión y reiniciando formulario...");
@@ -685,53 +775,73 @@
       return;
     }
 
-    // PASO 1: PROVINCIA -> BARCELONA
-    var selProv = document.querySelector("select[name*='provincia']") || document.querySelector("select");
-    var btnProvAceptar = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
-
-    if (selProv && btnProvAceptar && (body.indexOf("PROVINCIAS DISPONIBLES") !== -1 || body.indexOf("Selecciona Provincia") !== -1 ||
-        href.indexOf("acopcdirect") !== -1 || (href.indexOf("acprovincias") !== -1 && body.indexOf("TRÁMITE") === -1))) {
-      setStatus("📍 Paso 1/5: Seleccionando Provincia BARCELONA...");
-      var foundP = false;
-      for (var i = 0; i < selProv.options.length; i++) {
-        if (selProv.options[i].text.toUpperCase().indexOf("BARCELONA") !== -1 || selProv.options[i].value === PROVINCIA_VAL) {
-          selProv.selectedIndex = i;
-          selProv.dispatchEvent(new Event("change", { bubbles: true }));
-          foundP = true;
-          break;
+    // PASO 1: PROVINCIA -> BARCELONA. Elegir el SELECT que realmente contiene Barcelona,
+    // no el primer select de la página (que podía ser otro control y dejar el bot girando).
+    var allSelects = document.querySelectorAll("select");
+    var selProv = null, provIdx = -1;
+    for (var ps = 0; ps < allSelects.length; ps++) {
+      for (var po = 0; po < allSelects[ps].options.length; po++) {
+        var provOpt = allSelects[ps].options[po];
+        var provText = provOpt.text.normalize ? provOpt.text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : provOpt.text.toUpperCase();
+        var isProvSelect = ((allSelects[ps].id || "") + " " + (allSelects[ps].name || "")).toLowerCase().indexOf("prov") !== -1;
+        if (provText.indexOf("BARCELONA") !== -1 || (isProvSelect && (provOpt.value === PROVINCIA_VAL || provOpt.value === "08"))) {
+          selProv = allSelects[ps]; provIdx = po; break;
         }
       }
-      if (foundP) { setTimeout(function () { submitFormWithBtn(btnProvAceptar); }, 600); return; }
+      if (selProv) break;
+    }
+    var btnProvAceptar = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']") ||
+                         document.querySelector("button[value='Aceptar']");
+    var isDirectEntry = href.indexOf("acopcdirect") !== -1;
+    var isProvincePage = normalizedBody.indexOf("PROVINCIAS DISPONIBLES") !== -1 ||
+                         normalizedBody.indexOf("SELECCIONA PROVINCIA") !== -1 ||
+                         normalizedBody.indexOf("SELECCIONE PROVINCIA") !== -1 ||
+                         (isDirectEntry && normalizedBody.indexOf("TRAMITE") === -1 && normalizedBody.indexOf("IDENTIDAD DEL USUARIO") === -1);
+
+    if (isProvincePage) {
+      if (selProv && btnProvAceptar && provIdx !== -1) {
+        setStatus("📍 Paso 1/5: Provincia Barcelona detectada; enviando selección...");
+        selProv.selectedIndex = provIdx;
+        selProv.dispatchEvent(new Event("change", { bubbles: true }));
+        setTimeout(function () { submitFormWithBtn(btnProvAceptar); }, 600);
+        return;
+      }
+      if (!selProv) pageHint = "El portal está abierto, pero no encuentro Barcelona en ningún selector de provincia.";
+      else if (!btnProvAceptar) pageHint = "Provincia Barcelona detectada, pero no encuentro el botón Aceptar del portal.";
     }
 
-    // PASO 2: TRAMITE -> TOMA DE HUELLAS
-    var selects = document.querySelectorAll("select");
-    if (selects.length > 0 && (body.indexOf("TRÁMITES") !== -1 || body.indexOf("TRÁMITE") !== -1 || body.indexOf("TOMA DE HUELLAS") !== -1) &&
-        body.indexOf("Identidad del usuario") === -1) {
-      setStatus("📋 Paso 2/5: Seleccionando Trámite TOMA DE HUELLAS...");
+    // PASO 2: TRAMITE -> TOMA DE HUELLAS (normaliza tildes/mayúsculas).
+    var isTramitePage = normalizedBody.indexOf("TRAMITE") !== -1 || normalizedBody.indexOf("TOMA DE HUELLAS") !== -1;
+    if (allSelects.length > 0 && isTramitePage && normalizedBody.indexOf("IDENTIDAD DEL USUARIO") === -1) {
       var tramiteSel = null, tramiteIdx = -1;
-      for (var s = 0; s < selects.length; s++) {
-        for (var o = 0; o < selects[s].options.length; o++) {
-          var txtOpt = selects[s].options[o].text.toUpperCase();
+      for (var ts = 0; ts < allSelects.length; ts++) {
+        for (var to = 0; to < allSelects[ts].options.length; to++) {
+          var txtOpt = allSelects[ts].options[to].text.normalize ? allSelects[ts].options[to].text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : allSelects[ts].options[to].text.toUpperCase();
           if (txtOpt.indexOf("TOMA DE HUELLAS") !== -1 || txtOpt.indexOf("HUELLAS") !== -1) {
-            tramiteSel = selects[s]; tramiteIdx = o; break;
+            tramiteSel = allSelects[ts]; tramiteIdx = to; break;
           }
         }
         if (tramiteSel) break;
       }
-      if (tramiteSel && tramiteIdx !== -1) {
+      var btnAceptarTramite = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']") ||
+                              document.querySelector("button[value='Aceptar']");
+      if (tramiteSel && tramiteIdx !== -1 && btnAceptarTramite) {
+        setStatus("📋 Paso 2/5: Trámite Toma de Huellas detectado; enviando selección...");
         tramiteSel.selectedIndex = tramiteIdx;
         tramiteSel.dispatchEvent(new Event("change", { bubbles: true }));
-        var btnAceptarTramite = document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
         setTimeout(function () { submitFormWithBtn(btnAceptarTramite); }, 700);
         return;
+      }
+      if (isTramitePage) {
+        if (!tramiteSel) pageHint = "Página de trámites detectada, pero no encuentro la opción Toma de Huellas.";
+        else if (!btnAceptarTramite) pageHint = "Trámite detectado, pero no encuentro el botón Aceptar.";
       }
     }
 
     // PASO 3: AVISO DE INFORMACION -> ENTRAR
     var btnEntrar = document.querySelector("#btnEntrar") ||
-                    document.querySelector("input[value*='Entrar']") ||
-                    document.querySelector("button[id*='Entrar']");
+                    document.querySelector("input[value*='Entrar' i]") ||
+                    document.querySelector("button[id*='Entrar' i]");
     if (btnEntrar) {
       setStatus("🚪 Paso 3/5: Pulsando 'Entrar' en el aviso de información...");
       setTimeout(function () { submitFormWithBtn(btnEntrar); }, 500);
@@ -743,6 +853,12 @@
     var inputNombre = document.querySelector("#txtDesCitado") || document.querySelector("input[name*='txtDesCitado']");
 
     if (inputNie && inputNombre) {
+      var btnEnviarDatos = document.querySelector("#btnEnviar") || document.querySelector("#btnAceptar") ||
+                           document.querySelector("input[value='Aceptar']") || document.querySelector("button[value='Aceptar']");
+      if (!btnEnviarDatos) {
+        setStatus("👤 Formulario de identidad detectado, pero no encuentro el botón para continuar.");
+        return;
+      }
       setStatus("👤 Paso 4/5: Rellenando datos de Amina Chair (NIE " + NIE + ")...");
       var radioNie = document.querySelector("#rdbTipoDocNie") || document.querySelector("input[value='NIE']");
       if (radioNie) { radioNie.checked = true; radioNie.dispatchEvent(new Event("change", { bubbles: true })); }
@@ -765,14 +881,13 @@
           }
         }
       }
-      var btnEnviarDatos = document.querySelector("#btnEnviar") || document.querySelector("#btnAceptar") || document.querySelector("input[value='Aceptar']");
       setTimeout(function () { submitFormWithBtn(btnEnviarDatos); }, 800);
       return;
     }
 
     // PASO 5: SOLICITAR CITA
-    var btnSolicitar = document.querySelector("#btnEnviar") || document.querySelector("input[value*='Solicitar']");
-    if (btnSolicitar && (body.indexOf("Solicitar Cita") !== -1 || body.indexOf("Identidad del usuario") !== -1)) {
+    var btnSolicitar = document.querySelector("#btnEnviar") || document.querySelector("input[value*='Solicitar' i]");
+    if (btnSolicitar && (normalizedBody.indexOf("SOLICITAR CITA") !== -1 || normalizedBody.indexOf("IDENTIDAD DEL USUARIO") !== -1)) {
       setStatus("⚡ Paso 5/5: Comprobando disponibilidad de citas en Barcelona...");
       setTimeout(function () { submitFormWithBtn(btnSolicitar); }, 600);
       return;
@@ -783,7 +898,10 @@
     var inTel = document.querySelector("#txtTelefonoCitado") || document.querySelector("input[name*='Telefono']");
     var inMail1 = document.querySelector("#email") || document.querySelector("#txtEmail") || document.querySelector("input[name*='email']");
 
-    if (radiosCita.length > 0 || inTel || inMail1 || body.indexOf("Seleccione la cita") !== -1 || body.indexOf("Confirmación de la cita") !== -1) {
+    var isAppointmentPage = radiosCita.length > 0 || normalizedBody.indexOf("SELECCIONE LA CITA") !== -1 ||
+                            normalizedBody.indexOf("CONFIRMACION DE LA CITA") !== -1 ||
+                            (normalizedBody.indexOf("FECHA Y HORA") !== -1 && (inTel || inMail1));
+    if (isAppointmentPage) {
       document.body.style.backgroundColor = "#bbf7d0";
 
       if (radiosCita.length > 0) {
@@ -802,17 +920,21 @@
       vibrate([1000, 300, 1000, 300, 2000, 300, 2000]);
 
       setTimeout(function () {
-        var btnFinal = document.querySelector("#btnSiguiente") || document.querySelector("#btnEnviar") || document.querySelector("input[value*='Confirmar']");
+        var btnFinal = document.querySelector("#btnSiguiente") || document.querySelector("#btnEnviar") || document.querySelector("input[value*='Confirmar' i]");
+        if (!btnFinal) {
+          setStatus("🎉 Cita detectada, pero el portal no muestra un botón final reconocible. Dejo la página abierta para comprobar la confirmación.");
+          return;
+        }
         submitFormWithBtn(btnFinal);
       }, 600);
       return;
     }
 
     // PASO 7: SIN CITAS -> el watchdog de 7 minutos hace la recarga automatica (nada que hacer aqui)
-    if (lower.indexOf("en este momento no hay citas disponibles") !== -1 ||
-        lower.indexOf("no hay citas disponibles") !== -1 ||
-        lower.indexOf("no existen citas disponibles") !== -1 ||
-        lower.indexOf("no se han encontrado citas") !== -1) {
+    if (normalizedBody.indexOf("EN ESTE MOMENTO NO HAY CITAS DISPONIBLES") !== -1 ||
+        normalizedBody.indexOf("NO HAY CITAS DISPONIBLES") !== -1 ||
+        normalizedBody.indexOf("NO EXISTEN CITAS DISPONIBLES") !== -1 ||
+        normalizedBody.indexOf("NO SE HAN ENCONTRADO CITAS") !== -1) {
       if (!window.botNoCitasNotified) {
         window.botNoCitasNotified = true;
         var timeNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -825,14 +947,15 @@
     }
 
     // PAGINA GENERAL -> volver al inicio del formulario
-    if (!window.botReentered && href.indexOf("acopcdirect") === -1 && body.indexOf("PROVINCIA") === -1) {
+    if (!window.botReentered && href.indexOf("acopcdirect") === -1 && normalizedBody.indexOf("PROVINCIA") === -1) {
       window.botReentered = true;
       setStatus("🔍 Iniciando asistente de citas Barcelona para Amina Chair...");
       setTimeout(function () { hardNavigate(BASE_URL, false); }, 3000);
       return;
     }
 
-    setStatus("⏳ Esperando la respuesta del servidor... (recarga automática garantizada)");
+    if (pageHint) setStatus("⚠️ " + pageHint + " El contador y la recarga automática siguen activos.");
+    else setStatus("⏳ Página cargada; no identifico un paso del formulario todavía. Esperando respuesta del portal.");
   }
 
   // ============================== 8. ARRANQUE ==============================
@@ -877,7 +1000,7 @@
 
   // Objeto de diagnostico (se puede inspeccionar desde la consola del navegador).
   window.__BOT_BARCELONA = {
-    version: "9.6",
+    version: "9.7",
     segundoPlanoActivo: isBackgroundModeActive,
     activarSegundoPlano: function () { return activateBackgroundMode(); },
     revisarAlVolver: function () { return resumeCheck(); },
