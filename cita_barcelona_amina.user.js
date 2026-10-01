@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.3
-// @description  v9.3 Recarga Infalible - Amina Chair (NIE Y2086361E). Recarga garantizada cada 10 min aunque el navegador congele la pestana: meta-refresh nativo armado antes del load, sin bloqueo beforeunload, cascada de navegacion y boton de recarga manual.
+// @version      9.4
+// @description  v9.4 - Amina Chair (NIE Y2086361E). Busqueda automatica cada 7 minutos 24/7 y recarga 100% automatica al terminar el contador (sin ningun boton): meta-refresh nativo armado antes del load, sin bloqueo beforeunload y cascada de navegacion con reintentos.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
@@ -22,9 +22,14 @@
    ===================================================================================== */
 
 /* =====================================================================================
-   BOT CITA PREVIA BARCELONA - VERSION 9.3 "RECARGA INFALIBLE"
+   BOT CITA PREVIA BARCELONA - VERSION 9.4 "AUTOMATICO TOTAL"
    -------------------------------------------------------------------------------------
-   QUE SE ARREGLA EN ESTA VERSION (en v9.2 el contador llegaba a 0 y NO recargaba):
+   NOVEDADES v9.4:
+   - La busqueda se repite CADA 7 MINUTOS (RETRY_SEC = 420), 24 h, los 7 dias.
+   - SIN botones de recarga: la pagina se recarga SOLA en cuanto el contador llega a
+     00:00. No hay que tocar nada.
+   -------------------------------------------------------------------------------------
+   HISTORIAL v9.3 "Recarga Infalible" (en v9.2 el contador llegaba a 0 y NO recargaba):
    1) El <meta http-equiv="refresh"> se inyecta al inicio (document-start), ANTES del
       evento "load". Firefox/Gecko SOLO obedece un meta-refresh insertado antes de load;
       en v9.2 se insertaba tarde => el motor nativo nunca se armaba.
@@ -33,10 +38,9 @@
       navegador => la recarga ocurre aunque la pantalla este apagada.
    3) Se anula window.onbeforeunload y el dialogo "¿Desea salir?" del portal, que bloquea
       la navegacion cuando nadie puede pulsar "Salir".
-   4) Watchdog con fecha limite persistente (localStorage): recarga SIEMPRE cada 10 min.
+   4) Watchdog con fecha limite persistente (localStorage): recarga SIEMPRE cada 7 min.
    5) Cascada de navegacion: top.location -> formulario GET oculto -> location.replace ->
       assign -> href -> reload -> meta-refresh de 3 s, reintentando cada 4 segundos.
-   6) Boton "RECARGAR AHORA" en el panel para forzar la busqueda manualmente.
    ===================================================================================== */
 
 (function () {
@@ -49,7 +53,7 @@
   var PROVINCIA_VAL = "8"; // BARCELONA
   var TELEFONO = "698233413";
   var EMAIL = "fuadel21@hotmail.com";
-  var RETRY_SEC = 600; // 10 MINUTOS, 24/7 TODA LA SEMANA
+  var RETRY_SEC = 420; // 7 MINUTOS, 24/7 TODA LA SEMANA
   var BASE_URL = "https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDirect";
   var RELOAD_GUARD_MS = 4000;   // minimo entre intentos de recarga
   var STEP_GRACE_MS = 25000;    // margen si el flujo del formulario esta en curso
@@ -57,7 +61,8 @@
 
   // Guardia anti-duplicados: si por lo que sea quedase instalada tambien la 9.2, esta
   // version arranca antes (document-start) y la otra se desactiva sola al ver la marca.
-  if (window.botInitializedV93 || window.botInitialized) return;
+  if (window.botInitializedV94 || window.botInitializedV93 || window.botInitialized) return;
+  window.botInitializedV94 = true;
   window.botInitializedV93 = true;
   window.botInitialized = true;
 
@@ -285,7 +290,7 @@
         return;
       }
     }
-    forceReload("10 min cumplidos");
+    forceReload("7 min cumplidos");
   }
 
   // Intervalo principal + intervalo de respaldo (por si el primero se degrada en segundo plano).
@@ -328,7 +333,7 @@
 
     b.innerHTML =
       "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-        "<span>🤖 BOT BARCELONA v9.3" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
+        "<span>🤖 BOT BARCELONA v9.4" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
         "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + getAttemptCount() + "</span>" +
       "</div>" +
       "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -339,22 +344,14 @@
           "<span style='color:#94a3b8;font-size:11px;'> · " + (booked ? "en pausa (cita detectada)" : (paused ? "en pausa" : (armed ? "motor nativo armado ✅ (" + armed + "s)" : "motor nativo re-armándose..."))) + "</span>" +
         "</div>" +
       "</div>" +
-      "<div style='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;'>" +
-        "<button id='bot-btn-reload' style='flex:1;padding:9px;border:none;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold;font-size:12px;'>🔄 RECARGAR AHORA</button>" +
-        (("Notification" in window) && Notification.permission !== "granted"
-          ? "<button id='bot-btn-notif' style='flex:1;padding:9px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:bold;font-size:12px;'>🔔 ACTIVAR AVISOS</button>" : "") +
-        (booked || paused
-          ? "<button id='bot-btn-resume' style='flex:1;padding:9px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-weight:bold;font-size:12px;'>🔁 REANUDAR BÚSQUEDA 24/7</button>" : "") +
-      "</div>";
-
-    var btnReload = document.getElementById("bot-btn-reload");
-    if (btnReload) btnReload.onclick = function () {
-      initHTML5KeepAlive();
-      setStatus("🔄 Recarga manual solicitada por el usuario...");
-      lsSet("bot_deadline", Date.now()); // fuerza el reloj a cero
-      lastReloadTry = 0;
-      forceReload("orden manual");
-    };
+      (("Notification" in window) && Notification.permission !== "granted" || booked || paused
+        ? "<div style='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;'>" +
+            (("Notification" in window) && Notification.permission !== "granted"
+              ? "<button id='bot-btn-notif' style='flex:1;padding:9px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:bold;font-size:12px;'>🔔 ACTIVAR AVISOS</button>" : "") +
+            (booked || paused
+              ? "<button id='bot-btn-resume' style='flex:1;padding:9px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-weight:bold;font-size:12px;'>🔁 REANUDAR BÚSQUEDA 24/7</button>" : "") +
+          "</div>"
+        : "");
 
     var btnNotif = document.getElementById("bot-btn-notif");
     if (btnNotif) btnNotif.onclick = function () {
@@ -375,7 +372,7 @@
       lsSet("bot_deadline", Date.now() + RETRY_SEC * 1000);
       lastReloadTry = 0;
       injectMetaRefresh(RETRY_SEC, BASE_URL);
-      setStatus("🔁 Búsqueda automática reanudada (ciclo nuevo de 10 minutos).");
+      setStatus("🔁 Búsqueda automática reanudada (ciclo nuevo de 7 minutos).");
     };
 
     updateCountdownUI(getRemainingSeconds());
@@ -659,7 +656,7 @@
       return;
     }
 
-    // PASO 7: SIN CITAS -> el watchdog de 10 minutos hace la recarga (nada que hacer aqui)
+    // PASO 7: SIN CITAS -> el watchdog de 7 minutos hace la recarga automatica (nada que hacer aqui)
     if (lower.indexOf("en este momento no hay citas disponibles") !== -1 ||
         lower.indexOf("no hay citas disponibles") !== -1 ||
         lower.indexOf("no existen citas disponibles") !== -1 ||
@@ -668,7 +665,7 @@
         window.botNoCitasNotified = true;
         var timeNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
         sendNotification("🤖 Intento #" + getAttemptCount() + " revisado en Barcelona",
-          "Revisado a las " + timeNow + ". Sin citas libres. Recarga automática en 10 minutos.");
+          "Revisado a las " + timeNow + ". Sin citas libres. Recarga automática en 7 minutos.");
         vibrate([200, 100, 200]);
       }
       setStatus("❌ Sin citas disponibles en este momento. La página se recargará sola al llegar a 00:00.");
@@ -698,7 +695,7 @@
     if (lastNotified !== window.__botCycleId) {
       lsSet("bot_cycle_notified", window.__botCycleId);
       sendNotification("🤖 Intento #" + getAttemptCount() + " en Barcelona",
-        "Buscando cita para " + NOMBRE + " (" + NIE + "). Provincia BARCELONA, TOMA DE HUELLAS. Recarga automática cada 10 min.");
+        "Buscando cita para " + NOMBRE + " (" + NIE + "). Provincia BARCELONA, TOMA DE HUELLAS. Recarga automática cada 7 min.");
     }
   }
 
@@ -717,7 +714,7 @@
 
   // Objeto de diagnostico (se puede inspeccionar desde la consola del navegador).
   window.__BOT_BARCELONA = {
-    version: "9.3",
+    version: "9.4",
     intento: getAttemptCount,
     segundosRestantes: getRemainingSeconds,
     metaRefreshArmado: function () { return window.__botMetaRefreshArmed; },
