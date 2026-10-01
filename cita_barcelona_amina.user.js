@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.5
-// @description  v9.5 - Amina Chair (NIE Y2086361E). Busqueda cada 7 minutos 24/7 con MODO SEGUNDO PLANO (audio silencioso + wake lock para que Android no congele Firefox) y recuperacion inmediata al volver. Recarga 100% automatica sin botones.
+// @version      9.6
+// @description  v9.6 - Amina Chair (NIE Y2086361E). Busqueda cada 7 minutos 24/7 con MODO SEGUNDO PLANO (audio silencioso + wake lock para que Android no congele Firefox) y recuperacion inmediata al volver. Recarga 100% automatica sin botones.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
@@ -24,7 +24,7 @@
 /* =====================================================================================
    BOT CITA PREVIA BARCELONA - VERSION 9.5 "ANTI-CONGELAMIENTO"
    -------------------------------------------------------------------------------------
-   NOVEDADES v9.5 (arregla que con Firefox EN SEGUNDO PLANO no hiciera nada):
+   NOVEDADES v9.6 (arregla que con Firefox EN SEGUNDO PLANO no hiciera nada):
    1) MODO SEGUNDO PLANO: reproduce un tono de 60 Hz practicamente inaudible en bucle.
       Con audio en marcha, Firefox Android crea su servicio de reproduccion en primer
       plano y Android NO congela la app => el temporizador del meta-refresh sigue
@@ -72,7 +72,8 @@
 
   // Guardia anti-duplicados: si por lo que sea quedase instalada tambien la 9.2, esta
   // version arranca antes (document-start) y la otra se desactiva sola al ver la marca.
-  if (window.botInitializedV95 || window.botInitializedV94 || window.botInitializedV93 || window.botInitialized) return;
+  if (window.botInitializedV96 || window.botInitializedV95 || window.botInitializedV94 || window.botInitializedV93 || window.botInitialized) return;
+  window.botInitializedV96 = true;
   window.botInitializedV95 = true;
   window.botInitializedV94 = true;
   window.botInitializedV93 = true;
@@ -357,7 +358,7 @@
           "<span style='color:#94a3b8;font-size:11px;'> · " + (booked ? "en pausa (cita detectada)" : (paused ? "en pausa" : (armed ? "motor nativo armado ✅ (" + armed + "s)" : "motor nativo re-armándose..."))) + "</span>" +
         "</div>" +
         "<div style='margin-top:4px;font-size:11px;color:#94a3b8;'>🔊 Segundo plano: " +
-          (isBackgroundModeActive() ? "<b style='color:#22c55e;'>ACTIVO ✅</b> (Android no congelará Firefox)" : "<b style='color:#f87171;'>INACTIVO</b> (toca el botón morado 🔊)") +
+          (window.__botBgMode ? "<b style='color:#22c55e;'>ACTIVO ✅</b> (Android no congelará Firefox)" : (lsGet("bot_bg_intent") === "1" ? "<b style='color:#facc15;'>ESPERANDO TOQUE 🔑</b> (toca cualquier parte)" : "<b style='color:#f87171;'>INACTIVO</b> (toca el botón morado 🔊)")) +
           (window.__botLastFreeze ? " · ⚠️ congelado " + window.__botLastFreeze + " min la última vez" : "") +
         "</div>" +
       "</div>" +
@@ -490,7 +491,7 @@
   // minima: en el altavoz del movil resulta practicamente inaudible.
   var wakeLockObj = null;
 
-  function isBackgroundModeActive() { return !!window.__botBgMode; }
+  function isBackgroundModeActive() { return !!window.__botBgMode || lsGet("bot_bg_intent") === "1"; }
 
   function buildToneURL() {
     try {
@@ -528,6 +529,7 @@
 
   // Necesita un toque del usuario si Firefox tiene el autoplay bloqueado.
   function activateBackgroundMode() {
+    lsSet("bot_bg_intent", "1");
     if (window.__botBgMode) { requestWakeLock(); return true; }
     var url = "";
     try { url = buildToneURL(); } catch (e) { url = ""; }
@@ -576,7 +578,11 @@
 
   // El primer toque en cualquier parte de la pagina activa el modo segundo plano.
   try {
-    var armBgOnce = function () { try { activateBackgroundMode(); } catch (e) {} };
+    var armBgOnce = function () {
+      try {
+        if (lsGet("bot_bg_intent") === "1") activateBackgroundMode();
+      } catch (e) {}
+    };
     document.addEventListener("pointerdown", armBgOnce, { once: true, capture: true, passive: true });
     document.addEventListener("touchstart", armBgOnce, { once: true, capture: true, passive: true });
   } catch (e) {}
@@ -607,6 +613,9 @@
       }
 
       // Si el audio de fondo se paro (p.ej. tras una recarga), se intenta reanudar.
+      if (lsGet("bot_bg_intent") === "1" && (!window.__botBgMode || (window.__botBgAudio && window.__botBgAudio.paused))) {
+        try { activateBackgroundMode(); } catch (e) {}
+      }
       if (window.__botBgMode && window.__botBgAudio && window.__botBgAudio.paused) {
         try { var pp = window.__botBgAudio.play(); if (pp && pp.catch) pp.catch(function () {}); } catch (e) {}
       }
@@ -868,7 +877,7 @@
 
   // Objeto de diagnostico (se puede inspeccionar desde la consola del navegador).
   window.__BOT_BARCELONA = {
-    version: "9.5",
+    version: "9.6",
     segundoPlanoActivo: isBackgroundModeActive,
     activarSegundoPlano: function () { return activateBackgroundMode(); },
     revisarAlVolver: function () { return resumeCheck(); },
