@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.4
-// @description  v9.4 - Amina Chair (NIE Y2086361E). Busqueda automatica cada 7 minutos 24/7 y recarga 100% automatica al terminar el contador (sin ningun boton): meta-refresh nativo armado antes del load, sin bloqueo beforeunload y cascada de navegacion con reintentos.
+// @version      9.5
+// @description  v9.5 - Amina Chair (NIE Y2086361E). Busqueda cada 7 minutos 24/7 con MODO SEGUNDO PLANO (audio silencioso + wake lock para que Android no congele Firefox) y recuperacion inmediata al volver. Recarga 100% automatica sin botones.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
@@ -22,12 +22,22 @@
    ===================================================================================== */
 
 /* =====================================================================================
-   BOT CITA PREVIA BARCELONA - VERSION 9.4 "AUTOMATICO TOTAL"
+   BOT CITA PREVIA BARCELONA - VERSION 9.5 "ANTI-CONGELAMIENTO"
    -------------------------------------------------------------------------------------
-   NOVEDADES v9.4:
-   - La busqueda se repite CADA 7 MINUTOS (RETRY_SEC = 420), 24 h, los 7 dias.
-   - SIN botones de recarga: la pagina se recarga SOLA en cuanto el contador llega a
-     00:00. No hay que tocar nada.
+   NOVEDADES v9.5 (arregla que con Firefox EN SEGUNDO PLANO no hiciera nada):
+   1) MODO SEGUNDO PLANO: reproduce un tono de 60 Hz practicamente inaudible en bucle.
+      Con audio en marcha, Firefox Android crea su servicio de reproduccion en primer
+      plano y Android NO congela la app => el temporizador del meta-refresh sigue
+      corriendo y la pagina se recarga sola cada 7 minutos aunque la pantalla este
+      apagada o el movil en el bolsillo.
+   2) WAKE LOCK (si el navegador lo soporta): mantiene la pantalla encendida mientras la
+      pestana esta visible, para que Android no duerma la app.
+   3) LATIDO + DETECCION DE CONGELAMIENTO: se guarda un latido cada segundo. Si al volver
+      a Firefox el latido lleva mas de 90 s parado, se avisa ("congelado N min") y la
+      busqueda se reanuda AL INSTANTE, sin esperar a que termine el contador.
+   -------------------------------------------------------------------------------------
+   v9.4: la busqueda se repite CADA 7 MINUTOS (RETRY_SEC = 420) y la pagina se recarga
+   SOLA al llegar el contador a 00:00, sin ningun boton.
    -------------------------------------------------------------------------------------
    HISTORIAL v9.3 "Recarga Infalible" (en v9.2 el contador llegaba a 0 y NO recargaba):
    1) El <meta http-equiv="refresh"> se inyecta al inicio (document-start), ANTES del
@@ -57,11 +67,13 @@
   var BASE_URL = "https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDirect";
   var RELOAD_GUARD_MS = 4000;   // minimo entre intentos de recarga
   var STEP_GRACE_MS = 25000;    // margen si el flujo del formulario esta en curso
+  var FREEZE_GAP_MS = 90000;    // mas de 90 s sin latido = Firefox congelado en 2o plano
   var IS_TOP = (window.top === window.self);
 
   // Guardia anti-duplicados: si por lo que sea quedase instalada tambien la 9.2, esta
   // version arranca antes (document-start) y la otra se desactiva sola al ver la marca.
-  if (window.botInitializedV94 || window.botInitializedV93 || window.botInitialized) return;
+  if (window.botInitializedV95 || window.botInitializedV94 || window.botInitializedV93 || window.botInitialized) return;
+  window.botInitializedV95 = true;
   window.botInitializedV94 = true;
   window.botInitializedV93 = true;
   window.botInitialized = true;
@@ -273,6 +285,7 @@
   var deadlineExpiredAt = 0;
 
   function watchdog() {
+    lsSet("bot_hb", Date.now()); // latido: permite detectar congelamientos en segundo plano
     var rem = getRemainingSeconds();
 
     // Mantener siempre visible el panel y el contador (si el portal los borra, se recrean).
@@ -333,7 +346,7 @@
 
     b.innerHTML =
       "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-        "<span>🤖 BOT BARCELONA v9.4" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
+        "<span>🤖 BOT BARCELONA v9.5" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
         "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + getAttemptCount() + "</span>" +
       "</div>" +
       "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -343,11 +356,17 @@
         "<div style='margin-top:6px;color:#e2e8f0;'>⏱️ Próxima recarga en: <b id='bot-countdown' style='color:#22c55e;font-size:16px;'>--:--</b>" +
           "<span style='color:#94a3b8;font-size:11px;'> · " + (booked ? "en pausa (cita detectada)" : (paused ? "en pausa" : (armed ? "motor nativo armado ✅ (" + armed + "s)" : "motor nativo re-armándose..."))) + "</span>" +
         "</div>" +
+        "<div style='margin-top:4px;font-size:11px;color:#94a3b8;'>🔊 Segundo plano: " +
+          (isBackgroundModeActive() ? "<b style='color:#22c55e;'>ACTIVO ✅</b> (Android no congelará Firefox)" : "<b style='color:#f87171;'>INACTIVO</b> (toca el botón morado 🔊)") +
+          (window.__botLastFreeze ? " · ⚠️ congelado " + window.__botLastFreeze + " min la última vez" : "") +
+        "</div>" +
       "</div>" +
-      (("Notification" in window) && Notification.permission !== "granted" || booked || paused
+      (("Notification" in window) && Notification.permission !== "granted" || booked || paused || !isBackgroundModeActive()
         ? "<div style='display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;'>" +
             (("Notification" in window) && Notification.permission !== "granted"
               ? "<button id='bot-btn-notif' style='flex:1;padding:9px;border:none;border-radius:8px;background:#dc2626;color:#fff;font-weight:bold;font-size:12px;'>🔔 ACTIVAR AVISOS</button>" : "") +
+            (!isBackgroundModeActive()
+              ? "<button id='bot-btn-bg' style='flex:1;padding:9px;border:none;border-radius:8px;background:#7c3aed;color:#fff;font-weight:bold;font-size:12px;'>🔊 ACTIVAR SEGUNDO PLANO</button>" : "") +
             (booked || paused
               ? "<button id='bot-btn-resume' style='flex:1;padding:9px;border:none;border-radius:8px;background:#16a34a;color:#fff;font-weight:bold;font-size:12px;'>🔁 REANUDAR BÚSQUEDA 24/7</button>" : "") +
           "</div>"
@@ -356,6 +375,7 @@
     var btnNotif = document.getElementById("bot-btn-notif");
     if (btnNotif) btnNotif.onclick = function () {
       initHTML5KeepAlive();
+      activateBackgroundMode();
       try {
         Notification.requestPermission().then(function (p) {
           if (p === "granted") sendNotification("✅ Avisos Activados", "Recibirás un aviso en cada intento de cita.");
@@ -363,6 +383,9 @@
         });
       } catch (e) {}
     };
+
+    var btnBg = document.getElementById("bot-btn-bg");
+    if (btnBg) btnBg.onclick = function () { initHTML5KeepAlive(); activateBackgroundMode(); };
 
     var btnResume = document.getElementById("bot-btn-resume");
     if (btnResume) btnResume.onclick = function () {
@@ -459,17 +482,90 @@
 
   function vibrate(pattern) { try { if ("vibrate" in navigator) navigator.vibrate(pattern); } catch (e) {} }
 
-  function initHTML5KeepAlive() {
+  // ============================== 6b. MODO SEGUNDO PLANO (ANTI-CONGELAMIENTO) ==============================
+  // Android congela las apps en segundo plano y Firefox suspende las pestanas inactivas.
+  // CON AUDIO EN MARCHA, Firefox Android crea su servicio de reproduccion en primer plano
+  // y el proceso NO se congela => el temporizador del meta-refresh sigue corriendo y la
+  // pagina se recarga sola cada 7 minutos. El tono es un zumbido a 60 Hz de amplitud
+  // minima: en el altavoz del movil resulta practicamente inaudible.
+  var wakeLockObj = null;
+
+  function isBackgroundModeActive() { return !!window.__botBgMode; }
+
+  function buildToneURL() {
     try {
-      if (!window.__botKeepAlive) {
-        window.__botKeepAlive = true;
-        var silent = "data:audio/mp3;base64,SUQ3BAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABAAA7Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6Ojo6//OUZAAAAAAAABAAA0gAAAAABAAAAAAAAAAA=";
-        var audio = new Audio(silent);
-        audio.loop = true;
-        audio.volume = 0.01;
-        audio.play().catch(function () {});
+      var sr = 8000, n = sr; // 1 segundo
+      var buf = new ArrayBuffer(44 + n * 2);
+      var v = new DataView(buf);
+      function wstr(off, str) { for (var i = 0; i < str.length; i++) v.setUint8(off + i, str.charCodeAt(i)); }
+      wstr(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); wstr(8, "WAVE"); wstr(12, "fmt ");
+      v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+      wstr(36, "data"); v.setUint32(40, n * 2, true);
+      for (var i2 = 0; i2 < n; i2++) {
+        v.setInt16(44 + i2 * 2, Math.round(Math.sin(2 * Math.PI * 60 * i2 / sr) * 0.06 * 32767), true);
       }
+      var bytes = new Uint8Array(buf), bin = "";
+      for (var i3 = 0; i3 < bytes.length; i3++) bin += String.fromCharCode(bytes[i3]);
+      return "data:audio/wav;base64," + btoa(bin);
+    } catch (e) { return ""; }
+  }
+
+  function requestWakeLock() {
+    try {
+      if (!navigator.wakeLock || !navigator.wakeLock.request || wakeLockObj) return;
+      navigator.wakeLock.request("screen").then(function (wl) {
+        wakeLockObj = wl;
+        if (wl && wl.addEventListener) {
+          wl.addEventListener("release", function () {
+            wakeLockObj = null;
+            if (!document.hidden) setTimeout(requestWakeLock, 5000);
+          });
+        }
+      }).catch(function () {});
     } catch (e) {}
+  }
+
+  // Necesita un toque del usuario si Firefox tiene el autoplay bloqueado.
+  function activateBackgroundMode() {
+    if (window.__botBgMode) { requestWakeLock(); return true; }
+    var url = "";
+    try { url = buildToneURL(); } catch (e) { url = ""; }
+    if (!url) return false;
+    try {
+      var audio = new Audio(url);
+      audio.loop = true;
+      audio.volume = 0.05;
+      audio.setAttribute("playsinline", "");
+      var p = null;
+      try { p = audio.play(); } catch (e) { p = null; }
+      var finish = function (ok) {
+        window.__botBgMode = ok;
+        if (ok) {
+          window.__botBgAudio = audio;
+          setStatus("🔊 Modo segundo plano ACTIVADO ✅ (Android ya no congelará Firefox)");
+          sendNotification("🔊 Modo segundo plano activado", "El bot seguirá buscando cita aunque cierres la pantalla o cambies de app.");
+        } else {
+          setStatus("⚠️ Audio bloqueado: toca el botón morado 🔊 y elige 'Permitir audio' (o activa Autoplay en Firefox).");
+        }
+        render();
+      };
+      if (p && typeof p.then === "function") {
+        p.then(function () { finish(true); }).catch(function () { finish(false); });
+      } else {
+        finish(!audio.paused);
+      }
+    } catch (e) {
+      setStatus("⚠️ Este navegador no permite el modo segundo plano con audio.");
+      render();
+      return false;
+    }
+    requestWakeLock();
+    return true;
+  }
+
+  function initHTML5KeepAlive() {
+    requestWakeLock();
     try {
       if ("locks" in navigator && !window.__botLock) {
         window.__botLock = true;
@@ -477,6 +573,53 @@
       }
     } catch (e) {}
   }
+
+  // El primer toque en cualquier parte de la pagina activa el modo segundo plano.
+  try {
+    var armBgOnce = function () { try { activateBackgroundMode(); } catch (e) {} };
+    document.addEventListener("pointerdown", armBgOnce, { once: true, capture: true, passive: true });
+    document.addEventListener("touchstart", armBgOnce, { once: true, capture: true, passive: true });
+  } catch (e) {}
+
+  // ============================== 6c. RECUPERACION AL VOLVER (DETECCION DE CONGELAMIENTO) ==============================
+  var resumeCheck = function () {
+    try {
+      var hb = parseInt(lsGet("bot_hb") || "0", 10);
+      var gap = hb ? (Date.now() - hb) : 0;
+
+      if (!window.botBooked) {
+        if (gap > FREEZE_GAP_MS) {
+          var mins = Math.max(1, Math.round(gap / 60000));
+          window.__botLastFreeze = mins;
+          lastReloadTry = 0; // permiso para recargar ya, sin esperar el margen de seguridad
+          setStatus("▶️ Firefox estuvo congelado " + mins + " min en segundo plano. Reanudando la búsqueda AHORA...");
+          sendNotification("▶️ Bot reanudado", "Firefox estuvo " + mins + " min congelado en segundo plano. Reanudando la búsqueda de cita de Amina Chair.");
+          if (getRemainingSeconds() <= 0) {
+            forceReload("al volver del segundo plano");
+          } else {
+            cancelMetaRefresh();
+            injectMetaRefresh(getRemainingSeconds(), BASE_URL);
+          }
+        } else if (!window.botTimerPaused && !(window.__botMetaRefreshArmed > 0)) {
+          // El navegador pudo cancelar el meta-refresh al congelar la pestana: se re-arma.
+          injectMetaRefresh(Math.max(getRemainingSeconds(), 1), BASE_URL);
+        }
+      }
+
+      // Si el audio de fondo se paro (p.ej. tras una recarga), se intenta reanudar.
+      if (window.__botBgMode && window.__botBgAudio && window.__botBgAudio.paused) {
+        try { var pp = window.__botBgAudio.play(); if (pp && pp.catch) pp.catch(function () {}); } catch (e) {}
+      }
+      if (!window.__botBgMode) { try { activateBackgroundMode(); } catch (e) {} }
+      requestWakeLock();
+
+      lsSet("bot_hb", Date.now());
+      render();
+    } catch (e) {}
+  };
+  try { document.addEventListener("visibilitychange", function () { if (!document.hidden) resumeCheck(); }); } catch (e) {}
+  try { window.addEventListener("focus", resumeCheck); } catch (e) {}
+  try { window.addEventListener("pageshow", resumeCheck); } catch (e) {}
 
   // ============================== 7. FORMULARIO (PASOS 1 A 5) ==============================
   function submitFormWithBtn(btn) {
@@ -699,6 +842,17 @@
     }
   }
 
+  // Intento automatico al cargar (funciona si Firefox tiene el Autoplay permitido).
+  setTimeout(function () {
+    try {
+      if (!window.botBgMode) {
+        injectMetaRefresh(getRemainingSeconds(), BASE_URL);
+      }
+      activateBackgroundMode();
+      resumeCheck();
+    } catch (e) {}
+  }, 1500);
+
   setInterval(function () { if (!window.botSubmitting) runStep(); }, 2000);
 
   function boot(tries) {
@@ -714,7 +868,10 @@
 
   // Objeto de diagnostico (se puede inspeccionar desde la consola del navegador).
   window.__BOT_BARCELONA = {
-    version: "9.4",
+    version: "9.5",
+    segundoPlanoActivo: isBackgroundModeActive,
+    activarSegundoPlano: function () { return activateBackgroundMode(); },
+    revisarAlVolver: function () { return resumeCheck(); },
     intento: getAttemptCount,
     segundosRestantes: getRemainingSeconds,
     metaRefreshArmado: function () { return window.__botMetaRefreshArmed; },

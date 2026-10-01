@@ -1,4 +1,4 @@
-# 📱 Manual MÓVIL — Bot de Citas Barcelona para Amina Chair (v9.4 "Automático Total")
+# 📱 Manual MÓVIL — Bot de Citas Barcelona para Amina Chair (v9.5 "Anti-Congelamiento")
 
 **Gestor de usuarioscripts: TAMPERMONKEY** · Navegador: **Firefox Android** (también vale Kiwi/Lemur con Tampermonkey).
 
@@ -6,6 +6,7 @@
 - 📍 Provincia: **BARCELONA** · Trámite: **POLICIA - TOMA DE HUELLAS (RENOVACIÓN DE TARJETA)**
 - 📱 Teléfono: **698233413** · ✉️ Email del justificante: **fuadel21@hotmail.com**
 - 🔁 Búsqueda **cada 7 minutos, 24 h, los 7 días de la semana** (recarga 100% automática)
+- 🔊 **Funciona con Firefox en segundo plano** (audio silencioso anti-congelamiento de Android)
 - ⚡ Reserva **instantánea** en la primera oficina y hora disponibles
 
 ---
@@ -44,12 +45,20 @@ En el **Dashboard** de Tampermonkey busca scripts que actúen sobre `icp.adminis
 
 ---
 
-## 2. Permisos en el móvil (para que funcione 24/7)
+## 2. Permisos y ajustes en el móvil (IMPRESCINDIBLES para 24/7) ⚠️
 
-1. **Notificaciones**: al abrir la web, el panel del bot muestra un botón rojo **"🔔 ACTIVAR AVISOS"** → púlsalo y acepta *Permitir*. Si sale el candado 🔒 en la barra de direcciones, entra ahí y activa las notificaciones del sitio.
-2. **Android → Ajustes → Aplicaciones → Firefox → Batería → "Sin restricciones" / "No optimizar"**. Si Android mata Firefox, ninguna página puede recargarse.
-3. Deja **Firefox abierto en segundo plano** con la pestaña del bot (no la cierres). El motor nativo del navegador recarga la página aunque la pantalla esté apagada.
-4. **Ajustes recomendados de Tampermonkey**: Configuración → *Config mode: Advanced* → **Inject Mode: Instantáneo**, si notas que el bot no arranca al instante en algún arranque del navegador.
+> **Por qué hace falta esto:** Android **congela** las apps en segundo plano y Firefox suspende las pestañas inactivas. Con la app congelada, **ningún** script (ni el meta-refresh) puede ejecutarse. La v9.5 lo resuelve reproduciendo un **tono de 60 Hz prácticamente inaudible**: mientras hay audio en marcha, Android trata a Firefox como "reproductor" y **no lo congela**, así que la recarga de los 7 minutos sigue funcionando con la pantalla apagada.
+
+1. **🔊 Activa el modo segundo plano en la web**: al abrir la página, toca el botón morado **"🔊 ACTIVAR SEGUNDO PLANO"** (o simplemente toca una vez en cualquier parte de la página). El panel debe pasar a **"🔊 Segundo plano: ACTIVO ✅"**. Verás una notificación de reproducción de Firefox: es normal, es el tono silencioso.
+2. **Permite el autoplay (muy recomendable)**: Firefox → **Ajustes → Permisos del sitio → Reproducción automática → "Permitir audio y vídeo"**. Así el modo segundo plano se reactiva **solo** después de cada recarga, sin tener que tocar nada.
+3. **Notificaciones**: pulsa **"🔔 ACTIVAR AVISOS"** y acepta *Permitir*. Si aparece el candado 🔒 en la barra de direcciones, activa ahí las notificaciones del sitio.
+4. **Android → Ajustes → Aplicaciones → Firefox → Batería → "Sin restricciones" / "No optimizar"**, y activa **"Permitir actividad en segundo plano"** si tu móvil lo muestra.
+5. **No cierres la pestaña ni deslices Firefox fuera de las apps recientes.** Puedes apagar la pantalla y cambiar de app sin problema.
+6. **Ajustes de Tampermonkey**: Configuración → *Config mode: Advanced* → **Inject Mode: Instantáneo**, si notas que el bot no arranca al instante en algún arranque del navegador.
+
+### Opción 100 % garantizada (si tu móvil es muy agresivo matando apps)
+
+Android → **Ajustes → Opciones de desarrollo → "Mantener pantalla activada mientras está cargando"** (o "Stay awake") → conecta el cargador y deja Firefox **en primer plano** con la página del bot. La pantalla no se apagará nunca y el bot trabaja sin interrupciones (baja el brillo al mínimo para no dañar la pantalla).
 
 ---
 
@@ -58,13 +67,14 @@ En el **Dashboard** de Tampermonkey busca scripts que actúen sobre `icp.adminis
 Al entrar en `https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDirect` verás un recuadro azul abajo:
 
 ```
-🤖 BOT BARCELONA v9.4 · Tampermonkey 🟢        [INTENTO #N]
+🤖 BOT BARCELONA v9.5 · Tampermonkey 🟢        [INTENTO #N]
 👤 AMINA CHAIR (Y2086361E) · 📍 BARCELONA · TOMA DE HUELLAS
 📱 698233413 · ✉️ fuadel21@hotmail.com
 (paso actual: provincia → trámite → Entrar → datos → solicitar cita)
 ⏱️ Próxima recarga en: 04:12 · motor nativo armado ✅ (420s)
+🔊 Segundo plano: ACTIVO ✅ (Android no congelará Firefox)
 ```
-*(El único botón que puede aparecer es 🔔 ACTIVAR AVISOS, y solo hasta que concedas las notificaciones.)*
+*(Botones que pueden aparecer: 🔊 ACTIVAR SEGUNDO PLANO, 🔔 ACTIVAR AVISOS —ambos desaparecen cuando ya están activos— y 🔁 REANUDAR BÚSQUEDA solo si el bot encontró cita.)*
 
 - El contador **baja de 07:00 a 00:00** y al llegar a cero la página **se recarga sola** para volver a buscar (aunque estés en otra app o con la pantalla apagada).
 - **No hay ningún botón de recarga ni nada que pulsar**: el ciclo de 7 minutos es totalmente automático, 24 h, los 7 días.
@@ -74,10 +84,11 @@ Al entrar en `https://icp.administracionelectronica.gob.es/icpplustieb/acOpcDire
 
 ## 4. Si algún día el contador se quedara parado
 
-1. Recarga la pestaña a mano (menú de Firefox → **Recargar**): el bot reanudará el ciclo de 7 minutos él solo.
-2. Si sigue igual: comprueba que la pestaña no la haya matado Android (batería sin restricciones, punto 2.2).
-3. Comprueba en el panel del bot la etiqueta del motor: debe decir **"motor nativo armado ✅ (420s)"**. Si se queda en *"motor nativo re-armándose..."*, revisa el **Inject Mode: Instantáneo** de Tampermonkey (punto 2.4) y recarga la página una vez.
+1. **Si el panel dice "⚠️ congelado N min la última vez"**: es el aviso de que Android congeló Firefox mientras estaba en segundo plano. El bot **ya se reanudó solo** con el primer ciclo nuevo; asegúrate de que el punto 2.1 (🔊 segundo plano ACTIVO ✅) y el autoplay estén configurados.
+2. Si el panel dice "🔊 Segundo plano: INACTIVO", toca el botón morado. Si sigue inactivo, activa el autoplay de Firefox (punto 2.2).
+3. Recarga la pestaña a mano (menú de Firefox → **Recargar**): el bot reanudará el ciclo de 7 minutos él solo.
+4. Comprueba en el panel del bot que dice **"motor nativo armado ✅ (420s)"** y **"🔊 Segundo plano: ACTIVO ✅"**. Si el segundo plano aparece INACTIVO revisa los puntos 2.1 y 2.2; si el motor se queda en *"re-armándose..."*, revisa el Inject Mode: Instantáneo (punto 2.6) y recarga la página una vez.
 4. Comprueba que Tampermonkey tiene el script **activado** (interruptor verde en el Dashboard) y que solo hay **un** script para este sitio.
 5. Diagnóstico avanzado (ordenador con Firefox de escritorio sobre la misma página, o depuración remota): el bot expone el objeto `__BOT_BARCELONA` con `segundosRestantes()`, `metaRefreshArmado()`, `recargarAhora()`, `pausar()` y `reanudar()`.
 
-*Versión del documento: v9.4 — Automático Total (búsqueda cada 7 minutos, recarga 100% automática al terminar el contador y sin botones; meta-refresh nativo armado antes de `load`, watchdog con fecha límite persistente y cascada de navegación con reintentos).*
+*Versión del documento: v9.5 — Anti-Congelamiento (búsqueda cada 7 minutos, recarga 100% automática sin botones, modo segundo plano con audio de 60 Hz + wake lock, latido de actividad y reanudación inmediata al volver del congelamiento).*
