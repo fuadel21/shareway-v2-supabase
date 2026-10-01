@@ -1,66 +1,14 @@
-import { createElement, useEffect, useState } from 'react';
+import { createElement } from 'react';
 import { Radio, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import MapComponent from './MapComponent.jsx';
-import { supabase } from '../lib/supabase.js';
-import { getPublicRegisteredUserCount } from '../lib/supabaseRPC.js';
+import { useRegisteredUserCount } from '../hooks/useRegisteredUserCount.js';
 
 const LANDING_MAP_CENTER = { lat: 41.3874, lng: 2.1687 };
 
-const readRegisteredUserCount = (data) => {
-  const payload = data && typeof data === 'object' && !Array.isArray(data) ? data : { count: data };
-  const count = Number(payload?.count);
-  return Number.isFinite(count) && count >= 0 ? Math.floor(count) : null;
-};
-
 function PublicCommunityMap() {
   const { t, i18n } = useTranslation();
-  const [registeredUsers, setRegisteredUsers] = useState(null);
-  const [countError, setCountError] = useState(false);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const refreshCount = async () => {
-      const response = await getPublicRegisteredUserCount();
-      if (!isMounted) return;
-
-      const count = response.success ? readRegisteredUserCount(response.data) : null;
-      if (count === null) {
-        setCountError(true);
-        return;
-      }
-
-      setRegisteredUsers(count);
-      setCountError(false);
-    };
-
-    refreshCount();
-
-    // Realtime carries only an aggregate stats row. The client deliberately
-    // asks the allow-listed RPC for the value instead of using any row payload.
-    const channel = supabase
-      .channel('public-registered-user-count')
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'public_platform_stats' },
-        refreshCount
-      )
-      .subscribe();
-
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshCount();
-    };
-    const interval = window.setInterval(refreshCount, 30000);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  const { registeredUsers, countError } = useRegisteredUserCount();
 
   const locale = i18n.language?.startsWith('ar')
     ? 'ar'
