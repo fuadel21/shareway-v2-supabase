@@ -14,13 +14,14 @@ import {
     Plus, Search, Car, Loader2, Calendar, Leaf, Sparkles, Navigation,
     Megaphone, Clock, Activity, Star, ShieldCheck, Heart, ChevronRight, X,
     BadgeCheck, MapPin, Users, RotateCcw, ArrowRightLeft, SlidersHorizontal,
-    WalletCards, MessageCircle, AlertCircle
+    WalletCards, MessageCircle, AlertCircle, ChevronUp
 } from 'lucide-react';
 import { getAvailableRides } from '@/services/rideService';
 import AddressAutocomplete from './AddressAutocomplete';
 import MapComponent from './MapComponent';
 import { DraggableSheet } from './DraggableSheet';
 import { useTranslation } from 'react-i18next';
+import { useRegisteredUserCount } from '@/hooks/useRegisteredUserCount.js';
 
 const copyByLanguage = {
     es: {
@@ -75,7 +76,14 @@ const copyByLanguage = {
         goToMyRides: 'Mis viajes',
         goToRequests: 'Solicitudes',
         goToWallet: 'Billetera',
-        refresh: 'Actualizar'
+        refresh: 'Actualizar',
+        offerSeat: 'Ofrecer plaza',
+        requestSeat: 'Pedir plaza',
+        openSearch: 'Buscar viaje',
+        closeSearch: 'Cerrar búsqueda',
+        registeredUsers: 'usuarios registrados',
+        registeredUser: 'usuario registrado',
+        usersLoading: 'Cargando...'
     },
     en: {
         positiveImpact: 'Positive Impact',
@@ -129,7 +137,14 @@ const copyByLanguage = {
         goToMyRides: 'My rides',
         goToRequests: 'Requests',
         goToWallet: 'Wallet',
-        refresh: 'Refresh'
+        refresh: 'Refresh',
+        offerSeat: 'Offer a seat',
+        requestSeat: 'Request a seat',
+        openSearch: 'Search rides',
+        closeSearch: 'Close search',
+        registeredUsers: 'registered users',
+        registeredUser: 'registered user',
+        usersLoading: 'Loading...'
     },
     ar: {
         positiveImpact: 'أثر إيجابي',
@@ -183,7 +198,14 @@ const copyByLanguage = {
         goToMyRides: 'رحلاتي',
         goToRequests: 'الطلبات',
         goToWallet: 'المحفظة',
-        refresh: 'تحديث'
+        refresh: 'تحديث',
+        offerSeat: 'اعرض مقعدًا',
+        requestSeat: 'اطلب مقعدًا',
+        openSearch: 'ابحث عن رحلة',
+        closeSearch: 'إغلاق البحث',
+        registeredUsers: 'مستخدمين مسجلين',
+        registeredUser: 'مستخدم مسجل',
+        usersLoading: 'جارٍ التحميل...'
     }
 };
 
@@ -282,6 +304,28 @@ const ImpactBadge = ({ profile, copy }) => {
                 </p>
                 <p className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-0.5">{copy.positiveImpact}</p>
             </div>
+        </div>
+    );
+};
+
+const UserCountBadge = ({ copy, language, className }) => {
+    const { registeredUsers } = useRegisteredUserCount('dashboard-registered-user-count');
+    const locale = language === 'ar' ? 'ar' : language === 'en' ? 'en' : 'es';
+    const hasCount = registeredUsers !== null;
+
+    return (
+        <div
+            className={cn('pointer-events-none flex items-center gap-2 rounded-full border border-white/60 bg-white/95 px-3 py-2 shadow-xl backdrop-blur-xl ring-1 ring-black/5', className)}
+            aria-live="polite"
+            data-testid="registered-users-badge"
+        >
+            <div className="size-7 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0"><Users size={14} /></div>
+            <p className="text-left leading-tight">
+                <span className="block text-sm font-black text-slate-900">{hasCount ? new Intl.NumberFormat(locale).format(registeredUsers) : '—'}</span>
+                <span className="block text-[8px] font-black uppercase tracking-widest text-slate-400">
+                    {!hasCount ? copy.usersLoading : registeredUsers === 1 ? copy.registeredUser : copy.registeredUsers}
+                </span>
+            </p>
         </div>
     );
 };
@@ -550,6 +594,7 @@ function Dashboard() {
     const [searchDate, setSearchDate] = useState('');
     const [searchSeats, setSearchSeats] = useState(1);
     const [activeSearch, setActiveSearch] = useState(null);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -635,6 +680,7 @@ function Dashboard() {
         setActiveSearch(search);
         setActiveFilter('rides');
         setSelectedItem(null);
+        setIsSearchOpen(false);
         const nextCenter = getLocationCoords(searchOrigin || searchDestination);
         if (nextCenter) {
             setMapCenter([nextCenter.lat, nextCenter.lng]);
@@ -747,15 +793,6 @@ function Dashboard() {
                     </div>
                 </div>
 
-                <div className="p-4 grid grid-cols-2 gap-3 bg-slate-50/50 border-b border-slate-100">
-                    <Button onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest italic shadow-lg gap-2 border-none active:scale-95 transition-all">
-                        <Plus size={14} className="text-primary" /> {t('nav.publish')}
-                    </Button>
-                    <Button onClick={() => navigate('/request')} className="h-12 rounded-2xl bg-white text-slate-900 font-black text-[10px] uppercase tracking-widest italic shadow-md gap-2 border border-slate-200 active:scale-95 transition-all">
-                        <Megaphone size={14} className="text-secondary" /> {t('nav.request')}
-                    </Button>
-                </div>
-
                 <div className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
                     <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} />
@@ -800,7 +837,43 @@ function Dashboard() {
 
                 <div className="lg:hidden absolute top-16 left-3 right-3 z-[1100] flex flex-col gap-2 pointer-events-none [transform:translateZ(0)]">
                     <div className="pointer-events-auto">
-                        <SearchPanel {...searchPanelProps} compact />
+                        {isSearchOpen ? (
+                            <div className="relative animate-in fade-in slide-in-from-top-2 duration-200">
+                                <SearchPanel {...searchPanelProps} compact />
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSearchOpen(false)}
+                                    className="absolute right-3 top-3 size-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center active:scale-90"
+                                    aria-label={copy.closeSearch}
+                                >
+                                    <ChevronUp size={16} />
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsSearchOpen(true)}
+                                    aria-expanded="false"
+                                    className="flex h-12 min-w-0 flex-1 items-center gap-3 rounded-2xl border border-white/60 bg-white/95 px-4 text-left shadow-xl ring-1 ring-black/5 backdrop-blur-2xl active:scale-[0.98]"
+                                >
+                                    <Search size={16} className="shrink-0 text-primary" />
+                                    <span className={cn('truncate text-[11px] font-black uppercase tracking-widest', activeSearch ? 'text-slate-900' : 'text-slate-500')}>
+                                        {activeSearch ? getSearchSummary(activeSearch, copy) : copy.openSearch}
+                                    </span>
+                                </button>
+                                {activeSearch && (
+                                    <button
+                                        type="button"
+                                        onClick={clearSearch}
+                                        className="size-12 shrink-0 rounded-2xl border border-white/60 bg-white/95 text-slate-500 shadow-xl backdrop-blur-2xl flex items-center justify-center active:scale-90"
+                                        aria-label={copy.clearSearch}
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-2 pointer-events-auto">
                         <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
@@ -829,25 +902,29 @@ function Dashboard() {
                     <span className="text-[10px] font-black uppercase tracking-widest pr-1">{copy.nearMe}</span>
                 </Button>
 
-                {isMobile && (
-                    <div
-                        className="fixed inset-x-3 z-[1100] flex gap-2 lg:hidden [transform:translateZ(0)]"
-                        style={{ bottom: 'calc(5.75rem + env(safe-area-inset-bottom, 0px))' }}
+                <UserCountBadge
+                    copy={copy}
+                    language={language}
+                    className="fixed right-3 bottom-[calc(9.5rem+env(safe-area-inset-bottom,0px))] z-[1100] max-lg:[transform:translateZ(0)] lg:absolute lg:bottom-auto lg:right-4 lg:top-4"
+                />
+
+                <div
+                    className="fixed inset-x-3 bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-[1100] flex gap-2 lg:absolute lg:inset-x-auto lg:bottom-8 lg:left-1/2 lg:-translate-x-1/2 lg:gap-3 max-lg:[transform:translateZ(0)]"
+                    data-testid="floating-ride-actions"
+                >
+                    <Button
+                        onClick={() => navigate('/publish')}
+                        className="flex-1 h-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2 lg:flex-none lg:px-6"
                     >
-                        <Button
-                            onClick={() => navigate('/publish')}
-                            className="flex-1 h-14 rounded-2xl bg-slate-900 text-white shadow-2xl border-none active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2"
-                        >
-                            <Plus size={16} className="text-primary" /> {t('create_ride.title')}
-                        </Button>
-                        <Button
-                            onClick={() => navigateToRequestWithSearch()}
-                            className="flex-1 h-14 rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2"
-                        >
-                            <Megaphone size={16} className="text-amber-500" /> {t('create_request.title')}
-                        </Button>
-                    </div>
-                )}
+                        <Plus size={16} className="text-primary" /> {copy.offerSeat}
+                    </Button>
+                    <Button
+                        onClick={() => navigateToRequestWithSearch()}
+                        className="flex-1 h-14 rounded-2xl bg-white text-slate-900 shadow-2xl border border-slate-200 hover:bg-white active:scale-95 font-black uppercase italic tracking-widest text-[11px] gap-2 lg:flex-none lg:px-6"
+                    >
+                        <Megaphone size={16} className="text-amber-500" /> {copy.requestSeat}
+                    </Button>
+                </div>
 
                 {isMobile && (
                     <div className="lg:hidden">
