@@ -1,4 +1,4 @@
-# Manual móvil — Bot de citas Barcelona para Amina Chair (v9.7 «Estable»)
+# Manual móvil — Bot de citas Barcelona para Amina Chair (v9.8 «Recuperación al volver»)
 
 **Gestor:** Tampermonkey · **Navegador previsto:** Firefox Android.
 
@@ -19,7 +19,7 @@
    https://raw.githubusercontent.com/fuadel21/shareway-v2-supabase/arena/01a025e6-shareway-v2-supabase/cita_barcelona_amina.user.js
    ```
 
-2. Comprueba que la pantalla indique **versión 9.7** y confirma **Actualizar/Reinstalar**.
+2. Comprueba que la pantalla indique **versión 9.8** y confirma **Actualizar/Reinstalar**.
 3. En el Dashboard de Tampermonkey, comprueba que el script está activado y que hay **un solo** userscript para `icp.administracionelectronica.gob.es`.
 
 No cambies `@name`, `@namespace` ni `@grant none`: se conservan para que Tampermonkey actualice el mismo script.
@@ -45,7 +45,7 @@ El panel de estado debe permanecer estable; el contador se actualiza sin reconst
 - **Paso 1/5**: detectó la provincia y está enviando la selección.
 - **Paso 2/5**: detectó el trámite y está enviando la selección.
 - **Formulario de identidad detectado**: rellenando o esperando el botón del portal.
-- **Sin citas disponibles**: la recarga automática queda programada para el final del ciclo.
+- **Sin citas disponibles**: espera la recarga del ciclo; si Firefox se congeló y al volver sigue en esa pantalla, la v9.8 inicia un ciclo nuevo inmediatamente.
 - **No encuentro Barcelona / botón Aceptar / opción Toma de Huellas**: el HTML que recibió el móvil no coincide con los controles que el script espera; el bot no debe seguir haciendo clics a ciegas.
 - **El portal no confirmó el envío**: el script deja de repetir ese clic para evitar solicitudes duplicadas y mantiene la recarga programada.
 
@@ -55,11 +55,11 @@ El contador busca recargar al llegar a **00:00**. No hay un botón de recarga ma
 
 ## 4. Si vuelve a quedarse parpadeando o sin avanzar
 
-1. Comprueba que el panel indique **v9.7**. Si indica otra versión, actualiza desde la URL de arriba.
+1. Comprueba que el panel indique **v9.8**. Si indica otra versión, actualiza desde la URL de arriba.
 2. Haz una captura donde se vea el texto del panel y el contenido de la página (oculta datos personales si aparecen). Envíala para identificar el control exacto que el portal está mostrando.
 3. No instales una segunda copia ni dejes dos bots activos: pueden competir entre sí y provocar envíos duplicados.
 4. Si el panel dice **ESPERANDO TOQUE**, toca una vez la página para reintentar activar el audio. Si dice que el envío no se confirmó, deja que actúe el ciclo automático y comprueba si el portal presenta un error.
 
 Para diagnóstico avanzado, el script expone `window.__BOT_BARCELONA` en la consola de Firefox de escritorio/depuración remota, con el número de intento, segundos restantes y estado del meta-refresh.
 
-*Documento actualizado para v9.7.*
+*Documento actualizado para v9.8.*

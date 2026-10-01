@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
-// @version      9.7
-// @description  v9.7 - Amina Chair (NIE Y2086361E). Ciclo de 7 minutos, panel estable sin parpadeos, deteccion de controles y reintentos moderados; audio de fondo sujeto a permisos/limites del navegador.
+// @version      9.8
+// @description  v9.8 - Amina Chair (NIE Y2086361E). Ciclo de 7 minutos, panel estable y reintento inmediato al volver del segundo plano si la página indica que no hay citas.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
@@ -22,15 +22,15 @@
    ===================================================================================== */
 
 /* =====================================================================================
-   BOT CITA PREVIA BARCELONA - VERSION 9.7 "ESTABLE"
+   BOT CITA PREVIA BARCELONA - VERSION 9.8 "RECUPERACION AL VOLVER"
    -------------------------------------------------------------------------------------
-   NOVEDADES v9.7 (evita el parpadeo y permite diagnosticar el punto atascado):
-   1) El panel solo se redibuja cuando cambia el estado; ya no parpadea en cada sondeo.
-   2) El meta-refresh solo se inserta en <head>, se reemplaza de forma limpia y nunca
-      borra los meta-refresh propios del portal.
-   3) El envío del formulario tiene un watchdog: si la página no responde, el bot deja
-      de pulsar repetidamente y mantiene visible el motivo en vez de quedarse bloqueado.
-   4) Los reintentos de navegación se espacian para evitar una cascada de recargas.
+   NOVEDADES v9.8 (reintenta al volver si Android congeló Firefox):
+   1) Conserva las correcciones de estabilidad del panel, selectores y envíos de v9.7.
+   2) Al volver de un congelamiento, si la página muestra "no hay citas disponibles",
+      inicia un nuevo ciclo inmediatamente en vez de esperar el contador restante.
+   3) Si el formulario sigue en otro paso, reanuda su análisis y rearma el meta-refresh.
+   4) El audio de fondo ayuda solo cuando el navegador y Android permiten mantenerlo;
+      esta versión no puede impedir que el sistema suspenda Firefox.
    -------------------------------------------------------------------------------------
    HISTORIAL v9.6 (persistencia de la intención del modo segundo plano):
    1) MODO SEGUNDO PLANO: intenta reproducir un tono bajo de 60 Hz para ayudar a mantener
@@ -164,7 +164,7 @@
 
   function removeOwnedMetaRefresh() {
     try {
-      var owned = document.querySelectorAll("meta#bot-meta-refresh[data-bot-owner='shareway-v97']");
+      var owned = document.querySelectorAll("meta#bot-meta-refresh[data-bot-owner='shareway-v97'], meta#bot-meta-refresh[data-bot-owner='shareway-v98']");
       for (var i = 0; i < owned.length; i++) {
         if (owned[i] && owned[i].parentNode) owned[i].parentNode.removeChild(owned[i]);
       }
@@ -221,7 +221,7 @@
       var m = document.createElement("meta");
       m.setAttribute("http-equiv", "refresh");
       m.setAttribute("content", s + ";url=" + target);
-      m.setAttribute("data-bot-owner", "shareway-v97");
+      m.setAttribute("data-bot-owner", "shareway-v98");
       m.id = "bot-meta-refresh";
       head.appendChild(m);
       metaEl = m;
@@ -380,7 +380,7 @@
 
     b.innerHTML =
       "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-        "<span>🤖 BOT BARCELONA v9.7" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
+        "<span>🤖 BOT BARCELONA v9.8" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
         "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + getAttemptCount() + "</span>" +
       "</div>" +
       "<div style='color:#e2e8f0;font-size:12px;'>" +
@@ -626,17 +626,33 @@
       var gap = hb ? (Date.now() - hb) : 0;
 
       if (!window.botBooked) {
-        if (gap > FREEZE_GAP_MS) {
+        if (gap > FREEZE_GAP_MS && !window.__botReloadStarted) {
           var mins = Math.max(1, Math.round(gap / 60000));
           window.__botLastFreeze = mins;
-          lastReloadTry = 0; // permiso para recargar ya, sin esperar el margen de seguridad
-          setStatus("▶️ Firefox estuvo congelado " + mins + " min en segundo plano. Reanudando la búsqueda AHORA...");
-          sendNotification("▶️ Bot reanudado", "Firefox estuvo " + mins + " min congelado en segundo plano. Reanudando la búsqueda de cita de Amina Chair.");
-          if (getRemainingSeconds() <= 0) {
-            forceReload("al volver del segundo plano");
+          setStatus("▶️ Firefox estuvo congelado " + mins + " min en segundo plano. Comprobando la página al volver...");
+          sendNotification("▶️ Bot reanudado", "Firefox estuvo " + mins + " min congelado en segundo plano. Comprobando de nuevo la página de citas.");
+
+          var resumeBody = "";
+          try { resumeBody = getPortalBodyText(); } catch (e) {}
+          var resumeText = resumeBody.normalize ? resumeBody.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() : resumeBody.toUpperCase();
+          var noAppointments = resumeText.indexOf("EN ESTE MOMENTO NO HAY CITAS DISPONIBLES") !== -1 ||
+                               resumeText.indexOf("NO HAY CITAS DISPONIBLES") !== -1 ||
+                               resumeText.indexOf("NO EXISTEN CITAS DISPONIBLES") !== -1 ||
+                               resumeText.indexOf("NO SE HAN ENCONTRADO CITAS") !== -1;
+
+          if (getRemainingSeconds() <= 0 || noAppointments) {
+            // Al volver tras una pausa larga no esperar varios minutos en una pantalla
+            // que ya confirmó que no hay citas: empezar ahora un ciclo nuevo.
+            if (noAppointments) lsSet("bot_deadline", Date.now() - 2000);
+            lastReloadTry = 0;
+            deadlineExpiredAt = 0;
+            forceReload(noAppointments ? "reintento inmediato al volver: sin citas" : "al volver del segundo plano");
           } else {
             cancelMetaRefresh();
             injectMetaRefresh(getRemainingSeconds(), BASE_URL);
+            setTimeout(function () {
+              if (!window.botBooked && !window.botSubmitting && !window.__botReloadStarted) runStep();
+            }, 0);
           }
         } else if (!window.botTimerPaused && !(window.__botMetaRefreshArmed > 0)) {
           // El navegador pudo cancelar el meta-refresh al congelar la pestana: se re-arma.
@@ -1006,7 +1022,7 @@
 
   // Objeto de diagnostico (se puede inspeccionar desde la consola del navegador).
   window.__BOT_BARCELONA = {
-    version: "9.7",
+    version: "9.8",
     segundoPlanoActivo: isBackgroundModeActive,
     activarSegundoPlano: function () { return activateBackgroundMode(); },
     revisarAlVolver: function () { return resumeCheck(); },
