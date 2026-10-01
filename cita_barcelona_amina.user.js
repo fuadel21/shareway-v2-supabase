@@ -1,13 +1,25 @@
 // ==UserScript==
-// @name         Bot Cita Previa Barcelona - Version 9.3 (Recarga Infalible 24/7)
+// @name         Bot Cita Previa Barcelona - Version 9.2 (Amina Chair - Precisión Absoluta)
 // @namespace    https://icp.administracionelectronica.gob.es/
 // @version      9.3
-// @description  Amina Chair (NIE Y2086361E). Recarga garantizada cada 10 min aunque el navegador congele la pestana: meta-refresh nativo armado antes del load, sin bloqueo beforeunload, cascada de navegacion y boton de recarga manual.
+// @description  v9.3 Recarga Infalible - Amina Chair (NIE Y2086361E). Recarga garantizada cada 10 min aunque el navegador congele la pestana: meta-refresh nativo armado antes del load, sin bloqueo beforeunload, cascada de navegacion y boton de recarga manual.
 // @author       Asistente Arena.ai
 // @match        *://icp.administracionelectronica.gob.es/*
 // @run-at       document-start
 // @grant        none
+// @updateURL    https://raw.githubusercontent.com/fuadel21/shareway-v2-supabase/arena/01a025e6-shareway-v2-supabase/cita_barcelona_amina.user.js
+// @downloadURL  https://raw.githubusercontent.com/fuadel21/shareway-v2-supabase/arena/01a025e6-shareway-v2-supabase/cita_barcelona_amina.user.js
 // ==/UserScript==
+
+/* =====================================================================================
+   IMPORTANTE PARA TAMPERMONKEY (no cambiar estas dos lineas):
+   - El @name se mantiene EXACTAMENTE igual que en la version 9.2 a proposito: asi
+     Tampermonkey reconoce este archivo como ACTUALIZACION del mismo script (mismo
+     @name + @namespace) y NO crea uno nuevo. Si cambias el @name tendrias DOS bots
+     instalados a la vez. La version real se ve en @version y dentro del panel del bot.
+   - @grant debe seguir siendo "none": asi el script se ejecuta en el contexto de la
+     pagina y puede neutralizar el dialogo "Desea salir?" del portal.
+   ===================================================================================== */
 
 /* =====================================================================================
    BOT CITA PREVIA BARCELONA - VERSION 9.3 "RECARGA INFALIBLE"
@@ -43,8 +55,17 @@
   var STEP_GRACE_MS = 25000;    // margen si el flujo del formulario esta en curso
   var IS_TOP = (window.top === window.self);
 
-  if (window.botInitializedV93) return;
+  // Guardia anti-duplicados: si por lo que sea quedase instalada tambien la 9.2, esta
+  // version arranca antes (document-start) y la otra se desactiva sola al ver la marca.
+  if (window.botInitializedV93 || window.botInitialized) return;
   window.botInitializedV93 = true;
+  window.botInitialized = true;
+
+  // Nombre del gestor de usuarioscripts (Tampermonkey / Violentmonkey) si lo expone.
+  var MANAGER = "";
+  try {
+    if (typeof GM_info !== "undefined" && GM_info && GM_info.scriptHandler) MANAGER = String(GM_info.scriptHandler);
+  } catch (e) {}
 
   // ============================== 0. BLINDAJE ANTI-BLOQUEO ==============================
   // 0.1 Anular el dialogo "¿Desea salir de esta pagina?" que el portal instala y que
@@ -307,7 +328,7 @@
 
     b.innerHTML =
       "<div style='font-weight:bold;color:#60a5fa;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>" +
-        "<span>🤖 BOT BARCELONA v9.3 " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
+        "<span>🤖 BOT BARCELONA v9.3" + (MANAGER ? " · " + MANAGER : "") + " " + (booked ? "🎉" : (paused ? "⏸️" : "🟢")) + "</span>" +
         "<span style='background:#1e3a8a;color:#93c5fd;padding:2px 8px;border-radius:6px;font-size:11px;'>INTENTO #" + getAttemptCount() + "</span>" +
       "</div>" +
       "<div style='color:#e2e8f0;font-size:12px;'>" +
