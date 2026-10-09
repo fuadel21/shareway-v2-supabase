@@ -1,9 +1,7 @@
+import { getCorsHeaders } from '../_shared/cors.ts'
 import { serve } from 'https://deno.land/std@0.131.0/http/server.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+
 
 const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'fuadel21@hotmail.com'
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
@@ -11,7 +9,7 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 serve(async (req) => {
   // Manejo de CORS (Preflight request)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: getCorsHeaders(req) })
   }
 
   const requestId = crypto.randomUUID();
@@ -83,13 +81,13 @@ serve(async (req) => {
       console.error(`[${requestId}] Error de Resend:`, JSON.stringify(result));
       return new Response(JSON.stringify({ error: 'Error enviando email', details: result }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       });
     }
 
     console.log(`[${requestId}] ✅ Email enviado con éxito. ID: ${result.id}`);
     return new Response(JSON.stringify({ success: true, id: result.id }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
       status: 200,
     });
 
@@ -97,7 +95,7 @@ serve(async (req) => {
     console.error(`[${requestId}] ❌ Error crítico:`, err.message);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
     });
   }
 })

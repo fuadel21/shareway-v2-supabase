@@ -1,16 +1,13 @@
+import { getCorsHeaders } from '../_shared/cors.ts'
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14?target=deno'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-}
+
 
 const jsonResponse = (payload: unknown, status = 200) => new Response(
   JSON.stringify(payload),
-  { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+  { status, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } },
 )
 
 const activePassengerStatuses = new Set([
@@ -30,7 +27,7 @@ const passengerMatches = (passenger: Record<string, unknown>, userId: string) =>
 }
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: getCorsHeaders(req) })
   if (req.method !== 'POST') return jsonResponse({ error: { message: 'Método no permitido' } }, 405)
 
   try {
