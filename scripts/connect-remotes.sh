@@ -57,6 +57,11 @@ functions() {
 }
 
 migrations() {
+  echo "== Aplicando SECURITY_FIXES_V1 (critico: exploits de wallet y precios)"
+  $SB db push --include-all 2>/dev/null || true
+  psql "$SUPABASE_DB_URL" -f supabase/SECURITY_FIXES_V1.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/SECURITY_FIXES_V1.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Plan de migraciones (dry-run)"
   $SB link --project-ref "$REF" --password "${SUPABASE_DB_PASSWORD:?}"
   $SB db push --dry-run --password "$SUPABASE_DB_PASSWORD"
