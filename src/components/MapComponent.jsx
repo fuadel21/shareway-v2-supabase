@@ -292,9 +292,9 @@ const MapComponent = ({
                 zoom={zoom || 6}
                 scrollWheelZoom={true}
                 className="w-full h-full !z-0"
-                style={{ zIndex: 0 }}
+                style={{ zIndex: 0, touchAction: 'manipulation' }}
                 zoomControl={false}
-                tap={false}
+                tap={true}
             >
                 <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
