@@ -62,6 +62,10 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/SECURITY_FIXES_V1.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/SECURITY_FIXES_V1.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_REQUEST_FLOW (flujo solicitar/ofrecer plaza)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_REQUEST_FLOW.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_REQUEST_FLOW.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Plan de migraciones (dry-run)"
   $SB link --project-ref "$REF" --password "${SUPABASE_DB_PASSWORD:?}"
   $SB db push --dry-run --password "$SUPABASE_DB_PASSWORD"
