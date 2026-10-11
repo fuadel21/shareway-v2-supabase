@@ -154,6 +154,14 @@ function MapEvents({ onClick }) {
         click: (e) => {
             if (onClick && e.latlng) onClick(e.latlng);
         },
+        // Firefox Android: el evento click de Leaflet no siempre dispara con touch.
+        // pointerdown cubre todos los navegadores y dispositivos.
+        pointerdown: (e) => {
+            if (onClick && e.latlng) {
+                const isTouch = e.originalEvent?.pointerType !== 'mouse';
+                if (isTouch) onClick(e.latlng);
+            }
+        },
     });
     return null;
 }
