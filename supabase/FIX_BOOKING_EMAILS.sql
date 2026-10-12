@@ -172,4 +172,11 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $fn$;
 
+-- Asegurar que el trigger existe (lo creaba la migracion 20260504)
+DROP TRIGGER IF EXISTS on_auth_user_created_notification ON public.profiles;
+CREATE TRIGGER on_auth_user_created_notification
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user_notification();
+
 NOTIFY pgrst, 'reload schema';
