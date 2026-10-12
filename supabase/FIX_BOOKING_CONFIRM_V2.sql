@@ -16,6 +16,11 @@
 -- Es IDEMPOTENTE. Ejecutar entero en el SQL Editor.
 -- ============================================================================
 
+-- Limpiar la firma antigua (dropoff ANTES de price) si existe: dos firmas
+-- con los mismos nombres de parametro en distinto orden hacen ambigua la
+-- llamada para PostgREST (PGRST203).
+DROP FUNCTION IF EXISTS public.confirm_trip_and_pay(uuid, uuid, text, jsonb, text, jsonb, numeric, integer);
+
 CREATE OR REPLACE FUNCTION public.confirm_trip_and_pay(
   p_ride_id UUID,
   p_request_id UUID DEFAULT NULL,
