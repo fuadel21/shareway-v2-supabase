@@ -296,7 +296,9 @@ const readStoredAccessToken = () => {
 };
 const jwtExpiresInMinutes = (token) => {
     try {
-        const payload = JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        let b64 = String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
         if (!payload?.exp) return null;
         return Math.round(payload.exp - Date.now() / 1000);
     } catch {
