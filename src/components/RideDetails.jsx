@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import MapComponent from './MapComponent';
 import ShareRideCard from './share/ShareRideCard.jsx';
-import BookingPaymentModal from './BookingPaymentModal';
+import SimpleBookingModal from './SimpleBookingModal';
 import PinVerificationDialog from './PinVerificationDialog.jsx';
 import RideRatingModal from './RideRatingModal.jsx';
 import { Button } from './ui/button.jsx';
@@ -1114,7 +1114,7 @@ const RideDetails = () => {
                 </div>
             </div>
 
-            <BookingPaymentModal
+            <SimpleBookingModal
                 isOpen={isBookingModalOpen}
                 onClose={() => setIsBookingModalOpen(false)}
                 ride={ride}
