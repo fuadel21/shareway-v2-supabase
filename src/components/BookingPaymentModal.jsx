@@ -48,6 +48,8 @@ const copyByLanguage = {
         invalidPrice: 'Precio no válido',
         connectionError: 'Error de conexión con el servidor.',
         quoteUnavailable: 'No se pudo calcular el importe seguro. Revisa la ruta o inténtalo de nuevo.',
+        quoteErrorOwnRide: 'No puedes reservar tu propio viaje. Publica la plaza desde otra cuenta para probar la reserva.',
+        quoteErrorSession: 'Tu sesión no es válida para calcular el precio. Cierra sesión y vuelve a entrar.',
         bookingDenied: 'Reserva no disponible',
         bookingProcessError: 'No se pudo procesar la reserva.',
         title: 'Finalizar reserva',
@@ -121,6 +123,8 @@ const copyByLanguage = {
         invalidPrice: 'Invalid price',
         connectionError: 'Server connection error.',
         quoteUnavailable: 'We could not calculate the secure amount. Check the route or try again.',
+        quoteErrorOwnRide: 'You cannot book your own ride. Publish the seat from another account to test the booking.',
+        quoteErrorSession: 'Your session is not valid for pricing. Please sign out and sign in again.',
         bookingDenied: 'Booking unavailable',
         bookingProcessError: 'Could not process the booking.',
         title: 'Complete booking',
@@ -193,6 +197,8 @@ const copyByLanguage = {
         stripeError: 'خطأ في Stripe',
         invalidPrice: 'السعر غير صالح',
         connectionError: 'خطأ في الاتصال بالخادم.',
+        quoteErrorOwnRide: 'لا يمكنك حجز رحلتك الخاصة. انشر المقعد من حساب آخر لتجربة الحجز.',
+        quoteErrorSession: 'جلستك غير صالحة لحساب السعر. يرجى تسجيل الخروج والدخول مرة أخرى.',
         quoteUnavailable: 'تعذر حساب المبلغ الآمن. تحقق من المسار أو حاول مرة أخرى.',
         bookingDenied: 'الحجز غير متاح',
         bookingProcessError: 'تعذر معالجة الحجز.',
@@ -327,6 +333,18 @@ const friendlyBookingError = (error, copy) => {
     if (text.includes('ha salido') || text.includes('expirado') || text.includes('expired') || text.includes('departed')) return copy.tripAlreadyDeparted;
     if (text.includes('booking_not_allowed') || text.includes('no está disponible') || text.includes('not available')) return copy.bookingUnavailable;
     return raw || copy.bookingProcessError;
+};
+
+const friendlyQuoteError = (error, copy) => {
+    const raw = String(error?.message || error?.error || error || '').trim();
+    const text = raw.toUpperCase();
+
+    if (text.includes('DRIVER_CANNOT_BOOK_OWN_RIDE')) return copy.quoteErrorOwnRide;
+    if (text.includes('RIDE_NOT_SCHEDULED') || text.includes('RIDE_ALREADY_DEPARTED')) return copy.tripAlreadyDeparted;
+    if (text.includes('NO_SEATS_AVAILABLE')) return copy.noSeatsLeft;
+    if (text.includes('INVALID_RIDE_PRICE') || text.includes('INVALID_SEAT_COUNT')) return copy.quoteUnavailable;
+    if (text.includes('AUTH_REQUIRED') || text.includes('PERMISSION DENIED') || text.includes('42501')) return copy.quoteErrorSession;
+    return copy.quoteUnavailable;
 };
 
 const isUserParticipant = (ride, userId) => {
@@ -562,6 +580,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [isQuoteReady, setIsQuoteReady] = useState(false);
     const [quotedInputSignature, setQuotedInputSignature] = useState(null);
     const [quoteError, setQuoteError] = useState(false);
+    const [quoteErrorDetail, setQuoteErrorDetail] = useState(null);
 
     useEffect(() => {
         const maxSeats = Math.min(8, Math.max(1, seatsAvailable));
@@ -693,6 +712,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setIsQuoteReady(false);
                 setQuotedInputSignature(null);
                 setQuoteError(false);
+                setQuoteErrorDetail(null);
                 setDynamicAmount(0);
                 setQuotedPricePerSeat(0);
                 setQuotedPlatformFee(0);
@@ -721,6 +741,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             setIsQuoteReady(false);
             setQuotedInputSignature(null);
             setQuoteError(false);
+            setQuoteErrorDetail(null);
             setDynamicAmount(0);
             setQuotedPricePerSeat(0);
             setQuotedPricePerKm(0);
@@ -754,6 +775,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     setIsQuoteReady(false);
                     setQuotedInputSignature(null);
                     setQuoteError(true);
+                    setQuoteErrorDetail(String(error?.message || error?.error || error || '').trim());
                     setDynamicAmount(0);
                     setQuotedPricePerSeat(0);
                         setQuotedPlatformFee(0);
@@ -931,7 +953,12 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                             {quoteError && !bookingBlockedMessage && isValidLocation(pickupLocation) && isValidLocation(dropoffLocation) && (
                                 <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-center text-[10px] font-black uppercase tracking-widest text-red-700">
-                                    {copy.quoteUnavailable}
+                                    {friendlyQuoteError(quoteErrorDetail, copy)}
+                                    {quoteErrorDetail && (
+                                        <span className="block mt-1 text-[8px] font-medium normal-case tracking-normal text-red-400 break-all">
+                                            {quoteErrorDetail}
+                                        </span>
+                                    )}
                                 </div>
                             )}
 
