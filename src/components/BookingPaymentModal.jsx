@@ -581,6 +581,14 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     const [quotedInputSignature, setQuotedInputSignature] = useState(null);
     const [quoteError, setQuoteError] = useState(false);
     const [quoteErrorDetail, setQuoteErrorDetail] = useState(null);
+    const [quoteDebug, setQuoteDebug] = useState(null);
+    const [debugTick, setDebugTick] = useState(0);
+
+    useEffect(() => {
+        if (quoteDebug?.phase !== 'calculating') return;
+        const t = setInterval(() => setDebugTick((v) => v + 1), 1000);
+        return () => clearInterval(t);
+    }, [quoteDebug?.phase]);
 
     useEffect(() => {
         const maxSeats = Math.min(8, Math.max(1, seatsAvailable));
@@ -713,6 +721,10 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setQuotedInputSignature(null);
                 setQuoteError(false);
                 setQuoteErrorDetail(null);
+                setQuoteDebug({
+                    phase: 'skipped',
+                    detail: !pickupLocation ? 'falta pickup' : !dropoffLocation ? 'falta dropoff' : !ride ? 'falta ride' : `bloqueado: ${bookingBlockedMessage}`,
+                });
                 setDynamicAmount(0);
                 setQuotedPricePerSeat(0);
                 setQuotedPlatformFee(0);
@@ -742,18 +754,25 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             setQuotedInputSignature(null);
             setQuoteError(false);
             setQuoteErrorDetail(null);
+            setQuoteDebug({ phase: 'calculating', startedAt: Date.now(), detail: '' });
             setDynamicAmount(0);
             setQuotedPricePerSeat(0);
             setQuotedPricePerKm(0);
             setQuotedPlatformFee(0);
             setQuotedDriverPayout(0);
             try {
-                const { data: serverQuote, error: serverQuoteError } = await supabase.rpc('quote_ride_booking', {
+                const rpcStartedAt = Date.now();
+                const rpcPromise = supabase.rpc('quote_ride_booking', {
                     p_ride_id: rideId,
                     p_pickup_location: pickup,
                     p_dropoff_location: dropoff,
                     p_num_seats: Number(numSeats),
                 });
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('TIMEOUT_12S_SIN_RESPUESTA')), 12000);
+                });
+                const { data: serverQuote, error: serverQuoteError } = await Promise.race([rpcPromise, timeoutPromise]);
+                console.log('[quote-debug] respuesta rpc', Date.now() - rpcStartedAt, 'ms', { serverQuote, serverQuoteError });
 
                 const quote = Array.isArray(serverQuote) ? serverQuote[0] : serverQuote;
                 if (serverQuoteError || !quote?.success) {
@@ -769,6 +788,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setQuotedDriverPayout(Number(quote.driver_payout) || 0);
                 setQuotedInputSignature(quoteInputSignature);
                 setIsQuoteReady(true);
+                setQuoteDebug((prev) => ({ phase: 'ok', detail: `total=${roundMoney(quote.total).toFixed(2)} en ${Date.now() - (prev?.startedAt || Date.now())}ms` }));
             } catch (error) {
                 console.error('Error updating server quote:', error);
                 if (!cancelled) {
@@ -776,6 +796,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     setQuotedInputSignature(null);
                     setQuoteError(true);
                     setQuoteErrorDetail(String(error?.message || error?.error || error || '').trim());
+                    setQuoteDebug((prev) => ({ phase: 'error', detail: String(error?.message || error?.error || error || '').trim(), elapsedMs: Date.now() - (prev?.startedAt || Date.now()) }));
                     setDynamicAmount(0);
                     setQuotedPricePerSeat(0);
                         setQuotedPlatformFee(0);
@@ -950,6 +971,14 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     </div>
                                 </div>
                             )}
+
+                            <div className="rounded-2xl bg-slate-900 p-3 font-mono text-[9px] leading-relaxed text-emerald-300 break-all border border-slate-700" data-sw-quote-debug>
+                                <p className="text-white font-black">🔍 DEBUG PRECIO (temporal)</p>
+                                <p>uid: {user?.id?.slice(0, 8) || '—'} · driver: {ride?.driver_id?.slice(0, 8) || '—'}{user && ride?.driver_id && String(user.id) === String(ride.driver_id) ? ' · ⚠️ ERES EL CONDUCTOR' : ''}</p>
+                                <p>url: {String(import.meta.env.VITE_SUPABASE_URL || '—').replace(/^https?:\/\//, '').split('.')[0]} · plazas: {numSeats} · saldo: {Number(wallet?.balance || 0).toFixed(2)}€</p>
+                                <p>estado: {quoteDebug?.phase || '—'}{quoteDebug?.phase === 'calculating' ? ` ${Math.max(0, Math.round((Date.now() - quoteDebug.startedAt) / 1000))}s (tick ${debugTick})` : ''}{quoteDebug?.detail ? ` · ${String(quoteDebug.detail).slice(0, 90)}` : ''}</p>
+                                <p>pickup: {locationSignature(pickupLocation)} · dropoff: {locationSignature(dropoffLocation)}</p>
+                            </div>
 
                             {quoteError && !bookingBlockedMessage && isValidLocation(pickupLocation) && isValidLocation(dropoffLocation) && (
                                 <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-center text-[10px] font-black uppercase tracking-widest text-red-700">
