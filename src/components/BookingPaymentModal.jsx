@@ -852,6 +852,15 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 }
             }, 10000);
 
+            // Precio local INMEDIATO (sin red, sin temporizadores): el servidor
+            // lo sustituira por el oficial en cuanto responda. Con esto el
+            // precio se muestra al instante este la red como este.
+            try {
+                applyLocalQuote('estimacion inmediata');
+            } catch (immediateError) {
+                console.warn('[quote-debug] sin estimacion local posible:', immediateError);
+            }
+
             try {
                 const rpcStartedAt = Date.now();
                 let serverQuote = null;
@@ -899,10 +908,16 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                 const quote = Array.isArray(serverQuote) ? serverQuote[0] : serverQuote;
                 if (serverQuoteError || !quote?.success) {
-                    // Respaldo: calculo local con la misma formula. El servidor
-                    // sigue siendo la autoridad al confirmar el pago.
-                    console.warn('[quote-debug] fallo del servidor, uso estimacion local:', serverQuoteError?.message || quote?.error);
-                    applyLocalQuote(serverQuoteError?.message || quote?.error || 'sin respuesta valida');
+                    // Fallo del servidor: si ya hay precio local mostrado, se
+                    // mantiene (el servidor validara el importe al confirmar).
+                    const srvReason = String(serverQuoteError?.message || quote?.error || 'sin respuesta valida');
+                    console.warn('[quote-debug] fallo del servidor:', srvReason);
+                    setQuoteDebug((prev) => (prev?.phase === 'estimated' ? { ...prev, detail: `${prev.detail || 'local'} · srv_fallo: ${srvReason.slice(0, 60)}` } : prev));
+                    try {
+                        applyLocalQuote(srvReason);
+                    } catch (localFailError) {
+                        throw serverQuoteError || new Error(quote?.error || copy.quoteUnavailable);
+                    }
                     return;
                 }
 
@@ -1196,6 +1211,11 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                         <p className="text-4xl font-black italic tracking-tighter">
                                             {isCalculatingDistance ? <Loader2 className="h-8 w-8 animate-spin inline" /> : isQuoteCurrent ? <>{roundMoney(dynamicAmount).toFixed(2)}<span className="text-xl ml-1">€</span></> : '—'}
                                         </p>
+                                        {quoteDebug?.phase === 'estimated' && isQuoteCurrent && (
+                                            <p className="mt-1 inline-block rounded-full bg-amber-400/20 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest text-amber-300">
+                                                Precio estimado · se valida al confirmar
+                                            </p>
+                                        )}
                                         <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 mt-1">{copy.yourTrip} · {tripDistance.toFixed(1)} km</p>
                                     </div>
                                     <div className="text-right">
