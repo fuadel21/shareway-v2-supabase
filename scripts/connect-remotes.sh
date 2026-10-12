@@ -70,6 +70,10 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_BOOKING_QUOTE_V2.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_BOOKING_QUOTE_V2.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_BOOKING_CONFIRM_V2 (cobro por km al confirmar con cartera)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_BOOKING_CONFIRM_V2.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_BOOKING_CONFIRM_V2.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Plan de migraciones (dry-run)"
   $SB link --project-ref "$REF" --password "${SUPABASE_DB_PASSWORD:?}"
   $SB db push --dry-run --password "$SUPABASE_DB_PASSWORD"

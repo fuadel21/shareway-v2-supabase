@@ -283,6 +283,42 @@ const locationSignature = (loc) => {
 };
 const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
 
+const localHaversineKm = (a, b) => {
+    const toRad = (d) => (d * Math.PI) / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * 6371.0088 * Math.asin(Math.min(1, Math.sqrt(Math.max(s, 0))));
+};
+const localProgressivePrice = (km) => Math.min(Math.max(
+    Math.min(km, 15) * 0.30 + Math.max(Math.min(km, 100) - 15, 0) * 0.22 + Math.max(km - 100, 0) * 0.15,
+    0.50), 300);
+const buildLocalQuote = (ride, pickup, dropoff, numSeats) => {
+    const rideOrigin = { lat: getLat(ride?.origin), lng: getLng(ride?.origin) };
+    const rideDestination = { lat: getLat(ride?.destination), lng: getLng(ride?.destination) };
+    const billedKm = Math.max(localHaversineKm(pickup, dropoff) * 1.20, 0.6);
+    const rideDistance = Number(ride?.distance) > 0
+        ? Number(ride.distance)
+        : Math.max(localHaversineKm(rideOrigin, rideDestination), 1);
+    const tariff = localProgressivePrice(billedKm);
+    const basePerSeat = billedKm <= rideDistance * 1.10
+        ? Math.min(tariff, Number(ride?.price) || tariff)
+        : tariff;
+    const supplement = localHaversineKm(rideOrigin, pickup) > 3 ? 1.50 : 0;
+    const pricePerSeat = roundMoney(Math.max(basePerSeat + supplement, 0.50));
+    const total = roundMoney(pricePerSeat * Math.max(Number(numSeats) || 1, 1));
+    return {
+        success: true,
+        estimated: true,
+        total,
+        price_per_seat: pricePerSeat,
+        platform_fee: roundMoney(total * 0.10),
+        driver_payout: roundMoney(total - roundMoney(total * 0.10)),
+        passenger_distance_km: Math.round(billedKm * 10) / 10,
+        pickup_supplement_per_seat: supplement,
+    };
+};
+
 const pendingKeyForRide = (rideId) => `${PENDING_BOOKING_KEY}:${rideId}`;
 
 const savePendingBooking = (payload) => {
@@ -762,21 +798,71 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             setQuotedDriverPayout(0);
             try {
                 const rpcStartedAt = Date.now();
-                const rpcPromise = supabase.rpc('quote_ride_booking', {
-                    p_ride_id: rideId,
-                    p_pickup_location: pickup,
-                    p_dropoff_location: dropoff,
-                    p_num_seats: Number(numSeats),
-                });
-                const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('TIMEOUT_12S_SIN_RESPUESTA')), 12000);
-                });
-                const { data: serverQuote, error: serverQuoteError } = await Promise.race([rpcPromise, timeoutPromise]);
+                let serverQuote = null;
+                let serverQuoteError = null;
+                try {
+                    const sessionResult = await supabase.auth.getSession();
+                    const accessToken = sessionResult?.data?.session?.access_token;
+                    if (!accessToken) throw new Error('NO_SESSION');
+                    const controller = new AbortController();
+                    const abortTimer = setTimeout(() => controller.abort(), 10000);
+                    let response;
+                    try {
+                        response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/quote_ride_booking`, {
+                            method: 'POST',
+                            headers: {
+                                apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+                                Authorization: `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                p_ride_id: rideId,
+                                p_pickup_location: pickup,
+                                p_dropoff_location: dropoff,
+                                p_num_seats: Number(numSeats),
+                            }),
+                            signal: controller.signal,
+                        });
+                    } finally {
+                        clearTimeout(abortTimer);
+                    }
+                    if (response.status === 401) {
+                        throw new Error('SESION_CADUCADA: tu sesión ha expirado. Cierra sesión y vuelve a entrar.');
+                    }
+                    if (!response.ok) {
+                        let errText = `HTTP_${response.status}`;
+                        try {
+                            const errJson = await response.json();
+                            errText = errJson?.message || errJson?.hint || errText;
+                        } catch { /* keep default */ }
+                        throw new Error(errText);
+                    }
+                    serverQuote = await response.json();
+                } catch (fetchError) {
+                    serverQuoteError = fetchError;
+                }
                 console.log('[quote-debug] respuesta rpc', Date.now() - rpcStartedAt, 'ms', { serverQuote, serverQuoteError });
 
                 const quote = Array.isArray(serverQuote) ? serverQuote[0] : serverQuote;
                 if (serverQuoteError || !quote?.success) {
-                    throw serverQuoteError || new Error(quote?.error || copy.quoteUnavailable);
+                    // Respaldo: calculo local con la misma formula (el servidor
+                    // sigue siendo la autoridad al confirmar el pago).
+                    const localQuote = buildLocalQuote(ride, pickup, dropoff, numSeats);
+                    if (!localQuote || !(localQuote.total > 0)) {
+                        throw serverQuoteError || new Error(quote?.error || copy.quoteUnavailable);
+                    }
+                    console.warn('[quote-debug] precio estimado local tras fallo del servidor:', serverQuoteError?.message || quote?.error);
+                    if (cancelled) return;
+                    setTripDistance(Number(localQuote.passenger_distance_km) || 0);
+                    setAppliedSupplement(Number(localQuote.pickup_supplement_per_seat) || 0);
+                    setDynamicAmount(roundMoney(localQuote.total));
+                    setQuotedPricePerSeat(Number(localQuote.price_per_seat) || 0);
+                    setQuotedPlatformFee(Number(localQuote.platform_fee) || 0);
+                    setQuotedDriverPayout(Number(localQuote.driver_payout) || 0);
+                    setQuotedInputSignature(quoteInputSignature);
+                    setIsQuoteReady(true);
+                    setQuoteDebug((prev) => ({ phase: 'estimated', detail: 'local ' + localQuote.total + 'EUR tras: ' + String(serverQuoteError?.message || quote?.error || '?').slice(0, 60) }));
+                    return;
                 }
 
                 if (cancelled) return;
