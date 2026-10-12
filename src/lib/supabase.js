@@ -10,7 +10,20 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('🛡️ CRÍTICO: Faltan credenciales de Supabase en .env');
 }
 
-const protectedFetch = createSingleFlightFetch(globalThis.fetch);
+// Timeout global: ninguna peticion a Supabase puede quedar colgada para siempre
+// (en moviles con red inestable el fetch sin timeout se cuelga indefinidamente).
+const fetchWithTimeout = (input, init) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20000);
+  const externalSignal = init?.signal;
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort(externalSignal.reason);
+    else externalSignal.addEventListener('abort', () => controller.abort(externalSignal.reason), { once: true });
+  }
+  return globalThis.fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+};
+
+const protectedFetch = createSingleFlightFetch(fetchWithTimeout);
 
 // SINGLETON PATTERN: Eliminamos la cabecera 'global' que causaba el bloqueo de CORS.
 // Las RPC críticas comparten una sola petición mientras una operación idéntica siga en curso.

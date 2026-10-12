@@ -283,6 +283,27 @@ const locationSignature = (loc) => {
 };
 const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
 
+const readStoredAccessToken = () => {
+    try {
+        const raw = localStorage.getItem('sw-auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        const session = parsed?.currentSession || parsed?.session || parsed;
+        return session?.access_token || session?.currentSession?.access_token || null;
+    } catch {
+        return null;
+    }
+};
+const jwtExpiresInMinutes = (token) => {
+    try {
+        const payload = JSON.parse(atob(String(token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload?.exp) return null;
+        return Math.round(payload.exp - Date.now() / 1000);
+    } catch {
+        return null;
+    }
+};
+
 const localHaversineKm = (a, b) => {
     const toRad = (d) => (d * Math.PI) / 180;
     const dLat = toRad(b.lat - a.lat);
@@ -796,14 +817,45 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
             setQuotedPricePerKm(0);
             setQuotedPlatformFee(0);
             setQuotedDriverPayout(0);
+            const accessToken = readStoredAccessToken();
+            const tokenExpSecs = jwtExpiresInMinutes(accessToken);
+            setQuoteDebug((prev) => (prev?.phase === 'calculating' ? { ...prev, tokenExpSecs } : prev));
+
+            let quoteResolved = false;
+            const applyLocalQuote = (reason) => {
+                if (cancelled || quoteResolved) return;
+                const localQuote = buildLocalQuote(ride, pickup, dropoff, numSeats);
+                if (!localQuote || !(localQuote.total > 0)) {
+                    throw new Error(String(reason || 'no se pudo calcular el precio'));
+                }
+                quoteResolved = true;
+                setTripDistance(Number(localQuote.passenger_distance_km) || 0);
+                setAppliedSupplement(Number(localQuote.pickup_supplement_per_seat) || 0);
+                setDynamicAmount(roundMoney(localQuote.total));
+                setQuotedPricePerSeat(Number(localQuote.price_per_seat) || 0);
+                setQuotedPlatformFee(Number(localQuote.platform_fee) || 0);
+                setQuotedDriverPayout(Number(localQuote.driver_payout) || 0);
+                setQuotedInputSignature(quoteInputSignature);
+                setIsQuoteReady(true);
+                setIsCalculatingDistance(false);
+                setQuoteDebug((prev) => ({ phase: 'estimated', detail: `local ${localQuote.total}EUR (${String(reason).slice(0, 70)})`, tokenExpSecs }));
+            };
+
+            // Perro guardian: pase lo que pase, en 10s hay precio (local si el servidor no responde)
+            const watchdogTimer = setTimeout(() => {
+                try {
+                    applyLocalQuote('watchdog 10s');
+                } catch (watchdogError) {
+                    console.warn('[quote-debug] watchdog sin precio local:', watchdogError);
+                }
+            }, 10000);
+
             try {
                 const rpcStartedAt = Date.now();
                 let serverQuote = null;
                 let serverQuoteError = null;
                 try {
-                    const sessionResult = await supabase.auth.getSession();
-                    const accessToken = sessionResult?.data?.session?.access_token;
-                    if (!accessToken) throw new Error('NO_SESSION');
+                    if (!accessToken) throw new Error('NO_SESSION_EN_LOCALSTORAGE');
                     const controller = new AbortController();
                     const abortTimer = setTimeout(() => controller.abort(), 10000);
                     let response;
@@ -845,23 +897,10 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
 
                 const quote = Array.isArray(serverQuote) ? serverQuote[0] : serverQuote;
                 if (serverQuoteError || !quote?.success) {
-                    // Respaldo: calculo local con la misma formula (el servidor
-                    // sigue siendo la autoridad al confirmar el pago).
-                    const localQuote = buildLocalQuote(ride, pickup, dropoff, numSeats);
-                    if (!localQuote || !(localQuote.total > 0)) {
-                        throw serverQuoteError || new Error(quote?.error || copy.quoteUnavailable);
-                    }
-                    console.warn('[quote-debug] precio estimado local tras fallo del servidor:', serverQuoteError?.message || quote?.error);
-                    if (cancelled) return;
-                    setTripDistance(Number(localQuote.passenger_distance_km) || 0);
-                    setAppliedSupplement(Number(localQuote.pickup_supplement_per_seat) || 0);
-                    setDynamicAmount(roundMoney(localQuote.total));
-                    setQuotedPricePerSeat(Number(localQuote.price_per_seat) || 0);
-                    setQuotedPlatformFee(Number(localQuote.platform_fee) || 0);
-                    setQuotedDriverPayout(Number(localQuote.driver_payout) || 0);
-                    setQuotedInputSignature(quoteInputSignature);
-                    setIsQuoteReady(true);
-                    setQuoteDebug((prev) => ({ phase: 'estimated', detail: 'local ' + localQuote.total + 'EUR tras: ' + String(serverQuoteError?.message || quote?.error || '?').slice(0, 60) }));
+                    // Respaldo: calculo local con la misma formula. El servidor
+                    // sigue siendo la autoridad al confirmar el pago.
+                    console.warn('[quote-debug] fallo del servidor, uso estimacion local:', serverQuoteError?.message || quote?.error);
+                    applyLocalQuote(serverQuoteError?.message || quote?.error || 'sin respuesta valida');
                     return;
                 }
 
@@ -874,7 +913,9 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                 setQuotedDriverPayout(Number(quote.driver_payout) || 0);
                 setQuotedInputSignature(quoteInputSignature);
                 setIsQuoteReady(true);
-                setQuoteDebug((prev) => ({ phase: 'ok', detail: `total=${roundMoney(quote.total).toFixed(2)} en ${Date.now() - (prev?.startedAt || Date.now())}ms` }));
+                quoteResolved = true;
+                clearTimeout(watchdogTimer);
+                setQuoteDebug((prev) => ({ phase: 'ok', detail: `total=${roundMoney(quote.total).toFixed(2)} en ${Date.now() - (prev?.startedAt || Date.now())}ms`, tokenExpSecs }));
             } catch (error) {
                 console.error('Error updating server quote:', error);
                 if (!cancelled) {
@@ -891,6 +932,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                     setAppliedSupplement(0);
                 }
             } finally {
+                clearTimeout(watchdogTimer);
                 if (!cancelled) setIsCalculatingDistance(false);
             }
         };
@@ -1062,6 +1104,7 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                 <p className="text-white font-black">🔍 DEBUG PRECIO (temporal)</p>
                                 <p>uid: {user?.id?.slice(0, 8) || '—'} · driver: {ride?.driver_id?.slice(0, 8) || '—'}{user && ride?.driver_id && String(user.id) === String(ride.driver_id) ? ' · ⚠️ ERES EL CONDUCTOR' : ''}</p>
                                 <p>url: {String(import.meta.env.VITE_SUPABASE_URL || '—').replace(/^https?:\/\//, '').split('.')[0]} · plazas: {numSeats} · saldo: {Number(wallet?.balance || 0).toFixed(2)}€</p>
+                                <p>token: {quoteDebug?.tokenExpSecs == null ? 'no legible' : quoteDebug.tokenExpSecs > 0 ? `expira en ${Math.max(1, Math.round(quoteDebug.tokenExpSecs / 60))} min` : `⚠️ CADUCADO hace ${Math.max(1, Math.round(-quoteDebug.tokenExpSecs / 60))} min`}</p>
                                 <p>estado: {quoteDebug?.phase || '—'}{quoteDebug?.phase === 'calculating' ? ` ${Math.max(0, Math.round((Date.now() - quoteDebug.startedAt) / 1000))}s (tick ${debugTick})` : ''}{quoteDebug?.detail ? ` · ${String(quoteDebug.detail).slice(0, 90)}` : ''}</p>
                                 <p>pickup: {locationSignature(pickupLocation)} · dropoff: {locationSignature(dropoffLocation)}</p>
                             </div>
