@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, MapPin } from 'lucide-react';
 import { EsriProvider } from 'leaflet-geosearch';
 
-const AddressAutocomplete = ({ label, onSelect, initialValue = '', icon }) => {
+const AddressAutocomplete = ({ label, onSelect, initialValue = '', icon, disabled = false }) => {
     const [query, setQuery] = useState(initialValue);
     const [suggestions, setSuggestions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +29,7 @@ const AddressAutocomplete = ({ label, onSelect, initialValue = '', icon }) => {
 
         const handleSearch = async () => {
             const trimmedQuery = query.trim();
-            if (trimmedQuery.length < 3 || !userTyped.current) {
+            if (disabled || trimmedQuery.length < 3 || !userTyped.current) {
                 setSuggestions([]);
                 return;
             }
@@ -57,10 +57,10 @@ const AddressAutocomplete = ({ label, onSelect, initialValue = '', icon }) => {
             active = false;
             clearTimeout(debounce);
         };
-    }, [query, provider]);
+    }, [query, provider, disabled]);
 
     const handleSelect = (result) => {
-        if (!result) return;
+        if (!result || disabled) return;
         userTyped.current = false;
         
         // BLINDAJE: Extracción segura de etiquetas
@@ -104,11 +104,12 @@ const AddressAutocomplete = ({ label, onSelect, initialValue = '', icon }) => {
                 <Input
                     placeholder={label}
                     value={query}
+                    disabled={disabled}
                     onChange={(e) => {
                         userTyped.current = true;
                         setQuery(e.target.value);
                     }}
-                    className="h-14 pl-12 text-base w-full bg-white border-slate-100 shadow-sm focus-visible:ring-primary/20"
+                    className="h-14 pl-12 text-base w-full bg-white border-slate-100 shadow-sm focus-visible:ring-primary/20 disabled:opacity-60 disabled:cursor-not-allowed"
                 />
                 {isLoading && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">

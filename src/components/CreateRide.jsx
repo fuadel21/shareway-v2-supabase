@@ -453,8 +453,8 @@ const CreateRide = () => {
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_itinerary')}</h3>
                         </div>
                         <div className="space-y-4">
-                            <AddressAutocomplete label={t('create_ride.origin_label')} onSelect={setOrigin} defaultValue={origin?.address} icon={<div className="h-2 w-2 rounded-full bg-emerald-500" />} />
-                            <AddressAutocomplete label={t('create_ride.destination_label')} onSelect={setDestination} defaultValue={destination?.address} icon={<div className="h-2 w-2 rounded-full bg-primary" />} />
+                            <AddressAutocomplete label={t('create_ride.origin_label')} onSelect={setOrigin} initialValue={origin?.address} icon={<div className="h-2 w-2 rounded-full bg-emerald-500" />} />
+                            <AddressAutocomplete label={t('create_ride.destination_label')} onSelect={setDestination} initialValue={destination?.address} icon={<div className="h-2 w-2 rounded-full bg-primary" />} />
 
                             {(origin && destination) && (
                                 <div className="h-44 w-full rounded-2xl overflow-hidden border mt-2 relative">

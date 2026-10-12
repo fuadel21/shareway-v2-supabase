@@ -23,7 +23,7 @@ import {
     Wallet,
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
-import MapComponent from './MapComponent';
+import AddressAutocomplete from './AddressAutocomplete';
 import { useTranslation } from 'react-i18next';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
@@ -652,11 +652,21 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
     useEffect(() => {
         if (isOpen) {
             if (!pickupLocation) {
-                if (userLocation) setPickupLocation(normalizeMapLocation(userLocation));
-                else if (initialPickupLocation) setPickupLocation(normalizeMapLocation(initialPickupLocation));
-                else if (ride?.origin) setPickupLocation(normalizeMapLocation(ride.origin));
+                if (userLocation) {
+                    setPickupLocation(normalizeMapLocation(userLocation));
+                    setPickupAddress(userLocation?.address || '');
+                } else if (initialPickupLocation) {
+                    setPickupLocation(normalizeMapLocation(initialPickupLocation));
+                    setPickupAddress(initialPickupLocation?.address || '');
+                } else if (ride?.origin) {
+                    setPickupLocation(normalizeMapLocation(ride.origin));
+                    setPickupAddress(ride.origin?.address || ride.origin?.name || '');
+                }
             }
-            if (!dropoffLocation && ride?.destination) setDropoffLocation(normalizeMapLocation(ride.destination));
+            if (!dropoffLocation && ride?.destination) {
+                setDropoffLocation(normalizeMapLocation(ride.destination));
+                setDropoffAddress(ride.destination?.address || ride.destination?.name || '');
+            }
         } else {
             setClientSecret(null);
             setPaymentSignature(null);
@@ -930,12 +940,15 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">1</span>
                                     {copy.pickupQuestion}
                                 </p>
-                                <div className="h-40 rounded-3xl overflow-hidden border-2 border-slate-100 shadow-inner relative group">
-                                    <MapComponent center={pickupLocation || ride?.origin} zoom={15} onLocationSelect={paymentControlsDisabled ? undefined : handleLocationSelect} showSearch={false} height="100%" />
-                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm">
-                                        <MapPin className="size-3 text-primary animate-pulse" />
-                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">{copy.origin}</span>
-                                    </div>
+                                <div className="rounded-3xl border-2 border-slate-100 shadow-inner bg-white p-1.5">
+                                    <AddressAutocomplete
+                                        key={`pickup-${rideId}`}
+                                        label={copy.pickupQuestion}
+                                        onSelect={handleLocationSelect}
+                                        initialValue={pickupAddress}
+                                        disabled={paymentControlsDisabled}
+                                        icon={<MapPin className="size-4 text-primary" />}
+                                    />
                                 </div>
                                 {pickupAddress && <p className="text-[9px] font-bold text-slate-500 italic px-2">{copy.pickupAt} {pickupAddress}</p>}
                             </div>
@@ -945,12 +958,15 @@ const BookingPaymentModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLo
                                     <span className="size-5 rounded-full bg-slate-200 text-slate-900 flex items-center justify-center text-[8px]">2</span>
                                     {copy.dropoffQuestion}
                                 </p>
-                                <div className="h-40 rounded-3xl overflow-hidden border-2 border-slate-100 shadow-inner relative group">
-                                    <MapComponent center={dropoffLocation || ride?.destination} zoom={15} onLocationSelect={paymentControlsDisabled ? undefined : handleDropoffSelect} showSearch={false} height="100%" />
-                                    <div className="absolute top-2 right-2 bg-white/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5 shadow-sm">
-                                        <Navigation className="size-3 text-emerald-500 animate-pulse" />
-                                        <span className="text-[9px] font-black uppercase text-slate-900 tracking-tighter">{copy.destination}</span>
-                                    </div>
+                                <div className="rounded-3xl border-2 border-slate-100 shadow-inner bg-white p-1.5">
+                                    <AddressAutocomplete
+                                        key={`dropoff-${rideId}`}
+                                        label={copy.dropoffQuestion}
+                                        onSelect={handleDropoffSelect}
+                                        initialValue={dropoffAddress}
+                                        disabled={paymentControlsDisabled}
+                                        icon={<Navigation className="size-4 text-emerald-500" />}
+                                    />
                                 </div>
                                 {dropoffAddress && <p className="text-[9px] font-bold text-slate-500 italic px-2">{copy.destinationAt} {dropoffAddress}</p>}
                             </div>
