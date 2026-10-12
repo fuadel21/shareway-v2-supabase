@@ -1,10 +1,14 @@
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { requireUser, unauthorized } from '../_shared/auth.ts'
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 
 
 serve(async (req) => {
     if (req.method === 'OPTIONS') return new Response('ok', { headers: getCorsHeaders(req) })
+
+    const user = await requireUser(req)
+    if (!user) return unauthorized(getCorsHeaders(req) as Record<string, string>)
 
     try {
         let coords, overview, geometries;

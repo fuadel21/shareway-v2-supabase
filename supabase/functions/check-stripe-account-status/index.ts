@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@11.1.0?target=deno'
 import { corsHeaders } from '../_shared/cors.ts'
+import { requireUser, unauthorized } from '../_shared/auth.ts'
 
 const stripe = Stripe(Deno.env.get('STRIPE_SECRET_KEY'), {
   httpClient: Stripe.createFetchHttpClient()
@@ -13,7 +14,11 @@ serve(async (req) => {
   }
 
   try {
-    const { userId } = await req.json()
+    const user = await requireUser(req)
+    if (!user) return unauthorized({ 'Access-Control-Allow-Origin': '*' })
+    // El userId SIEMPRE es el del token: nadie puede consultar la cuenta
+    // Stripe de otro usuario.
+    const userId = user.id
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL'),
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
