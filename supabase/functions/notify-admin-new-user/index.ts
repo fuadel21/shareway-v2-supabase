@@ -1,4 +1,7 @@
-import { getCorsHeaders } from '../_shared/cors.ts'
+// NOTA: version AUTOCONTENIDA (sin imports locales) para poder pegarla
+// directamente en el editor del dashboard de Supabase, que solo admite un
+// archivo. Solo la llama el trigger de la BD via pg_net (server-to-server),
+// asi que no necesita CORS.
 import { serve } from 'https://deno.land/std@0.131.0/http/server.ts'
 
 // ============================================================================
@@ -48,7 +51,7 @@ const row = (label: string, value: string) => `
 
 serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
-        return new Response('ok', { headers: getCorsHeaders(req) })
+        return new Response('ok')
     }
 
     const requestId = crypto.randomUUID()
@@ -58,7 +61,7 @@ serve(async (req: Request) => {
         if (req.headers.get('x-sw-webhook') !== WEBHOOK_SECRET) {
             return new Response(JSON.stringify({ error: 'unauthorized' }), {
                 status: 401,
-                headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
+                headers: { 'Content-Type': 'application/json' },
             })
         }
 
@@ -163,7 +166,7 @@ serve(async (req: Request) => {
 
         return new Response(JSON.stringify({ ok: res.ok, status: res.status }), {
             status: res.ok ? 200 : 502,
-            headers: { 'Content-Type': 'application/json', ...getCorsHeaders(req) },
+            headers: { 'Content-Type': 'application/json' },
         })
     } catch (error) {
         console.error(`[${requestId}] Error:`, error)
