@@ -450,7 +450,7 @@ serve(async (req) => {
             data: reversalData,
             error: reversalError,
             businessFailure: reversalFailure,
-          } = await invokeRpc('reverse wallet deposit refund', 'reverse_wallet_deposit_refund', {
+          } = await runRpc('reverse wallet deposit refund', 'reverse_wallet_deposit_refund', {
             p_external_id: paymentIntentId,
             p_refund_amount: refundAmount,
             p_stripe_event_id: event.id,

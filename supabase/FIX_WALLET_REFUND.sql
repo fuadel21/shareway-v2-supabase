@@ -73,8 +73,11 @@ BEGIN
     RETURN jsonb_build_object('success', true, 'handled', false);
   END IF;
 
-  -- Idempotencia: un reintento del mismo reembolso no debita dos veces
-  IF COALESCE(v_intent.financial_status, v_intent.status) = 'refunded' THEN
+  -- Idempotencia: solo la propia reversión escribe 'refunded_amount' en
+  -- metadata (financial_status tambien lo escribe transition_financial_status,
+  -- que NO debita cartera, asi que no puede usarse como marca de reversión).
+  IF COALESCE(v_intent.metadata ->> 'refunded_amount', '') <> ''
+     OR v_intent.provider_refund_id IS NOT NULL THEN
     RETURN jsonb_build_object('success', true, 'already_processed', true, 'handled', true);
   END IF;
 
@@ -128,6 +131,7 @@ BEGIN
   UPDATE public.payment_intents
   SET status = 'refunded',
       financial_status = 'refunded',
+      provider_refund_id = COALESCE(provider_refund_id, p_stripe_event_id),
       metadata = COALESCE(metadata, '{}'::JSONB)
         || jsonb_build_object(
              'refunded_amount', v_debit,
