@@ -109,9 +109,12 @@ const TransactionItem = ({ tx, onClick }) => {
     const copy = copyByLanguage[language];
     if (!tx) return null;
 
-    const isDeposit = tx.type === 'deposit_stripe' || tx.type === 'deposit' || tx.type === 'refund' || tx.amount > 0;
-    const isHold = tx.type === 'hold';
     const amount = parseFloat(tx.amount || 0);
+    // El signo lo marca el importe real: hay reembolsos que ENTRAN a la
+    // cartera (compensaciones, > 0) y reembolsos que SALEN de ella
+    // (devolucion de recarga a la tarjeta, < 0).
+    const isDeposit = amount > 0;
+    const isHold = tx.type === 'hold';
     const safeDate = formatWalletDate(tx.created_at, language, copy.recent);
     const formattedAmount = formatCurrency(amount, language);
 
