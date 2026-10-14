@@ -74,6 +74,10 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_BOOKING_CONFIRM_V2.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_BOOKING_CONFIRM_V2.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_STRIPE_WEBHOOK_CORE (capa SQL del webhook de Stripe)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_WEBHOOK_CORE.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_STRIPE_WEBHOOK_CORE.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Plan de migraciones (dry-run)"
   $SB link --project-ref "$REF" --password "${SUPABASE_DB_PASSWORD:?}"
   $SB db push --dry-run --password "$SUPABASE_DB_PASSWORD"
