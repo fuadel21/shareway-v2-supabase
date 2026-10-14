@@ -279,6 +279,7 @@ AS $fn$
 DECLARE
   v_driver_id UUID := auth.uid();
   v_request RECORD;
+  v_pin TEXT;
   v_seats_needed INTEGER;
   v_price_per_seat NUMERIC;
   v_total NUMERIC;
@@ -420,8 +421,10 @@ BEGIN
   END IF;
 
   -- 9. Embarcar al pasajero en el viaje y actualizar asientos
+  v_pin := lpad((floor(random() * 10000))::INT::TEXT, 4, '0');
   v_passenger_obj := jsonb_build_object(
     'id', v_request.requester_id,
+    'pin', v_pin,
     'seats', v_seats_needed,
     'status', 'confirmed',
     'payment_status', 'held',
@@ -459,6 +462,7 @@ BEGIN
     'success', true,
     'rideId', v_ride_id,
     'requestId', p_request_id,
+    'pin', v_pin,
     'message', 'Viaje creado y pasajero vinculado con éxito'
   );
 END;
