@@ -442,6 +442,29 @@ serve(async (req) => {
             message: 'El evento charge.refunded no contiene payment_intent',
           })
         } else {
+          // Primero: si es un deposito de cartera, se debita el saldo.
+          const refundAmount = roundMoney(
+            Number(charge.amount_refunded || charge.amount || 0) / 100,
+          )
+          const {
+            data: reversalData,
+            error: reversalError,
+            businessFailure: reversalFailure,
+          } = await invokeRpc('reverse wallet deposit refund', 'reverse_wallet_deposit_refund', {
+            p_external_id: paymentIntentId,
+            p_refund_amount: refundAmount,
+            p_stripe_event_id: event.id,
+          })
+          if (reversalError || reversalFailure) {
+            failures.push(reversalFailure || rpcFailure('reverse wallet deposit refund', reversalError))
+          } else {
+            const reversal = (Array.isArray(reversalData) ? reversalData[0] : reversalData) as
+              | Record<string, unknown>
+              | null
+            if (reversal?.handled) break
+          }
+          // Si no era un deposito de cartera (p.ej. pago de reserva),
+          // se registra la transicion financiera como antes.
           await runRpc('transition payment to refunded', 'transition_financial_status', {
             p_stripe_id: paymentIntentId,
             p_new_status: 'refunded',
