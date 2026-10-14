@@ -425,6 +425,7 @@ BEGIN
   v_passenger_obj := jsonb_build_object(
     'id', v_request.requester_id,
     'pin', v_pin,
+    'booked_price', v_total,
     'seats', v_seats_needed,
     'status', 'confirmed',
     'payment_status', 'held',
