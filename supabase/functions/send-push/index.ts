@@ -1,11 +1,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import webpush from 'https://esm.sh/web-push@3.6.7';
 
 ;
 
 const jsonResponse = (payload: Record<string, unknown>, status = 200) => new Response(JSON.stringify(payload), {
   status,
-  headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+  headers: { ...getCorsHeaders(), 'Content-Type': 'application/json' },
 });
 
 const getNotificationRecord = (body: Record<string, unknown>) => {
@@ -28,9 +29,12 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    const publicKey = Deno.env.get('VAPID_PUBLIC_KEY');
-    const privateKey = Deno.env.get('VAPID_PRIVATE_KEY');
-    const subject = Deno.env.get('VAPID_SUBJECT') || 'mailto:fuadel21@gmail.com';
+    // Limpiar valores mal guardados: comillas envolventes y espacios
+    // Por si el valor se guardo con saltos de linea o espacios intercalados
+    const cleanSecret = (value: string | undefined) => String(value || '').replace(/\s+/g, '').replace(/^["']|["']$/g, '');
+    const publicKey = cleanSecret(Deno.env.get('VAPID_PUBLIC_KEY'));
+    const privateKey = cleanSecret(Deno.env.get('VAPID_PRIVATE_KEY'));
+    const subject = cleanSecret(Deno.env.get('VAPID_SUBJECT')).replace(/^mailto:\s+/i, 'mailto:') || 'mailto:fuadel21@hotmail.com';
     const webhookSecret = Deno.env.get('PUSH_WEBHOOK_SECRET') || '';
 
     if (!supabaseUrl || !anonKey || !serviceKey) throw new Error('Faltan variables de Supabase.');
@@ -80,7 +84,9 @@ Deno.serve(async (req) => {
 
     if (subError) throw subError;
 
-    webpush.setVapidDetails(subject, publicKey, privateKey);
+    // Normalizar a base64url estricto: web-push rechaza '=' de padding y +/ 
+    const toB64Url = (value: string) => String(value || '').trim().replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+    webpush.setVapidDetails(subject, toB64Url(publicKey), toB64Url(privateKey));
 
     let sent = 0;
     let failed = 0;
