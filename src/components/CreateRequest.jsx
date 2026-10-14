@@ -37,6 +37,7 @@ const copyByLanguage = {
         missingRoute: 'Completa origen y destino para publicar la solicitud.',
         priceAuto: 'Precio sugerido automáticamente',
         priceManual: 'Puedes ajustarlo si quieres atraer más conductores.',
+        totalLabel: 'Total estimado',
         publishCta: 'Publicar solicitud',
         routePreview: 'Vista previa de tu solicitud'
     },
@@ -54,6 +55,7 @@ const copyByLanguage = {
         missingRoute: 'Complete origin and destination to publish the request.',
         priceAuto: 'Suggested price calculated automatically',
         priceManual: 'You can adjust it to attract more drivers.',
+        totalLabel: 'Estimated total',
         publishCta: 'Publish request',
         routePreview: 'Request preview'
     },
@@ -71,6 +73,7 @@ const copyByLanguage = {
         missingRoute: 'أكمل نقطة الانطلاق والوجهة لنشر الطلب.',
         priceAuto: 'تم اقتراح السعر تلقائيًا',
         priceManual: 'يمكنك تعديله لجذب المزيد من السائقين.',
+        totalLabel: 'الإجمالي التقديري',
         publishCta: 'نشر الطلب',
         routePreview: 'معاينة الطلب'
     }
@@ -346,6 +349,8 @@ const CreateRequest = () => {
     const originLabel = getLocationLabel(origin, t('create_ride.origin_label'));
     const destinationLabel = getLocationLabel(destination, t('create_ride.destination_label'));
     const canPublish = Boolean(origin?.coordinates && destination?.coordinates && price && !isCalculatingRoute && !isSubmitting);
+    const perSeatPrice = parseFloat(String(price || '').replace(',', '.')) || 0;
+    const totalEstimate = Math.round(perSeatPrice * seats * 100) / 100;
 
     return (
         <div className="bg-slate-50 min-h-screen pb-32 font-sans text-left">
@@ -381,22 +386,27 @@ const CreateRequest = () => {
                                     </Button>
                                 </div>
 
-                                <div className="grid grid-cols-3 gap-2">
-                                    <div className="rounded-2xl bg-white/10 p-3">
-                                        <MapPin className="size-4 text-emerald-300 mb-2" />
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.route}</p>
-                                        <p className="text-[10px] font-black text-white leading-tight mt-1 truncate">{originLabel}</p>
-                                        <p className="text-[10px] font-black text-white/60 leading-tight truncate">→ {destinationLabel}</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="col-span-2 rounded-2xl bg-white/10 p-3 flex items-center gap-3">
+                                        <MapPin className="size-5 text-emerald-300 shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.route}</p>
+                                            <p className="text-[11px] font-black text-white leading-tight mt-0.5 truncate">{originLabel} → {destinationLabel}</p>
+                                        </div>
                                     </div>
-                                    <div className="rounded-2xl bg-white/10 p-3">
-                                        <CalendarClock className="size-4 text-primary mb-2" />
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.date}</p>
-                                        <p className="text-[10px] font-black text-white mt-1">{formatSearchDate(date, getLanguage(i18n.language))}</p>
+                                    <div className="rounded-2xl bg-white/10 p-3 flex items-center gap-3">
+                                        <CalendarClock className="size-5 text-primary shrink-0" />
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.date}</p>
+                                            <p className="text-[11px] font-black text-white mt-0.5">{formatSearchDate(date, getLanguage(i18n.language))}</p>
+                                        </div>
                                     </div>
-                                    <div className="rounded-2xl bg-white/10 p-3">
-                                        <Users className="size-4 text-amber-300 mb-2" />
-                                        <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.seats}</p>
-                                        <p className="text-[10px] font-black text-white mt-1">{seats}</p>
+                                    <div className="rounded-2xl bg-white/10 p-3 flex items-center gap-3">
+                                        <Users className="size-5 text-amber-300 shrink-0" />
+                                        <div>
+                                            <p className="text-[8px] font-black uppercase tracking-widest text-white/35">{copy.seats}</p>
+                                            <p className="text-[11px] font-black text-white mt-0.5">{seats}</p>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -441,7 +451,7 @@ const CreateRequest = () => {
                         )}
                     </Card>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_datetime')}</p>
                             <Popover>
@@ -484,6 +494,13 @@ const CreateRequest = () => {
                                         <p className="text-[10px] font-bold text-emerald-700/70 mt-1 leading-relaxed">{copy.priceManual}</p>
                                     </div>
                                 </div>
+                            </div>
+                            <div className="rounded-2xl bg-slate-900 p-4 flex items-center justify-between gap-3">
+                                <p className="text-[9px] font-black uppercase tracking-widest text-white/50 leading-relaxed">
+                                    {copy.totalLabel}<br />
+                                    <span className="text-white/35">{seats} × {perSeatPrice.toFixed(2)} €</span>
+                                </p>
+                                <p className="text-2xl font-black italic text-emerald-300 tracking-tighter shrink-0">{totalEstimate.toFixed(2)} €</p>
                             </div>
                         </Card>
                     </div>
