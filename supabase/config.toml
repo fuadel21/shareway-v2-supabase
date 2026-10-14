@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.process-radar-push-outbox]
 verify_jwt = false
+
+[functions.stripe-reconcile]
+verify_jwt = false

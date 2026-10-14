@@ -74,6 +74,14 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_BOOKING_CONFIRM_V2.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_BOOKING_CONFIRM_V2.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_WALLET_REFUND (reversión de saldo al reembolsar recargas)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_WALLET_REFUND.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_WALLET_REFUND.sql en el SQL Editor si psql no esta disponible"
+
+  echo "== Aplicando FIX_STRIPE_RECONCILE (cron de conciliación con Stripe)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_RECONCILE.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_STRIPE_RECONCILE.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Aplicando FIX_STRIPE_WEBHOOK_CORE (capa SQL del webhook de Stripe)"
   psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_WEBHOOK_CORE.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_STRIPE_WEBHOOK_CORE.sql en el SQL Editor si psql no esta disponible"
