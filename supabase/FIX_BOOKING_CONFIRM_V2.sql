@@ -126,7 +126,7 @@ BEGIN
     'id', v_user,
     'status', 'confirmed',
     'pin', v_pin,
-    'booked_price', v_amount,
+    'booked_price', round(v_amount / GREATEST(COALESCE(p_num_seats, 1), 1), 2),
     'payment_method', 'wallet',
     'seats', GREATEST(COALESCE(p_num_seats, 1), 1),
     'pickup_address', COALESCE(p_pickup_address, ''),
