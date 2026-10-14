@@ -227,6 +227,9 @@ $fn$;
 -- ----------------------------------------------------------------------------
 -- cancel_ride_unified (la llama la Edge Function con rol service_role)
 -- ----------------------------------------------------------------------------
+-- Limpiar variantes antiguas si existieran (evita ambiguedad de overload)
+DROP FUNCTION IF EXISTS public.cancel_ride_unified(UUID, TEXT);
+
 CREATE OR REPLACE FUNCTION public.cancel_ride_unified(
   p_ride_id UUID,
   p_reason TEXT DEFAULT NULL,
