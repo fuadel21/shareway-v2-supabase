@@ -1,14 +1,34 @@
 import { serve } from 'https://deno.land/std@0.131.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getCorsHeaders } from '../_shared/cors.ts'
+import { requireUser, isInternalWebhook, unauthorized } from '../_shared/auth.ts'
 
 const FCM_API_URL = 'https://fcm.googleapis.com/fcm/send'
 const FCM_SERVER_KEY = Deno.env.get('FCM_SERVER_KEY')
 
+// SEGURIDAD: antes esta funcion no pedia ninguna credencial y cualquiera
+// podia enviar pushes arbitrarios a cualquier usuario (spam/phishing).
+// Ahora exige sesion (y un usuario solo puede enviarse pushes a si mismo)
+// o el secreto interno de los triggers de la BD (x-sw-webhook).
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req)
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method Not Allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  const user = await requireUser(req)
+  const internal = isInternalWebhook(req)
+  if (!user && !internal) return unauthorized(corsHeaders)
+  if (!FCM_SERVER_KEY) {
+    return new Response(JSON.stringify({ error: 'Push no configurado' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
@@ -18,7 +38,14 @@ serve(async (req) => {
     if (!userId || !payload) {
       return new Response(JSON.stringify({ error: 'Missing userId or payload' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!internal && userId !== user?.id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
@@ -62,19 +89,19 @@ serve(async (req) => {
     }
 
     const fcmResult = await fcmResponse.json();
-    
+
     if (fcmResult.failure > 0) {
         console.error('FCM sending error:', fcmResult.results[0].error);
     }
 
     return new Response(JSON.stringify({ success: true, result: fcmResult }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
