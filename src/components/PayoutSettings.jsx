@@ -93,7 +93,7 @@ const StatusCard = ({ isConnected, onConnect, isConnecting }) => {
                 {!isConnected && (
                     <div className="space-y-4">
                         <p className="text-[10px] font-bold text-slate-400 leading-relaxed italic">{t('payouts.description')}</p>
-                        <Button onClick={onConnect} disabled={isConnecting} className="w-full h-12 rounded-xl bg-slate-950 text-white font-black text-[9px] uppercase tracking-normal shadow-lg active:scale-95 transition-all">
+                        <Button onClick={onConnect} disabled={isConnecting} className="w-full h-12 rounded-xl bg-primary text-white font-black text-[9px] uppercase tracking-normal shadow-lg active:scale-95 transition-all">
                             {isConnecting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <ExternalLink className="mr-2 h-4 w-4" />} {t('payouts.setup_button')}
                         </Button>
                     </div>

@@ -159,7 +159,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
             <DialogContent className="rounded-3xl border-none shadow-2xl p-8 max-w-md bg-white outline-none max-h-[90vh]">
                 <DialogHeader>
                     <div className="flex items-center gap-3">
-                        <div className="size-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+                        <div className="size-12 bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] rounded-2xl flex items-center justify-center shadow-lg">
                             <ShieldCheck className="h-6 w-6 text-primary" />
                         </div>
                         <div>

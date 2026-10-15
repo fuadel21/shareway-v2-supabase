@@ -17,7 +17,7 @@ const Actions = () => {
                 <section className="space-y-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-6">Como Conductor</p>
                     <Link to="/create-ride" className="block group">
-                        <Card className="rounded-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] bg-navy text-white overflow-hidden transition-all duration-500 hover:scale-[1.02] active:scale-95 group-hover:shadow-[0_40px_120px_rgba(0,0,0,0.15)]">
+                        <Card className="rounded-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white overflow-hidden transition-all duration-500 hover:scale-[1.02] active:scale-95 group-hover:shadow-[0_40px_120px_rgba(0,0,0,0.15)]">
                             <CardContent className="p-10 flex items-center justify-between relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Car className="size-32 rotate-12" />

@@ -409,7 +409,7 @@ const CreateRide = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <Card className={cn(
                         'border-none shadow-xl rounded-3xl p-6 space-y-4',
-                        isVehicleConfigured ? 'bg-slate-900 text-white' : 'bg-amber-50 text-amber-900 border-2 border-amber-100'
+                        isVehicleConfigured ? 'bg-primary text-white' : 'bg-amber-50 text-amber-900 border-2 border-amber-100'
                     )}>
                         <div className="flex items-start justify-between gap-4">
                             <div className="flex items-start gap-4 min-w-0">
@@ -566,7 +566,7 @@ const CreateRide = () => {
                         </AlertDialogHeader>
                         <AlertDialogFooter className="mt-6 gap-2">
                             <AlertDialogCancel className="rounded-xl h-12">{t('create_ride.cancel_button')}</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleConfirmPublish} className="h-12 rounded-xl bg-slate-900 text-white font-black">{t('create_ride.confirm_button')}</AlertDialogAction>
+                            <AlertDialogAction onClick={handleConfirmPublish} className="h-12 rounded-xl bg-primary text-white font-black">{t('create_ride.confirm_button')}</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>

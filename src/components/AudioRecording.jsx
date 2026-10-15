@@ -171,7 +171,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
                         </p>
                         <Button
                             onClick={startRecording}
-                            className="mt-6 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest px-8 hover:scale-105 active:scale-95 transition-all"
+                            className="mt-6 h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-normal px-8 hover:scale-105 active:scale-95 transition-all"
                         >
                             Iniciar Grabación
                         </Button>

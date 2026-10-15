@@ -310,7 +310,7 @@ const ActivityCenter = () => {
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
                 <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between">
                     <div className="flex gap-4 items-center">
-                        <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
+                        <div className="h-14 w-14 bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] rounded-2xl flex items-center justify-center shadow-lg rotate-3">
                             <Bell className="h-6 w-6 text-primary" />
                         </div>
                         <div>
@@ -369,7 +369,7 @@ const ActivityCenter = () => {
                             className={cn(
                                 'flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border-2',
                                 filter === f.id
-                                    ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-200 scale-105'
+                                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105'
                                     : 'bg-white border-white text-slate-400 hover:border-slate-100'
                             )}
                         >
@@ -380,7 +380,7 @@ const ActivityCenter = () => {
                 </div>
 
                 {selectionMode && selectedIds.length > 0 && (
-                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-slate-900 rounded-3xl p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10">
+                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10">
                         <p className="text-white text-[10px] font-black uppercase tracking-widest ml-4">
                             {selectedIds.length} {copy.selected}
                         </p>

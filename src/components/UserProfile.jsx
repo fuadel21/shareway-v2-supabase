@@ -280,7 +280,7 @@ function UserProfile() {
                     <div className="relative inline-block">
                         <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative z-10 mx-auto transition-transform hover:scale-105 duration-500">
                             <AvatarImage src={profile.photo_url || profile.avatar_url} />
-                            <AvatarFallback className="bg-slate-900 text-white text-3xl font-black">{profile.display_name?.[0] || 'U'}</AvatarFallback>
+                            <AvatarFallback className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white text-3xl font-black">{profile.display_name?.[0] || 'U'}</AvatarFallback>
                         </Avatar>
 
                         <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 z-20 bg-white px-4 py-1.5 rounded-full shadow-xl border border-slate-100 flex items-center gap-1.5 animate-in zoom-in duration-700 delay-300">

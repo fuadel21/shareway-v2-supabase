@@ -967,7 +967,7 @@ function Dashboard() {
                                             <div className="flex items-center gap-4 min-w-0">
                                                 <Avatar className="h-16 w-16 border-4 border-white shadow-2xl shrink-0">
                                                     <AvatarImage src={selectedItem.type === 'request' ? selectedItem.requester?.photo_url : selectedItem.driver?.photo_url} className="object-cover" />
-                                                    <AvatarFallback className="bg-slate-900 text-white font-black text-xl">{selectedItem.type === 'request' ? selectedItem.requester?.display_name?.[0] : selectedItem.driver?.display_name?.[0]}</AvatarFallback>
+                                                    <AvatarFallback className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white font-black text-xl">{selectedItem.type === 'request' ? selectedItem.requester?.display_name?.[0] : selectedItem.driver?.display_name?.[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="min-w-0">
                                                     <h3 className="truncate text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">

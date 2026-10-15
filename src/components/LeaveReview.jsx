@@ -157,7 +157,7 @@ const LeaveReview = () => {
 
             <main className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <Card className="rounded-3xl border-none shadow-2xl overflow-hidden bg-white">
-                    <CardHeader className="bg-slate-900 pb-16 pt-12 text-center flex flex-col items-center relative">
+                    <CardHeader className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] pb-16 pt-12 text-center flex flex-col items-center relative">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none overflow-hidden">
                             <Sparkles className="size-64 -translate-x-20 -translate-y-20 text-white" />
                         </div>

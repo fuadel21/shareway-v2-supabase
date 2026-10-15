@@ -229,7 +229,7 @@ export default function TripCalendarPage() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="rounded-3xl border-none bg-slate-900 text-white shadow-xl overflow-hidden">
+            <Card className="rounded-3xl border-none bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white shadow-xl overflow-hidden">
               <CardContent className="p-4 lg:p-8">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary">

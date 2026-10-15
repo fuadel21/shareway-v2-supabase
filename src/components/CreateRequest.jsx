@@ -475,7 +475,7 @@ const CreateRequest = () => {
                                             onClick={() => setSeats(n)}
                                             className={cn(
                                                 'h-10 rounded-xl text-xs font-black transition-all touch-action-manipulation active:scale-95',
-                                                seats === n ? 'bg-slate-900 text-white shadow-lg' : 'text-slate-400'
+                                                seats === n ? 'bg-primary text-white shadow-lg' : 'text-slate-400'
                                             )}>
                                         {n}
                                     </button>

@@ -160,7 +160,7 @@ function RideChatSelector() {
                                             ) : (
                                                 <>
                                                     <AvatarImage src={getOtherUserAvatar(chat)} />
-                                                    <AvatarFallback className="bg-slate-900 text-white font-black text-sm">
+                                                    <AvatarFallback className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white font-black text-sm">
                                                         {getInitials(getChatTitle(chat))}
                                                     </AvatarFallback>
                                                 </>

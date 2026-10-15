@@ -86,7 +86,7 @@ export default function TrustCenter() {
             {activeTab === 'verification' ? (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {/* Score de Confianza */}
-                    <Card className="border-none shadow-diamond overflow-hidden relative group bg-slate-900 text-white rounded-3xl">
+                    <Card className="border-none shadow-diamond overflow-hidden relative group bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white rounded-3xl">
                         <div className="absolute inset-0 bg-gradient-premium opacity-20" />
                         <CardContent className="p-5 relative z-10 flex items-center justify-between">
                             <div className="space-y-1">

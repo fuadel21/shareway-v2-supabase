@@ -280,7 +280,7 @@ const getMyPassengerEntry = (ride, currentUserId) => {
 const QuickActionButton = ({ icon: Icon, label, tone = 'neutral', onClick, disabled = false }) => {
     const toneClass = {
         neutral: 'bg-slate-50 text-slate-600 border-slate-100 hover:bg-slate-100',
-        primary: 'bg-slate-900 text-white border-slate-900 hover:bg-slate-800 shadow-lg shadow-slate-900/10',
+        primary: 'bg-primary text-white border-primary hover:bg-primary/90 shadow-lg shadow-primary/20',
         success: 'bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100',
         warning: 'bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100',
         danger: 'bg-red-50 text-red-600 border-red-100 hover:bg-red-100',
@@ -384,7 +384,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
                     </div>
                 )}
                 {isDriver && (
-                    <div className="bg-slate-900 text-white p-1.5 rounded-full shadow-lg">
+                    <div className="bg-primary text-white p-1.5 rounded-full shadow-lg">
                         <Car size={10} />
                     </div>
                 )}
@@ -392,7 +392,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
 
             <div className="p-6 flex items-center justify-between border-b border-slate-50">
                 <div className="flex items-center gap-4">
-                    <div className="bg-slate-900 text-white size-14 rounded-2xl flex flex-col items-center justify-center shadow-lg group-hover:rotate-3 transition-transform">
+                    <div className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white size-14 rounded-2xl flex flex-col items-center justify-center shadow-lg group-hover:rotate-3 transition-transform">
                         <span className="text-xs font-black italic leading-none">
                             {dateObj && isValid(dateObj) ? format(dateObj, 'dd') : '--'}
                         </span>
@@ -742,7 +742,7 @@ const MyRides = () => {
                                 className={cn(
                                     'flex flex-col items-center justify-center gap-1 px-1 py-2 rounded-2xl transition-all border min-w-0',
                                     isActiveTab
-                                        ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+                                        ? 'bg-primary text-white border-primary shadow-md'
                                         : 'bg-white text-slate-500 border-slate-100 hover:bg-slate-50'
                                 )}
                             >

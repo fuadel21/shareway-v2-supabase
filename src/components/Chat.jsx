@@ -216,7 +216,7 @@ const Chat = () => {
                 <div className="flex-1 flex items-center gap-3">
                     <Avatar className="h-12 w-12 border-2 border-white shadow-md">
                         <AvatarImage src={otherUser?.photo_url} />
-                        <AvatarFallback className="bg-slate-900 text-white font-black text-sm">
+                        <AvatarFallback className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white font-black text-sm">
                             {getInitials(otherUser?.display_name || 'U')}
                         </AvatarFallback>
                     </Avatar>
@@ -320,7 +320,7 @@ const Chat = () => {
                             <Button
                                 type="submit"
                                 disabled={isSending || !newMessage.trim()}
-                                className="size-14 rounded-2xl bg-slate-900 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                                className="size-14 rounded-2xl bg-primary text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
                             >
                                 {isSending ? <Loader2 className="animate-spin size-5" /> : <Send size={20} />}
                             </Button>

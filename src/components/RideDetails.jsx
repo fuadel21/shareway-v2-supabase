@@ -644,7 +644,7 @@ const RideDetails = () => {
                 actions={(isDriver || isPassenger) && (
                     <button
                         onClick={() => navigate(`/rides/${rideId}/chats`)}
-                        className="h-11 w-11 rounded-2xl bg-slate-900 shadow-lg flex items-center justify-center text-white active:scale-95 transition-all"
+                        className="h-11 w-11 rounded-2xl bg-primary shadow-lg flex items-center justify-center text-white active:scale-95 transition-all"
                         title="Conversaciones"
                     >
                         <MessageCircle size={20} />

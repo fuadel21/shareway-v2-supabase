@@ -49,7 +49,7 @@ const AchievementCard = ({ achievement, isUnlocked, unlockedAt, index }) => {
             <div className={cn(
                 "h-20 w-20 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 group-hover:scale-110",
                 isUnlocked
-                    ? "bg-navy text-primary shadow-primary/20 rotate-3 group-hover:rotate-6"
+                    ? "bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white shadow-lg rotate-3 group-hover:rotate-6"
                     : "bg-slate-100 text-slate-300"
             )}>
                 <IconComponent className={cn("h-10 w-10", isUnlocked && "animate-pulse")} strokeWidth={1.5} />

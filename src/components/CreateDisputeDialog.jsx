@@ -139,7 +139,7 @@ const CreateDisputeDialog = ({ open, onOpenChange, rideId, onSuccess }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-lg rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
-                <div className="bg-slate-900 p-8 text-white relative">
+                <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-6 text-white relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
                         <AlertCircle size={80} />
                     </div>
@@ -258,7 +258,7 @@ const CreateDisputeDialog = ({ open, onOpenChange, rideId, onSuccess }) => {
                     <Button
                         onClick={handleSubmit}
                         disabled={submitting || uploading || !reason.trim()}
-                        className="h-14 flex-[2] rounded-2xl bg-slate-900 hover:bg-slate-950 text-white font-black uppercase italic tracking-widest text-[11px] shadow-xl active:scale-95 transition-all"
+                        className="h-14 flex-[2] rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase italic tracking-normal text-[11px] shadow-xl active:scale-95 transition-all"
                     >
                         {(submitting || uploading) ? (
                             <Loader2 className="h-5 w-5 animate-spin" />

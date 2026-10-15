@@ -283,12 +283,10 @@ const Wallet = () => {
             </header>
 
             <main className="max-w-xl mx-auto px-4 py-6 space-y-5 text-left">
-                <Card className="border-none shadow-2xl bg-slate-900 overflow-hidden rounded-3xl relative group">
-                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
-                        <Zap className="h-32 w-32 text-white" />
-                    </div>
+                <Card className="border-none shadow-xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] overflow-hidden rounded-3xl relative group">
+                    <div className="absolute -top-10 -right-10 size-40 rounded-full bg-white/15 blur-2xl" />
                     <CardContent className="p-5 text-white relative z-10 text-left">
-                        <div className="flex justify-between items-start mb-10 text-left">
+                        <div className="flex justify-between items-start mb-6 text-left">
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-2">
                                     <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">{t('wallet.available_balance')}</p>
@@ -297,31 +295,31 @@ const Wallet = () => {
                                         {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
                                     </button>
                                 </div>
-                                <h2 className="text-5xl font-black tracking-tighter italic min-h-[60px]">
+                                <h2 className="text-4xl font-black tracking-tighter italic min-h-[48px]">
                                     {showBalance ? formattedBalance : '••••••'}
                                 </h2>
                             </div>
-                            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-xl"><WalletIcon className="h-6 w-6 text-white" /></div>
+                            <div className="bg-white/20 border border-white/20 p-3 rounded-2xl"><WalletIcon className="h-6 w-6 text-white" /></div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 mb-10">
-                            <div className="bg-white/5 rounded-3xl p-5 border border-white/5">
+                        <div className="grid grid-cols-2 gap-3 mb-6">
+                            <div className="bg-white/10 rounded-2xl p-4 border border-white/10">
                                 <p className="text-[8px] text-slate-500 uppercase font-black tracking-[0.2em] mb-2">{t('wallet.in_guarantee')}</p>
                                 <p className="text-xl font-black italic">{showBalance ? `${heldBalance.toFixed(2)}€` : '•••'}</p>
                             </div>
-                            <div className="bg-white/5 rounded-3xl p-5 border border-white/5 opacity-40">
+                            <div className="bg-white/10 rounded-2xl p-4 border border-white/10 opacity-50">
                                 <p className="text-[8px] text-slate-500 uppercase font-black tracking-[0.2em] mb-2">{t('wallet.cashback')}</p>
                                 <p className="text-xl font-black italic">0.00€</p>
                             </div>
                         </div>
                         <div className="flex gap-4">
                             <Button onClick={() => setIsModalOpen(true)}
-                                    className="flex-1 h-12 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                                    className="flex-1 h-12 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-normal shadow-lg active:scale-95 transition-all">
                                 {t('wallet.add_funds')}
                             </Button>
                             <Button variant="outline"
-                                    className="h-16 w-16 rounded-2xl bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
+                                    className="h-12 w-12 rounded-2xl bg-white/20 border-white/20 text-white hover:bg-white/30 flex items-center justify-center active:scale-95 transition-all"
                                     onClick={() => navigate('/settings')}>
-                                <CreditCard className="h-6 w-6" />
+                                <CreditCard className="h-5 w-5" />
                             </Button>
                         </div>
                     </CardContent>

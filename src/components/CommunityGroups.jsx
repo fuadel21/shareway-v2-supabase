@@ -218,7 +218,7 @@ const CommunityGroups = () => {
                                                     "h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest px-8 shadow-2xl transition-all active:scale-95 group",
                                                     isMember
                                                         ? "bg-emerald-50 text-emerald-500"
-                                                        : (!!profile?.community_id ? "opacity-20 bg-slate-100 text-slate-400" : "bg-slate-900 text-white hover:bg-slate-800")
+                                                        : (!!profile?.community_id ? "opacity-20 bg-slate-100 text-slate-400" : "bg-primary text-white hover:bg-primary/90")
                                                 )}
                                             >
                                                 {isJoining === community.id ? (

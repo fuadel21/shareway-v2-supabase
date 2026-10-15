@@ -61,7 +61,7 @@ function Account() {
         `Miembro desde ${format(creationDate, "MMMM yyyy", { locale: es })}` : '';
 
     const ActionButton = ({ to, icon: Icon, children, color = "text-primary" }) => (
-        <Button variant="outline" size="lg" asChild className="justify-start text-base py-6 md:py-8 rounded-3xl md:rounded-3xl border-none shadow-sm bg-white dark:bg-navy hover:shadow-md transition-all group">
+        <Button variant="outline" size="lg" asChild className="justify-start text-base py-6 md:py-8 rounded-3xl md:rounded-3xl border-none shadow-sm bg-white dark:bg-primary hover:shadow-md transition-all group">
             <Link to={to} className="flex items-center gap-4">
                 <div className={cn("p-2.5 md:p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 transition-colors group-hover:bg-primary/10", color)}>
                     <Icon className="h-5 w-5 md:h-6 md:w-6" />
@@ -76,7 +76,7 @@ function Account() {
         <div className="min-h-screen bg-slate-50 dark:bg-navy pb-24">
             <main className="container mx-auto p-4 max-w-2xl pt-8">
                 {/* --- Tarjeta de Perfil Principal --- */}
-                <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-white dark:bg-navy">
+                <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-white dark:bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6]">
                     <CardContent className="p-5 flex flex-col items-center text-center">
                         <div className="relative mb-6">
                             <Avatar className="h-32 w-32 border-4 border-white dark:border-slate-800 shadow-2xl">

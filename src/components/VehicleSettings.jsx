@@ -271,7 +271,7 @@ const VehicleSettings = () => {
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-3">
-            <Button type="button" onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-950 text-[10px] font-black uppercase tracking-normal text-white">
+            <Button type="button" onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-primary text-[10px] font-black uppercase tracking-normal text-white">
               Publicar viaje
             </Button>
             <Button type="button" variant="outline" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl border-slate-200 bg-white text-[10px] font-black uppercase tracking-normal text-slate-700">

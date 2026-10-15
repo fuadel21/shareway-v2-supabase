@@ -91,7 +91,7 @@ function ConversationsList() {
                             <div className="relative">
                                 <Avatar className="h-16 w-16 border-2 border-white shadow-lg">
                                     <AvatarImage src={convo.otherUserPhoto} />
-                                    <AvatarFallback className="bg-slate-900 text-white font-black text-xs">
+                                    <AvatarFallback className="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white font-black text-xs">
                                         {getInitials(convo.otherUserName)}
                                     </AvatarFallback>
                                 </Avatar>

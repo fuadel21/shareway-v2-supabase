@@ -166,7 +166,7 @@ function EditProfile() {
                             <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-50" />
                             <Avatar className="size-36 md:size-44 border-8 border-white shadow-2xl relative z-10">
                                 <AvatarImage src={profileImageUrl} />
-                                <AvatarFallback className="text-4xl md:text-5xl bg-slate-900 text-white font-black italic">{getInitials(formData.display_name)}</AvatarFallback>
+                                <AvatarFallback className="text-4xl md:text-5xl bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] text-white font-black italic">{getInitials(formData.display_name)}</AvatarFallback>
                             </Avatar>
                             <Label htmlFor="profile-upload" className="absolute bottom-1 right-1 md:bottom-2 md:right-2 z-20 bg-primary border-4 border-white text-white rounded-2xl h-12 w-12 md:h-14 md:w-14 flex items-center justify-center cursor-pointer shadow-xl active:scale-90 transition-all">
                                 <Camera className="h-5 w-5 md:h-6 md:w-6" />

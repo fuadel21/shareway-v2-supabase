@@ -315,7 +315,7 @@ const BookingContractGuard = () => {
               <button
                 type="button"
                 onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))}
-                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl bg-primary hover:bg-primary/90 text-[10px] font-black uppercase tracking-normal text-white"
               >
                 <X className="size-4" /> Cerrar
               </button>

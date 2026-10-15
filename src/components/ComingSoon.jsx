@@ -23,7 +23,7 @@ function ComingSoon() {
                 {/* ICONO CENTRAL ANIMADO */}
                 <div className="relative group mb-12 animate-in zoom-in-50 duration-1000">
                     <div className="absolute inset-0 bg-primary/20 blur-[80px] rounded-full animate-pulse" />
-                    <div className="size-48 bg-navy rounded-[4rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] flex items-center justify-center border-4 border-white/10 relative z-10 group-hover:rotate-12 transition-transform duration-700">
+                    <div className="size-48 bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-[4rem] shadow-[0_40px_100px_rgba(0,0,0,0.3)] flex items-center justify-center border-4 border-white/10 relative z-10 group-hover:rotate-12 transition-transform duration-700">
                         <Zap className="size-20 text-primary animate-bounce" />
                     </div>
                     <div className="absolute -bottom-4 -right-4 size-16 bg-white rounded-3xl flex items-center justify-center shadow-2xl border-4 border-slate-900 z-20">
@@ -65,7 +65,7 @@ function ComingSoon() {
 
                 <Button
                     onClick={() => navigate(-1)}
-                    className="mt-16 h-12 px-12 rounded-3xl bg-navy text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-navy-600 transition-all hover:scale-105 active:scale-95"
+                    className="mt-16 h-12 px-12 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-normal shadow-xl transition-all hover:scale-105 active:scale-95"
                 >
                     <ArrowLeft className="mr-3 size-4" /> {t('coming_soon.back_button')}
                 </Button>

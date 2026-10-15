@@ -87,7 +87,7 @@ const CreatePackage = () => {
 
                     {/* SECCIÓN 1: RUTA DEL ENVÍO */}
                     <Card className="rounded-3xl border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-700">
-                        <CardHeader className="bg-navy p-10 relative overflow-hidden">
+                        <CardHeader className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-10 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
                             <div className="relative z-10 space-y-2">
                                 <CardTitle className="text-2xl font-black text-white tracking-tighter flex items-center gap-3">
@@ -152,7 +152,7 @@ const CreatePackage = () => {
                                             className={cn(
                                                 "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-500 gap-3 group/btn",
                                                 size === item.id
-                                                    ? "bg-navy border-navy text-white shadow-2xl scale-100"
+                                                    ? "bg-primary border-primary text-white shadow-xl scale-100"
                                                     : "bg-slate-50 border-transparent text-slate-400 hover:bg-white hover:border-slate-200 scale-95"
                                             )}
                                         >
@@ -210,7 +210,7 @@ const CreatePackage = () => {
                         <Button
                             type="submit"
                             disabled={isLoading || !origin || !destination}
-                            className="w-full h-14 rounded-3xl text-2xl font-black tracking-tighter shadow-[0_20px_50px_rgba(249,115,22,0.4)] bg-primary hover:bg-navy transition-all hover:scale-[1.02] active:scale-95 group border-t border-white/20 relative z-10 text-white"
+                            className="w-full h-14 rounded-3xl text-2xl font-black tracking-tighter shadow-[0_20px_50px_rgba(249,115,22,0.4)] bg-primary hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-95 group border-t border-white/20 relative z-10 text-white"
                         >
                             {isLoading ? (
                                 <><Loader2 className="animate-spin h-8 w-8 mr-3 text-white" /> PUBLICANDO...</>
