@@ -461,7 +461,7 @@ const RequestDetails = () => {
             <SubPageHeader title={copy.pageTitle} backPath="/my-requests" />
 
             <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
-                <Card className="rounded-3xl border-none shadow-xl bg-slate-900 text-white p-4 space-y-5 overflow-hidden relative">
+                <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white p-4 space-y-5 overflow-hidden relative">
                     <div className="absolute -right-10 -top-10 size-36 rounded-full bg-primary/20 blur-2xl" />
                     <div className="relative flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 min-w-0">
@@ -583,7 +583,7 @@ const RequestDetails = () => {
                         {computed.canAccept && (
                             <Button
                                 onClick={() => setShowAcceptDialog(true)}
-                                className="w-full h-12 rounded-3xl bg-slate-900 text-white font-black text-base italic shadow-2xl uppercase active:scale-95 transition-all border-none"
+                                className="w-full h-12 rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white font-black text-base italic shadow-2xl uppercase active:scale-95 transition-all border-none"
                             >
                                 {copy.acceptAndCreate} <ChevronRight size={20} className="ml-2 text-primary" />
                             </Button>

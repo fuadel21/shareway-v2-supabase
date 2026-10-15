@@ -349,7 +349,7 @@ const SimpleBookingModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLoc
                             </div>
 
                             {/* 4. Precio (calculo local instantaneo) */}
-                            <div className="bg-slate-900 rounded-3xl p-6 text-white space-y-3 shadow-xl">
+                            <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-5 text-white space-y-3 shadow-xl">
                                 <div className="flex justify-between items-start">
                                     <div>
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-1">{copy.totalToPay}</p>

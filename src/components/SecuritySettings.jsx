@@ -297,7 +297,7 @@ function SecuritySettings() {
             <SubPageHeader title={t('security.title')} backTo="/settings" />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5 text-left">
-                <div className="bg-navy rounded-3xl md:rounded-3xl p-8 md:p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
+                <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-6 relative overflow-hidden group shadow-2xl shadow-slate-300/50">
                     <div className="absolute top-0 right-0 p-10 opacity-10 blur-xl group-hover:blur-md transition-all">
                         <ShieldCheck className="h-24 w-24 md:h-32 md:w-32 text-white" />
                     </div>

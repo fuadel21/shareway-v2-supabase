@@ -111,7 +111,7 @@ const CommunityGroups = () => {
                 {/* ESTADO ACTUAL PREMIUM */}
                 <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                     {profile?.community_id ? (
-                        <Card className="rounded-3xl border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-slate-900 text-white relative">
+                        <Card className="rounded-3xl border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white relative">
                             <div className="absolute top-0 right-0 p-10 opacity-10">
                                 <ShieldCheck className="size-24 text-primary" />
                             </div>

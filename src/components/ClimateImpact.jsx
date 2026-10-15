@@ -41,7 +41,7 @@ const ClimateImpact = () => {
 
             <main className="max-w-xl mx-auto px-4 mt-6 space-y-5 animate-in fade-in duration-700">
                 {/* Hero Section */}
-                <section className="bg-slate-900 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden group">
+                <section className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
                         <Leaf size={180} />
                     </div>

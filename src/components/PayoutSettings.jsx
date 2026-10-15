@@ -215,7 +215,7 @@ function PayoutSettings() {
                                 <Button
                                     onClick={handleRequest}
                                     disabled={isRequesting || balance < 10 || !amount}
-                                    className="w-full h-12 md:h-14 rounded-2xl md:rounded-3xl bg-slate-900 text-white font-black text-base md:text-lg uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-30"
+                                    className="w-full h-12 md:h-14 rounded-2xl md:rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white font-black text-base md:text-lg uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-30"
                                 >
                                     {isRequesting ? <Loader2 className="animate-spin size-5 md:size-6" /> : copy.transferButton}
                                 </Button>

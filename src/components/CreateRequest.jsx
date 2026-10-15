@@ -367,7 +367,7 @@ const CreateRequest = () => {
             <main className="max-w-xl mx-auto px-4 py-8 text-left">
                 <form onSubmit={handleCreateRequest} className="space-y-6 text-left">
                     {wasPreparedFromSearch && (
-                        <Card className="border-none shadow-2xl rounded-3xl p-4 bg-slate-900 text-white overflow-hidden relative">
+                        <Card className="border-none shadow-2xl rounded-3xl p-4 bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white overflow-hidden relative">
                             <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
                             <div className="relative space-y-5">
                                 <div className="flex items-start justify-between gap-4">
@@ -495,7 +495,7 @@ const CreateRequest = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="rounded-2xl bg-slate-900 p-4 flex items-center justify-between gap-3">
+                            <div className="rounded-2xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-4 flex items-center justify-between gap-3">
                                 <p className="text-[9px] font-black uppercase tracking-widest text-white/50 leading-relaxed">
                                     {copy.totalLabel}<br />
                                     <span className="text-white/35">{seats} × {perSeatPrice.toFixed(2)} €</span>

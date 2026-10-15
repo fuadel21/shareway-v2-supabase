@@ -321,7 +321,7 @@ function UserProfile() {
                                 {trustSignals.completed >= 3 ? copy.trustDescReady : copy.trustDescPending}
                             </p>
                         </div>
-                        <div className="rounded-2xl bg-slate-950 px-4 py-3 text-center shrink-0">
+                        <div className="rounded-2xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] px-4 py-3 text-center shrink-0">
                             <p className="text-[8px] font-black uppercase tracking-widest text-white/40">Trust</p>
                             <p className="text-xl font-black text-primary">{trustSignals.completed}/4</p>
                         </div>
@@ -376,7 +376,7 @@ function UserProfile() {
                 )}
 
                 {profile.vehicle && (profile.vehicle.make || profile.vehicle.model || profile.vehicle.photoURL) && (
-                    <Card className="rounded-3xl border-none shadow-xl bg-slate-900 overflow-hidden relative">
+                    <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 opacity-10"><Car size={120} className="text-white" /></div>
                         <div className="p-8 text-white relative z-10 text-left">
                             <div className="flex items-center gap-4 mb-6">

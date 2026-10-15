@@ -466,7 +466,7 @@ const MyRequests = () => {
       <SubPageHeader title={copy.title} />
 
       <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
-        <div className="bg-slate-900 rounded-3xl p-7 shadow-2xl relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-5 shadow-xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
             <Target size={120} className="text-primary" />
           </div>

@@ -258,7 +258,7 @@ const VehicleSettings = () => {
                 {readiness.isReady ? 'Ya puedes publicar viajes con más confianza.' : 'Completa datos básicos y plazas para que el pasajero reserve tranquilo.'}
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-950 px-4 py-3 text-right text-white">
+            <div className="rounded-2xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] px-4 py-3 text-right text-white">
               <p className="text-[8px] font-black uppercase tracking-widest text-white/40">Guía</p>
               <p className="text-xl font-black text-primary">{readiness.completed}/{readiness.total}</p>
             </div>
@@ -280,7 +280,7 @@ const VehicleSettings = () => {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-3xl bg-slate-950 text-white shadow-2xl">
+        <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white shadow-2xl">
           <div className="relative aspect-[16/9] bg-slate-900">
             {previewUrl ? (
               <img src={previewUrl} alt="Vehículo" className="h-full w-full object-cover opacity-90" />
@@ -313,7 +313,7 @@ const VehicleSettings = () => {
         <form onSubmit={handleSave} className="space-y-6">
           <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-primary">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-primary">
                 <Car className="h-6 w-6" />
               </div>
               <div>
@@ -426,7 +426,7 @@ const VehicleSettings = () => {
             <p className="mt-2 px-3 text-right text-[10px] font-bold text-slate-400">{String(vehicle.notes || '').length}/280</p>
           </section>
 
-          <Button type="submit" disabled={isSaving} className="h-12 w-full rounded-3xl bg-slate-950 text-lg font-black uppercase italic tracking-tight text-white shadow-2xl active:scale-95 md:h-14 md:rounded-3xl">
+          <Button type="submit" disabled={isSaving} className="h-12 w-full rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-lg font-black uppercase italic tracking-tight text-white shadow-2xl active:scale-95 md:h-14 md:rounded-3xl">
             {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <>{completion < 100 ? 'Guardar vehículo' : 'Actualizar vehículo'} <Sparkles className="ml-3 h-5 w-5 text-primary" /></>}
           </Button>
         </form>

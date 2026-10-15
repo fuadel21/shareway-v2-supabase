@@ -31,7 +31,7 @@ function AppearanceSettings() {
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5 text-left">
 
                 {/* HERO CARD */}
-                <div className="bg-slate-900 rounded-3xl p-10 relative overflow-hidden group shadow-2xl shadow-slate-200">
+                <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-6 relative overflow-hidden group shadow-2xl shadow-slate-200">
                     <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12 group-hover:scale-110 transition-transform">
                         <Palette size={140} className="text-white" />
                     </div>

@@ -500,7 +500,7 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
     ];
 
     return (
-        <div className="rounded-3xl bg-slate-900 text-white p-5 shadow-2xl overflow-hidden relative">
+        <div className="rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white p-5 shadow-2xl overflow-hidden relative">
             <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
             <div className="relative space-y-4">
                 <div className="flex items-start justify-between gap-4">

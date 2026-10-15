@@ -104,7 +104,7 @@ function NotificationSettings() {
                     </div>
                 </div>
 
-                <Card className="border-none rounded-3xl bg-slate-950 text-white shadow-2xl shadow-slate-900/20 overflow-hidden">
+                <Card className="border-none rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white shadow-2xl shadow-slate-900/20 overflow-hidden">
                     <CardContent className="p-4 space-y-5">
                         <div className="flex items-start justify-between gap-4">
                             <div>

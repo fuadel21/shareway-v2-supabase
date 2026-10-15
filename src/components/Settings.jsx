@@ -168,17 +168,17 @@ const Settings = () => {
       </header>
 
       <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-5 md:space-y-6 text-left">
-        <section className="rounded-3xl bg-slate-900 text-white p-6 shadow-2xl overflow-hidden relative">
-          <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
-          <div className="relative space-y-5">
+        <section className="rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-white p-5 shadow-xl overflow-hidden relative">
+          <div className="absolute -right-12 -top-12 size-40 rounded-full bg-white/15 blur-2xl" />
+          <div className="relative space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">ShareWay</p>
-                <h2 className="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">Centro de cuenta</h2>
-                <p className="mt-2 text-xs font-bold text-white/55 leading-relaxed">Completa perfil, vehículo y cobros para dar más confianza antes de viajar.</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/80">ShareWay</p>
+                <h2 className="mt-1 text-xl font-black italic uppercase tracking-tighter leading-none">Centro de cuenta</h2>
+                <p className="mt-1.5 text-[11px] font-bold text-white/75 leading-relaxed">Completa perfil, vehículo y cobros para dar más confianza antes de viajar.</p>
               </div>
-              <div className="h-14 w-14 rounded-2xl bg-white/10 border border-white/10 flex items-center justify-center shrink-0">
-                <Shield className="size-6 text-primary" />
+              <div className="h-11 w-11 rounded-2xl bg-white/20 border border-white/20 flex items-center justify-center shrink-0">
+                <Shield className="size-5 text-white" />
               </div>
             </div>
 
@@ -211,16 +211,16 @@ const Settings = () => {
           </div>
         </section>
 
-        <section className="rounded-3xl bg-slate-950 text-white p-6 shadow-2xl overflow-hidden relative">
-          <div className="absolute -left-12 -bottom-12 size-40 rounded-full bg-emerald-400/15 blur-2xl" />
-          <div className="relative space-y-5">
+        <section className="rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white p-5 shadow-xl overflow-hidden relative">
+          <div className="absolute -left-12 -bottom-12 size-40 rounded-full bg-white/15 blur-2xl" />
+          <div className="relative space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-300">Radar ShareWay</p>
-                <h2 className="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">Viajes compatibles</h2>
-                <p className="mt-2 text-xs font-bold text-white/55 leading-relaxed">Recibe avisos cuando aparezca una plaza o una solicitud cerca de ti.</p>
+                <h2 className="mt-1 text-xl font-black italic uppercase tracking-tighter leading-none">Viajes compatibles</h2>
+                <p className="mt-1.5 text-[11px] font-bold text-white/75 leading-relaxed">Recibe avisos cuando aparezca una plaza o una solicitud cerca de ti.</p>
               </div>
-              <div className="h-14 w-14 rounded-2xl bg-emerald-400/15 border border-emerald-300/15 flex items-center justify-center shrink-0">
+              <div className="h-11 w-11 rounded-2xl bg-white/20 border border-white/20 flex items-center justify-center shrink-0">
                 {radarStatus.loading ? <Loader2 className="size-6 text-emerald-300 animate-spin" /> : <Radar className="size-6 text-emerald-300" />}
               </div>
             </div>
@@ -263,7 +263,7 @@ const Settings = () => {
         <section>
           <SectionHeader title={t('settings.account_section')} icon={User} color="text-slate-900" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem icon={User} label={profile?.display_name || t('settings.my_profile')} sublabel={t('settings.edit_profile')} color="bg-slate-900" onClick={() => navigate('/profile/edit')} />
+            <SettingItem icon={User} label={profile?.display_name || t('settings.my_profile')} sublabel={t('settings.edit_profile')} color="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6]" onClick={() => navigate('/profile/edit')} />
             <ReferralCard profile={profile} user={user} />
             <SettingItem icon={Leaf} label={t('settings.environmental_impact')} sublabel={t('settings.environmental_impact_sub')} color="bg-emerald-600" onClick={() => navigate('/settings/impact')} />
             <SettingItem icon={Star} label={t('settings.my_reviews')} sublabel={t('settings.my_reviews_sub')} color="bg-amber-500" onClick={() => navigate(`/profile/${profile?.id}`)} />
@@ -280,7 +280,7 @@ const Settings = () => {
         <section>
           <SectionHeader title={t('settings.travel_prefs')} icon={MapIcon} color="text-blue-500" />
           <div className="grid grid-cols-1 gap-4">
-            <SettingItem icon={Car} label={hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Mi vehículo'} sublabel={hasVehicle ? 'Editar coche, plazas y normas' : 'Añade coche, plazas, equipaje y normas'} color="bg-slate-900" badge={!hasVehicle} onClick={() => navigate('/settings/vehicle')} />
+            <SettingItem icon={Car} label={hasVehicle ? `${vehicle.make} ${vehicle.model}` : 'Mi vehículo'} sublabel={hasVehicle ? 'Editar coche, plazas y normas' : 'Añade coche, plazas, equipaje y normas'} color="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6]" badge={!hasVehicle} onClick={() => navigate('/settings/vehicle')} />
             <SettingItem icon={MapIcon} label={t('settings.routes')} sublabel={t('settings.routes_sub')} color="bg-blue-600" onClick={() => navigate('/settings/routes')} />
           </div>
         </section>
@@ -298,7 +298,7 @@ const Settings = () => {
           <div className="grid grid-cols-1 gap-4">
             <SettingItem icon={Palette} label={t('settings.design_style')} sublabel={t('settings.design_sub')} color="bg-indigo-500" onClick={() => navigate('/settings/appearance')} />
             <SettingItem icon={Bell} label={t('settings.notifications')} sublabel={t('settings.notifications_sub')} color="bg-violet-600" onClick={() => navigate('/settings/notifications')} />
-            <SettingItem icon={History} label={t('settings.activity_history')} sublabel={t('settings.activity_history_sub')} color="bg-slate-900" onClick={() => navigate('/settings/activity')} />
+            <SettingItem icon={History} label={t('settings.activity_history')} sublabel={t('settings.activity_history_sub')} color="bg-gradient-to-br from-[#1267FF] to-[#0FC6A6]" onClick={() => navigate('/settings/activity')} />
           </div>
         </section>
 

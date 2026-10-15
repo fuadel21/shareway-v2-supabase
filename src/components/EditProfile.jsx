@@ -234,7 +234,7 @@ function EditProfile() {
                         <AccordionItem value="vehicle" className="bg-white rounded-3xl shadow-sm border-none overflow-hidden px-2" ref={vehicleRef}>
                             <AccordionTrigger className="px-8 py-6 hover:no-underline group">
                                 <div className="flex items-center gap-4 text-left">
-                                    <div className="size-12 rounded-2xl bg-slate-900 text-primary flex items-center justify-center group-hover:scale-110 transition-transform"><Car className="h-6 w-6" /></div>
+                                    <div className="size-12 rounded-2xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-primary flex items-center justify-center group-hover:scale-110 transition-transform"><Car className="h-6 w-6" /></div>
                                     <div className="text-left">
                                         <p className="font-black text-lg tracking-tight text-slate-900 leading-none mb-1 uppercase italic">{t('edit_profile.sections.vehicle')}</p>
                                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Garage</p>
@@ -243,7 +243,7 @@ function EditProfile() {
                             </AccordionTrigger>
                             <AccordionContent className="px-8 pb-10 space-y-8 text-left">
                                 <div className="relative group mx-auto w-full">
-                                    <div className="aspect-[16/9] rounded-3xl bg-slate-900 border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center relative">
+                                    <div className="aspect-[16/9] rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] border-4 border-white shadow-2xl overflow-hidden flex items-center justify-center relative">
                                         {vehicleImageUrl ? (
                                             <img src={vehicleImageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Vehículo" />
                                         ) : (

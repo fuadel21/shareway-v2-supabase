@@ -183,7 +183,7 @@ function LandingPage() {
               </article>
             ))}
           </div>
-          <div className="mt-8 rounded-3xl bg-slate-950 p-6 text-white">
+          <div className="mt-8 rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] p-6 text-white">
             <p className="text-xl font-black">Empieza ahora con ShareWay</p>
             <p className="mt-2 text-white/70">Crea tu cuenta gratis y encuentra rutas compatibles para compartir trayecto.</p>
             <a href="/register" className="mt-5 inline-flex rounded-full bg-orange-500 px-6 py-4 font-black text-white">Crear cuenta gratis</a>

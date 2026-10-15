@@ -136,7 +136,7 @@ export default function DriverRadarSettingsCard() {
   }
 
   return (
-    <Card className="border-none rounded-3xl bg-slate-950 text-white shadow-2xl overflow-hidden">
+    <Card className="border-none rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white shadow-2xl overflow-hidden">
       <CardContent className="p-4 space-y-6 relative">
         <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/15 blur-3xl" />
 

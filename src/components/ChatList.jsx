@@ -106,7 +106,7 @@ const ChatStats = ({ stats, copy }) => {
 };
 
 const ChatCommandCard = ({ copy, stats, loading, onRefresh, navigate }) => (
-    <div className="rounded-3xl bg-slate-950 text-white p-6 shadow-2xl relative overflow-hidden">
+    <div className="rounded-3xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 size-32 rounded-full bg-primary/20 blur-2xl" />
         <div className="relative z-10 space-y-5">
             <div className="flex items-start justify-between gap-4">

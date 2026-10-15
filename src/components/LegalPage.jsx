@@ -176,7 +176,7 @@ const LegalPage = () => {
 
                 <section className="rounded-3xl bg-white border border-slate-100 shadow-xl p-8 sm:p-10">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="h-12 w-12 rounded-2xl bg-slate-950 text-white flex items-center justify-center">
+                        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#0FC6A6] via-[#1267FF] to-[#0B2A86] text-white flex items-center justify-center">
                             {slug === 'contacto' ? <Mail className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
                         </div>
                         <p className="text-xs font-black uppercase tracking-[0.25em] text-emerald-600">ShareWay</p>

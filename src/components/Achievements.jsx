@@ -164,7 +164,7 @@ const Achievements = () => {
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
 
                 {/* PROGRESS HERO CARD */}
-                <div className="bg-navy rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden group">
+                <div className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] rounded-3xl p-6 text-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000">
                         <Trophy size={160} className="text-primary rotate-12" />
                     </div>

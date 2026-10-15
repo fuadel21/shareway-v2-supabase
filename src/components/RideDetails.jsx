@@ -790,7 +790,7 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
-                <Card className="rounded-3xl border-none shadow-xl bg-slate-900 p-4 text-white">
+                <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-4 text-white">
                     <div className="flex items-center justify-between gap-3 mb-4">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Política económica</p>
@@ -1080,7 +1080,7 @@ const RideDetails = () => {
                                 </Button>
                                 <Button
                                     onClick={() => navigate(`/rides/${rideId}/chats`)}
-                                    className="h-12 flex-[2] rounded-3xl bg-slate-900 font-black uppercase italic tracking-widest text-white shadow-2xl"
+                                    className="h-12 flex-[2] rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] font-black uppercase italic tracking-widest text-white shadow-2xl"
                                 >
                                     <span className="flex items-center gap-2">Chat <MessageCircle size={18} /></span>
                                 </Button>

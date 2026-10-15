@@ -140,7 +140,7 @@ function Account() {
 
                 {/* --- Tarjeta de Vehículo (si existe) --- */}
                 {profile.vehicle && (profile.vehicle.make || profile.vehicle.photoURL) && (
-                    <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-slate-900 group">
+                    <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
                             <Car size={140} className="text-white" />
                         </div>
