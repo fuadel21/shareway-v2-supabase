@@ -12,3 +12,12 @@ verify_jwt = false
 
 [functions.stripe-reconcile]
 verify_jwt = false
+
+# Las llaman los triggers/cron de la BD con el secreto interno
+# (x-sw-webhook), sin JWT de usuario. La propia función comprueba
+# el secreto (fail-closed) en _shared/auth.ts / su código.
+[functions.notify-admin-new-user]
+verify_jwt = false
+
+[functions.match-engine]
+verify_jwt = false
