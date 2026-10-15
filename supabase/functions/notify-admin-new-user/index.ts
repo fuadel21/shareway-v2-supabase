@@ -15,7 +15,7 @@ import { serve } from 'https://deno.land/std@0.131.0/http/server.ts'
 // Todos los datos llegan ya resueltos en el payload (la función no consulta BD).
 // ============================================================================
 
-const WEBHOOK_SECRET = 'shareway-bookings-2026' // debe coincidir con FIX_BOOKING_EMAILS.sql
+const WEBHOOK_SECRET = Deno.env.get('SW_INTERNAL_WEBHOOK_SECRET') || ''
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const FROM = Deno.env.get('EMAIL_FROM') || 'ShareWay <notifications@resend.dev>'
 const ADMIN_EMAIL = Deno.env.get('ADMIN_EMAIL') || 'fuadel21@hotmail.com'
@@ -58,7 +58,7 @@ serve(async (req: Request) => {
 
     try {
         // Protección mínima anti-spam: el trigger de la BD envía este encabezado
-        if (req.headers.get('x-sw-webhook') !== WEBHOOK_SECRET) {
+        if (!WEBHOOK_SECRET || req.headers.get('x-sw-webhook') !== WEBHOOK_SECRET) {
             return new Response(JSON.stringify({ error: 'unauthorized' }), {
                 status: 401,
                 headers: { 'Content-Type': 'application/json' },
