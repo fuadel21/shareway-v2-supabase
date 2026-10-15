@@ -2,6 +2,11 @@ name: Deploy Supabase Edge Functions
 
 on:
   workflow_dispatch:
+    inputs:
+      functions:
+        description: 'Funciones a desplegar (separadas por espacios). Por defecto, el paquete de seguridad + send-push.'
+        required: false
+        default: 'notify-admin-new-user stripe-reconcile match-engine send-notification calculate-co2-savings check-stripe-account-status stripe-webhook send-push'
   push:
     branches:
       - main
@@ -21,8 +26,23 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy send-push
+      # En push a main se mantiene el comportamiento histórico (solo send-push).
+      # El despliegue del resto se lanza a mano desde la pestaña Actions
+      # ("Run workflow"), para revisar antes qué entra en producción.
+      - name: Deploy send-push (push)
+        if: github.event_name == 'push'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: supabase functions deploy send-push --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Deploy selected functions (manual)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          for fn in ${{ inputs.functions }}; do
+            echo "== Deploying $fn =="
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_REF"
+          done
