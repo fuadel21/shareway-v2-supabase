@@ -78,6 +78,10 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_WALLET_REFUND.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_WALLET_REFUND.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_MISSING_RPCS (RPCs que faltaban: busqueda, gestion pasajeros, valoraciones, radar, seguridad, mapa)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_MISSING_RPCS.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_MISSING_RPCS.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Aplicando FIX_STRIPE_RECONCILE (cron de conciliación con Stripe)"
   psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_RECONCILE.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_STRIPE_RECONCILE.sql en el SQL Editor si psql no esta disponible"
