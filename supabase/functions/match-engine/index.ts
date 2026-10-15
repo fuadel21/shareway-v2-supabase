@@ -1,12 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
 import { requireUser, isInternalWebhook, unauthorized } from '../_shared/auth.ts'
-
+import { getCorsHeaders } from '../_shared/cors.ts'
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
+  const corsHeaders = getCorsHeaders(req)
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const user = await requireUser(req)
-  if (!user && !isInternalWebhook(req)) return unauthorized()
+  if (!user && !isInternalWebhook(req)) return unauthorized(corsHeaders)
 
   try {
     const { table, record } = await req.json()
@@ -58,10 +58,9 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (error) {
     console.error('Match Engine Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
-  }
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 })
