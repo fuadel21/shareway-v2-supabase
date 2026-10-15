@@ -609,10 +609,10 @@ function SeoAnalyticsTab() {
               </button>
             ))}
           </div>
-          <Button onClick={fetchEvents} variant="secondary" className="rounded-2xl font-black uppercase tracking-widest">
+          <Button onClick={fetchEvents} variant="secondary" className="rounded-2xl font-black uppercase tracking-normal">
             <RefreshCw className="mr-2 h-4 w-4" /> Actualizar
           </Button>
-          <Button onClick={handleExportCsv} disabled={events.length === 0} className="rounded-2xl bg-orange-500 font-black uppercase tracking-widest text-white hover:bg-orange-600">
+          <Button onClick={handleExportCsv} disabled={events.length === 0} className="rounded-2xl bg-orange-500 font-black uppercase tracking-normal text-white hover:bg-orange-600">
             <Download className="mr-2 h-4 w-4" /> CSV
           </Button>
         </div>

@@ -144,10 +144,10 @@ const injectActivityEmptyStateCtas = () => {
       <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
     </div>
     <div class="grid grid-cols-2 gap-2">
-      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
-      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.request}</button>
-      <button type="button" data-shareway-nav="/calendar" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.calendar}</button>
-      <button type="button" data-shareway-nav="/chats" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.chats}</button>
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.request}</button>
+      <button type="button" data-shareway-nav="/calendar" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.calendar}</button>
+      <button type="button" data-shareway-nav="/chats" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.chats}</button>
     </div>
   `;
   card.appendChild(wrapper);
@@ -203,10 +203,10 @@ const injectRequestEmptyStateCtas = () => {
       <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
     </div>
     <div class="grid grid-cols-2 gap-2">
-      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.newRequest}</button>
-      <button type="button" data-shareway-nav="/my-requests?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.active}</button>
-      <button type="button" data-shareway-nav="/my-rides?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.rides}</button>
-      <button type="button" data-shareway-nav="/dashboard" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">Dashboard</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.newRequest}</button>
+      <button type="button" data-shareway-nav="/my-requests?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.active}</button>
+      <button type="button" data-shareway-nav="/my-rides?tab=active" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.rides}</button>
+      <button type="button" data-shareway-nav="/dashboard" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">Dashboard</button>
     </div>
   `;
   card.appendChild(wrapper);
@@ -265,7 +265,7 @@ const injectRequestGuide = () => {
         <h2 class="mt-1 text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">${copy.title}</h2>
         <p class="mt-2 text-[11px] font-bold text-slate-400 leading-relaxed">${copy.desc}</p>
       </div>
-      <button type="button" data-shareway-nav="/my-requests?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-slate-900 text-white text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRequests}</button>
+      <button type="button" data-shareway-nav="/my-requests?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-slate-900 text-white text-[8px] font-black uppercase tracking-normal active:scale-95 transition-all">${copy.myRequests}</button>
     </div>
     <div class="grid grid-cols-3 gap-2">
       <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3 text-center"><p class="text-lg font-black text-slate-900">1</p><p class="text-[8px] font-black uppercase tracking-widest text-slate-400">${copy.step1}</p></div>
@@ -328,11 +328,11 @@ const injectCalendarCommandCenter = () => {
         <h2 class="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">${copy.title}</h2>
         <p class="mt-2 text-xs font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
       </div>
-      <button type="button" data-shareway-nav="/my-rides?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-white text-slate-950 text-[8px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.myRides}</button>
+      <button type="button" data-shareway-nav="/my-rides?tab=active" class="shrink-0 h-11 px-3 rounded-2xl bg-white text-slate-950 text-[8px] font-black uppercase tracking-normal active:scale-95 transition-all">${copy.myRides}</button>
     </div>
     <div class="mt-4 grid grid-cols-2 gap-2">
-      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
-      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white/10 text-white border border-white/10 text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.request}</button>
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-orange-500 text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white/10 text-white border border-white/10 text-[9px] font-black uppercase tracking-normal active:scale-95 transition-all">${copy.request}</button>
     </div>
   `;
   headerCard.insertAdjacentElement('afterend', wrapper);

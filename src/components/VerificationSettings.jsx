@@ -262,7 +262,7 @@ function VerificationSettings() {
                             </p>
                         </div>
 
-                        <Button variant="outline" className="h-12 px-10 rounded-2xl bg-white/5 border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10">
+                        <Button variant="outline" className="h-12 px-10 rounded-2xl bg-white/5 border-white/10 text-white font-black text-xs uppercase tracking-normal hover:bg-white/10">
                             {t('verification.more_info')}
                         </Button>
                     </div>

@@ -204,9 +204,9 @@ const Settings = () => {
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <Button type="button" onClick={() => navigate('/profile/edit')} className="h-12 rounded-2xl bg-white text-slate-900 hover:bg-white/90 text-[9px] font-black uppercase tracking-widest">Perfil</Button>
-              <Button type="button" onClick={() => navigate('/settings/vehicle')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-widest">Vehículo</Button>
-              <Button type="button" onClick={() => navigate('/settings/security')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-widest">Seguridad</Button>
+              <Button type="button" onClick={() => navigate('/profile/edit')} className="h-12 rounded-2xl bg-white text-slate-900 hover:bg-white/90 text-[9px] font-black uppercase tracking-normal">Perfil</Button>
+              <Button type="button" onClick={() => navigate('/settings/vehicle')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-normal">Vehículo</Button>
+              <Button type="button" onClick={() => navigate('/settings/security')} className="h-12 rounded-2xl bg-white/10 text-white hover:bg-white/20 border border-white/10 text-[9px] font-black uppercase tracking-normal">Seguridad</Button>
             </div>
           </div>
         </section>

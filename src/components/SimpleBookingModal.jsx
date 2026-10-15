@@ -277,7 +277,7 @@ const SimpleBookingModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLoc
                             <p className="text-[10px] font-bold text-emerald-600">
                                 {Number(result?.amount || 0).toFixed(2)} €
                             </p>
-                            <Button onClick={onClose} className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest">
+                            <Button onClick={onClose} className="w-full h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-normal">
                                 {copy.viewRide}
                             </Button>
                         </div>

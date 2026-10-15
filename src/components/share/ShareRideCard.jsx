@@ -169,13 +169,13 @@ const ShareRideCard = ({ ride, rideId }) => {
           )}
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <Button onClick={handleNativeShare} className="h-11 rounded-2xl bg-emerald-500 font-black uppercase tracking-widest text-white hover:bg-emerald-600">
+            <Button onClick={handleNativeShare} className="h-11 rounded-2xl bg-emerald-500 font-black uppercase tracking-normal text-white hover:bg-emerald-600">
               <Share2 className="mr-2 h-4 w-4" /> Compartir
             </Button>
-            <Button onClick={handleCopy} variant="outline" className="h-11 rounded-2xl border-white/10 bg-white/10 font-black uppercase tracking-widest text-white hover:bg-white/20">
+            <Button onClick={handleCopy} variant="outline" className="h-11 rounded-2xl border-white/10 bg-white/10 font-black uppercase tracking-normal text-white hover:bg-white/20">
               <Copy className="mr-2 h-4 w-4" /> Copiar
             </Button>
-            <Button onClick={handleRevoke} variant="outline" disabled={isRevoking} className="h-11 rounded-2xl border-red-300/20 bg-red-500/10 font-black uppercase tracking-widest text-red-200 hover:bg-red-500/20">
+            <Button onClick={handleRevoke} variant="outline" disabled={isRevoking} className="h-11 rounded-2xl border-red-300/20 bg-red-500/10 font-black uppercase tracking-normal text-red-200 hover:bg-red-500/20">
               {isRevoking ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
               Revocar
             </Button>

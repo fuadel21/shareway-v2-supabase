@@ -117,7 +117,7 @@ const NotificationBell = ({ user }) => {
           </div>
 
           <div className="border-t border-slate-100 p-3">
-            <Button asChild variant="ghost" className="h-12 w-full rounded-2xl font-black uppercase tracking-widest">
+            <Button asChild variant="ghost" className="h-12 w-full rounded-2xl font-black uppercase tracking-normal">
               <Link to="/notifications" onClick={() => setOpen(false)}>Ver centro completo</Link>
             </Button>
           </div>

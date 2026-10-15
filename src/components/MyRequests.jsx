@@ -216,16 +216,17 @@ const QuickActions = ({ copy, navigate, loading, onRefresh }) => (
   <div className="bg-white rounded-3xl p-4 shadow-xl border border-slate-100 space-y-3">
     <div className="flex items-center justify-between px-1">
       <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">{copy.quickActions}</p>
-      <Button type="button" variant="ghost" size="sm" onClick={onRefresh} className="rounded-2xl h-9 px-3 text-[9px] font-black uppercase tracking-widest text-slate-400 gap-1">
+      <Button type="button" variant="ghost" size="sm" onClick={onRefresh} className="rounded-2xl h-9 px-3 text-[9px] font-black uppercase tracking-normal text-slate-400 gap-1">
         <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} /> {copy.refresh}
       </Button>
     </div>
     <div className="grid grid-cols-2 gap-3">
-      <Button onClick={() => navigate('/request')} className="h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] gap-2">
-        <Plus className="size-4 text-primary" /> {copy.publishRequest}
+      <Button onClick={() => navigate('/request')} className="h-12 rounded-2xl bg-slate-900 text-white font-black uppercase text-[10px] sm:text-xs gap-2 px-2 leading-tight">
+        <Plus className="size-4 text-primary shrink-0" /> <span className="truncate">{copy.publishRequest}</span>
       </Button>
-      <Button onClick={() => navigate('/dashboard')} variant="outline" className="h-14 rounded-2xl bg-white border-slate-200 text-slate-700 font-black uppercase tracking-widest text-[10px] gap-2">
-        <Search className="size-4 text-primary" /> {copy.findRide}
+      <Button onClick={() => navigate('/dashboard')} variant="outline" className="h-12 rounded-2xl bg-white border-slate-200 text-slate-700 font-black uppercase text-[10px] sm:text-xs gap-2 px-2 leading-tight">
+        <Search className="size-4 text-primary shrink-0" /> <span className="truncate">{copy.findRide}
+      </span>
       </Button>
     </div>
   </div>
@@ -323,7 +324,7 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index, copy, lan
           </div>
         </div>
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" onClick={() => onOpen(request.id)} className="h-12 px-4 rounded-2xl bg-slate-900 text-white font-black text-[9px] uppercase tracking-widest">
+          <Button type="button" onClick={() => onOpen(request.id)} className="h-12 px-4 rounded-2xl bg-slate-900 text-white font-black text-[9px] uppercase tracking-normal">
             <StatusIcon className="size-3.5 mr-1" /> {copy.viewRequest}
           </Button>
         </div>

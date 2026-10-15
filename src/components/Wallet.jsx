@@ -355,10 +355,10 @@ const Wallet = () => {
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
-                            <Button type="button" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest">
+                            <Button type="button" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-normal">
                                 {copy.myRides}
                             </Button>
-                            <Button type="button" variant="outline" onClick={() => navigate('/settings')} className="h-12 rounded-2xl bg-white border-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-widest">
+                            <Button type="button" variant="outline" onClick={() => navigate('/settings')} className="h-12 rounded-2xl bg-white border-slate-200 text-slate-700 font-black text-[10px] uppercase tracking-normal">
                                 {copy.paymentSettings}
                             </Button>
                         </div>
@@ -377,7 +377,7 @@ const Wallet = () => {
                                 <Sparkles className="size-10 text-slate-200 mx-auto mb-4" />
                                 <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{copy.emptyTitle}</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2">{copy.emptyDesc}</p>
-                                <Button onClick={() => navigate('/dashboard')} className="mt-6 h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest px-8">
+                                <Button onClick={() => navigate('/dashboard')} className="mt-6 h-12 rounded-2xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-normal px-8">
                                     {copy.dashboard}
                                 </Button>
                             </div>

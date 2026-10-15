@@ -196,10 +196,10 @@ const SEOLandingPage = () => {
                             {config.description}
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3">
-                            <Button asChild className="h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest">
+                            <Button asChild className="h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-normal">
                                 <Link to="/register">{config.cta} <ArrowRight className="ml-2 h-5 w-5" /></Link>
                             </Button>
-                            <Button asChild variant="outline" className="h-14 rounded-2xl border-white/20 bg-white/10 text-white hover:bg-white/20 font-black uppercase tracking-widest">
+                            <Button asChild variant="outline" className="h-14 rounded-2xl border-white/20 bg-white/10 text-white hover:bg-white/20 font-black uppercase tracking-normal">
                                 <Link to="/login">Entrar</Link>
                             </Button>
                         </div>
@@ -272,7 +272,7 @@ const SEOLandingPage = () => {
                 <div className="max-w-4xl mx-auto text-center space-y-6">
                     <h2 className="text-3xl sm:text-4xl font-black tracking-tighter">Empieza a crear rutas compartidas con ShareWay</h2>
                     <p className="text-slate-600 text-lg">Publica un viaje, solicita plaza o encuentra personas con rutas compatibles.</p>
-                    <Button asChild className="h-14 rounded-2xl bg-slate-950 text-white hover:bg-slate-800 font-black uppercase tracking-widest">
+                    <Button asChild className="h-14 rounded-2xl bg-slate-950 text-white hover:bg-slate-800 font-black uppercase tracking-normal">
                         <Link to="/register">Crear cuenta gratis <ArrowRight className="ml-2 h-5 w-5" /></Link>
                     </Button>
                 </div>

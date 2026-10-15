@@ -193,7 +193,7 @@ function AdminDashboard() {
                             )}
                         </div>
                     </div>
-                    <Button variant="ghost" onClick={() => navigate('/admin/maintenance')} className="relative z-10 w-full sm:w-auto text-white hover:bg-white/10 rounded-2xl px-6 h-11 font-black text-[10px] uppercase tracking-widest gap-3 border border-white/5">
+                    <Button variant="ghost" onClick={() => navigate('/admin/maintenance')} className="relative z-10 w-full sm:w-auto text-white hover:bg-white/10 rounded-2xl px-6 h-11 font-black text-[10px] uppercase tracking-normal gap-3 border border-white/5">
                         Logs <ArrowRight className="size-4" />
                     </Button>
                 </div>
@@ -217,7 +217,7 @@ function AdminDashboard() {
                             })}
                         </div>
                     </div>
-                    <Button onClick={() => fetchPlatformData({ retry: true })} disabled={isRetrying || loading} className="h-11 rounded-2xl px-5 font-black uppercase text-[10px] tracking-widest gap-2 shrink-0">
+                    <Button onClick={() => fetchPlatformData({ retry: true })} disabled={isRetrying || loading} className="h-11 rounded-2xl px-5 font-black uppercase text-[10px] tracking-normal gap-2 shrink-0">
                         <RefreshCw className={`size-4 ${isRetrying ? 'animate-spin' : ''}`} />
                         {isRetrying ? 'Reintentando' : 'Reintentar datos'}
                     </Button>

@@ -131,10 +131,10 @@ function NotificationSettings() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-2">
-                            <Button type="button" onClick={() => navigate('/chats')} className="h-12 rounded-2xl bg-white text-slate-950 hover:bg-white/90 text-[9px] font-black uppercase tracking-widest">
+                            <Button type="button" onClick={() => navigate('/chats')} className="h-12 rounded-2xl bg-white text-slate-950 hover:bg-white/90 text-[9px] font-black uppercase tracking-normal">
                                 Mensajes <ChevronRight className="ml-1 h-4 w-4" />
                             </Button>
-                            <Button type="button" variant="outline" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-white/10 border-white/10 text-white hover:bg-white/20 text-[9px] font-black uppercase tracking-widest">
+                            <Button type="button" variant="outline" onClick={() => navigate('/my-rides?tab=active')} className="h-12 rounded-2xl bg-white/10 border-white/10 text-white hover:bg-white/20 text-[9px] font-black uppercase tracking-normal">
                                 Mis viajes <ChevronRight className="ml-1 h-4 w-4" />
                             </Button>
                         </div>

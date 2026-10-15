@@ -417,7 +417,7 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
                     </div>
                 </div>
                 {activeSearch && (
-                    <Button type="button" variant="ghost" size="sm" onClick={onClear} className="rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 gap-1">
+                    <Button type="button" variant="ghost" size="sm" onClick={onClear} className="rounded-2xl text-[10px] font-black uppercase tracking-normal text-slate-400 gap-1">
                         <RotateCcw size={13} /> {copy.clearSearch}
                     </Button>
                 )}
@@ -450,7 +450,7 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
                 </div>
             </div>
 
-            <Button type="button" onClick={onSearch} className="h-13 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl gap-2 active:scale-95">
+            <Button type="button" onClick={onSearch} className="h-13 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-normal shadow-xl gap-2 active:scale-95">
                 <Search size={16} className="text-primary" /> {copy.searchButton}
             </Button>
         </div>
@@ -475,7 +475,7 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
         )}
 
         {!compact && activeSearch && resultCount === 0 && (
-            <Button type="button" variant="outline" onClick={onCreateRequest} className="w-full h-12 rounded-2xl border-amber-100 bg-amber-50 text-amber-700 font-black uppercase tracking-widest text-[10px] gap-2">
+            <Button type="button" variant="outline" onClick={onCreateRequest} className="w-full h-12 rounded-2xl border-amber-100 bg-amber-50 text-amber-700 font-black uppercase tracking-normal text-[10px] gap-2">
                 <Megaphone size={15} /> {copy.createRequest}
             </Button>
         )}
@@ -513,7 +513,7 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
                             <p className="text-[10px] font-bold text-white/45 uppercase tracking-widest mt-1 leading-relaxed">{copy.activitySubtitle}</p>
                         </div>
                     </div>
-                    <Button type="button" variant="ghost" onClick={onRefresh} disabled={loading} className="h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-widest shrink-0">
+                    <Button type="button" variant="ghost" onClick={onRefresh} disabled={loading} className="h-10 rounded-2xl bg-white/10 hover:bg-white/20 text-white text-[9px] font-black uppercase tracking-normal shrink-0">
                         {loading ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}
                     </Button>
                 </div>
@@ -564,9 +564,9 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 pt-1">
-                    <Button type="button" onClick={() => navigate('/my-rides')} className="h-10 rounded-2xl bg-white text-slate-900 text-[9px] font-black uppercase tracking-widest">{copy.goToMyRides}</Button>
-                    <Button type="button" onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest">{copy.goToRequests}</Button>
-                    <Button type="button" onClick={() => navigate('/wallet')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-widest">{copy.goToWallet}</Button>
+                    <Button type="button" onClick={() => navigate('/my-rides')} className="h-10 rounded-2xl bg-white text-slate-900 text-[9px] font-black uppercase tracking-normal">{copy.goToMyRides}</Button>
+                    <Button type="button" onClick={() => navigate('/my-requests')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-normal">{copy.goToRequests}</Button>
+                    <Button type="button" onClick={() => navigate('/wallet')} variant="outline" className="h-10 rounded-2xl bg-white/10 border-white/10 text-white text-[9px] font-black uppercase tracking-normal">{copy.goToWallet}</Button>
                 </div>
             </div>
         </div>
@@ -799,7 +799,7 @@ function Dashboard() {
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
                         {filters.map((f) => (
-                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-100')}>{f.label}</button>
+                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-normal transition-all border whitespace-nowrap', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-100')}>{f.label}</button>
                         ))}
                     </div>
 
@@ -816,7 +816,7 @@ function Dashboard() {
                                 <p className="text-sm font-black text-slate-900 uppercase italic">{activeSearch ? copy.noSearchResults : t('dashboard.no_results')}</p>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">{activeSearch ? copy.noSearchResultsDesc : copy.noNearbyResults}</p>
                                 {activeSearch && (
-                                    <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                                    <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black uppercase tracking-normal text-[10px] gap-2">
                                         <Megaphone size={15} /> {copy.createRequest}
                                     </Button>
                                 )}
@@ -878,7 +878,7 @@ function Dashboard() {
                     <div className="flex items-center gap-2 pointer-events-auto">
                         <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
                             {filters.map((f) => (
-                                <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
+                                <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-normal transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
                                     {f.label}
                                 </button>
                             ))}
@@ -953,7 +953,7 @@ function Dashboard() {
                                                     <Car className="mx-auto h-10 w-10 text-slate-200 mb-3" />
                                                     <p className="text-[10px] font-black text-slate-900 uppercase italic">{activeSearch ? copy.noSearchResults : copy.noNearbyResults}</p>
                                                     {activeSearch && (
-                                                        <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                                                        <Button onClick={navigateToRequestWithSearch} className="mt-5 h-12 rounded-2xl bg-amber-500 text-white font-black uppercase tracking-normal text-[10px] gap-2">
                                                             <Megaphone size={15} /> {copy.createRequest}
                                                         </Button>
                                                     )}
@@ -1005,7 +1005,7 @@ function Dashboard() {
                                             </div>
                                         </div>
 
-                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all">
+                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-normal shadow-2xl active:scale-95 transition-all">
                                             {selectedItem.type === 'request' ? copy.viewRequest : copy.viewDetails} <ChevronRight size={20} className="ml-2 text-primary" />
                                         </Button>
                                     </div>

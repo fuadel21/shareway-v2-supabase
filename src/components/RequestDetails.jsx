@@ -553,10 +553,10 @@ const RequestDetails = () => {
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.quickActions}</p>
                         {!computed.isMyRequest && (
                             <div className="grid grid-cols-3 gap-2">
-                                <Button onClick={handleCallRequester} className="h-12 rounded-2xl bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 font-black text-[10px] uppercase tracking-widest">
+                                <Button onClick={handleCallRequester} className="h-12 rounded-2xl bg-emerald-50 text-emerald-600 border-none hover:bg-emerald-100 font-black text-[10px] uppercase tracking-normal">
                                     <Phone size={16} className="mr-1" /> {copy.call}
                                 </Button>
-                                <Button onClick={() => navigate(`/ride-chat/${request.id}`)} className="h-12 rounded-2xl bg-orange-50 text-orange-600 border-none hover:bg-orange-100 font-black text-[10px] uppercase tracking-widest">
+                                <Button onClick={() => navigate(`/ride-chat/${request.id}`)} className="h-12 rounded-2xl bg-orange-50 text-orange-600 border-none hover:bg-orange-100 font-black text-[10px] uppercase tracking-normal">
                                     <MessageCircle size={16} className="mr-1" /> Chat
                                 </Button>
                                 <Button type="button" onClick={handleShare} className="h-12 rounded-2xl bg-slate-50 text-slate-500 p-0 border-none hover:bg-slate-100">
@@ -566,16 +566,16 @@ const RequestDetails = () => {
                         )}
 
                         <div className="grid grid-cols-2 gap-2">
-                            <Button type="button" variant="outline" onClick={() => navigate('/my-requests')} className="h-12 rounded-2xl border-slate-100 bg-white font-black text-[10px] uppercase tracking-widest gap-2">
+                            <Button type="button" variant="outline" onClick={() => navigate('/my-requests')} className="h-12 rounded-2xl border-slate-100 bg-white font-black text-[10px] uppercase tracking-normal gap-2">
                                 <ArrowLeft size={15} /> {copy.openMyRequests}
                             </Button>
-                            <Button type="button" variant="outline" onClick={() => navigate('/dashboard')} className="h-12 rounded-2xl border-slate-100 bg-white font-black text-[10px] uppercase tracking-widest gap-2">
+                            <Button type="button" variant="outline" onClick={() => navigate('/dashboard')} className="h-12 rounded-2xl border-slate-100 bg-white font-black text-[10px] uppercase tracking-normal gap-2">
                                 <Car size={15} /> {copy.backToSearch}
                             </Button>
                         </div>
 
                         {computed.canViewRide && (
-                            <Button type="button" onClick={() => navigate(`/ride/${computed.linkedRideId}`)} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest text-[10px] gap-2">
+                            <Button type="button" onClick={() => navigate(`/ride/${computed.linkedRideId}`)} className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-normal text-[10px] gap-2">
                                 <Car size={17} /> {copy.viewRide}
                             </Button>
                         )}
@@ -590,7 +590,7 @@ const RequestDetails = () => {
                         )}
 
                         {computed.canCancel && (
-                            <Button type="button" onClick={() => setShowCancelDialog(true)} variant="outline" className="w-full h-12 rounded-2xl border-red-100 bg-red-50 text-red-600 font-black uppercase tracking-widest text-[10px]">
+                            <Button type="button" onClick={() => setShowCancelDialog(true)} variant="outline" className="w-full h-12 rounded-2xl border-red-100 bg-red-50 text-red-600 font-black uppercase tracking-normal text-[10px]">
                                 <XCircle size={15} className="mr-2" /> {copy.cancelRequest}
                             </Button>
                         )}
@@ -678,10 +678,10 @@ const RequestDetails = () => {
                         </DialogDescription>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <Button type="button" variant="outline" onClick={() => setShowCancelDialog(false)} className="h-13 rounded-2xl border-slate-100 font-black uppercase tracking-widest text-[10px]">
+                        <Button type="button" variant="outline" onClick={() => setShowCancelDialog(false)} className="h-13 rounded-2xl border-slate-100 font-black uppercase tracking-normal text-[10px]">
                             {copy.keepRequest}
                         </Button>
-                        <Button type="button" onClick={handleCancelRequest} disabled={isCancelling} className="h-13 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-widest text-[10px]">
+                        <Button type="button" onClick={handleCancelRequest} disabled={isCancelling} className="h-13 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black uppercase tracking-normal text-[10px]">
                             {isCancelling ? <Loader2 className="animate-spin" /> : copy.confirmCancel}
                         </Button>
                     </div>

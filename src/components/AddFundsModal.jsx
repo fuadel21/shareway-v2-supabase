@@ -108,7 +108,7 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose, copy }) => {
             )}
             <div className="flex gap-3">
                 <Button type="button" onClick={onClose} variant="ghost" disabled={isLoading} className="rounded-xl font-bold text-slate-400">{copy.cancel}</Button>
-                <Button type="submit" disabled={!stripe || isLoading} className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl">
+                <Button type="submit" disabled={!stripe || isLoading} className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-normal shadow-xl">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : `${copy.pay} ${amount.toFixed(2)}€`}
                 </Button>
             </div>

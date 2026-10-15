@@ -189,7 +189,7 @@ export default function NotificationCenterPanel({ user, children, fullPage = fal
           </div>
           <div className="flex items-center gap-2">
             {unreadCount > 0 && (
-              <Button type="button" variant="outline" size="sm" onClick={readAll} className="rounded-2xl text-[11px] font-black uppercase tracking-widest">
+              <Button type="button" variant="outline" size="sm" onClick={readAll} className="rounded-2xl text-[11px] font-black uppercase tracking-normal">
                 Leer todo
               </Button>
             )}

@@ -425,7 +425,7 @@ const CreateRide = () => {
                                     <p className={cn('text-[10px] font-bold uppercase tracking-widest mt-1 leading-4', isVehicleConfigured ? 'text-white/50' : 'text-amber-700/70')}>{isVehicleConfigured ? copy.vehicleReadyDesc : copy.vehicleMissingDesc}</p>
                                 </div>
                             </div>
-                            <Button type="button" variant="ghost" onClick={() => navigate('/settings/vehicle')} className={cn('rounded-2xl h-11 px-4 shrink-0 text-[10px] font-black uppercase tracking-widest', isVehicleConfigured ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white text-amber-700 hover:bg-white')}>
+                            <Button type="button" variant="ghost" onClick={() => navigate('/settings/vehicle')} className={cn('rounded-2xl h-11 px-4 shrink-0 text-[10px] font-black uppercase tracking-normal', isVehicleConfigured ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-white text-amber-700 hover:bg-white')}>
                                 {copy.configureVehicle}
                             </Button>
                         </div>

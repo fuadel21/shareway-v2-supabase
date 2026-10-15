@@ -68,10 +68,10 @@ const ReferralCard = ({ profile, user }) => {
       </div>
 
       <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
-        <Button onClick={shareInvite} className="h-13 rounded-2xl bg-orange-500 font-black uppercase tracking-widest text-white hover:bg-orange-600">
+        <Button onClick={shareInvite} className="h-13 rounded-2xl bg-orange-500 font-black uppercase tracking-normal text-white hover:bg-orange-600">
           <Share2 className="mr-2 h-4 w-4" /> Compartir
         </Button>
-        <Button onClick={copyInvite} variant="outline" className="h-13 rounded-2xl border-white/10 bg-white/10 font-black uppercase tracking-widest text-white hover:bg-white/20">
+        <Button onClick={copyInvite} variant="outline" className="h-13 rounded-2xl border-white/10 bg-white/10 font-black uppercase tracking-normal text-white hover:bg-white/20">
           <Copy className="mr-2 h-4 w-4" /> Copiar
         </Button>
       </div>

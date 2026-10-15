@@ -339,7 +339,7 @@ const EmergencyChat = () => {
                     <a href="tel:112" className="flex items-center gap-2 text-red-600 font-black text-[10px] uppercase tracking-widest hover:underline">
                         <Phone size={14} /> Llamar al 112
                     </a>
-                    <button onClick={() => navigate('/settings/emergency')} className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:underline">
+                    <button onClick={() => navigate('/settings/emergency')} className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-normal hover:underline">
                         <Users size={14} /> Mis Contactos
                     </button>
                 </div>

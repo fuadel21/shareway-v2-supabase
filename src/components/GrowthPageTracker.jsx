@@ -169,8 +169,8 @@ const injectActivityEmptyStateCtas = () => {
       <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
     </div>
     <div class="grid grid-cols-2 gap-2">
-      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">${copy.publish}</button>
-      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow active:scale-95 transition-all">${copy.request}</button>
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.request}</button>
     </div>
   `;
   card.appendChild(wrapper);
@@ -194,14 +194,14 @@ const injectPublishGuide = () => {
         <h2 class="mt-1 text-2xl font-black italic uppercase tracking-tighter leading-none">${copy.title}</h2>
         <p class="mt-3 text-xs font-bold text-white/55 leading-relaxed">${copy.desc}</p>
       </div>
-      <button type="button" data-shareway-nav="/my-rides?tab=active" class="h-11 px-4 rounded-2xl bg-white/10 text-white text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all shrink-0">${copy.myRides}</button>
+      <button type="button" data-shareway-nav="/my-rides?tab=active" class="h-11 px-4 rounded-2xl bg-white/10 text-white text-[9px] font-black uppercase tracking-normal active:scale-95 transition-all shrink-0">${copy.myRides}</button>
     </div>
     <div class="grid grid-cols-3 gap-2">
       <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black text-orange-400">1</p><p class="text-[9px] font-black uppercase tracking-widest text-white/70">${copy.stepRoute}</p></div>
       <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black text-orange-400">2</p><p class="text-[9px] font-black uppercase tracking-widest text-white/70">${copy.stepTime}</p></div>
       <div class="rounded-2xl bg-white/10 p-3"><p class="text-lg font-black text-orange-400">3</p><p class="text-[9px] font-black uppercase tracking-widest text-white/70">${copy.stepPrice}</p></div>
     </div>
-    <button type="button" data-shareway-nav="/settings/vehicle" class="w-full h-12 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all">${copy.vehicle}</button>
+    <button type="button" data-shareway-nav="/settings/vehicle" class="w-full h-12 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-normal active:scale-95 transition-all">${copy.vehicle}</button>
   `;
   form.prepend(guide);
 };

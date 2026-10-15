@@ -275,7 +275,7 @@ const AdminCommunityDetail = () => {
                                         </div>
                                     </CardContent>
                                     <CardFooter className="bg-slate-50/50 p-4 flex justify-between">
-                                        <Button variant="ghost" className="h-8 px-3 rounded-lg text-[8px] font-black uppercase tracking-widest" onClick={() => navigate(`/admin/review/${member.id}`)} disabled={!member.id}>
+                                        <Button variant="ghost" className="h-8 px-3 rounded-lg text-[8px] font-black uppercase tracking-normal" onClick={() => navigate(`/admin/review/${member.id}`)} disabled={!member.id}>
                                             <ExternalLink className="size-3 mr-1.5" /> Ver Perfil
                                         </Button>
                                         {isVerified && <div className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest"><Shield className="size-3" /> Verificado</div>}
@@ -328,7 +328,7 @@ const AdminCommunityDetail = () => {
                                 </div>
                             </CardContent>
                             <CardFooter className="p-5 bg-slate-50/50 flex justify-end">
-                                <Button onClick={handleUpdateCommunity} disabled={isSaving} className="h-14 px-10 rounded-2xl bg-primary font-black uppercase italic text-xs tracking-widest shadow-xl shadow-primary/20">
+                                <Button onClick={handleUpdateCommunity} disabled={isSaving} className="h-14 px-10 rounded-2xl bg-primary font-black uppercase italic text-xs tracking-normal shadow-xl shadow-primary/20">
                                     {isSaving ? <Loader2 className="size-5 animate-spin" /> : 'Guardar Cambios'}
                                 </Button>
                             </CardFooter>
@@ -343,7 +343,7 @@ const AdminCommunityDetail = () => {
                                 <CardContent className="p-5 pt-0">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase italic tracking-widest text-xs shadow-xl shadow-red-500/10"><Trash2 className="size-5 mr-3" /> Eliminar Comunidad</Button>
+                                            <Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase italic tracking-normal text-xs shadow-xl shadow-red-500/10"><Trash2 className="size-5 mr-3" /> Eliminar Comunidad</Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent className="rounded-3xl border-none">
                                             <AlertDialogHeader>
@@ -352,7 +352,7 @@ const AdminCommunityDetail = () => {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter className="gap-2">
                                                 <AlertDialogCancel className="rounded-xl font-black uppercase text-[10px] tracking-widest border-none bg-slate-100">Cancelar</AlertDialogCancel>
-                                                <AlertDialogAction onClick={handleDeleteCommunity} className="rounded-xl font-black uppercase text-[10px] tracking-widest bg-red-600 text-white">Eliminar Definitivamente</AlertDialogAction>
+                                                <AlertDialogAction onClick={handleDeleteCommunity} className="rounded-xl font-black uppercase text-[10px] tracking-normal bg-red-600 text-white">Eliminar Definitivamente</AlertDialogAction>
                                             </AlertDialogFooter>
                                         </AlertDialogContent>
                                     </AlertDialog>
@@ -366,7 +366,7 @@ const AdminCommunityDetail = () => {
                                         <h4 className="text-lg font-black uppercase italic tracking-tighter">Administrador Certificado</h4>
                                         <p className="text-[9px] font-bold text-indigo-100/60 uppercase tracking-widest leading-relaxed">Como administrador, puedes auditar cualquier actividad dentro de esta comunidad para garantizar la seguridad de los trayectos compartidos.</p>
                                     </div>
-                                    <Button onClick={handleDownloadAudit} className="w-full h-12 rounded-xl bg-white text-indigo-600 font-black text-[10px] uppercase tracking-widest">DESCARGAR AUDITORÍA</Button>
+                                    <Button onClick={handleDownloadAudit} className="w-full h-12 rounded-xl bg-white text-indigo-600 font-black text-[10px] uppercase tracking-normal">DESCARGAR AUDITORÍA</Button>
                                 </CardContent>
                             </Card>
                         </div>

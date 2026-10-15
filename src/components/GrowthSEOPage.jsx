@@ -252,13 +252,13 @@ const GrowthSEOPage = ({ pageType }) => {
               </Link>
             </div>
             <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-              <button onClick={handleNativeShare} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white/10 px-4 text-xs font-black uppercase tracking-widest text-white hover:bg-white/20">
+              <button onClick={handleNativeShare} className="inline-flex h-12 items-center justify-center rounded-2xl bg-white/10 px-4 text-xs font-black uppercase tracking-normal text-white hover:bg-white/20">
                 <Share2 className="mr-2 h-4 w-4" /> Compartir
               </button>
               <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex h-12 items-center justify-center rounded-2xl bg-emerald-500/20 px-4 text-xs font-black uppercase tracking-widest text-emerald-200 hover:bg-emerald-500/30">
                 WhatsApp
               </a>
-              <button onClick={handleCopyLink} className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/15 px-4 text-xs font-black uppercase tracking-widest text-white hover:bg-white/10">
+              <button onClick={handleCopyLink} className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/15 px-4 text-xs font-black uppercase tracking-normal text-white hover:bg-white/10">
                 <Copy className="mr-2 h-4 w-4" /> Copiar enlace
               </button>
             </div>

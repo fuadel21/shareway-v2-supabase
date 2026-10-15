@@ -381,7 +381,7 @@ const CreateRequest = () => {
                                             <p className="text-xs font-bold text-white/55 mt-2 leading-relaxed">{copy.fromSearchDesc}</p>
                                         </div>
                                     </div>
-                                    <Button type="button" variant="ghost" onClick={handleClearSearchPrefill} className="rounded-2xl bg-white/10 hover:bg-white/20 text-white h-10 px-3 text-[9px] font-black uppercase tracking-widest shrink-0">
+                                    <Button type="button" variant="ghost" onClick={handleClearSearchPrefill} className="rounded-2xl bg-white/10 hover:bg-white/20 text-white h-10 px-3 text-[9px] font-black uppercase tracking-normal shrink-0">
                                         <RotateCcw className="size-3.5 mr-1" /> {copy.reset}
                                     </Button>
                                 </div>

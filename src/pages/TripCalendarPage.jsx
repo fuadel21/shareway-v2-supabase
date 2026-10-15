@@ -159,10 +159,10 @@ export default function TripCalendarPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-900 px-4 text-xs font-black uppercase tracking-widest text-white gap-2">
+              <Button onClick={() => navigate('/publish')} className="h-12 rounded-2xl bg-slate-900 px-4 text-xs font-black uppercase tracking-normal text-white gap-2">
                 <Plus className="h-4 w-4" /> Publicar
               </Button>
-              <Button onClick={() => navigate('/request')} variant="outline" className="h-12 rounded-2xl px-4 text-xs font-black uppercase tracking-widest gap-2">
+              <Button onClick={() => navigate('/request')} variant="outline" className="h-12 rounded-2xl px-4 text-xs font-black uppercase tracking-normal gap-2">
                 <Search className="h-4 w-4" /> Solicitar
               </Button>
             </div>

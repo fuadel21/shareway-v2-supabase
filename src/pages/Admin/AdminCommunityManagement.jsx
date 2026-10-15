@@ -291,7 +291,7 @@ const AdminCommunityManagement = () => {
                         </p>
                     </div>
                 </div>
-                <Button className="h-12 px-10 rounded-2xl bg-white text-indigo-600 font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
+                <Button className="h-12 px-10 rounded-2xl bg-white text-indigo-600 font-black text-xs uppercase tracking-normal shadow-xl hover:scale-105 transition-all">
                     EXPERT VIEW
                 </Button>
             </div>

@@ -332,7 +332,7 @@ function UserProfile() {
                         ))}
                     </div>
                     {isOwnProfile && trustSignals.completed < 4 && (
-                        <Button onClick={() => navigate('/profile/edit')} className="w-full h-14 rounded-2xl font-black uppercase tracking-widest">
+                        <Button onClick={() => navigate('/profile/edit')} className="w-full h-14 rounded-2xl font-black uppercase tracking-normal">
                             {copy.editProfile}
                         </Button>
                     )}
