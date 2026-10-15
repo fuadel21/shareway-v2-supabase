@@ -213,7 +213,7 @@ const RequestStats = ({ stats, copy }) => {
 };
 
 const QuickActions = ({ copy, navigate, loading, onRefresh }) => (
-  <div className="bg-white rounded-[2.5rem] p-4 shadow-xl border border-slate-100 space-y-3">
+  <div className="bg-white rounded-3xl p-4 shadow-xl border border-slate-100 space-y-3">
     <div className="flex items-center justify-between px-1">
       <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">{copy.quickActions}</p>
       <Button type="button" variant="ghost" size="sm" onClick={onRefresh} className="rounded-2xl h-9 px-3 text-[9px] font-black uppercase tracking-widest text-slate-400 gap-1">
@@ -259,14 +259,14 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index, copy, lan
 
   return (
     <div
-      className="group relative overflow-hidden rounded-[3rem] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4"
+      className="group relative overflow-hidden rounded-3xl border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 bg-white flex flex-col animate-in fade-in slide-in-from-bottom-4"
       style={{ animationDelay: `${index * 70}ms` }}
     >
       <div className="absolute -right-8 -top-8 size-28 rounded-full bg-primary/5 blur-xl group-hover:scale-125 transition-transform" />
 
       <div className="p-6 flex items-center justify-between border-b border-slate-50/50 relative z-10">
         <div className="flex items-center gap-4 min-w-0">
-          <div className="bg-slate-950 text-white size-14 rounded-[1.5rem] flex flex-col items-center justify-center shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-500 shrink-0">
+          <div className="bg-slate-950 text-white size-14 rounded-2xl flex flex-col items-center justify-center shadow-xl rotate-3 group-hover:rotate-0 transition-transform duration-500 shrink-0">
             <span className="text-[9px] font-black uppercase opacity-40 leading-none mb-1">{String(dateLabel).split(' ')[1] || '---'}</span>
             <span className="text-2xl font-black italic leading-none">{String(dateLabel).split(' ')[0] || '--'}</span>
           </div>
@@ -465,7 +465,7 @@ const MyRequests = () => {
       <SubPageHeader title={copy.title} />
 
       <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
-        <div className="bg-slate-900 rounded-[3rem] p-7 shadow-2xl relative overflow-hidden group">
+        <div className="bg-slate-900 rounded-3xl p-7 shadow-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 opacity-10 rotate-12 group-hover:scale-110 transition-transform">
             <Target size={120} className="text-primary" />
           </div>
@@ -487,7 +487,7 @@ const MyRequests = () => {
         <RequestStats stats={stats} copy={copy} />
         <QuickActions copy={copy} navigate={navigate} loading={loading} onRefresh={fetchRequests} />
 
-        <div className="flex p-2 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-x-auto no-scrollbar">
+        <div className="flex p-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-x-auto no-scrollbar">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -495,7 +495,7 @@ const MyRequests = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'flex-1 min-w-[112px] h-14 rounded-[2rem] text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative overflow-hidden group flex items-center justify-center gap-2',
+                  'flex-1 min-w-[112px] h-14 rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative overflow-hidden group flex items-center justify-center gap-2',
                   activeTab === tab.id ? 'bg-slate-950 text-white shadow-2xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'
                 )}
               >
@@ -514,7 +514,7 @@ const MyRequests = () => {
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{copy.scanning}</p>
             </div>
           ) : filteredRequests.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200 animate-in fade-in duration-700 px-8">
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200 animate-in fade-in duration-700 px-8">
               <div className="size-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Calendar className="h-10 w-10 text-slate-200" />
               </div>

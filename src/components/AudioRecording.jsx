@@ -140,7 +140,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
     };
 
     return (
-        <Card className="rounded-[2rem] border-2 border-red-50 bg-white p-6 shadow-xl">
+        <Card className="rounded-3xl border-2 border-red-50 bg-white p-4 shadow-xl">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                     <div className={cn(
@@ -164,7 +164,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
 
             <div className="space-y-4">
                 {!audioURL && !isRecording && (
-                    <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-100 rounded-[2rem] bg-slate-50/50">
+                    <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-dashed border-slate-100 rounded-3xl bg-slate-50/50">
                         <Volume2 className="size-10 text-slate-200 mb-4" />
                         <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest px-10">
                             Pulsa para iniciar una grabación preventiva en una bóveda privada
@@ -179,7 +179,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
                 )}
 
                 {isRecording && (
-                    <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-red-100 rounded-[2rem] bg-red-50/30">
+                    <div className="py-10 flex flex-col items-center justify-center text-center border-2 border-red-100 rounded-3xl bg-red-50/30">
                         <div className="flex items-center gap-1 mb-6">
                             {[1, 2, 3, 4, 5, 6].map(i => (
                                 <div
@@ -207,7 +207,7 @@ const AudioRecording = ({ rideId, onRecordingComplete }) => {
 
                 {audioURL && !isRecording && (
                     <div className="space-y-4">
-                        <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100">
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                             <div className="flex items-center gap-4 mb-4">
                                 <div className="p-2 bg-emerald-50 rounded-lg">
                                     <ShieldCheck className="size-4 text-emerald-600" />

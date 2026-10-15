@@ -9,7 +9,7 @@ const AdminLayout = ({ handleSignOut, profile }) => {
 
     return (
         <div className="admin-shell min-h-screen w-full flex flex-col bg-slate-50 font-sans">
-            <header className="admin-shell__header sticky top-0 z-[100] h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 lg:px-12 flex items-center justify-between">
+            <header className="admin-shell__header sticky top-0 z-[100] h-14 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 lg:px-12 flex items-center justify-between">
                 <div className="flex items-center gap-3 lg:gap-6 min-w-0">
                     <Button
                         variant="ghost"

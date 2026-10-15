@@ -43,7 +43,7 @@ export default function BrowserAlertsCard({ userId }) {
   };
 
   return (
-    <div className="rounded-[2.5rem] border border-emerald-100 bg-white p-6 shadow-sm">
+    <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
       <div className="flex items-start gap-5">
         <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-600">
           <Smartphone className="size-6" />

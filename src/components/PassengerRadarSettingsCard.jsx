@@ -127,8 +127,8 @@ export default function PassengerRadarSettingsCard() {
 
   if (isLoading) {
     return (
-      <Card className="border-none rounded-[2.5rem] bg-white shadow-sm">
-        <CardContent className="p-8 flex items-center justify-center">
+      <Card className="border-none rounded-3xl bg-white shadow-sm">
+        <CardContent className="p-5 flex items-center justify-center">
           <Loader2 className="size-6 animate-spin text-primary" />
         </CardContent>
       </Card>
@@ -136,8 +136,8 @@ export default function PassengerRadarSettingsCard() {
   }
 
   return (
-    <Card className="border-none rounded-[2.5rem] bg-white text-slate-950 shadow-2xl overflow-hidden border border-slate-100">
-      <CardContent className="p-6 space-y-6 relative">
+    <Card className="border-none rounded-3xl bg-white text-slate-950 shadow-2xl overflow-hidden border border-slate-100">
+      <CardContent className="p-4 space-y-6 relative">
         <div className="absolute -right-10 -top-10 size-40 rounded-full bg-emerald-400/15 blur-3xl" />
 
         <div className="relative flex items-start justify-between gap-5">
@@ -196,7 +196,7 @@ export default function PassengerRadarSettingsCard() {
           </div>
         </div>
 
-        <div className="relative rounded-[2rem] border border-indigo-100 bg-indigo-50/60 p-5 space-y-4">
+        <div className="relative rounded-3xl border border-indigo-100 bg-indigo-50/60 p-5 space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="size-11 rounded-2xl bg-white flex items-center justify-center text-indigo-600 shadow-sm">

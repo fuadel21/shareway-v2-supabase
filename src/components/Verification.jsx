@@ -73,7 +73,7 @@ const Verification = () => {
         <div className="bg-slate-50 min-h-screen pb-20">
             <SubPageHeader title="Confianza y Seguridad" />
             
-            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-8">
+            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-5">
                 {/* Tarjeta de Estado de Verificación */}
                 <div className={`rounded-2xl p-6 flex items-center gap-6 ${currentStatus.bgColor}`}>
                     <currentStatus.icon className={`h-10 w-10 ${currentStatus.color}`} />

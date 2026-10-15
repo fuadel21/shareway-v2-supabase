@@ -51,14 +51,14 @@ const PinVerificationDialog = ({ open, onOpenChange, onConfirm, isLoading, title
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="rounded-[3.5rem] border-none shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden max-w-[420px] p-0">
+            <DialogContent className="rounded-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.2)] overflow-hidden max-w-[420px] p-0">
 
                 <div className="bg-navy p-12 text-center text-white relative">
                     <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
                         <Sparkles className="h-full w-full p-4" />
                     </div>
 
-                    <div className="h-20 w-20 bg-primary/20 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 border border-white/10 backdrop-blur-xl animate-in zoom-in duration-700">
+                    <div className="h-20 w-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-white/10 backdrop-blur-xl animate-in zoom-in duration-700">
                         <Lock className="h-10 w-10 text-primary" />
                     </div>
 
@@ -84,7 +84,7 @@ const PinVerificationDialog = ({ open, onOpenChange, onConfirm, isLoading, title
                                 onChange={(e) => handleChange(index, e.target.value)}
                                 onKeyDown={(e) => handleKeyDown(index, e)}
                                 className={cn(
-                                    "w-16 h-24 text-center text-4xl font-black rounded-[1.5rem] border-4 transition-all duration-300 outline-none",
+                                    "w-16 h-24 text-center text-4xl font-black rounded-2xl border-4 transition-all duration-300 outline-none",
                                     digit
                                         ? "border-primary bg-primary/5 text-primary shadow-2xl shadow-primary/10"
                                         : "border-slate-50 bg-slate-50 focus:border-indigo-100 text-slate-800"
@@ -98,7 +98,7 @@ const PinVerificationDialog = ({ open, onOpenChange, onConfirm, isLoading, title
                         <Button
                             onClick={handleConfirm}
                             disabled={isLoading || !isComplete}
-                            className="w-full h-20 rounded-[2rem] text-xl font-black tracking-tighter shadow-2xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all bg-indigo-600 hover:bg-navy text-white"
+                            className="w-full h-14 rounded-3xl text-xl font-black tracking-tighter shadow-2xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all bg-indigo-600 hover:bg-navy text-white"
                         >
                             {isLoading ? (
                                 <><Loader2 className="mr-3 h-8 w-8 animate-spin" /> VERIFICANDO...</>

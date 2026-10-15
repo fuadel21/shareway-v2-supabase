@@ -130,7 +130,7 @@ const PackageDetails = () => {
     return (
         <div className="bg-slate-50 min-h-screen pb-40">
             <SubPageHeader title="Detalle del Envío" />
-             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8">
+             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5">
                 {/* El resto del JSX que ya tenías va aquí */}
             </main>
         </div>

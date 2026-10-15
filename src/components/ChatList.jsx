@@ -106,7 +106,7 @@ const ChatStats = ({ stats, copy }) => {
 };
 
 const ChatCommandCard = ({ copy, stats, loading, onRefresh, navigate }) => (
-    <div className="rounded-[3rem] bg-slate-950 text-white p-6 shadow-2xl relative overflow-hidden">
+    <div className="rounded-3xl bg-slate-950 text-white p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 size-32 rounded-full bg-primary/20 blur-2xl" />
         <div className="relative z-10 space-y-5">
             <div className="flex items-start justify-between gap-4">
@@ -147,7 +147,7 @@ const ChatItem = ({ chat, onClick, userId, copy, language }) => {
         <div
             onClick={() => onClick(chat)}
             className={cn(
-                'group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-[2.5rem] hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer relative',
+                'group flex items-center gap-4 p-5 bg-white border border-slate-100 rounded-3xl hover:shadow-xl hover:scale-[1.01] transition-all cursor-pointer relative',
                 chat.unreadCount > 0 ? 'border-emerald-100 bg-emerald-50/5' : ''
             )}
         >
@@ -333,7 +333,7 @@ const ChatList = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-16 text-center bg-white rounded-[3rem] border border-dashed border-slate-200 px-8 animate-in fade-in duration-700">
+                    <div className="py-16 text-center bg-white rounded-3xl border border-dashed border-slate-200 px-8 animate-in fade-in duration-700">
                         <MessageSquare className="h-12 w-12 text-slate-100 mx-auto mb-4" />
                         <h3 className="text-sm font-black text-slate-900 uppercase italic text-center">{copy.empty}</h3>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-3">{copy.emptyDesc}</p>

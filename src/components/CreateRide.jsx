@@ -408,7 +408,7 @@ const CreateRide = () => {
             <main className="max-w-xl mx-auto px-4 py-8">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <Card className={cn(
-                        'border-none shadow-xl rounded-[2.5rem] p-6 space-y-4',
+                        'border-none shadow-xl rounded-3xl p-6 space-y-4',
                         isVehicleConfigured ? 'bg-slate-900 text-white' : 'bg-amber-50 text-amber-900 border-2 border-amber-100'
                     )}>
                         <div className="flex items-start justify-between gap-4">
@@ -447,7 +447,7 @@ const CreateRide = () => {
                         )}
                     </Card>
 
-                    <Card className="border-none shadow-xl rounded-[2.5rem] p-6 bg-white space-y-6">
+                    <Card className="border-none shadow-xl rounded-3xl p-4 bg-white space-y-6">
                         <div className="flex items-center gap-3">
                             <div className="bg-emerald-50 p-2.5 rounded-xl"><Navigation size={18} className="text-emerald-600" /></div>
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_itinerary')}</h3>
@@ -474,7 +474,7 @@ const CreateRide = () => {
                     </Card>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
+                        <Card className="border-none shadow-lg rounded-3xl p-4 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_datetime')}</p>
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -489,7 +489,7 @@ const CreateRide = () => {
                             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-14 rounded-2xl border-none bg-slate-50 font-black text-center text-lg" />
                         </Card>
 
-                        <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
+                        <Card className="border-none shadow-lg rounded-3xl p-4 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl">
                                 <button type="button"
@@ -515,7 +515,7 @@ const CreateRide = () => {
                         </Card>
                     </div>
 
-                    <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
+                    <Card className="border-none shadow-xl rounded-3xl p-5 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_ride.section_preferences')}</h3>
                             <button type="button"
@@ -537,7 +537,7 @@ const CreateRide = () => {
                         <Textarea placeholder={t('create_ride.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
                     </Card>
 
-                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-20 rounded-[2.2rem] bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
+                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
                         {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{t('create_ride.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                     </Button>
                 </form>

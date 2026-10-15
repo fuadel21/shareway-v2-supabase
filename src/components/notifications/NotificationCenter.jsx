@@ -59,7 +59,7 @@ const NotificationCenter = () => {
       </header>
 
       <main className="mx-auto max-w-4xl space-y-5 px-4 py-6">
-        <Card className="rounded-[2rem] border-none bg-white p-4 shadow-sm">
+        <Card className="rounded-3xl border-none bg-white p-4 shadow-sm">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar notificaciones" className="h-14 rounded-2xl border-none bg-slate-50 pl-11 font-bold" />
@@ -80,7 +80,7 @@ const NotificationCenter = () => {
         {loading && <p className="py-10 text-center text-sm font-bold text-slate-400">Cargando notificaciones...</p>}
 
         {!loading && visibleNotifications.length === 0 && (
-          <Card className="rounded-[2rem] border-none bg-white p-10 text-center shadow-sm">
+          <Card className="rounded-3xl border-none bg-white p-10 text-center shadow-sm">
             <Inbox className="mx-auto mb-4 h-10 w-10 text-slate-300" />
             <h2 className="text-xl font-black tracking-tight text-slate-950">Sin notificaciones</h2>
             <p className="mt-2 text-sm font-bold text-slate-400">Cuando haya actividad importante aparecerá aquí.</p>
@@ -89,7 +89,7 @@ const NotificationCenter = () => {
 
         <div className="space-y-3">
           {visibleNotifications.map((notification) => (
-            <Card key={notification.id} className={cn('rounded-[2rem] border-none p-5 shadow-sm transition-all', notification.is_read ? 'bg-white' : 'bg-orange-50')}>
+            <Card key={notification.id} className={cn('rounded-3xl border-none p-5 shadow-sm transition-all', notification.is_read ? 'bg-white' : 'bg-orange-50')}>
               <div className="flex items-start gap-4">
                 <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', notification.is_read ? 'bg-slate-100 text-slate-400' : 'bg-orange-500 text-white')}>
                   <Bell className="h-5 w-5" />

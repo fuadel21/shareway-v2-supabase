@@ -124,7 +124,7 @@ const NotificationTestPage = () => {
       <SubPageHeader title="Test Notificaciones" backPath="/settings" />
 
       <main className="mx-auto max-w-3xl px-4 py-6 space-y-6">
-        <Card className="rounded-[2rem] border-none bg-white p-6 shadow-xl space-y-5">
+        <Card className="rounded-3xl border-none bg-white p-4 shadow-xl space-y-5">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
               <BellRing className="h-5 w-5" />
@@ -137,7 +137,7 @@ const NotificationTestPage = () => {
             </div>
           </div>
 
-          <div className="grid gap-3 rounded-[1.5rem] bg-slate-50 p-4 text-xs font-bold text-slate-600 sm:grid-cols-3">
+          <div className="grid gap-3 rounded-2xl bg-slate-50 p-4 text-xs font-bold text-slate-600 sm:grid-cols-3">
             <div>
               <span className="block text-[10px] uppercase tracking-widest text-slate-400">Usuario</span>
               {testLabel}
@@ -199,7 +199,7 @@ const NotificationTestPage = () => {
           </div>
         </Card>
 
-        <Card className="rounded-[2rem] border-none bg-white p-6 shadow-xl">
+        <Card className="rounded-3xl border-none bg-white p-4 shadow-xl">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-black text-slate-900">Últimas notificaciones</h2>

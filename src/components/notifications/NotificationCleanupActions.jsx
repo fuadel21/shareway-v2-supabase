@@ -25,7 +25,7 @@ export default function NotificationCleanupActions() {
   };
 
   return (
-    <div className="mb-4 flex flex-col gap-3 rounded-[1.5rem] border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div>
         <p className="text-sm font-black text-slate-900">Limpieza rápida</p>
         <p className="text-xs font-semibold text-slate-500">Elimina notificaciones leídas que no estén fijadas ni sean críticas.</p>

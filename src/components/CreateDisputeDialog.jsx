@@ -138,7 +138,7 @@ const CreateDisputeDialog = ({ open, onOpenChange, rideId, onSuccess }) => {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-lg rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
+            <DialogContent className="max-w-lg rounded-3xl border-none shadow-2xl p-0 overflow-hidden">
                 <div className="bg-slate-900 p-8 text-white relative">
                     <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
                         <AlertCircle size={80} />
@@ -197,7 +197,7 @@ const CreateDisputeDialog = ({ open, onOpenChange, rideId, onSuccess }) => {
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder="Describe detalladamente qué sucedió..."
-                            className="min-h-[120px] rounded-[1.5rem] border-2 border-slate-100 bg-slate-50/50 focus:bg-white transition-all text-sm font-medium resize-none p-5"
+                            className="min-h-[120px] rounded-2xl border-2 border-slate-100 bg-slate-50/50 focus:bg-white transition-all text-sm font-medium resize-none p-5"
                             maxLength={500}
                         />
                         <div className="flex justify-end">
@@ -228,7 +228,7 @@ const CreateDisputeDialog = ({ open, onOpenChange, rideId, onSuccess }) => {
                             ))}
 
                             {evidenceFiles.length < 3 && (
-                                <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-200 rounded-[2rem] cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all group">
+                                <label className="flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed border-slate-200 rounded-3xl cursor-pointer hover:border-primary/40 hover:bg-primary/[0.02] transition-all group">
                                     <div className="size-10 rounded-2xl bg-slate-50 flex items-center justify-center group-hover:bg-primary/10 transition-colors">
                                         <Upload size={18} className="text-slate-300 group-hover:text-primary" />
                                     </div>

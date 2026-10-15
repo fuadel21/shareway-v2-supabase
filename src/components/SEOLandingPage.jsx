@@ -205,7 +205,7 @@ const SEOLandingPage = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl">
+                    <div className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-xl">
                         <div className="grid gap-4">
                             <div className="rounded-3xl bg-white text-slate-950 p-5">
                                 <p className="text-xs font-black uppercase tracking-widest text-slate-400">Ahorro estimado</p>
@@ -229,17 +229,17 @@ const SEOLandingPage = () => {
 
             <section className="px-6 py-16">
                 <div className="max-w-5xl mx-auto grid gap-8 md:grid-cols-3">
-                    <article className="rounded-[2rem] border border-slate-100 bg-slate-50 p-7">
+                    <article className="rounded-3xl border border-slate-100 bg-slate-50 p-7">
                         <MapPin className="h-7 w-7 text-emerald-600 mb-4" />
                         <h2 className="text-xl font-black tracking-tight mb-2">Encuentra rutas compatibles</h2>
                         <p className="text-slate-600 leading-relaxed">{config.intro}</p>
                     </article>
-                    <article className="rounded-[2rem] border border-slate-100 bg-slate-50 p-7">
+                    <article className="rounded-3xl border border-slate-100 bg-slate-50 p-7">
                         <Wallet className="h-7 w-7 text-emerald-600 mb-4" />
                         <h2 className="text-xl font-black tracking-tight mb-2">Ahorra en cada desplazamiento</h2>
                         <p className="text-slate-600 leading-relaxed">Divide gastos de combustible, aparcamiento, taxi o trayecto con personas que se mueven en la misma dirección.</p>
                     </article>
-                    <article className="rounded-[2rem] border border-slate-100 bg-slate-50 p-7">
+                    <article className="rounded-3xl border border-slate-100 bg-slate-50 p-7">
                         <ShieldCheck className="h-7 w-7 text-emerald-600 mb-4" />
                         <h2 className="text-xl font-black tracking-tight mb-2">Viaja con más confianza</h2>
                         <p className="text-slate-600 leading-relaxed">Perfiles, valoraciones, mensajería y herramientas de seguridad para organizar trayectos con más tranquilidad.</p>

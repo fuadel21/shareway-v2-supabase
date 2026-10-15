@@ -122,7 +122,7 @@ const EditFavoriteRoute = () => {
         <div className="min-h-screen bg-muted/30 pb-32">
             <SubPageHeader title={isNew ? 'Nueva Ruta Habitual' : 'Editar Ruta Habitual'} />
             <main className="container mx-auto p-4 max-w-2xl">
-                <Card className="rounded-[2.5rem] border-none shadow-xl glass overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Card className="rounded-3xl border-none shadow-xl glass overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <CardHeader className="bg-primary/5 pb-8">
                         <CardTitle className="flex items-center gap-2 text-2xl font-black text-primary">
                             <Heart className="h-6 w-6 fill-primary" />
@@ -130,7 +130,7 @@ const EditFavoriteRoute = () => {
                         </CardTitle>
                         <CardDescription className="font-medium text-muted-foreground">Recibirás avisos cuando haya viajes en este trayecto.</CardDescription>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-8">
+                    <CardContent className="p-4 space-y-8">
                         <div className="space-y-2">
                             <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Nombre de la ruta</Label>
                             <Input

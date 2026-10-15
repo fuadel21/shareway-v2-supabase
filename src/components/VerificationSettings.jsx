@@ -38,13 +38,13 @@ const VerificationStep = ({ icon: Icon, title, description, status, actionText, 
     return (
         <div
             className={cn(
-                "group relative flex items-center gap-6 p-8 bg-white rounded-[3rem] border border-slate-100 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8",
+                "group relative flex items-center gap-6 p-8 bg-white rounded-3xl border border-slate-100 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8",
                 isDisabled && "opacity-40 grayscale pointer-events-none"
             )}
             style={{ animationDelay: `${index * 150}ms` }}
         >
             <div className={cn(
-                "p-5 rounded-[1.8rem] transition-all duration-500 shadow-sm",
+                "p-5 rounded-2xl transition-all duration-500 shadow-sm",
                 isCompleted ? 'bg-emerald-50 text-emerald-500' : isPending ? 'bg-orange-50 text-primary' : 'bg-slate-50 text-slate-400'
             )}>
                 {isCompleted ? <BadgeCheck className="h-8 w-8" /> : <Icon className="h-8 w-8" />}
@@ -160,7 +160,7 @@ function VerificationSettings() {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title={t('verification.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12 text-left">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6 text-left">
 
                 {/* GAMIFIED PROGRESS CARD */}
                 <Card className="rounded-[4rem] border-none shadow-2xl bg-white overflow-hidden p-10 space-y-8">
@@ -171,7 +171,7 @@ function VerificationSettings() {
                                 {completedSteps === 3 ? t('verification.elite_profile') : t('verification.level_of', { current: completedSteps + 1 })}
                             </p>
                         </div>
-                        <div className="h-16 w-16 bg-navy rounded-[1.5rem] flex items-center justify-center text-white shadow-xl rotate-3">
+                        <div className="h-16 w-16 bg-navy rounded-2xl flex items-center justify-center text-white shadow-xl rotate-3">
                             <Trophy className="h-8 w-8 text-primary" />
                         </div>
                     </div>
@@ -251,7 +251,7 @@ function VerificationSettings() {
                     </div>
 
                     <div className="relative z-10 space-y-8">
-                        <div className="size-20 bg-primary/20 rounded-[2rem] flex items-center justify-center backdrop-blur-md">
+                        <div className="size-20 bg-primary/20 rounded-3xl flex items-center justify-center backdrop-blur-md">
                             <GraduationCap className="size-10 text-primary" />
                         </div>
 
@@ -262,7 +262,7 @@ function VerificationSettings() {
                             </p>
                         </div>
 
-                        <Button variant="outline" className="h-16 px-10 rounded-2xl bg-white/5 border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10">
+                        <Button variant="outline" className="h-12 px-10 rounded-2xl bg-white/5 border-white/10 text-white font-black text-xs uppercase tracking-widest hover:bg-white/10">
                             {t('verification.more_info')}
                         </Button>
                     </div>

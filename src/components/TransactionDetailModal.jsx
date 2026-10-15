@@ -117,13 +117,13 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-0 max-w-md bg-white overflow-hidden outline-none">
+            <DialogContent className="rounded-3xl border-none shadow-2xl p-0 max-w-md bg-white overflow-hidden outline-none">
                 <div className={cn(
                     'p-8 flex flex-col items-center justify-center text-center space-y-4',
                     isDeposit ? 'bg-emerald-50/50' : isHold ? 'bg-amber-50/50' : 'bg-slate-50'
                 )}>
                     <div className={cn(
-                        'h-20 w-20 rounded-[2rem] flex items-center justify-center shadow-sm border mb-2 bg-white',
+                        'h-20 w-20 rounded-3xl flex items-center justify-center shadow-sm border mb-2 bg-white',
                         isDeposit ? 'border-emerald-100' : isHold ? 'border-amber-100' : 'border-slate-100'
                     )}>
                         {getIcon()}
@@ -202,7 +202,7 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
                         )}
 
                         {(tx.type === 'payout' || tx.type === 'earning') && (
-                            <div className="mt-4 p-5 bg-slate-900 rounded-[2rem] text-white space-y-3">
+                            <div className="mt-4 p-5 bg-slate-900 rounded-3xl text-white space-y-3">
                                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">{copy.liquidationBreakdown}</p>
                                 <div className="flex justify-between items-center text-[11px]">
                                     <span className="text-slate-400 font-bold uppercase">{t('wallet.breakdown.total_gross')}</span>
@@ -221,7 +221,7 @@ const TransactionDetailModal = ({ isOpen, onClose, tx, onViewRide }) => {
                     </div>
 
                     <div className="pt-4 border-t border-slate-100">
-                        <div className="bg-slate-50 rounded-[1.5rem] p-4 flex items-center gap-3">
+                        <div className="bg-slate-50 rounded-2xl p-4 flex items-center gap-3">
                             <ShieldCheck className="size-5 text-emerald-500" />
                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">
                                 {copy.protected}

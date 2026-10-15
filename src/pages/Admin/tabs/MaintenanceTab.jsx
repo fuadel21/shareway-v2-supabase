@@ -179,8 +179,8 @@ export default function MaintenanceTab() {
             </div>
 
             {showAudit ? (
-                <Card className="border-none shadow-xl rounded-[2.5rem] bg-slate-900 text-white overflow-hidden animate-in slide-in-from-top-4 duration-500">
-                    <CardHeader className="p-8 border-b border-white/5">
+                <Card className="border-none shadow-xl rounded-3xl bg-slate-900 text-white overflow-hidden animate-in slide-in-from-top-4 duration-500">
+                    <CardHeader className="p-5 border-b border-white/5">
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div>
                                 <CardTitle className="text-xl font-black uppercase italic tracking-tighter flex items-center gap-3">
@@ -298,7 +298,7 @@ export default function MaintenanceTab() {
                             </CardHeader>
                             <CardContent className="space-y-4 relative z-10">
                                 <Button
-                                    className="w-full h-16 rounded-2xl bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 text-xs font-black uppercase italic tracking-widest"
+                                    className="w-full h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 shadow-xl shadow-indigo-200 text-xs font-black uppercase italic tracking-widest"
                                     onClick={handleRunMaintenance}
                                     disabled={isRunning}
                                 >
@@ -376,7 +376,7 @@ export default function MaintenanceTab() {
                 </>
             )}
 
-            <Card className="border-none shadow-sm rounded-[2.5rem] overflow-hidden border-l-8 border-l-primary bg-white group hover:shadow-2xl transition-all duration-1000">
+            <Card className="border-none shadow-sm rounded-3xl overflow-hidden border-l-8 border-l-primary bg-white group hover:shadow-2xl transition-all duration-1000">
                 <CardContent className="p-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="size-20 rounded-3xl bg-primary/5 flex items-center justify-center shrink-0 shadow-inner group-hover:rotate-6 transition-transform">
                         <ShieldCheck className="h-10 w-10 text-primary" />

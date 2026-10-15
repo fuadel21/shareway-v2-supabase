@@ -654,7 +654,7 @@ const RideDetails = () => {
 
             <main className="max-w-xl mx-auto px-4 mt-6 space-y-6 animate-in fade-in duration-500">
                 {isRideCancelled && (
-                    <div className="bg-red-50 border-2 border-red-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-red-600">
+                    <div className="bg-red-50 border-2 border-red-100 rounded-3xl p-6 flex items-center gap-4 text-red-600">
                         <XCircle size={32} className="shrink-0" />
                         <div>
                             <p className="font-black uppercase italic leading-none">Viaje Cancelado</p>
@@ -664,7 +664,7 @@ const RideDetails = () => {
                 )}
 
                 {!isDriver && !isPassenger && !isRideBookableNow && !isRideCancelled && (
-                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-amber-700">
+                    <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-6 flex items-center gap-4 text-amber-700">
                         <AlertCircle size={32} className="shrink-0" />
                         <div>
                             <p className="font-black uppercase italic leading-none">{bookingBlockedLabel}</p>
@@ -673,7 +673,7 @@ const RideDetails = () => {
                     </div>
                 )}
 
-                <div className="h-56 w-full rounded-[2.5rem] overflow-hidden shadow-xl border-4 border-white relative group">
+                <div className="h-56 w-full rounded-3xl overflow-hidden shadow-xl border-4 border-white relative group">
                     <MapComponent
                         center={isRideActive && driverLocation ? driverLocation : (selectedPickupLocation || ride.origin)}
                         itemsToDisplay={mapItems}
@@ -723,7 +723,7 @@ const RideDetails = () => {
                     <ShareRideCard ride={ride} rideId={rideId} />
                 )}
 
-                <Card className="rounded-[2.5rem] border-none shadow-2xl bg-white p-8 space-y-6">
+                <Card className="rounded-3xl border-none shadow-2xl bg-white p-5 space-y-6">
                     <div className="flex justify-between items-start gap-4">
                         <div className="text-left space-y-1 min-w-0">
                             <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-[10px]">
@@ -790,7 +790,7 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-slate-900 p-6 text-white">
+                <Card className="rounded-3xl border-none shadow-xl bg-slate-900 p-4 text-white">
                     <div className="flex items-center justify-between gap-3 mb-4">
                         <div>
                             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Política económica</p>
@@ -812,7 +812,7 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-8">
+                <Card className="rounded-3xl border-none shadow-xl bg-white p-5">
                     <div className="relative space-y-8 before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-primary before:to-emerald-500 before:rounded-full">
                         <div className="relative pl-10">
                             <div className="absolute left-0 top-1 w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
@@ -831,7 +831,7 @@ const RideDetails = () => {
                     </div>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden">
+                <Card className="rounded-3xl border-none shadow-xl bg-white overflow-hidden">
                     <div className="p-8">
                         <div className="flex items-center gap-6">
                             <div className="relative shrink-0">
@@ -885,7 +885,7 @@ const RideDetails = () => {
                 </Card>
 
                 {isDriver && ride.status === 'scheduled' && startBlockReason && (
-                    <div className="bg-amber-50 border-2 border-amber-100 rounded-[2.5rem] p-6 flex items-center gap-4 text-amber-700">
+                    <div className="bg-amber-50 border-2 border-amber-100 rounded-3xl p-6 flex items-center gap-4 text-amber-700">
                         <Lock size={28} className="shrink-0" />
                         <div>
                             <p className="font-black uppercase italic leading-none">Inicio bloqueado</p>
@@ -1011,7 +1011,7 @@ const RideDetails = () => {
                 )}
             </main>
 
-            <div className="fixed bottom-20 left-0 right-0 p-6 z-40 pointer-events-none">
+            <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-0 right-0 px-4 pb-3 z-40 pointer-events-none">
                 <div className="max-w-xl mx-auto flex gap-3 pointer-events-auto">
                     {isDriver ? (
                         <>
@@ -1021,7 +1021,7 @@ const RideDetails = () => {
                                         onClick={askCancelRide}
                                         disabled={isCancelling}
                                         variant="outline"
-                                        className="h-16 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all duration-300"
+                                        className="h-12 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all duration-300"
                                     >
                                         {isCancelling ? <Loader2 className="animate-spin" /> : 'Cancelar'}
                                     </Button>
@@ -1029,7 +1029,7 @@ const RideDetails = () => {
                                         onClick={handleStartRide}
                                         disabled={isStarting || !canStartRide}
                                         className={cn(
-                                            'h-16 flex-[2] rounded-3xl font-black uppercase italic tracking-widest text-white shadow-2xl transition-all duration-300 transform active:scale-95 group overflow-hidden relative',
+                                            'h-12 flex-[2] rounded-3xl font-black uppercase italic tracking-widest text-white shadow-2xl transition-all duration-300 transform active:scale-95 group overflow-hidden relative',
                                             canStartRide ? 'bg-primary hover:shadow-primary/40' : 'bg-slate-200 cursor-not-allowed'
                                         )}
                                     >
@@ -1052,7 +1052,7 @@ const RideDetails = () => {
                                 <Button
                                     onClick={handleCompleteRide}
                                     disabled={isCompleting}
-                                    className="h-16 flex-1 rounded-3xl bg-emerald-500 hover:bg-emerald-600 font-black uppercase italic tracking-widest text-white shadow-2xl shadow-emerald-200"
+                                    className="h-12 flex-1 rounded-3xl bg-emerald-500 hover:bg-emerald-600 font-black uppercase italic tracking-widest text-white shadow-2xl shadow-emerald-200"
                                 >
                                     {isCompleting ? <Loader2 className="animate-spin" /> : 'Finalizar Viaje'}
                                 </Button>
@@ -1073,14 +1073,14 @@ const RideDetails = () => {
                             <div className="flex gap-3">
                                 <Button
                                     variant="outline"
-                                    className="h-16 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400"
+                                    className="h-12 flex-1 rounded-3xl border-2 border-slate-100 font-black uppercase italic tracking-widest text-slate-400"
                                     onClick={askCancelBooking}
                                 >
                                     Cancelar
                                 </Button>
                                 <Button
                                     onClick={() => navigate(`/rides/${rideId}/chats`)}
-                                    className="h-16 flex-[2] rounded-3xl bg-slate-900 font-black uppercase italic tracking-widest text-white shadow-2xl"
+                                    className="h-12 flex-[2] rounded-3xl bg-slate-900 font-black uppercase italic tracking-widest text-white shadow-2xl"
                                 >
                                     <span className="flex items-center gap-2">Chat <MessageCircle size={18} /></span>
                                 </Button>
@@ -1089,7 +1089,7 @@ const RideDetails = () => {
                             {ride.status === 'completed' && myPassengerEntry?.status === 'verified' && !isRated && (
                                 <Button
                                     onClick={() => setIsRatingModalOpen(true)}
-                                    className="h-16 w-full rounded-3xl bg-amber-400 hover:bg-amber-500 font-black uppercase italic tracking-widest text-slate-900"
+                                    className="h-12 w-full rounded-3xl bg-amber-400 hover:bg-amber-500 font-black uppercase italic tracking-widest text-slate-900"
                                 >
                                     <Star className="mr-2 fill-current" /> Calificar Viaje
                                 </Button>
@@ -1100,7 +1100,7 @@ const RideDetails = () => {
                             disabled={!isRideBookableNow}
                             onClick={handleOpenBookingModal}
                             className={cn(
-                                'h-16 w-full rounded-[2.5rem] font-black uppercase italic tracking-[0.2em] text-lg shadow-2xl transition-all duration-300 transform active:scale-95 group',
+                                'h-12 w-full rounded-3xl font-black uppercase italic tracking-[0.2em] text-lg shadow-2xl transition-all duration-300 transform active:scale-95 group',
                                 isRideBookableNow ? 'bg-primary hover:shadow-primary/40 text-white' : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                             )}
                         >
@@ -1154,7 +1154,7 @@ const RideDetails = () => {
                     if (!open && !isSecureActionLoading) setSecureAction(null);
                 }}
             >
-                <AlertDialogContent className="rounded-[2.5rem] border-none p-8">
+                <AlertDialogContent className="rounded-3xl border-none p-8">
                     <AlertDialogHeader>
                         <div className={cn(
                             'mb-3 flex h-12 w-12 items-center justify-center rounded-2xl',

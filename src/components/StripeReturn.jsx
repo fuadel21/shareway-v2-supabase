@@ -77,7 +77,7 @@ function StripeReturn() {
         <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 space-y-6 animate-in fade-in duration-700">
             <div className="relative">
                 <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-full animate-pulse" />
-                <div className="relative bg-white p-8 rounded-[2.5rem] shadow-2xl border border-slate-100 flex items-center justify-center">
+                <div className="relative bg-white p-8 rounded-3xl shadow-2xl border border-slate-100 flex items-center justify-center">
                     <Loader2 className="h-12 w-12 text-primary animate-spin" strokeWidth={1.5} />
                 </div>
             </div>

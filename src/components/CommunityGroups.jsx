@@ -106,12 +106,12 @@ const CommunityGroups = () => {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title="Comunidades" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5">
 
                 {/* ESTADO ACTUAL PREMIUM */}
                 <div className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                     {profile?.community_id ? (
-                        <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-slate-900 text-white relative">
+                        <Card className="rounded-3xl border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-slate-900 text-white relative">
                             <div className="absolute top-0 right-0 p-10 opacity-10">
                                 <ShieldCheck className="size-24 text-primary" />
                             </div>
@@ -140,9 +140,9 @@ const CommunityGroups = () => {
                             </CardContent>
                         </Card>
                     ) : (
-                        <Card className="rounded-[3rem] border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-white/70 backdrop-blur-3xl p-10">
+                        <Card className="rounded-3xl border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] overflow-hidden bg-white/70 backdrop-blur-3xl p-10">
                             <div className="flex flex-col items-center text-center space-y-6">
-                                <div className="h-20 w-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center border border-indigo-100 relative">
+                                <div className="h-20 w-20 bg-indigo-50 rounded-3xl flex items-center justify-center border border-indigo-100 relative">
                                     <Building2 className="h-10 w-10 text-indigo-500" />
                                     <div className="absolute -top-1 -right-1 h-5 w-5 bg-primary rounded-lg flex items-center justify-center border-2 border-white shadow-lg">
                                         <PlusIcon className="h-3 w-3 text-white" />
@@ -174,7 +174,7 @@ const CommunityGroups = () => {
                     <div className="grid grid-cols-1 gap-6">
                         {loading ? (
                             <div className="flex flex-col items-center py-20 animate-pulse space-y-6 text-center">
-                                <div className="h-20 w-20 bg-slate-200 rounded-[2rem] flex items-center justify-center">
+                                <div className="h-20 w-20 bg-slate-200 rounded-3xl flex items-center justify-center">
                                     <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
                                 </div>
                                 <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">Sincronizando servidores...</p>
@@ -188,7 +188,7 @@ const CommunityGroups = () => {
                                     <Card
                                         key={community.id}
                                         className={cn(
-                                            "rounded-[2.5rem] border-none shadow-[0_20px_40px_rgba(0,0,0,0.04)] bg-white/60 backdrop-blur-3xl p-8 hover:shadow-xl transition-all duration-700 animate-in fade-in slide-in-from-bottom-8",
+                                            "rounded-3xl border-none shadow-[0_20px_40px_rgba(0,0,0,0.04)] bg-white/60 backdrop-blur-3xl p-8 hover:shadow-xl transition-all duration-700 animate-in fade-in slide-in-from-bottom-8",
                                             isMember && "ring-2 ring-primary/20",
                                             "mb-2"
                                         )}
@@ -197,7 +197,7 @@ const CommunityGroups = () => {
                                         <div className="flex items-center justify-between gap-6">
                                             <div className="flex items-center gap-6">
                                                 <div className={cn(
-                                                    "h-16 w-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform",
+                                                    "h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform",
                                                     isUniversity ? "bg-indigo-50 text-indigo-500" : "bg-emerald-50 text-emerald-500"
                                                 )}>
                                                     {isUniversity ? <GraduationCap className="h-8 w-8" /> : <Briefcase className="h-8 w-8" />}
@@ -252,7 +252,7 @@ const CommunityGroups = () => {
                 </div>
 
                 {/* INFO ADICIONAL */}
-                <div className="bg-indigo-50/50 p-8 rounded-[2.5rem] border border-indigo-100/50 flex items-start gap-4">
+                <div className="bg-indigo-50/50 p-8 rounded-3xl border border-indigo-100/50 flex items-start gap-4">
                     <Info className="h-6 w-6 text-indigo-500 flex-shrink-0 mt-1" />
                     <p className="text-[10px] font-bold text-indigo-900/60 leading-relaxed uppercase tracking-widest">
                         Tu email ya ha sido verificado al registrarte. Solo puedes unirte a una comunidad que coincida exactamente con el dominio de tu correo electrónico corporativo o académico.

@@ -197,7 +197,7 @@ export default function RideEmergencyQuickAction() {
       </div>
 
       <AlertDialog open={isConfirmOpen} onOpenChange={(open) => !isActivating && setIsConfirmOpen(open)}>
-        <AlertDialogContent className="rounded-[2.5rem] border-none p-8">
+        <AlertDialogContent className="rounded-3xl border-none p-8">
           <AlertDialogHeader>
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-500">
               <ShieldAlert className="h-6 w-6" />

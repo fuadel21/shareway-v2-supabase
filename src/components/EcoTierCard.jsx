@@ -60,7 +60,7 @@ const EcoTierCard = ({ tier = 'Seed', co2Saved = 0 }) => {
     const Icon = currentTier.icon;
 
     return (
-        <div className={cn("rounded-[2.5rem] p-6 relative overflow-hidden transition-all hover:shadow-md border border-slate-100", currentTier.bg)}>
+        <div className={cn("rounded-3xl p-6 relative overflow-hidden transition-all hover:shadow-md border border-slate-100", currentTier.bg)}>
             {/* Background Pattern */}
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
                 <Icon size={120} className={currentTier.color} />

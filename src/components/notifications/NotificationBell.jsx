@@ -52,7 +52,7 @@ const NotificationBell = ({ user }) => {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-14 z-[80] w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-[2rem] border border-slate-100 bg-white shadow-2xl">
+        <div className="absolute right-0 top-14 z-[80] w-[calc(100vw-2rem)] max-w-sm overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
           <div className="flex items-center justify-between border-b border-slate-100 p-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-orange-500">Centro</p>

@@ -82,10 +82,10 @@ function Login() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/20 rounded-full blur-[120px] animate-pulse delay-700" />
       </div>
 
-      <Card className="w-full max-w-md bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-w-md bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-3xl p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
         <CardHeader className="space-y-6 text-center pb-10">
           <div className="flex justify-center">
-            <div className="bg-primary h-28 w-28 rounded-[2.5rem] flex items-center justify-center shadow-2xl shadow-primary/30 relative group overflow-hidden animate-bounce-subtle">
+            <div className="bg-primary h-28 w-28 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 relative group overflow-hidden animate-bounce-subtle">
               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               <Sparkles className="h-12 w-12 text-white relative z-10" />
             </div>
@@ -120,7 +120,7 @@ function Login() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
-                    className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
+                    className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
                   />
                 </div>
               </div>
@@ -136,7 +136,7 @@ function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
+                    className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300"
                   />
                 </div>
               </div>
@@ -155,7 +155,7 @@ function Login() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
+              className="w-full h-12 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : (
                 <>{t('login.login_button')} <ArrowRight className="ml-3 h-4 w-4" /></>
@@ -178,7 +178,7 @@ function Login() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isSubmitting}
-              className="w-full h-16 rounded-2xl border-2 border-slate-50 font-black text-sm uppercase tracking-tight hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-95 touch-action-manipulation"
+              className="w-full h-12 rounded-2xl border-2 border-slate-50 font-black text-sm uppercase tracking-tight hover:bg-slate-50 transition-all flex items-center justify-center gap-3 active:scale-95 touch-action-manipulation"
             >
               <img src="https://www.google.com/favicon.ico" className="w-4 h-4 grayscale transition-all group-hover:grayscale-0" alt="Google" />
               {t('login.google_button')}

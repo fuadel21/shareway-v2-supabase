@@ -245,7 +245,7 @@ function RideChat() {
             <div className="h-screen flex flex-col bg-slate-50">
                 <SubPageHeader title="Chat No Disponible" />
                 <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-6">
-                    <div className="size-24 bg-white rounded-[2rem] shadow-xl flex items-center justify-center">
+                    <div className="size-24 bg-white rounded-3xl shadow-xl flex items-center justify-center">
                         <Info className="size-10 text-slate-200" />
                     </div>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
@@ -334,8 +334,8 @@ function RideChat() {
                                     <div className={cn(
                                         "px-5 py-4 text-sm font-bold shadow-xl transition-all hover:scale-[1.01]",
                                         isMe
-                                            ? "bg-navy text-white rounded-[2rem] rounded-tr-[0.5rem] shadow-slate-200/50"
-                                            : "bg-white text-slate-800 rounded-[2rem] rounded-bl-[0.5rem] shadow-slate-100/50 border border-slate-100"
+                                            ? "bg-navy text-white rounded-3xl rounded-tr-[0.5rem] shadow-slate-200/50"
+                                            : "bg-white text-slate-800 rounded-3xl rounded-bl-[0.5rem] shadow-slate-100/50 border border-slate-100"
                                     )}>
                                         <p className="leading-relaxed tracking-tight">{msg.content || ''}</p>
                                     </div>
@@ -391,7 +391,7 @@ function RideChat() {
                                     }
                                 }}
                                 placeholder="Escribe un mensaje..."
-                                className="w-full bg-slate-50 border-none rounded-[1.8rem] px-6 py-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 transition-all resize-none max-h-24 min-h-[52px] shadow-inner no-scrollbar"
+                                className="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-xs font-bold text-slate-900 placeholder:text-slate-300 focus:ring-2 focus:ring-primary/20 transition-all resize-none max-h-24 min-h-[52px] shadow-inner no-scrollbar"
                                 rows={1}
                             />
                         </div>

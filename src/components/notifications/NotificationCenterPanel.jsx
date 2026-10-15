@@ -179,7 +179,7 @@ export default function NotificationCenterPanel({ user, children, fullPage = fal
   const panel = (
     <div className={cn(
       'overflow-hidden border border-slate-100 bg-white shadow-2xl shadow-slate-900/10',
-      fullPage ? 'relative w-full rounded-[2rem]' : 'absolute right-0 top-12 z-[1200] w-[min(92vw,420px)] rounded-3xl',
+      fullPage ? 'relative w-full rounded-3xl' : 'absolute right-0 top-12 z-[1200] w-[min(92vw,420px)] rounded-3xl',
     )}>
       <div className="border-b border-slate-100 bg-slate-50/80 p-4">
         <div className="flex items-center justify-between gap-3">

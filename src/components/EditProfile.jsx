@@ -183,7 +183,7 @@ function EditProfile() {
 
                     <Accordion type="single" collapsible value={activeSection} onValueChange={setActiveSection} className="space-y-4">
 
-                        <AccordionItem value="personal" className="bg-white rounded-[2.5rem] shadow-sm border-none overflow-hidden px-2">
+                        <AccordionItem value="personal" className="bg-white rounded-3xl shadow-sm border-none overflow-hidden px-2">
                             <AccordionTrigger className="px-8 py-6 hover:no-underline group">
                                 <div className="flex items-center gap-4 text-left">
                                     <div className="size-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform"><UserCircle2 className="h-6 w-6" /></div>
@@ -196,23 +196,23 @@ function EditProfile() {
                             <AccordionContent className="px-8 pb-10 space-y-6 text-left">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2"><User size={12} className="text-primary" /> {t('edit_profile.fields.display_name')}</Label>
-                                    <Input name="display_name" value={formData.display_name} onChange={handleInputChange} className="h-16 px-6 rounded-2xl bg-slate-50 border-none font-black text-slate-900 shadow-inner text-lg italic tracking-tighter" />
+                                    <Input name="display_name" value={formData.display_name} onChange={handleInputChange} className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-black text-slate-900 shadow-inner text-lg italic tracking-tighter" />
                                 </div>
 
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2"><Mail size={12} className="text-primary" /> Email</Label>
-                                    <Input value={user?.email || ''} readOnly className="h-16 px-6 rounded-2xl bg-slate-100 border-none font-bold text-slate-500 shadow-none text-base" />
+                                    <Input value={user?.email || ''} readOnly className="h-12 px-6 rounded-2xl bg-slate-100 border-none font-bold text-slate-500 shadow-none text-base" />
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2"><Phone size={12} className="text-primary" /> {t('edit_profile.fields.phone')}</Label>
-                                        <Input name="phone" value={formData.phone} onChange={handleInputChange} className="h-16 px-6 rounded-2xl bg-slate-50 border-none font-black shadow-inner italic" />
+                                        <Input name="phone" value={formData.phone} onChange={handleInputChange} className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-black shadow-inner italic" />
                                     </div>
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase text-slate-400 ml-4 flex items-center gap-2"><Users2 size={12} className="text-primary" /> {t('edit_profile.fields.gender')}</Label>
                                         <Select value={formData.gender} onValueChange={(v) => setFormData(prev => ({ ...prev, gender: v }))} disabled={currentUser?.verification?.status === 'verified'}>
-                                            <SelectTrigger className="h-16 px-6 rounded-2xl bg-slate-50 border-none font-black shadow-inner italic">
+                                            <SelectTrigger className="h-12 px-6 rounded-2xl bg-slate-50 border-none font-black shadow-inner italic">
                                                 <SelectValue placeholder={t('edit_profile.select_options.placeholder')} />
                                             </SelectTrigger>
                                             <SelectContent className="rounded-3xl">
@@ -231,7 +231,7 @@ function EditProfile() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="vehicle" className="bg-white rounded-[2.5rem] shadow-sm border-none overflow-hidden px-2" ref={vehicleRef}>
+                        <AccordionItem value="vehicle" className="bg-white rounded-3xl shadow-sm border-none overflow-hidden px-2" ref={vehicleRef}>
                             <AccordionTrigger className="px-8 py-6 hover:no-underline group">
                                 <div className="flex items-center gap-4 text-left">
                                     <div className="size-12 rounded-2xl bg-slate-900 text-primary flex items-center justify-center group-hover:scale-110 transition-transform"><Car className="h-6 w-6" /></div>
@@ -261,14 +261,14 @@ function EditProfile() {
                                     <div className="space-y-2"><Label className="text-[9px] font-black uppercase text-slate-400 ml-4">{t('edit_profile.fields.model')}</Label><Input name="model" value={formData.vehicle.model} onChange={handleVehicleChange} placeholder="Model 3" className="h-14 px-5 rounded-xl bg-slate-50 border-none font-black shadow-inner uppercase" /></div>
                                     <div className="space-y-2 col-span-2">
                                         <Label className="text-[9px] font-black uppercase text-slate-400 ml-4 italic">{t('edit_profile.fields.plate')}</Label>
-                                        <Input name="plate" value={formData.vehicle.plate} onChange={handleVehicleChange} placeholder="0000 BBB" className="h-16 px-5 rounded-2xl bg-slate-900 text-primary border-none font-mono font-black shadow-2xl text-xl text-center tracking-[0.3em]" />
+                                        <Input name="plate" value={formData.vehicle.plate} onChange={handleVehicleChange} placeholder="0000 BBB" className="h-12 px-5 rounded-2xl bg-slate-900 text-primary border-none font-mono font-black shadow-2xl text-xl text-center tracking-[0.3em]" />
                                     </div>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
 
-                    <Button type="submit" disabled={isSaving} className="w-full h-16 md:h-20 rounded-[2rem] md:rounded-[2.5rem] bg-slate-900 text-white font-black text-lg md:text-xl tracking-tighter shadow-2xl active:scale-95 border-none group">
+                    <Button type="submit" disabled={isSaving} className="w-full h-12 md:h-14 rounded-3xl md:rounded-3xl bg-slate-900 text-white font-black text-lg md:text-xl tracking-tighter shadow-2xl active:scale-95 border-none group">
                         {isSaving ? <Loader2 className="animate-spin h-6 w-6 md:h-8 md:w-8" /> : <>{t('edit_profile.save_button')} <Sparkles className="ml-3 h-5 w-5 md:h-6 md:w-6 text-primary group-hover:rotate-12 transition-transform" /></>}
                     </Button>
                 </form>

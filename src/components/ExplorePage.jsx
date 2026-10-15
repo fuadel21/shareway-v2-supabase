@@ -144,7 +144,7 @@ const ExplorePage = () => {
     const renderList = (list, listName, component) => {
         if (!list || list.length === 0) {
             return (
-                <div className="text-center py-20 bg-white rounded-[2.5rem] border border-dashed border-slate-200">
+                <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
                     <p className="text-xs font-black text-slate-300 uppercase tracking-widest italic">No hay {listName} disponibles</p>
                 </div>
             );
@@ -164,7 +164,7 @@ const ExplorePage = () => {
                 <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em] mt-2">ShareWay Mobility Network</p>
             </header>
 
-            <Card className="rounded-[2.5rem] overflow-hidden shadow-2xl border-none h-80 mb-8 relative group">
+            <Card className="rounded-3xl overflow-hidden shadow-2xl border-none h-80 mb-8 relative group">
                 <MapComponent 
                     userLocation={userLocation}
                     itemsToDisplay={publishedRides} 
@@ -180,7 +180,7 @@ const ExplorePage = () => {
 
             <Tabs defaultValue={defaultTab} className="w-full space-y-8">
                 <div className="overflow-x-auto no-scrollbar pb-2">
-                    <TabsList className="bg-white p-1.5 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 inline-flex min-w-full sm:min-w-0">
+                    <TabsList className="bg-white p-1.5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 inline-flex min-w-full sm:min-w-0">
                         <TabsTrigger value="upcoming" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Próximos</TabsTrigger>
                         <TabsTrigger value="ongoing" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">En Curso</TabsTrigger>
                         <TabsTrigger value="requests" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Solicitudes</TabsTrigger>

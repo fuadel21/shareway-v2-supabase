@@ -85,10 +85,10 @@ const ResetPassword = () => {
         <div className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] bg-orange-400/10 rounded-full blur-[100px] animate-pulse delay-700" />
       </div>
 
-      <Card className="w-full max-w-md bg-white/80 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-w-md bg-white/80 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-3xl p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
         <CardHeader className="space-y-6 text-center pb-10">
           <div className="flex justify-center">
-            <div className="bg-primary h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/20 relative group overflow-hidden">
+            <div className="bg-primary h-24 w-24 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/20 relative group overflow-hidden">
               <ShieldCheck className="h-10 w-10 text-white relative z-10" />
             </div>
           </div>
@@ -123,7 +123,7 @@ const ResetPassword = () => {
                 <Input
                   type="password"
                   placeholder="Mínimo 6 caracteres"
-                  className="h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-300"
+                  className="h-12 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-300"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
@@ -139,7 +139,7 @@ const ResetPassword = () => {
                 <Input
                   type="password"
                   placeholder="Repite la contraseña"
-                  className="h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-300"
+                  className="h-12 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-300"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
@@ -152,7 +152,7 @@ const ResetPassword = () => {
           <CardFooter className="flex flex-col space-y-6 pt-10 pb-10">
             <Button
               type="submit"
-              className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              className="w-full h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
               disabled={isLoading || !password || !confirmPassword}
             >
               {isLoading ? <Loader2 className="animate-spin h-6 w-6" /> : 'Guardar contraseña'}

@@ -6,7 +6,7 @@ export default function MaintenanceMode() {
     return (
         <div className="h-screen flex flex-col items-center justify-center bg-white p-6 text-center animate-in fade-in duration-700">
             <div className="relative mb-8">
-                <div className="size-24 rounded-[2.5rem] bg-red-50 flex items-center justify-center shadow-2xl shadow-red-100 animate-pulse">
+                <div className="size-24 rounded-3xl bg-red-50 flex items-center justify-center shadow-2xl shadow-red-100 animate-pulse">
                     <ShieldAlert className="h-10 w-10 text-red-500" />
                 </div>
                 <div className="absolute -top-2 -right-2 size-8 bg-white rounded-2xl shadow-lg flex items-center justify-center border border-slate-100">

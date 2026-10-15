@@ -17,7 +17,7 @@ function ShareMyTrip() {
                 </div>
             </header>
 
-            <main className="container mx-auto max-w-2xl space-y-8 p-4">
+            <main className="container mx-auto max-w-2xl space-y-5 p-4">
                 <Card className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3">

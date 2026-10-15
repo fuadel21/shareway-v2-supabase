@@ -132,13 +132,13 @@ function GuideSEOPage() {
       <section className="px-5 py-14">
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_320px]">
           <article className="space-y-8">
-            <div className="rounded-[2rem] border border-slate-100 p-7 shadow-sm">
+            <div className="rounded-3xl border border-slate-100 p-7 shadow-sm">
               <p className="text-sm font-black uppercase tracking-widest text-orange-500">{guide.area}</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight">Por qué esta ruta puede funcionar compartiendo coche</h2>
               <p className="mt-5 text-lg leading-8 text-slate-600">{guide.intro}</p>
             </div>
 
-            <div className="rounded-[2rem] bg-slate-50 p-7">
+            <div className="rounded-3xl bg-slate-50 p-7">
               <h2 className="text-3xl font-black tracking-tight">Consejos para organizar el trayecto</h2>
               <div className="mt-6 space-y-4">
                 {guide.points.map((point) => (
@@ -150,7 +150,7 @@ function GuideSEOPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-slate-100 p-7">
+            <div className="rounded-3xl border border-slate-100 p-7">
               <h2 className="text-3xl font-black tracking-tight">Preguntas frecuentes</h2>
               <div className="mt-6 space-y-4">
                 {guide.faqs.map(([question, answer]) => (
@@ -164,20 +164,20 @@ function GuideSEOPage() {
           </article>
 
           <aside className="space-y-5">
-            <div className="rounded-[2rem] bg-orange-500 p-6 text-white">
+            <div className="rounded-3xl bg-orange-500 p-6 text-white">
               <h2 className="text-2xl font-black">Ruta relacionada</h2>
               <p className="mt-2 text-white/80">{guide.intent}</p>
               <Link to={guide.routeHref} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-4 font-black text-orange-600">
                 <Route className="mr-2 h-5 w-5" /> {guide.routeLabel}
               </Link>
             </div>
-            <div className="rounded-[2rem] border border-slate-100 p-6 shadow-sm">
+            <div className="rounded-3xl border border-slate-100 p-6 shadow-sm">
               <h2 className="text-2xl font-black">Ciudad relacionada</h2>
               <Link to={guide.cityHref} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 font-black text-white">
                 <MapPin className="mr-2 h-5 w-5" /> {guide.cityLabel}
               </Link>
             </div>
-            <div className="rounded-[2rem] bg-slate-50 p-6">
+            <div className="rounded-3xl bg-slate-50 p-6">
               <h2 className="text-2xl font-black">Más guías</h2>
               <div className="mt-5 space-y-3">
                 {relatedGuides.map((item) => (

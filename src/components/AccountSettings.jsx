@@ -61,12 +61,12 @@ function AccountSettings() {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title="Privacidad & Cuenta" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5 animate-in fade-in slide-in-from-bottom-6 duration-700">
 
                 {/* CAMBIO DE CONTRASEÑA PREMIUM */}
-                <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden p-8 space-y-8">
+                <Card className="rounded-3xl border-none shadow-xl bg-white overflow-hidden p-5 space-y-8">
                     <div className="flex items-center gap-6">
-                        <div className="size-16 rounded-[1.5rem] bg-orange-50 text-primary flex items-center justify-center">
+                        <div className="size-16 rounded-2xl bg-orange-50 text-primary flex items-center justify-center">
                             <KeyRound className="size-8" />
                         </div>
                         <div>
@@ -87,7 +87,7 @@ function AccountSettings() {
                     <Button
                         onClick={handlePasswordReset}
                         disabled={isSendingReset}
-                        className="w-full h-16 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
+                        className="w-full h-12 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
                     >
                         {isSendingReset ? <Loader2 className="animate-spin" /> : <Mail className="mr-2 size-5" />}
                         Solicitar Enlace de Cambio
@@ -95,10 +95,10 @@ function AccountSettings() {
                 </Card>
 
                 {/* ELIMINACIÓN DE CUENTA PREMIUM */}
-                <Card className="rounded-[3rem] border-none shadow-xl bg-white overflow-hidden">
+                <Card className="rounded-3xl border-none shadow-xl bg-white overflow-hidden">
                     <div className="p-8 space-y-8">
                         <div className="flex items-center gap-6">
-                            <div className="size-16 rounded-[1.5rem] bg-red-50 text-red-500 flex items-center justify-center">
+                            <div className="size-16 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center">
                                 <ShieldAlert className="size-8" />
                             </div>
                             <div>
@@ -123,7 +123,7 @@ function AccountSettings() {
                             variant="destructive"
                             onClick={handleDeleteAccount}
                             disabled={isDeleting}
-                            className="w-full h-16 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-red-600 hover:bg-red-700 transition-colors"
+                            className="w-full h-12 rounded-2xl font-black text-xs uppercase tracking-[0.2em] bg-red-600 hover:bg-red-700 transition-colors"
                         >
                             {isDeleting ? <Loader2 className="animate-spin" /> : <Trash2 className="mr-2 size-5" />}
                             Eliminar Cuenta Permanentemente

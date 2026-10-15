@@ -136,7 +136,7 @@ const RequestRideDialog = ({ open, onOpenChange, userLocation }) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl glass">
+      <DialogContent className="sm:max-w-[450px] rounded-3xl p-0 overflow-hidden border-none shadow-2xl glass">
         <DialogHeader className="p-8 bg-primary/5">
           <DialogTitle className="text-2xl font-black text-primary flex items-center gap-2">
             <MapPin className="h-6 w-6" /> ¿A dónde quieres ir?

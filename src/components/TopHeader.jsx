@@ -45,20 +45,20 @@ const TopHeader = ({ user }) => {
             <div className="max-w-xl mx-auto flex items-center justify-between pointer-events-auto">
                 <div className="flex items-center gap-4">
                     {isDashboard ? (
-                        <div className="size-14 bg-navy rounded-[1.5rem] shadow-2xl flex items-center justify-center border border-white/10 relative overflow-hidden group">
+                        <div className="size-14 bg-navy rounded-2xl shadow-2xl flex items-center justify-center border border-white/10 relative overflow-hidden group">
                             <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <Sparkles className="h-7 w-7 text-primary relative z-10" />
                         </div>
                     ) : (
                         <button
                             onClick={() => navigate(-1)}
-                            className="size-14 bg-white/80 backdrop-blur-xl rounded-[1.5rem] shadow-xl flex items-center justify-center border border-white hover:scale-105 active:scale-95 transition-all"
+                            className="size-14 bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl flex items-center justify-center border border-white hover:scale-105 active:scale-95 transition-all"
                         >
                             <ArrowLeft className="h-6 w-6 text-slate-900" />
                         </button>
                     )}
 
-                    <div className="bg-white/40 backdrop-blur-md px-6 h-14 rounded-[1.5rem] flex items-center border border-white/40 shadow-sm">
+                    <div className="bg-white/40 backdrop-blur-md px-6 h-14 rounded-2xl flex items-center border border-white/40 shadow-sm">
                         <h1 className="text-lg font-black tracking-tighter text-slate-900 uppercase italic">
                             {isDashboard ? 'ShareWay' : title}
                         </h1>

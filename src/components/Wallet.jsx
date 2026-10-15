@@ -142,7 +142,7 @@ const TransactionItem = ({ tx, onClick }) => {
     return (
         <button
             onClick={() => onClick(tx)}
-            className="w-full group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-[2rem] hover:shadow-md hover:border-primary/20 transition-all mb-3 text-left active:scale-[0.98]"
+            className="w-full group flex items-center justify-between p-5 bg-white border border-slate-100 rounded-3xl hover:shadow-md hover:border-primary/20 transition-all mb-3 text-left active:scale-[0.98]"
         >
             <div className="flex items-center gap-4 text-left">
                 <div className={cn(
@@ -282,12 +282,12 @@ const Wallet = () => {
                 </div>
             </header>
 
-            <main className="max-w-xl mx-auto px-4 py-6 space-y-8 text-left">
-                <Card className="border-none shadow-2xl bg-slate-900 overflow-hidden rounded-[2.5rem] relative group">
+            <main className="max-w-xl mx-auto px-4 py-6 space-y-5 text-left">
+                <Card className="border-none shadow-2xl bg-slate-900 overflow-hidden rounded-3xl relative group">
                     <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform duration-1000">
                         <Zap className="h-32 w-32 text-white" />
                     </div>
-                    <CardContent className="p-8 text-white relative z-10 text-left">
+                    <CardContent className="p-5 text-white relative z-10 text-left">
                         <div className="flex justify-between items-start mb-10 text-left">
                             <div className="text-left">
                                 <div className="flex items-center gap-2 mb-2">
@@ -315,11 +315,11 @@ const Wallet = () => {
                         </div>
                         <div className="flex gap-4">
                             <Button onClick={() => setIsModalOpen(true)}
-                                    className="flex-1 h-16 rounded-[1.5rem] bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+                                    className="flex-1 h-12 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black text-xs uppercase tracking-widest shadow-xl active:scale-95 transition-all">
                                 {t('wallet.add_funds')}
                             </Button>
                             <Button variant="outline"
-                                    className="h-16 w-16 rounded-[1.5rem] bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
+                                    className="h-16 w-16 rounded-2xl bg-white/10 border-white/10 text-white hover:bg-white/20 flex items-center justify-center active:scale-95 transition-all"
                                     onClick={() => navigate('/settings')}>
                                 <CreditCard className="h-6 w-6" />
                             </Button>
@@ -327,8 +327,8 @@ const Wallet = () => {
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-xl rounded-[2.5rem] bg-white overflow-hidden">
-                    <CardContent className="p-6 space-y-5">
+                <Card className="border-none shadow-xl rounded-3xl bg-white overflow-hidden">
+                    <CardContent className="p-4 space-y-5">
                         <div className="flex items-start gap-4">
                             <div className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                                 <ShieldCheck className="size-6" />
@@ -373,7 +373,7 @@ const Wallet = () => {
                         {transactions.length > 0 ? (
                             transactions.map((tx) => <TransactionItem key={tx.id} tx={tx} onClick={handleTxClick} />)
                         ) : (
-                            <div className="bg-white border border-slate-100 rounded-[3rem] p-10 text-center border-dashed shadow-sm">
+                            <div className="bg-white border border-slate-100 rounded-3xl p-10 text-center border-dashed shadow-sm">
                                 <Sparkles className="size-10 text-slate-200 mx-auto mb-4" />
                                 <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">{copy.emptyTitle}</h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-2">{copy.emptyDesc}</p>

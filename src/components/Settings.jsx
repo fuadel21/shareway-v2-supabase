@@ -17,10 +17,10 @@ import ReferralCard from '@/components/referrals/ReferralCard.jsx';
 const SettingItem = ({ icon: Icon, label, onClick, color, sublabel, badge }) => (
   <button
     onClick={onClick}
-    className="w-full flex items-center justify-between p-4 md:p-6 bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group"
+    className="w-full flex items-center justify-between p-4 md:p-6 bg-white rounded-3xl md:rounded-3xl border border-slate-100 hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 group"
   >
     <div className="flex items-center gap-4 md:gap-6 text-left">
-      <div className={cn("h-12 w-12 md:h-16 md:w-16 rounded-2xl md:rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6 duration-500 relative", color)}>
+      <div className={cn("h-12 w-12 md:h-16 md:w-16 rounded-2xl md:rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:rotate-6 duration-500 relative", color)}>
         <Icon className="size-5 md:size-6 text-white" />
         {badge && <div className="absolute -top-1 -right-1 size-3 md:size-4 bg-primary rounded-full border-2 border-white animate-pulse" />}
       </div>
@@ -167,8 +167,8 @@ const Settings = () => {
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12 text-left">
-        <section className="rounded-[2.5rem] bg-slate-900 text-white p-6 shadow-2xl overflow-hidden relative">
+      <main className="max-w-xl mx-auto px-4 py-6 md:py-8 space-y-5 md:space-y-6 text-left">
+        <section className="rounded-3xl bg-slate-900 text-white p-6 shadow-2xl overflow-hidden relative">
           <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
           <div className="relative space-y-5">
             <div className="flex items-start justify-between gap-4">
@@ -211,7 +211,7 @@ const Settings = () => {
           </div>
         </section>
 
-        <section className="rounded-[2.5rem] bg-slate-950 text-white p-6 shadow-2xl overflow-hidden relative">
+        <section className="rounded-3xl bg-slate-950 text-white p-6 shadow-2xl overflow-hidden relative">
           <div className="absolute -left-12 -bottom-12 size-40 rounded-full bg-emerald-400/15 blur-2xl" />
           <div className="relative space-y-5">
             <div className="flex items-start justify-between gap-4">
@@ -312,7 +312,7 @@ const Settings = () => {
         )}
 
         <div className="pt-6 md:pt-10">
-          <Button onClick={handleSignOut} variant="ghost" className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2.5rem] bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-black text-base md:text-lg tracking-tighter shadow-sm border-none uppercase italic">
+          <Button onClick={handleSignOut} variant="ghost" className="w-full h-12 md:h-14 rounded-2xl md:rounded-3xl bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 font-black text-base md:text-lg tracking-tighter shadow-sm border-none uppercase italic">
             <LogOut className="mr-3 size-5 md:size-6" /> {t('nav.logout')}
           </Button>
         </div>

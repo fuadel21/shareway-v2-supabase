@@ -136,7 +136,7 @@ const DisputesTab = () => {
                 <Badge variant="outline" className="rounded-xl border-slate-100 font-bold text-slate-400">{disputes.length} CASOS</Badge>
             </div>
 
-            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
                 <CardContent className="p-0">
                     <Table>
                         <TableHeader className="bg-slate-50/50">
@@ -200,7 +200,7 @@ const DisputesTab = () => {
             </Card>
 
             <Dialog open={!!selectedDispute} onOpenChange={(open) => { if (!open) closeDispute(); }}>
-                <DialogContent className="max-w-2xl rounded-[2.5rem] border-none shadow-2xl p-8 bg-white overflow-hidden">
+                <DialogContent className="max-w-2xl rounded-3xl border-none shadow-2xl p-8 bg-white overflow-hidden">
                     <DialogHeader className="space-y-2">
                         <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-900 flex items-center gap-3">
                             <div className="size-10 bg-slate-900 rounded-xl flex items-center justify-center shadow-lg"><FileText className="h-5 w-5 text-primary" /></div>
@@ -222,7 +222,7 @@ const DisputesTab = () => {
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-slate-950 rounded-[2rem] text-white relative overflow-hidden group">
+                            <div className="p-6 bg-slate-950 rounded-3xl text-white relative overflow-hidden group">
                                 <Gavel className="absolute -right-4 -bottom-4 size-24 opacity-5 group-hover:rotate-12 transition-transform duration-700" />
                                 <label className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3 block">Motivo de la Disputa</label>
                                 <p className="text-sm font-medium italic leading-relaxed text-slate-200">&quot;{selectedDispute.reason || 'Sin motivo detallado'}&quot;</p>

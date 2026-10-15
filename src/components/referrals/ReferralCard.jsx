@@ -47,7 +47,7 @@ const ReferralCard = ({ profile, user }) => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-6 text-white shadow-2xl">
+    <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-2xl">
       <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-orange-500/20 blur-2xl" />
       <div className="absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-emerald-500/20 blur-2xl" />
 

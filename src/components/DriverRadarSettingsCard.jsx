@@ -127,8 +127,8 @@ export default function DriverRadarSettingsCard() {
 
   if (isLoading) {
     return (
-      <Card className="border-none rounded-[2.5rem] bg-white shadow-sm">
-        <CardContent className="p-8 flex items-center justify-center">
+      <Card className="border-none rounded-3xl bg-white shadow-sm">
+        <CardContent className="p-5 flex items-center justify-center">
           <Loader2 className="size-6 animate-spin text-primary" />
         </CardContent>
       </Card>
@@ -136,8 +136,8 @@ export default function DriverRadarSettingsCard() {
   }
 
   return (
-    <Card className="border-none rounded-[2.5rem] bg-slate-950 text-white shadow-2xl overflow-hidden">
-      <CardContent className="p-6 space-y-6 relative">
+    <Card className="border-none rounded-3xl bg-slate-950 text-white shadow-2xl overflow-hidden">
+      <CardContent className="p-4 space-y-6 relative">
         <div className="absolute -right-10 -top-10 size-40 rounded-full bg-primary/15 blur-3xl" />
 
         <div className="relative flex items-start justify-between gap-5">

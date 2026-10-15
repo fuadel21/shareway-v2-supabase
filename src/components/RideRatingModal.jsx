@@ -79,7 +79,7 @@ const RideRatingModal = ({ isOpen, onClose, rideId, driverId, driverName, onSucc
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[400px] rounded-[2.5rem] border-none shadow-2xl p-8 bg-white overflow-hidden outline-none">
+            <DialogContent className="sm:max-w-[400px] rounded-3xl border-none shadow-2xl p-8 bg-white overflow-hidden outline-none">
                 <DialogHeader className="text-center space-y-2">
                     <div className="size-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-2 border-2 border-amber-100">
                         <Star className="h-8 w-8 text-amber-500 fill-amber-500" />
@@ -131,7 +131,7 @@ const RideRatingModal = ({ isOpen, onClose, rideId, driverId, driverName, onSucc
                     <Button
                         onClick={handleSubmit}
                         disabled={isSubmitting || rating === 0}
-                        className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl shadow-slate-200 disabled:opacity-50"
+                        className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl shadow-slate-200 disabled:opacity-50"
                     >
                         {isSubmitting ? <Loader2 className="animate-spin" /> : <span className="flex items-center gap-2">Enviar Valoración <Send size={16} /></span>}
                     </Button>

@@ -38,7 +38,7 @@ const AchievementCard = ({ achievement, isUnlocked, unlockedAt, index }) => {
     return (
         <div
             className={cn(
-                "group relative overflow-hidden rounded-[2.5rem] p-8 flex items-center gap-6 transition-all duration-700 animate-in fade-in slide-in-from-bottom-8",
+                "group relative overflow-hidden rounded-3xl p-8 flex items-center gap-6 transition-all duration-700 animate-in fade-in slide-in-from-bottom-8",
                 isUnlocked
                     ? "bg-white shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-primary/10"
                     : "bg-white/40 backdrop-blur-xl border border-white/60 grayscale opacity-70 hover:grayscale-0 hover:opacity-100"
@@ -47,7 +47,7 @@ const AchievementCard = ({ achievement, isUnlocked, unlockedAt, index }) => {
         >
             {/* ICONO CON ESTILO PREMIUM */}
             <div className={cn(
-                "h-20 w-20 rounded-[1.8rem] flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 group-hover:scale-110",
+                "h-20 w-20 rounded-2xl flex items-center justify-center shrink-0 shadow-2xl transition-all duration-700 group-hover:scale-110",
                 isUnlocked
                     ? "bg-navy text-primary shadow-primary/20 rotate-3 group-hover:rotate-6"
                     : "bg-slate-100 text-slate-300"
@@ -161,10 +161,10 @@ const Achievements = () => {
         <div className="bg-slate-50 min-h-screen pb-40">
             <SubPageHeader title="Hall of Fame" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
 
                 {/* PROGRESS HERO CARD */}
-                <div className="bg-navy rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+                <div className="bg-navy rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-1000">
                         <Trophy size={160} className="text-primary rotate-12" />
                     </div>

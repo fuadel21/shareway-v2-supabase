@@ -104,8 +104,8 @@ function EmergencyContacts() {
         <div className="min-h-screen bg-slate-50 pb-32">
             <SubPageHeader title="Contactos de Emergencia" />
 
-            <main className="container mx-auto p-4 max-w-2xl space-y-8 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <Card className="rounded-[2.5rem] border-none shadow-xl glass overflow-hidden">
+            <main className="container mx-auto p-4 max-w-2xl space-y-5 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <Card className="rounded-3xl border-none shadow-xl glass overflow-hidden">
                     <CardHeader className="bg-red-500/5 pb-8 border-b border-red-500/10">
                         <CardTitle className="text-xl font-black text-red-600 flex items-center gap-3">
                             <ShieldAlert className="h-6 w-6" /> Añadir Persona de Confianza
@@ -155,7 +155,7 @@ function EmergencyContacts() {
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl glass overflow-hidden">
+                <Card className="rounded-3xl border-none shadow-xl glass overflow-hidden">
                     <CardHeader className="bg-slate-50 border-b border-gray-100">
                         <CardTitle className="text-lg font-black text-slate-800 flex items-center gap-3">
                             <Heart className="h-5 w-5 text-red-500 fill-red-500" /> Tus Guardas de Seguridad ({contacts.length}/5)

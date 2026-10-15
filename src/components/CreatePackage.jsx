@@ -82,11 +82,11 @@ const CreatePackage = () => {
         <div className="bg-slate-50 min-h-screen pb-40">
             <SubPageHeader title="Enviar Paquete" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-10">
+            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-5">
                 <form onSubmit={handleCreatePackage} className="space-y-10">
 
                     {/* SECCIÓN 1: RUTA DEL ENVÍO */}
-                    <Card className="rounded-[3rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <Card className="rounded-3xl border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-700">
                         <CardHeader className="bg-navy p-10 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20" />
                             <div className="relative z-10 space-y-2">
@@ -104,7 +104,7 @@ const CreatePackage = () => {
                                         <div className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-indigo-500 z-10 flex items-center justify-center">
                                             <div className="h-2.5 w-2.5 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(99,102,241,1)]" />
                                         </div>
-                                        <AddressAutocomplete placeholder="Calle, ciudad o lugar..." onPlaceSelect={setOrigin} className="h-16 pl-14 rounded-2xl border-none bg-slate-50 shadow-inner font-bold text-slate-800 focus:ring-4 focus:ring-primary/5 transition-all" />
+                                        <AddressAutocomplete placeholder="Calle, ciudad o lugar..." onPlaceSelect={setOrigin} className="h-12 pl-14 rounded-2xl border-none bg-slate-50 shadow-inner font-bold text-slate-800 focus:ring-4 focus:ring-primary/5 transition-all" />
                                     </div>
                                 </div>
 
@@ -114,7 +114,7 @@ const CreatePackage = () => {
                                         <div className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary z-10 flex items-center justify-center">
                                             <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(249,115,22,1)]" />
                                         </div>
-                                        <AddressAutocomplete placeholder="¿A quién le llega?" onPlaceSelect={setDestination} className="h-16 pl-14 rounded-2xl border-none bg-slate-50 shadow-inner font-bold text-slate-800 focus:ring-4 focus:ring-primary/5 transition-all" />
+                                        <AddressAutocomplete placeholder="¿A quién le llega?" onPlaceSelect={setDestination} className="h-12 pl-14 rounded-2xl border-none bg-slate-50 shadow-inner font-bold text-slate-800 focus:ring-4 focus:ring-primary/5 transition-all" />
                                     </div>
                                 </div>
                             </div>
@@ -122,7 +122,7 @@ const CreatePackage = () => {
                     </Card>
 
                     {/* SECCIÓN 2: DETALLES Y TAMAÑO */}
-                    <Card className="rounded-[3rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
+                    <Card className="rounded-3xl border-none shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-2xl animate-in fade-in slide-in-from-bottom-8 duration-700 delay-150">
                         <CardHeader className="bg-white p-10 border-b border-slate-50 flex flex-row items-center justify-between">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-black text-slate-900 tracking-tighter flex items-center gap-3">
@@ -150,7 +150,7 @@ const CreatePackage = () => {
                                             type="button"
                                             onClick={() => setSize(item.id)}
                                             className={cn(
-                                                "flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all duration-500 gap-3 group/btn",
+                                                "flex flex-col items-center justify-center p-6 rounded-3xl border-2 transition-all duration-500 gap-3 group/btn",
                                                 size === item.id
                                                     ? "bg-navy border-navy text-white shadow-2xl scale-100"
                                                     : "bg-slate-50 border-transparent text-slate-400 hover:bg-white hover:border-slate-200 scale-95"
@@ -171,7 +171,7 @@ const CreatePackage = () => {
                                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">¿Cuándo entregar?</label>
                                     <Popover>
                                         <PopoverTrigger asChild>
-                                            <Button variant="outline" className="w-full h-16 rounded-2xl justify-start font-black text-slate-800 border-none bg-slate-50 shadow-inner hover:bg-slate-100 transition-all">
+                                            <Button variant="outline" className="w-full h-12 rounded-2xl justify-start font-black text-slate-800 border-none bg-slate-50 shadow-inner hover:bg-slate-100 transition-all">
                                                 <CalendarIcon className="mr-3 h-5 w-5 text-primary" />
                                                 {deliveryBy ? format(deliveryBy, "d 'de' MMM", { locale: es }) : "Fecha límite"}
                                             </Button>
@@ -185,7 +185,7 @@ const CreatePackage = () => {
                                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary ml-1 font-bold">Aportación (€)</label>
                                     <div className="relative group">
                                         <Euro className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" />
-                                        <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-16 pl-14 pr-4 rounded-2xl border-none bg-primary/5 shadow-inner font-black text-primary text-xl" placeholder="0.00" />
+                                        <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-12 pl-14 pr-4 rounded-2xl border-none bg-primary/5 shadow-inner font-black text-primary text-xl" placeholder="0.00" />
                                     </div>
                                 </div>
                             </div>
@@ -210,7 +210,7 @@ const CreatePackage = () => {
                         <Button
                             type="submit"
                             disabled={isLoading || !origin || !destination}
-                            className="w-full h-20 rounded-[2.5rem] text-2xl font-black tracking-tighter shadow-[0_20px_50px_rgba(249,115,22,0.4)] bg-primary hover:bg-navy transition-all hover:scale-[1.02] active:scale-95 group border-t border-white/20 relative z-10 text-white"
+                            className="w-full h-14 rounded-3xl text-2xl font-black tracking-tighter shadow-[0_20px_50px_rgba(249,115,22,0.4)] bg-primary hover:bg-navy transition-all hover:scale-[1.02] active:scale-95 group border-t border-white/20 relative z-10 text-white"
                         >
                             {isLoading ? (
                                 <><Loader2 className="animate-spin h-8 w-8 mr-3 text-white" /> PUBLICANDO...</>

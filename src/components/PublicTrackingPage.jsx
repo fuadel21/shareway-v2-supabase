@@ -115,7 +115,7 @@ function PublicTrackingPage() {
     if (error || !ride) {
         return (
             <div className="flex h-screen flex-col items-center justify-center bg-slate-50 p-8 text-center">
-                <div className="max-w-sm rounded-[3rem] border border-red-100 bg-white p-10 shadow-2xl">
+                <div className="max-w-sm rounded-3xl border border-red-100 bg-white p-10 shadow-2xl">
                     <ShieldOff className="mx-auto mb-6 h-20 w-20 text-red-500" />
                     <h2 className="mb-4 text-3xl font-black tracking-tight text-gray-900">Acceso no disponible</h2>
                     <p className="font-medium leading-relaxed text-muted-foreground">{error || INVALID_LINK_MESSAGE}</p>
@@ -133,7 +133,7 @@ function PublicTrackingPage() {
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-slate-100 font-sans">
             <header className="absolute left-4 right-4 top-4 z-50 sm:left-6 sm:right-6 sm:top-6">
-                <div className="flex min-h-20 items-center gap-4 rounded-[2rem] border border-white/20 bg-white/90 px-5 py-4 shadow-2xl backdrop-blur-xl sm:px-6">
+                <div className="flex min-h-14 items-center gap-4 rounded-3xl border border-white/20 bg-white/90 px-5 py-4 shadow-2xl backdrop-blur-xl sm:px-6">
                     <div className="rounded-2xl bg-primary/10 p-3">
                         <Navigation className="h-6 w-6 text-primary" />
                     </div>
@@ -163,7 +163,7 @@ function PublicTrackingPage() {
             </div>
 
             <div className="absolute bottom-5 left-4 right-4 z-50 sm:bottom-10 sm:left-6 sm:right-6">
-                <div className="rounded-[2.5rem] border border-white/20 bg-white/90 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
+                <div className="rounded-3xl border border-white/20 bg-white/90 p-5 shadow-2xl backdrop-blur-xl sm:p-6">
                     <div className="flex items-center gap-4 sm:gap-5">
                         <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full border-4 border-emerald-500/20 bg-white shadow-inner">
                             {ride.driver?.photo_url ? (

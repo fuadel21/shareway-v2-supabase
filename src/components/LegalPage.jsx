@@ -174,7 +174,7 @@ const LegalPage = () => {
                     <ArrowLeft className="h-4 w-4" /> Volver a ShareWay
                 </Link>
 
-                <section className="rounded-[2rem] bg-white border border-slate-100 shadow-xl p-8 sm:p-10">
+                <section className="rounded-3xl bg-white border border-slate-100 shadow-xl p-8 sm:p-10">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="h-12 w-12 rounded-2xl bg-slate-950 text-white flex items-center justify-center">
                             {slug === 'contacto' ? <Mail className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}

@@ -275,7 +275,7 @@ function UserProfile() {
                 </div>
             </header>
 
-            <main className="max-w-xl mx-auto px-4 py-8 space-y-8 text-left">
+            <main className="max-w-xl mx-auto px-4 py-8 space-y-5 text-left">
                 <div className="relative text-center space-y-4">
                     <div className="relative inline-block">
                         <Avatar className="h-32 w-32 border-4 border-white shadow-2xl relative z-10 mx-auto transition-transform hover:scale-105 duration-500">
@@ -310,7 +310,7 @@ function UserProfile() {
                     <StatCard icon={ecoSystem.icon} value={profile.eco_tier} label={copy.statLevel} color={ecoSystem.color} />
                 </div>
 
-                <section className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-6 space-y-5">
+                <section className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 space-y-5">
                     <div className="flex items-start justify-between gap-4">
                         <div className="text-left">
                             <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">{copy.trustTitle}</p>
@@ -339,7 +339,7 @@ function UserProfile() {
                 </section>
 
                 {profile.bio && (
-                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Info size={12} className="text-primary" /> {copy.biography}</p>
                         <p className="text-slate-600 font-medium italic whitespace-pre-line leading-relaxed">
                             "{profile.bio}"
@@ -348,7 +348,7 @@ function UserProfile() {
                 )}
 
                 {parseFloat(profile.total_co2_saved) > 0 && (
-                    <div className="bg-emerald-50 rounded-[2rem] p-6 border border-emerald-100 relative overflow-hidden shadow-sm">
+                    <div className="bg-emerald-50 rounded-3xl p-6 border border-emerald-100 relative overflow-hidden shadow-sm">
                         <div className="absolute top-0 right-0 p-6 opacity-10">
                             <Leaf size={100} className="text-emerald-600 rotate-12" />
                         </div>
@@ -376,7 +376,7 @@ function UserProfile() {
                 )}
 
                 {profile.vehicle && (profile.vehicle.make || profile.vehicle.model || profile.vehicle.photoURL) && (
-                    <Card className="rounded-[2.5rem] border-none shadow-xl bg-slate-900 overflow-hidden relative">
+                    <Card className="rounded-3xl border-none shadow-xl bg-slate-900 overflow-hidden relative">
                         <div className="absolute top-0 right-0 p-8 opacity-10"><Car size={120} className="text-white" /></div>
                         <div className="p-8 text-white relative z-10 text-left">
                             <div className="flex items-center gap-4 mb-6">

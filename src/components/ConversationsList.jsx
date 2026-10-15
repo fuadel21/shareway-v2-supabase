@@ -63,7 +63,7 @@ function ConversationsList() {
     if (conversations.length === 0) {
         return (
             <div className="h-full flex flex-col items-center justify-center text-center p-12 space-y-6">
-                <div className="h-24 w-24 bg-white rounded-[2rem] shadow-xl flex items-center justify-center border border-slate-50">
+                <div className="h-24 w-24 bg-white rounded-3xl shadow-xl flex items-center justify-center border border-slate-50">
                     <MessageSquare className="h-12 w-12 text-slate-100" />
                 </div>
                 <h3 className="font-black text-slate-950 text-xl tracking-tighter uppercase italic">{t('chats.no_chats')}</h3>

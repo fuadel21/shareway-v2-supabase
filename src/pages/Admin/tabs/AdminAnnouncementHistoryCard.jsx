@@ -43,8 +43,8 @@ export default function AdminAnnouncementHistoryCard({ refreshKey = 0 }) {
   }, [refreshKey]);
 
   return (
-    <Card className="rounded-[2rem] border-none bg-white shadow-xl text-left">
-      <CardHeader className="p-6 border-b border-slate-100">
+    <Card className="rounded-3xl border-none bg-white shadow-xl text-left">
+      <CardHeader className="p-4 border-b border-slate-100">
         <div className="flex items-center justify-between gap-3">
           <div>
             <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Historial</CardTitle>

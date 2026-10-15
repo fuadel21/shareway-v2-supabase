@@ -264,7 +264,7 @@ const GrowthSEOPage = ({ pageType }) => {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
             <div className="grid gap-3 sm:grid-cols-2">
               {page.stats.map(([label, value]) => (
                 <article key={label} className="rounded-3xl bg-white p-5 text-slate-950">
@@ -284,7 +284,7 @@ const GrowthSEOPage = ({ pageType }) => {
             [Wallet, 'Ahorro en gastos', page.sections[1]],
             [Leaf, 'Menos emisiones', page.sections[2]]
           ].map(([SectionIcon, title, text]) => (
-            <article key={title} className="rounded-[2rem] border border-slate-100 bg-slate-50 p-7">
+            <article key={title} className="rounded-3xl border border-slate-100 bg-slate-50 p-7">
               <SectionIcon className="mb-4 h-7 w-7 text-emerald-600" />
               <h2 className="text-xl font-black tracking-tight">{title}</h2>
               <p className="mt-3 leading-7 text-slate-600">{text}</p>
@@ -294,7 +294,7 @@ const GrowthSEOPage = ({ pageType }) => {
       </section>
 
       <section className="px-5 pb-16">
-        <div className="mx-auto max-w-6xl rounded-[2rem] bg-orange-50 p-7 sm:p-10">
+        <div className="mx-auto max-w-6xl rounded-3xl bg-orange-50 p-7 sm:p-10">
           <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.25em] text-orange-600">Enlaces internos</p>
@@ -327,7 +327,7 @@ const GrowthSEOPage = ({ pageType }) => {
       </section>
 
       <section className="px-5 pb-20">
-        <div className="mx-auto max-w-6xl rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
+        <div className="mx-auto max-w-6xl rounded-3xl bg-slate-950 p-8 text-white sm:p-10">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <ShieldCheck className="mb-4 h-8 w-8 text-emerald-400" />

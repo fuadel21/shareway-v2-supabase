@@ -244,8 +244,8 @@ const LeaveReview = () => {
                 <SubPageHeader title="Valorar Miembro" />
                 
                 <main className="max-w-2xl mx-auto px-4 py-8">
-                    <Card className="rounded-[3rem] border-none shadow-2xl overflow-hidden">
-                        <CardContent className="p-8 text-center">
+                    <Card className="rounded-3xl border-none shadow-2xl overflow-hidden">
+                        <CardContent className="p-5 text-center">
                             <ShieldCheck className="h-16 w-16 text-amber-500 mx-auto mb-4" />
                             <h3 className="text-xl font-bold mb-2">No puedes valorar a este usuario</h3>
                             <p className="text-muted-foreground mb-6">{canReview?.reason}</p>
@@ -263,7 +263,7 @@ const LeaveReview = () => {
 
             <main className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* Perfil del Reviewee */}
-                <Card className="rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white mb-6">
+                <Card className="rounded-3xl border-none shadow-2xl overflow-hidden bg-white mb-6">
                     <CardHeader className="bg-slate-900 pb-16 pt-12 text-center flex flex-col items-center relative">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none overflow-hidden">
                             <Sparkles className="size-64 -translate-x-20 -translate-y-20 text-white" />
@@ -289,7 +289,7 @@ const LeaveReview = () => {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="p-8 -mt-8 bg-white rounded-t-[3rem] relative z-20">
+                    <CardContent className="p-5 -mt-8 bg-white rounded-t-[3rem] relative z-20">
                         {/* Rating Actual */}
                         {reviewee.rating && (
                             <div className="mb-6 p-4 bg-slate-50 rounded-2xl">
@@ -355,7 +355,7 @@ const LeaveReview = () => {
                                 </div>
                                 <Textarea
                                     placeholder={`¿Cómo fue el viaje? (Máx. 500 caracteres)`}
-                                    className="min-h-[150px] p-6 rounded-[2rem] border-none bg-slate-50 font-medium transition-all shadow-inner focus-visible:ring-primary"
+                                    className="min-h-[150px] p-6 rounded-3xl border-none bg-slate-50 font-medium transition-all shadow-inner focus-visible:ring-primary"
                                     value={comment}
                                     onChange={handleCommentChange}
                                     disabled={submitting}
@@ -372,7 +372,7 @@ const LeaveReview = () => {
                                     size="lg"
                                     onClick={handleSubmitReview}
                                     disabled={submitting || rating === 0}
-                                    className="w-full h-20 rounded-[2rem] text-xl font-black uppercase italic tracking-tighter shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all bg-slate-900 text-white"
+                                    className="w-full h-14 rounded-3xl text-xl font-black uppercase italic tracking-tighter shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all bg-slate-900 text-white"
                                 >
                                     {submitting ? (
                                         <>
@@ -390,7 +390,7 @@ const LeaveReview = () => {
                                 <Button
                                     variant="ghost"
                                     onClick={() => navigate(-1)}
-                                    className="w-full h-12 rounded-[2rem]"
+                                    className="w-full h-12 rounded-3xl"
                                     disabled={submitting}
                                 >
                                     <ArrowLeft className="mr-2 h-4 w-4" />

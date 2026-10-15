@@ -19,7 +19,7 @@ const BottomNavBar = ({ totalUnreadChats, activeRideForUser }) => {
             className="fixed bottom-0 left-0 right-0 bg-gray-900 text-white border-t z-20"
             style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-            <nav className="flex justify-around items-center h-16">
+            <nav className="flex justify-around items-center h-14">
                 {navItems.map(item => (
                     <NavLink
                         key={item.to}

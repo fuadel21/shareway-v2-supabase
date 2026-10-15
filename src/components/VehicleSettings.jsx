@@ -247,7 +247,7 @@ const VehicleSettings = () => {
       </header>
 
       <main className="mx-auto max-w-xl space-y-6 px-4 py-6 md:py-8">
-        <section className="rounded-[2.5rem] border border-slate-100 bg-white p-6 shadow-sm">
+        <section className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Listo para publicar</p>
@@ -280,7 +280,7 @@ const VehicleSettings = () => {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-[2.5rem] bg-slate-950 text-white shadow-2xl">
+        <section className="overflow-hidden rounded-3xl bg-slate-950 text-white shadow-2xl">
           <div className="relative aspect-[16/9] bg-slate-900">
             {previewUrl ? (
               <img src={previewUrl} alt="Vehículo" className="h-full w-full object-cover opacity-90" />
@@ -311,7 +311,7 @@ const VehicleSettings = () => {
         </section>
 
         <form onSubmit={handleSave} className="space-y-6">
-          <section className="rounded-[2.5rem] bg-white p-6 shadow-sm">
+          <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-primary">
                 <Car className="h-6 w-6" />
@@ -341,13 +341,13 @@ const VehicleSettings = () => {
               </div>
               <div className="col-span-2 space-y-2">
                 <Label className="ml-4 text-[9px] font-black uppercase tracking-widest text-slate-400">Matrícula parcial</Label>
-                <Input value={vehicle.plate} onChange={(e) => updateVehicle({ plate: cleanPlate(e.target.value) })} placeholder="1234B**" className="h-16 rounded-2xl border-none bg-slate-950 px-5 text-center font-mono text-xl font-black uppercase tracking-[0.3em] text-primary shadow-2xl" />
+                <Input value={vehicle.plate} onChange={(e) => updateVehicle({ plate: cleanPlate(e.target.value) })} placeholder="1234B**" className="h-12 rounded-2xl border-none bg-slate-950 px-5 text-center font-mono text-xl font-black uppercase tracking-[0.3em] text-primary shadow-2xl" />
                 <p className="px-4 text-[10px] font-bold leading-5 text-slate-400">Puedes ocultar parte de la matrícula con asteriscos. Ejemplo: 1234B**.</p>
               </div>
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-white p-6 shadow-sm">
+          <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
                 <Users className="h-6 w-6" />
@@ -407,7 +407,7 @@ const VehicleSettings = () => {
             </div>
           </section>
 
-          <section className="rounded-[2.5rem] bg-white p-6 shadow-sm">
+          <section className="rounded-3xl bg-white p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                 <ShieldCheck className="h-6 w-6" />
@@ -426,7 +426,7 @@ const VehicleSettings = () => {
             <p className="mt-2 px-3 text-right text-[10px] font-bold text-slate-400">{String(vehicle.notes || '').length}/280</p>
           </section>
 
-          <Button type="submit" disabled={isSaving} className="h-16 w-full rounded-[2rem] bg-slate-950 text-lg font-black uppercase italic tracking-tight text-white shadow-2xl active:scale-95 md:h-20 md:rounded-[2.5rem]">
+          <Button type="submit" disabled={isSaving} className="h-12 w-full rounded-3xl bg-slate-950 text-lg font-black uppercase italic tracking-tight text-white shadow-2xl active:scale-95 md:h-14 md:rounded-3xl">
             {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <>{completion < 100 ? 'Guardar vehículo' : 'Actualizar vehículo'} <Sparkles className="ml-3 h-5 w-5 text-primary" /></>}
           </Button>
         </form>

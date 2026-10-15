@@ -176,7 +176,7 @@ function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="flex-1 max-w-3xl w-full bg-slate-900 rounded-[2rem] sm:rounded-[2.5rem] p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 border border-white/10 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] relative overflow-hidden">
+                <div className="flex-1 max-w-3xl w-full bg-slate-900 rounded-3xl sm:rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 border border-white/10 shadow-[0_0_50px_-12px_rgba(59,130,246,0.5)] relative overflow-hidden">
                     <div className="relative flex items-center gap-4 min-w-0 flex-1">
                         <div className="size-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30">
                             <Activity className="size-6 text-primary animate-pulse" />
@@ -224,7 +224,7 @@ function AdminDashboard() {
                 </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] sm:rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white">
+            <Card className="rounded-3xl sm:rounded-3xl border-none shadow-xl overflow-hidden bg-white">
                 <CardContent className="p-3 sm:p-4 lg:p-6">
                     <Tabs value={tab} onValueChange={(value) => navigate(`/admin/${value}`)} className="w-full">
                         <div className="mb-4 flex items-center justify-between gap-3 px-1">
@@ -234,7 +234,7 @@ function AdminDashboard() {
                             </div>
                             <Badge className="shrink-0 bg-slate-900 text-white border-none font-black text-[8px] uppercase tracking-widest px-3 py-1">Admin</Badge>
                         </div>
-                        <TabsList className="admin-command-tabs flex h-auto w-full overflow-x-auto snap-x snap-mandatory mb-6 bg-slate-50 p-2 rounded-[1.5rem] gap-2 border border-slate-100/50">
+                        <TabsList className="admin-command-tabs flex h-auto w-full overflow-x-auto snap-x snap-mandatory mb-6 bg-slate-50 p-2 rounded-2xl gap-2 border border-slate-100/50">
                             {adminTabs.map((item) => (
                                 <TabsTrigger key={item.val} value={item.val} className="min-w-[92px] min-h-[52px] snap-start rounded-2xl px-3 py-2 data-[state=active]:bg-white data-[state=active]:shadow-lg data-[state=active]:text-primary text-[9px] font-black uppercase tracking-widest gap-1.5 border border-transparent data-[state=active]:border-slate-100 flex flex-col items-center justify-center leading-none">
                                     <item.icon className="h-4 w-4 shrink-0" />
@@ -260,8 +260,8 @@ function AdminDashboard() {
             </Card>
 
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-                <Card className="rounded-[2rem] border-none shadow-2xl overflow-hidden bg-slate-900 text-white relative">
-                    <CardHeader className="p-6 pb-4">
+                <Card className="rounded-3xl border-none shadow-2xl overflow-hidden bg-slate-900 text-white relative">
+                    <CardHeader className="p-4 pb-4">
                         <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Tesorería disponible</CardTitle>
                         <div className="text-4xl font-black italic tracking-tighter mt-2">{loading ? <Skeleton className="h-12 w-32 bg-slate-800" /> : treasuryTotal.toFixed(2)}<span className="text-2xl ml-1 text-slate-500">€</span></div>
                     </CardHeader>
@@ -275,7 +275,7 @@ function AdminDashboard() {
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-2 rounded-[2rem] border-none shadow-xl bg-white overflow-hidden p-5 sm:p-8">
+                <Card className="lg:col-span-2 rounded-3xl border-none shadow-xl bg-white overflow-hidden p-5 sm:p-8">
                     <div className="flex items-center justify-between gap-3 mb-6">
                         <div>
                             <CardTitle className="text-base sm:text-lg font-black italic uppercase tracking-tighter">Salud Financiera</CardTitle>

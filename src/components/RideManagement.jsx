@@ -283,7 +283,7 @@ const RideManagement = ({ ride, onRefresh }) => {
     };
 
     return (
-        <Card className="rounded-[3rem] border-none shadow-diamond bg-white p-6 sm:p-8 space-y-8 relative overflow-hidden">
+        <Card className="rounded-3xl border-none shadow-diamond bg-white p-4 sm:p-5 space-y-8 relative overflow-hidden">
             <div className="flex items-center justify-between">
                 <div className="text-left">
                     <h3 className="font-black text-2xl text-slate-900 uppercase italic tracking-tighter leading-none">Gestión Élite</h3>
@@ -302,7 +302,7 @@ const RideManagement = ({ ride, onRefresh }) => {
             </div>
 
             {isRideScheduled && (
-                <div className="rounded-[2rem] border border-slate-100 bg-slate-50/80 p-4 sm:p-5 space-y-4">
+                <div className="rounded-3xl border border-slate-100 bg-slate-50/80 p-4 sm:p-5 space-y-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3">
                             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-sm">
@@ -485,7 +485,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                         />
                     ))
                 ) : (
-                    <div className="p-8 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-100">
+                    <div className="p-8 text-center bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100">
                         <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-relaxed">No hay pasajeros confirmados<br />todavía.</p>
                     </div>
                 )}
@@ -512,7 +512,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                         }}
                         disabled={!canStartRide || isLoading}
                         className={cn(
-                            'w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none',
+                            'w-full h-14 rounded-3xl font-black text-xl uppercase italic shadow-2xl active:scale-95 transition-all border-none',
                             canStartRide ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'
                         )}
                     >
@@ -528,7 +528,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                     <div className="space-y-4">
                         {distMeters !== null && (
                             <div className={cn(
-                                'p-6 rounded-[2rem] border-2 flex items-center justify-between',
+                                'p-6 rounded-3xl border-2 flex items-center justify-between',
                                 distMeters <= 500 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-100'
                             )}>
                                 <div className="text-left">
@@ -552,7 +552,7 @@ const RideManagement = ({ ride, onRefresh }) => {
                             }}
                             disabled={!canCompleteRide || isLoading}
                             className={cn(
-                                'w-full h-20 rounded-[2rem] font-black text-xl uppercase italic shadow-2xl transition-all border-none',
+                                'w-full h-14 rounded-3xl font-black text-xl uppercase italic shadow-2xl transition-all border-none',
                                 !canCompleteRide ? 'bg-slate-100 text-slate-300' : 'bg-emerald-600 text-white'
                             )}
                         >

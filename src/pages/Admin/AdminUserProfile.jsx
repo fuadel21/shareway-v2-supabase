@@ -153,7 +153,7 @@ function AdminUserProfile() {
             <main className="container mx-auto px-4 max-w-6xl">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="space-y-6">
-                        <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden">
+                        <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden">
                             <CardHeader className="bg-gradient-to-br from-white to-blue-50/30">
                                 <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5 text-primary" /> Detalles de Cuenta</CardTitle>
                             </CardHeader>
@@ -182,7 +182,7 @@ function AdminUserProfile() {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden">
+                        <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-emerald-500" /> Verificación KYC</CardTitle>
                             </CardHeader>
@@ -211,8 +211,8 @@ function AdminUserProfile() {
                             </CardContent>
                         </Card>
 
-                        <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 bg-primary text-white overflow-hidden">
-                            <CardContent className="p-8 flex flex-col items-center gap-4">
+                        <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 bg-primary text-white overflow-hidden">
+                            <CardContent className="p-5 flex flex-col items-center gap-4">
                                 <div className="p-4 bg-white/20 rounded-full backdrop-blur-sm">
                                     <Star className="h-10 w-10 text-yellow-300 fill-yellow-300" />
                                 </div>

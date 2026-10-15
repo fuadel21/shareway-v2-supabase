@@ -149,7 +149,7 @@ export default function TripCalendarPage() {
   return (
     <div className="min-h-screen bg-slate-50 px-4 py-6 pb-32 lg:px-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm lg:p-8">
+        <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm lg:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Agenda ShareWay</p>
@@ -170,8 +170,8 @@ export default function TripCalendarPage() {
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <Card className="rounded-[2rem] border-none bg-white shadow-xl overflow-hidden">
-            <CardContent className="p-4 sm:p-6 lg:p-8">
+          <Card className="rounded-3xl border-none bg-white shadow-xl overflow-hidden">
+            <CardContent className="p-4 sm:p-4 lg:p-8">
               <div className="mb-6 flex items-center justify-between gap-3">
                 <Button variant="outline" size="icon" onClick={() => setCurrentMonth((date) => subMonths(date, 1))} className="rounded-2xl">
                   <ChevronLeft className="h-4 w-4" />
@@ -229,8 +229,8 @@ export default function TripCalendarPage() {
           </Card>
 
           <div className="space-y-6">
-            <Card className="rounded-[2rem] border-none bg-slate-900 text-white shadow-xl overflow-hidden">
-              <CardContent className="p-6 lg:p-8">
+            <Card className="rounded-3xl border-none bg-slate-900 text-white shadow-xl overflow-hidden">
+              <CardContent className="p-4 lg:p-8">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/20 text-primary">
                     <CalendarDays className="h-6 w-6" />
@@ -257,8 +257,8 @@ export default function TripCalendarPage() {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] border-none bg-white shadow-xl">
-              <CardContent className="p-6 lg:p-8">
+            <Card className="rounded-3xl border-none bg-white shadow-xl">
+              <CardContent className="p-4 lg:p-8">
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Agenda rápida</p>

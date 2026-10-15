@@ -186,7 +186,7 @@ const injectPublishGuide = () => {
   const copy = getPublishGuideCopy();
   const guide = document.createElement('div');
   guide.setAttribute('data-shareway-publish-guide', 'true');
-  guide.className = 'rounded-[2.5rem] bg-slate-950 text-white p-6 shadow-2xl space-y-4 text-left';
+  guide.className = 'rounded-3xl bg-slate-950 text-white p-6 shadow-2xl space-y-4 text-left';
   guide.innerHTML = `
     <div class="flex items-start justify-between gap-4">
       <div>

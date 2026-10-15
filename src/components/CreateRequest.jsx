@@ -367,7 +367,7 @@ const CreateRequest = () => {
             <main className="max-w-xl mx-auto px-4 py-8 text-left">
                 <form onSubmit={handleCreateRequest} className="space-y-6 text-left">
                     {wasPreparedFromSearch && (
-                        <Card className="border-none shadow-2xl rounded-[2.5rem] p-6 bg-slate-900 text-white overflow-hidden relative">
+                        <Card className="border-none shadow-2xl rounded-3xl p-4 bg-slate-900 text-white overflow-hidden relative">
                             <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
                             <div className="relative space-y-5">
                                 <div className="flex items-start justify-between gap-4">
@@ -418,7 +418,7 @@ const CreateRequest = () => {
                         </Card>
                     )}
 
-                    <Card className="border-none shadow-xl rounded-[2.5rem] p-6 bg-white space-y-4">
+                    <Card className="border-none shadow-xl rounded-3xl p-4 bg-white space-y-4">
                         <AddressAutocomplete
                             label={t('create_ride.origin_label')}
                             onSelect={handleOriginSelect}
@@ -452,7 +452,7 @@ const CreateRequest = () => {
                     </Card>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
+                        <Card className="border-none shadow-lg rounded-3xl p-4 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_datetime')}</p>
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -466,7 +466,7 @@ const CreateRequest = () => {
                             </Popover>
                             <Input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="h-14 rounded-2xl border-none bg-slate-50 font-black text-center text-lg" />
                         </Card>
-                        <Card className="border-none shadow-lg rounded-[2rem] p-6 bg-white space-y-4 text-center">
+                        <Card className="border-none shadow-lg rounded-3xl p-4 bg-white space-y-4 text-center">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('create_ride.section_seats_price')}</p>
                             <div className="grid grid-cols-4 bg-slate-50 p-1.5 rounded-2xl gap-1">
                                 {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
@@ -505,7 +505,7 @@ const CreateRequest = () => {
                         </Card>
                     </div>
 
-                    <Card className="border-none shadow-xl rounded-[2.5rem] p-8 bg-white space-y-6">
+                    <Card className="border-none shadow-xl rounded-3xl p-5 bg-white space-y-6">
                         <div className="flex items-center justify-between gap-2">
                             <h3 className="font-black text-slate-900 uppercase italic tracking-tighter">{t('create_request.section_shield')}</h3>
                             <button type="button"
@@ -523,7 +523,7 @@ const CreateRequest = () => {
                     </Card>
 
                     <div className="pt-4">
-                        <Button type="submit" disabled={!canPublish} className="w-full h-20 rounded-[2.2rem] bg-slate-900 hover:bg-slate-800 text-white font-black text-xl tracking-tighter shadow-2xl active:scale-95 transition-all border-none uppercase italic">
+                        <Button type="submit" disabled={!canPublish} className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xl tracking-tighter shadow-2xl active:scale-95 transition-all border-none uppercase italic">
                             {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{copy.publishCta || t('create_request.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                         </Button>
                     </div>

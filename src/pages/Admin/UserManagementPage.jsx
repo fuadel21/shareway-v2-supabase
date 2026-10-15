@@ -75,8 +75,8 @@ const UserManagementPage = () => {
                 </div>
             </div>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden">
-                <CardHeader className="bg-gradient-to-br from-white to-gray-50/20 p-8 border-b border-gray-50">
+            <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-white to-gray-50/20 p-5 border-b border-gray-50">
                     <div className="relative max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <Input

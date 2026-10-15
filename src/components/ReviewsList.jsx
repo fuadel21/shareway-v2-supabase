@@ -42,7 +42,7 @@ const ReviewsList = ({ userId }) => {
     );
 
     if (reviews.length === 0) return (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 italic shadow-inner">
+        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border-2 border-dashed border-slate-100 italic shadow-inner">
             <MessageSquare className="h-10 w-10 text-slate-100 mb-3" />
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
                 Aún no tiene valoraciones.<br/>¡Sé el primero en viajar con este usuario!
@@ -55,7 +55,7 @@ const ReviewsList = ({ userId }) => {
             {reviews.map((review, idx) => (
                 <div
                     key={review.id}
-                    className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 group"
+                    className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 animate-in fade-in slide-in-from-bottom-4 group"
                     style={{ animationDelay: `${idx * 100}ms` }}
                 >
                     <div className="flex items-start gap-4">

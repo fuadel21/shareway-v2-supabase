@@ -153,8 +153,8 @@ const VerificationReview = () => {
                 </div>
             </div>
 
-            <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden">
-                <CardHeader className="bg-gradient-to-br from-white to-blue-50/20 p-8 border-b border-gray-50">
+            <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden">
+                <CardHeader className="bg-gradient-to-br from-white to-blue-50/20 p-5 border-b border-gray-50">
                     <div className="flex items-center gap-4">
                         <div className="bg-primary/10 p-4 rounded-2xl">
                             <ShieldCheck className="h-8 w-8 text-primary" />
@@ -165,7 +165,7 @@ const VerificationReview = () => {
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="p-8 space-y-10">
+                <CardContent className="p-5 space-y-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -204,7 +204,7 @@ const VerificationReview = () => {
                     <div className="flex flex-col sm:grid sm:grid-cols-2 gap-4 pt-10 border-t border-gray-50">
                         <Button
                             variant="outline"
-                            className="rounded-2xl h-16 px-10 text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 font-extrabold text-xs uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                            className="rounded-2xl h-12 px-10 text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 font-extrabold text-xs uppercase tracking-widest transition-all shadow-sm active:scale-95"
                             onClick={() => handleVerificationAction('rejected')}
                             disabled={isSubmitting}
                         >
@@ -212,7 +212,7 @@ const VerificationReview = () => {
                             Rechazar KYC
                         </Button>
                         <Button
-                            className="rounded-2xl h-16 px-10 bg-primary hover:bg-primary/90 font-extrabold text-xs uppercase tracking-widest transition-all shadow-xl shadow-primary/20 active:scale-95"
+                            className="rounded-2xl h-12 px-10 bg-primary hover:bg-primary/90 font-extrabold text-xs uppercase tracking-widest transition-all shadow-xl shadow-primary/20 active:scale-95"
                             onClick={() => handleVerificationAction('approved')}
                             disabled={isSubmitting}
                         >

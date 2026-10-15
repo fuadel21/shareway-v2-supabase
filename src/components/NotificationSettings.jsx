@@ -79,8 +79,8 @@ function NotificationSettings() {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title={t('notifications.title', 'Notificaciones')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8 text-left">
-                <div className="bg-white rounded-[3rem] p-8 shadow-2xl shadow-slate-200 border border-slate-100 relative overflow-hidden group">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5 text-left">
+                <div className="bg-white rounded-3xl p-8 shadow-2xl shadow-slate-200 border border-slate-100 relative overflow-hidden group">
                     <div className="absolute -right-6 -top-6 opacity-5 rotate-12 group-hover:scale-110 transition-transform">
                         <Bell size={120} className="text-primary" />
                     </div>
@@ -104,8 +104,8 @@ function NotificationSettings() {
                     </div>
                 </div>
 
-                <Card className="border-none rounded-[2.5rem] bg-slate-950 text-white shadow-2xl shadow-slate-900/20 overflow-hidden">
-                    <CardContent className="p-6 space-y-5">
+                <Card className="border-none rounded-3xl bg-slate-950 text-white shadow-2xl shadow-slate-900/20 overflow-hidden">
+                    <CardContent className="p-4 space-y-5">
                         <div className="flex items-start justify-between gap-4">
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-[0.25em] text-primary">Centro de avisos</p>
@@ -154,10 +154,10 @@ function NotificationSettings() {
                             return (
                                 <Card
                                     key={opt.id}
-                                    className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group animate-in fade-in slide-in-from-bottom-4"
+                                    className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all group animate-in fade-in slide-in-from-bottom-4"
                                     style={{ animationDelay: `${idx * 70}ms` }}
                                 >
-                                    <CardContent className="p-6 flex items-center justify-between gap-5">
+                                    <CardContent className="p-4 flex items-center justify-between gap-5">
                                         <div className="flex items-center gap-5 min-w-0">
                                             <div className={cn("p-4 rounded-2xl bg-slate-50 group-hover:scale-110 transition-transform", opt.color.replace('text', 'bg').replace('-500', '-50'))}>
                                                 <opt.icon className={cn("size-6", opt.color)} />
@@ -183,7 +183,7 @@ function NotificationSettings() {
                     </div>
                 </div>
 
-                <div className="p-8 bg-indigo-50/50 rounded-[3rem] border border-indigo-100 flex flex-col items-center gap-4 text-center">
+                <div className="p-8 bg-indigo-50/50 rounded-3xl border border-indigo-100 flex flex-col items-center gap-4 text-center">
                     <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">{t('notifications.battery_optimization', 'Control de avisos')}</p>
                     <p className="text-xs text-slate-500 font-medium leading-relaxed italic">
                         {t('notifications.battery_info', 'Puedes reducir ruido desactivando avisos no esenciales. Los avisos críticos de seguridad y pagos podrán seguir mostrándose para proteger el servicio.')}

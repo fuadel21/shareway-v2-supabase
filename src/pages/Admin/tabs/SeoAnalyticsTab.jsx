@@ -316,7 +316,7 @@ const getOpportunityClasses = (severity) => ({
 }[severity] || 'bg-slate-50 text-slate-700 border-slate-100');
 
 const MetricCard = ({ title, value, description, icon }) => (
-  <Card className="rounded-[2rem] border-none bg-white shadow-sm">
+  <Card className="rounded-3xl border-none bg-white shadow-sm">
     <CardContent className="flex items-center justify-between gap-4 p-5">
       <div>
         <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">{title}</p>
@@ -388,7 +388,7 @@ const EmptyState = ({ text = 'Sin datos todavía' }) => (
 );
 
 const SimpleTable = ({ title, description, rows, columns, limit = 10 }) => (
-  <Card className="rounded-[2rem] border-none shadow-sm">
+  <Card className="rounded-3xl border-none shadow-sm">
     <CardHeader className="p-5 pb-3">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -579,7 +579,7 @@ function SeoAnalyticsTab() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-[2rem] bg-slate-50">
+      <div className="flex min-h-[420px] items-center justify-center rounded-3xl bg-slate-50">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-500" />
           <p className="mt-4 text-xs font-black uppercase tracking-widest text-slate-400">Cargando analítica SEO...</p>
@@ -590,7 +590,7 @@ function SeoAnalyticsTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-[2rem] bg-slate-950 p-6 text-white xl:flex-row xl:items-center xl:justify-between">
+      <div className="flex flex-col gap-4 rounded-3xl bg-slate-950 p-6 text-white xl:flex-row xl:items-center xl:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-orange-300">SEO Analytics</p>
           <h3 className="mt-2 text-2xl font-black tracking-tight">Rendimiento SEO de los últimos {dayRange} días</h3>
@@ -631,8 +631,8 @@ function SeoAnalyticsTab() {
         <MetricCard title="Registro/Login" value={analytics.registrationClicks.reduce((sum, row) => sum + row.count, 0)} description="Intención de conversión" icon={<UserPlus className="h-5 w-5" />} />
       </div>
 
-      <Card className="rounded-[2rem] border-none bg-slate-950 text-white shadow-sm">
-        <CardHeader className="p-6 pb-3">
+      <Card className="rounded-3xl border-none bg-slate-950 text-white shadow-sm">
+        <CardHeader className="p-4 pb-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -648,7 +648,7 @@ function SeoAnalyticsTab() {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-6 pt-3">
+        <CardContent className="p-4 pt-3">
           <div className="grid gap-4 lg:grid-cols-2">
             {analytics.opportunities.map((opportunity, index) => (
               <OpportunityCard key={`${opportunity.type}-${opportunity.path}-${index}`} opportunity={opportunity} />
@@ -657,8 +657,8 @@ function SeoAnalyticsTab() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-[2rem] border-none bg-orange-50 shadow-sm">
-        <CardHeader className="p-6 pb-3">
+      <Card className="rounded-3xl border-none bg-orange-50 shadow-sm">
+        <CardHeader className="p-4 pb-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
               <div className="flex items-center gap-2">
@@ -674,7 +674,7 @@ function SeoAnalyticsTab() {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="p-6 pt-3">
+        <CardContent className="p-4 pt-3">
           {analytics.guideIdeas.length === 0 ? (
             <EmptyState text="Sin ideas todavía" />
           ) : (
@@ -736,7 +736,7 @@ function SeoAnalyticsTab() {
         />
       </div>
 
-      <Card className="rounded-[2rem] border-none bg-orange-50 shadow-sm">
+      <Card className="rounded-3xl border-none bg-orange-50 shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-start gap-3">
             <Search className="mt-1 h-5 w-5 shrink-0 text-orange-500" />

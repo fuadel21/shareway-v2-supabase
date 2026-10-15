@@ -114,7 +114,7 @@ function RideChatSelector() {
             <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
                 {/* Header del viaje */}
                 {ride && (
-                    <Card className="p-6 rounded-[2rem] border-none shadow-lg bg-white">
+                    <Card className="p-4 rounded-3xl border-none shadow-lg bg-white">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-2xl bg-primary/10">
                                 <MessageCircle className="h-6 w-6 text-primary" />
@@ -138,7 +138,7 @@ function RideChatSelector() {
                     </h3>
 
                     {chats.length === 0 ? (
-                        <Card className="p-12 rounded-[2rem] border-2 border-dashed border-slate-200 text-center">
+                        <Card className="p-12 rounded-3xl border-2 border-dashed border-slate-200 text-center">
                             <MessageCircle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                             <p className="text-sm font-bold text-slate-400">No hay conversaciones disponibles</p>
                         </Card>
@@ -146,7 +146,7 @@ function RideChatSelector() {
                         chats.map((chat) => (
                             <Card
                                 key={chat.chat_id}
-                                className="p-6 rounded-[2rem] border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-white relative overflow-hidden"
+                                className="p-6 rounded-3xl border-none shadow-md hover:shadow-xl transition-all cursor-pointer bg-white relative overflow-hidden"
                                 onClick={() => navigate(`/rides/${rideId}/chat/${chat.chat_id}`)}
                             >
                                 <div className="flex items-center gap-4">

@@ -88,7 +88,7 @@ function SettingsV2() {
                     <Button variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4 mr-2" /> Volver</Button>
                 </div>
             </header>
-            <main className="container mx-auto p-4 max-w-2xl space-y-8">
+            <main className="container mx-auto p-4 max-w-2xl space-y-5">
                 <Card>
                     <CardHeader>
                         <CardTitle>General</CardTitle>

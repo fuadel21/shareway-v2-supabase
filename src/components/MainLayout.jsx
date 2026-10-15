@@ -200,7 +200,7 @@ const MainLayout = (props) => {
 
   return (
     <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative font-sans text-left">
-      <header className="fixed top-0 left-0 right-0 h-14 lg:h-16 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 lg:px-6 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 h-14 lg:h-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 lg:px-6 flex items-center justify-between">
         <div className="flex items-center gap-2 lg:gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
           <div className="size-8 lg:size-9 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
             <Sparkles className="text-primary h-3.5 w-3.5 lg:h-4 lg:w-4" />
@@ -252,7 +252,7 @@ const MainLayout = (props) => {
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-[1000] w-full bg-white/95 backdrop-blur-3xl border-t border-slate-100 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        <div className="max-w-xl mx-auto px-3 py-2 flex items-center justify-between gap-0.5 relative h-20">
+        <div className="max-w-xl mx-auto px-3 py-2 flex items-center justify-between gap-0.5 relative h-14">
           <div className="absolute inset-x-8 -top-px h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent opacity-30" />
 
           {navItems.map(item => (

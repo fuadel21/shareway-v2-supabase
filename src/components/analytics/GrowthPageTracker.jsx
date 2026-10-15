@@ -257,7 +257,7 @@ const injectRequestGuide = () => {
   const copy = getRequestGuideCopy();
   const wrapper = document.createElement('div');
   wrapper.setAttribute('data-shareway-request-guide', 'true');
-  wrapper.className = 'rounded-[2.5rem] bg-white border border-slate-100 shadow-xl p-5 space-y-4 text-left';
+  wrapper.className = 'rounded-3xl bg-white border border-slate-100 shadow-xl p-5 space-y-4 text-left';
   wrapper.innerHTML = `
     <div class="flex items-start justify-between gap-3">
       <div>
@@ -320,7 +320,7 @@ const injectCalendarCommandCenter = () => {
   const copy = getCalendarCopy();
   const wrapper = document.createElement('div');
   wrapper.setAttribute('data-shareway-calendar-center', 'true');
-  wrapper.className = 'rounded-[2rem] bg-slate-950 text-white p-5 shadow-xl lg:p-7 text-left';
+  wrapper.className = 'rounded-3xl bg-slate-950 text-white p-5 shadow-xl lg:p-7 text-left';
   wrapper.innerHTML = `
     <div class="flex items-start justify-between gap-4">
       <div>

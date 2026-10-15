@@ -76,11 +76,11 @@ const StatusCard = ({ isConnected, onConnect, isConnecting }) => {
     const { t } = useTranslation();
     return (
         <Card className={cn(
-            "rounded-[2.5rem] border-none shadow-xl overflow-hidden relative group transition-all duration-700",
+            "rounded-3xl border-none shadow-xl overflow-hidden relative group transition-all duration-700",
             isConnected ? "bg-slate-900 text-white" : "bg-white text-slate-900 border border-slate-100"
         )}>
             <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-125 transition-transform duration-1000"><BadgeCheck size={100} /></div>
-            <CardContent className="p-6 relative z-10 space-y-4">
+            <CardContent className="p-4 relative z-10 space-y-4">
                 <div className="flex items-center gap-4">
                     <div className={cn("size-12 rounded-xl flex items-center justify-center shadow-lg", isConnected ? "bg-primary text-slate-950" : "bg-slate-50 text-slate-400")}><Landmark className="h-6 w-6" /></div>
                     <div>
@@ -173,12 +173,12 @@ function PayoutSettings() {
         <div className="bg-slate-50 min-h-screen pb-40 font-sans">
             <SubPageHeader title={t('payouts.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-8">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5">
                 <StatusCard isConnected={isConnected} onConnect={handleConnectAccount} isConnecting={isConnecting} />
 
                 {isConnected && (
                     <div className="space-y-6">
-                        <Card className="rounded-[2.5rem] md:rounded-[3rem] border-none shadow-xl bg-white p-8 md:p-10 space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+                        <Card className="rounded-3xl md:rounded-3xl border-none shadow-xl bg-white p-5 md:p-10 space-y-6 md:space-y-8 animate-in slide-in-from-bottom-4 duration-500">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="text-left space-y-2 bg-slate-50 p-6 rounded-3xl border border-slate-100 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:scale-125 transition-transform"><TrendingUp size={40} /></div>
@@ -201,7 +201,7 @@ function PayoutSettings() {
                                         placeholder="0.00"
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
-                                        className="h-16 md:h-20 pl-14 text-xl md:text-2xl font-black rounded-2xl md:rounded-3xl bg-slate-50 border-none shadow-inner text-slate-900 focus-visible:ring-primary"
+                                        className="h-12 md:h-14 pl-14 text-xl md:text-2xl font-black rounded-2xl md:rounded-3xl bg-slate-50 border-none shadow-inner text-slate-900 focus-visible:ring-primary"
                                     />
                                 </div>
 
@@ -215,7 +215,7 @@ function PayoutSettings() {
                                 <Button
                                     onClick={handleRequest}
                                     disabled={isRequesting || balance < 10 || !amount}
-                                    className="w-full h-16 md:h-20 rounded-2xl md:rounded-[2rem] bg-slate-900 text-white font-black text-base md:text-lg uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-30"
+                                    className="w-full h-12 md:h-14 rounded-2xl md:rounded-3xl bg-slate-900 text-white font-black text-base md:text-lg uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all disabled:opacity-30"
                                 >
                                     {isRequesting ? <Loader2 className="animate-spin size-5 md:size-6" /> : copy.transferButton}
                                 </Button>
@@ -244,7 +244,7 @@ function PayoutSettings() {
                             const isEarning = t_item.type === 'ride_earnings';
 
                             return (
-                                <div key={t_item.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex justify-between items-center shadow-sm hover:shadow-md transition-all animate-in fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
+                                <div key={t_item.id} className="bg-white p-6 rounded-3xl border border-slate-100 flex justify-between items-center shadow-sm hover:shadow-md transition-all animate-in fade-in" style={{ animationDelay: `${idx * 50}ms` }}>
                                     <div className="flex items-center gap-5">
                                         <div className={cn(
                                             "p-4 rounded-2xl",
@@ -269,7 +269,7 @@ function PayoutSettings() {
                                 </div>
                             );
                         }) : (
-                            <div className="py-24 flex flex-col items-center justify-center bg-white/50 rounded-[3rem] border-2 border-dashed border-slate-100">
+                            <div className="py-24 flex flex-col items-center justify-center bg-white/50 rounded-3xl border-2 border-dashed border-slate-100">
                                 <Wallet className="size-12 text-slate-100 mb-4 opacity-20" />
                                 <p className="text-center text-slate-300 font-black text-[10px] uppercase tracking-[0.3em] italic">{copy.noTransactions}</p>
                             </div>

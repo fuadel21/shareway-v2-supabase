@@ -300,7 +300,7 @@ const EmergencyChat = () => {
                             )}
                         >
                             <div className={cn(
-                                'px-6 py-4 rounded-[2rem] shadow-sm text-sm font-medium leading-relaxed',
+                                'px-6 py-4 rounded-3xl shadow-sm text-sm font-medium leading-relaxed',
                                 isSystem ? 'bg-white border-2 border-red-100 text-red-900 italic' :
                                     isMe ? 'bg-slate-900 text-white rounded-tr-md' : 'bg-white text-slate-800 rounded-tl-md border border-slate-100',
                             )}>
@@ -323,14 +323,14 @@ const EmergencyChat = () => {
                             onChange={(e) => setNewMessage(e.target.value)}
                             placeholder={chatId ? 'Describe tu situación...' : 'Esperando canal SOS...'}
                             disabled={!chatId}
-                            className="w-full bg-slate-50 border-2 border-red-50 rounded-[2rem] px-8 py-5 text-sm font-bold text-slate-900 focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all resize-none max-h-32 min-h-[64px] disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="w-full bg-slate-50 border-2 border-red-50 rounded-3xl px-8 py-5 text-sm font-bold text-slate-900 focus:border-red-500 focus:ring-4 focus:ring-red-50 transition-all resize-none max-h-32 min-h-[64px] disabled:opacity-60 disabled:cursor-not-allowed"
                             rows={1}
                         />
                     </div>
                     <Button
                         type="submit"
                         disabled={isSending || !newMessage.trim() || !chatId}
-                        className="h-16 w-16 rounded-[2rem] bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-200 active:scale-90 transition-all group shrink-0 disabled:opacity-50"
+                        className="h-16 w-16 rounded-3xl bg-red-600 hover:bg-red-700 text-white shadow-2xl shadow-red-200 active:scale-90 transition-all group shrink-0 disabled:opacity-50"
                     >
                         {isSending ? <Loader2 className="animate-spin" /> : <Send className="size-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                     </Button>

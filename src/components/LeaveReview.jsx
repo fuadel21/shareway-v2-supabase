@@ -42,7 +42,7 @@ const StarRating = ({ rating, setRating }) => (
 );
 
 const ReviewGuidance = ({ rating, commentLength }) => (
-    <div className="rounded-[2rem] bg-amber-50/70 border border-amber-100 p-5 space-y-4 text-left">
+    <div className="rounded-3xl bg-amber-50/70 border border-amber-100 p-5 space-y-4 text-left">
         <div className="flex items-start gap-3">
             <div className="h-11 w-11 rounded-2xl bg-white text-amber-500 flex items-center justify-center shadow-sm shrink-0">
                 <ShieldCheck className="h-5 w-5" />
@@ -156,7 +156,7 @@ const LeaveReview = () => {
             <SubPageHeader title="Valorar Conductor" />
 
             <main className="max-w-2xl mx-auto px-4 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <Card className="rounded-[3rem] border-none shadow-2xl overflow-hidden bg-white">
+                <Card className="rounded-3xl border-none shadow-2xl overflow-hidden bg-white">
                     <CardHeader className="bg-slate-900 pb-16 pt-12 text-center flex flex-col items-center relative">
                         <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none overflow-hidden">
                             <Sparkles className="size-64 -translate-x-20 -translate-y-20 text-white" />
@@ -181,7 +181,7 @@ const LeaveReview = () => {
                         </div>
                     </CardHeader>
 
-                    <CardContent className="p-8 space-y-10 -mt-8 bg-white rounded-t-[3rem] relative z-20">
+                    <CardContent className="p-5 space-y-10 -mt-8 bg-white rounded-t-[3rem] relative z-20">
                         <ReviewGuidance rating={rating} commentLength={comment.length} />
 
                         <div className="flex flex-col items-center space-y-4 pt-2">
@@ -197,7 +197,7 @@ const LeaveReview = () => {
                             </div>
                             <Textarea
                                 placeholder={`¿Cómo fue el viaje? Ejemplo: puntual, buena comunicación, conducción tranquila...`}
-                                className="min-h-[150px] p-6 rounded-[2rem] border-none bg-slate-50 font-medium transition-all shadow-inner focus-visible:ring-primary"
+                                className="min-h-[150px] p-6 rounded-3xl border-none bg-slate-50 font-medium transition-all shadow-inner focus-visible:ring-primary"
                                 value={comment}
                                 maxLength={500}
                                 onChange={(e) => setComment(e.target.value)}
@@ -209,7 +209,7 @@ const LeaveReview = () => {
                                 size="lg"
                                 onClick={handleSubmitReview}
                                 disabled={submitting || rating === 0}
-                                className="w-full h-20 rounded-[2rem] text-xl font-black uppercase italic tracking-tighter shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all bg-slate-900 text-white"
+                                className="w-full h-14 rounded-3xl text-xl font-black uppercase italic tracking-tighter shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all bg-slate-900 text-white"
                             >
                                 {submitting ? <Loader2 className="h-8 w-8 animate-spin" /> : "PUBLICAR VALORACIÓN"}
                             </Button>

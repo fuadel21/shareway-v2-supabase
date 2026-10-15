@@ -80,7 +80,7 @@ const SafetyHistory = () => {
 
             <div className="grid gap-4">
                 {evidences.length === 0 ? (
-                    <Card className="p-10 border-2 border-dashed border-slate-100 flex flex-col items-center text-center bg-slate-50/30 rounded-[2rem]">
+                    <Card className="p-10 border-2 border-dashed border-slate-100 flex flex-col items-center text-center bg-slate-50/30 rounded-3xl">
                         <Lock className="size-10 text-slate-200 mb-4" />
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
                             No hay evidencias registradas en tu bóveda.<br/>Tus viajes están protegidos por el protocolo SOS.
@@ -88,7 +88,7 @@ const SafetyHistory = () => {
                     </Card>
                 ) : (
                     evidences.map((item) => (
-                        <Card key={item.id} className="p-5 border-2 border-slate-50 hover:border-indigo-100 transition-all rounded-[2rem] bg-white group shadow-sm hover:shadow-md">
+                        <Card key={item.id} className="p-5 border-2 border-slate-50 hover:border-indigo-100 transition-all rounded-3xl bg-white group shadow-sm hover:shadow-md">
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-indigo-50 transition-colors">

@@ -153,7 +153,7 @@ const EmergencyContactsManager = () => {
                 ))}
 
                 {contacts.length === 0 && (
-                    <div className="text-center py-10 px-6 bg-slate-100/50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                    <div className="text-center py-10 px-6 bg-slate-100/50 rounded-3xl border-2 border-dashed border-slate-200">
                         <UserPlus className="h-10 w-10 text-slate-300 mx-auto mb-3" />
                         <p className="text-sm text-slate-400 font-bold uppercase tracking-widest">{t('security.add_guardians_placeholder')}</p>
                     </div>
@@ -185,7 +185,7 @@ const EmergencyContactsManager = () => {
                 <Button
                     onClick={handleAddContact}
                     disabled={isLoading || contacts.length >= 5}
-                    className="w-full rounded-2xl h-14 md:h-16 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
+                    className="w-full rounded-2xl h-14 md:h-12 font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-primary/20"
                 >
                     {isLoading ? <Loader2 className="animate-spin" /> : <><Plus className="mr-2 h-5 w-5" /> {t('security.link_guardian')}</>}
                 </Button>
@@ -244,7 +244,7 @@ const SecurityToggleItem = ({ settingKey, title, description, icon: Icon, colorC
 
 const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick }) => (
     <div className={cn(
-        "rounded-[2rem] md:rounded-[2.5rem] border-none transition-all duration-500 overflow-hidden",
+        "rounded-3xl md:rounded-3xl border-none transition-all duration-500 overflow-hidden",
         isOpen ? "bg-white shadow-[0_30px_60px_rgba(0,0,0,0.1)] ring-2 ring-primary/5" : "bg-white/60 hover:bg-white hover:shadow-xl shadow-sm"
     )}>
         <button
@@ -253,7 +253,7 @@ const FeatureCard = ({ icon: Icon, title, description, children, isOpen, onClick
         >
             <div className="flex items-center gap-4 md:gap-6">
                 <div className={cn(
-                    "p-3 md:p-4 rounded-2xl md:rounded-[1.5rem] transition-all duration-500",
+                    "p-3 md:p-4 rounded-2xl md:rounded-2xl transition-all duration-500",
                     isOpen ? "bg-primary text-white scale-110 shadow-lg shadow-primary/20" : "bg-slate-50 text-slate-400 group-hover:bg-slate-100"
                 )}>
                     <Icon className="size-6 md:size-7" />
@@ -296,8 +296,8 @@ function SecuritySettings() {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title={t('security.title')} backTo="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10 text-left">
-                <div className="bg-navy rounded-[2.5rem] md:rounded-[3.5rem] p-8 md:p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5 text-left">
+                <div className="bg-navy rounded-3xl md:rounded-3xl p-8 md:p-10 relative overflow-hidden group shadow-2xl shadow-navy/40">
                     <div className="absolute top-0 right-0 p-10 opacity-10 blur-xl group-hover:blur-md transition-all">
                         <ShieldCheck className="h-24 w-24 md:h-32 md:w-32 text-white" />
                     </div>
@@ -319,7 +319,7 @@ function SecuritySettings() {
                             </p>
                         </div>
 
-                        <div className="p-4 md:p-5 bg-white/5 backdrop-blur-md rounded-[1.5rem] md:rounded-3xl border border-white/10 flex items-center justify-between">
+                        <div className="p-4 md:p-5 bg-white/5 backdrop-blur-md rounded-2xl md:rounded-3xl border border-white/10 flex items-center justify-between">
                             <div className="flex gap-2">
                                 <Shield className="h-4 w-4 text-primary" />
                                 <span className="text-[9px] md:text-[10px] font-black text-white/60 uppercase">{t('security.active_shield')}</span>
@@ -395,7 +395,7 @@ function SecuritySettings() {
                     </FeatureCard>
                 </div>
 
-                <div className="p-8 bg-blue-50/50 rounded-[3rem] border border-blue-100 flex items-start gap-5 text-left">
+                <div className="p-8 bg-blue-50/50 rounded-3xl border border-blue-100 flex items-start gap-5 text-left">
                     <div className="p-3 bg-blue-100 rounded-2xl text-blue-600">
                         <AlertTriangle className="h-6 w-6" />
                     </div>

@@ -42,7 +42,7 @@ function ComingSoon() {
 
                 {/* TARJETAS DE PROGRESO */}
                 <div className="grid grid-cols-1 gap-4 w-full mt-16 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
-                    <div className="p-8 bg-white/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/60 flex items-center gap-6 shadow-xl text-left hover:scale-[1.02] transition-transform">
+                    <div className="p-8 bg-white/60 backdrop-blur-3xl rounded-3xl border border-white/60 flex items-center gap-6 shadow-xl text-left hover:scale-[1.02] transition-transform">
                         <div className="size-14 bg-emerald-50 rounded-2xl flex items-center justify-center border border-emerald-100">
                             <ShieldCheck className="size-7 text-emerald-500" />
                         </div>
@@ -52,7 +52,7 @@ function ComingSoon() {
                         </div>
                     </div>
 
-                    <div className="p-8 bg-white/60 backdrop-blur-3xl rounded-[2.5rem] border border-white/60 flex items-center gap-6 shadow-xl text-left hover:scale-[1.02] transition-transform">
+                    <div className="p-8 bg-white/60 backdrop-blur-3xl rounded-3xl border border-white/60 flex items-center gap-6 shadow-xl text-left hover:scale-[1.02] transition-transform">
                         <div className="size-14 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100">
                             <Rocket className="size-7 text-indigo-500" />
                         </div>
@@ -65,7 +65,7 @@ function ComingSoon() {
 
                 <Button
                     onClick={() => navigate(-1)}
-                    className="mt-16 h-16 px-12 rounded-[2rem] bg-navy text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-navy-600 transition-all hover:scale-105 active:scale-95"
+                    className="mt-16 h-12 px-12 rounded-3xl bg-navy text-white font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-navy-600 transition-all hover:scale-105 active:scale-95"
                 >
                     <ArrowLeft className="mr-3 size-4" /> {t('coming_soon.back_button')}
                 </Button>

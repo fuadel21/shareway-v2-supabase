@@ -151,7 +151,7 @@ const NotificationItem = ({ notification, isSelected, onSelect, onRead, onClick,
     return (
         <div
             className={cn(
-                'p-4 rounded-[2rem] border-2 transition-all duration-500 relative group cursor-pointer flex items-center gap-4',
+                'p-4 rounded-3xl border-2 transition-all duration-500 relative group cursor-pointer flex items-center gap-4',
                 isRead
                     ? 'bg-white/40 border-slate-100/50 opacity-75'
                     : 'bg-white border-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)]',
@@ -308,7 +308,7 @@ const ActivityCenter = () => {
             <SubPageHeader title={copy.title} backTo="/settings" />
 
             <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
-                <div className="bg-white rounded-[2.5rem] p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between">
+                <div className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex items-center justify-between">
                     <div className="flex gap-4 items-center">
                         <div className="h-14 w-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg rotate-3">
                             <Bell className="h-6 w-6 text-primary" />
@@ -380,7 +380,7 @@ const ActivityCenter = () => {
                 </div>
 
                 {selectionMode && selectedIds.length > 0 && (
-                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-slate-900 rounded-[2rem] p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10">
+                    <div className="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100] w-[90%] max-w-sm bg-slate-900 rounded-3xl p-4 shadow-2xl flex items-center justify-between animate-in slide-in-from-bottom-10">
                         <p className="text-white text-[10px] font-black uppercase tracking-widest ml-4">
                             {selectedIds.length} {copy.selected}
                         </p>
@@ -426,8 +426,8 @@ const ActivityCenter = () => {
                             </div>
                         ))
                     ) : (
-                        <div className="bg-white rounded-[3rem] p-12 text-center space-y-6 border border-slate-100">
-                            <div className="size-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto shadow-inner">
+                        <div className="bg-white rounded-3xl p-12 text-center space-y-6 border border-slate-100">
+                            <div className="size-24 bg-slate-50 rounded-3xl flex items-center justify-center mx-auto shadow-inner">
                                 <Bell className="size-10 text-slate-200" />
                             </div>
                             <div className="space-y-1">

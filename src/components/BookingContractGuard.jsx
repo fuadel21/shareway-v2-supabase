@@ -280,7 +280,7 @@ const BookingContractGuard = () => {
 
   return createPortal(
     <div className="absolute inset-0 z-[250] flex items-center justify-center bg-slate-950/55 p-5 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-[2rem] border border-white/20 bg-white p-6 shadow-2xl">
+      <div className="w-full max-w-sm rounded-3xl border border-white/20 bg-white p-6 shadow-2xl">
         {loading && !blockedMessage && !error ? (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
             <Loader2 className="size-9 animate-spin text-slate-900" />

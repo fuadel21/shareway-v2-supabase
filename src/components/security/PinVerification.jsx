@@ -15,7 +15,7 @@ function PinVerification() {
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 max-w-2xl space-y-8">
+            <main className="container mx-auto p-4 max-w-2xl space-y-5">
                 <Card className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3"><ShieldQuestion className="text-green-600" /><span>Viaja con la persona correcta</span></CardTitle>

@@ -63,7 +63,7 @@ const NotificationDiagnosticsGuard = () => {
 
   return (
     <div className="fixed inset-0 z-[310] bg-slate-950 flex items-center justify-center px-4 text-white">
-      <div className="w-full max-w-md rounded-[2.5rem] border border-white/10 bg-white/5 p-8 text-center shadow-2xl backdrop-blur-xl">
+      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 text-center shadow-2xl backdrop-blur-xl">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-amber-400/10 text-amber-300">
           <ShieldAlert className="h-7 w-7" />
         </div>

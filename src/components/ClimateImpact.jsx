@@ -11,7 +11,7 @@ import { getImpactEquivalency } from '../utils/climateImpact.js';
 import { cn } from '../lib/utils.js';
 
 const StatCard = ({ icon: Icon, label, value, unit, color }) => (
-    <Card className="p-6 rounded-[2rem] border-none shadow-xl bg-white flex flex-col items-center text-center gap-2 overflow-hidden relative group">
+    <Card className="p-4 rounded-3xl border-none shadow-xl bg-white flex flex-col items-center text-center gap-2 overflow-hidden relative group">
         <div className={cn("size-12 rounded-2xl flex items-center justify-center mb-2 shadow-lg transition-transform group-hover:scale-110", color)}>
             <Icon size={24} className="text-white" />
         </div>
@@ -39,9 +39,9 @@ const ClimateImpact = () => {
         <div className="min-h-screen bg-slate-50/50 pb-32">
             <SubPageHeader title="Mi Impacto" backPath="/settings" />
 
-            <main className="max-w-xl mx-auto px-4 mt-6 space-y-8 animate-in fade-in duration-700">
+            <main className="max-w-xl mx-auto px-4 mt-6 space-y-5 animate-in fade-in duration-700">
                 {/* Hero Section */}
-                <section className="bg-slate-900 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden group">
+                <section className="bg-slate-900 rounded-3xl p-10 text-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
                         <Leaf size={180} />
                     </div>
@@ -69,7 +69,7 @@ const ClimateImpact = () => {
                 </div>
 
                 {/* Mensaje de Logro */}
-                <Card className="p-8 rounded-[2.5rem] border-none shadow-xl bg-white flex items-center gap-6">
+                <Card className="p-5 rounded-3xl border-none shadow-xl bg-white flex items-center gap-6">
                     <div className="size-16 rounded-3xl bg-primary/10 flex items-center justify-center shrink-0">
                         < Award size={32} className="text-primary" />
                     </div>
@@ -83,7 +83,7 @@ const ClimateImpact = () => {
 
                 {/* Call to Action */}
                 <Button 
-                    className="w-full h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic shadow-xl gap-3"
+                    className="w-full h-12 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic shadow-xl gap-3"
                     onClick={() => {
                         if (navigator.share) {
                             navigator.share({

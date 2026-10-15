@@ -97,7 +97,7 @@ const NotificationItem = ({ notification, onRead, onClick }) => {
     return (
         <div 
             className={cn(
-                "p-5 rounded-[2.2rem] border-2 transition-all duration-500 relative group cursor-pointer active:scale-95 overflow-hidden",
+                "p-5 rounded-2xl border-2 transition-all duration-500 relative group cursor-pointer active:scale-95 overflow-hidden",
                 notification.is_read
                     ? "bg-white/40 border-slate-100/50 opacity-60 grayscale-[0.8]"
                     : cn(style.bg, style.border, "shadow-[0_15px_35px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:-translate-y-1.5")
@@ -117,7 +117,7 @@ const NotificationItem = ({ notification, onRead, onClick }) => {
 
             <div className="flex gap-5 items-center relative z-10">
                 <div className={cn(
-                    "h-16 w-16 rounded-[1.5rem] flex items-center justify-center shrink-0 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
+                    "h-16 w-16 rounded-2xl flex items-center justify-center shrink-0 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6",
                     notification.is_read ? "bg-slate-100 text-slate-400" : cn("bg-gradient-to-br text-white", style.gradient)
                 )}>
                     <Icon className="h-8 w-8 stroke-[2.5px]" />
@@ -190,7 +190,7 @@ const NotificationCenter = ({ children, user }) => {
                 toast.custom((t) => (
                     <div 
                         className={cn(
-                            "w-full max-w-sm p-5 rounded-[2.5rem] shadow-2xl border-2 flex gap-4 items-center animate-in slide-in-from-top-10 cursor-pointer backdrop-blur-2xl",
+                            "w-full max-w-sm p-5 rounded-3xl shadow-2xl border-2 flex gap-4 items-center animate-in slide-in-from-top-10 cursor-pointer backdrop-blur-2xl",
                             style.bg, style.border
                         )}
                         onClick={() => { toast.dismiss(t); setIsOpen(true); }}
@@ -315,7 +315,7 @@ const NotificationCenter = ({ children, user }) => {
                     ) : (
                         <div className="flex flex-col items-center justify-center py-40 text-center space-y-8 animate-in fade-in zoom-in duration-700">
                             <div className="relative">
-                                <div className="h-32 w-32 bg-white rounded-[3rem] flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-2 border-slate-50 relative z-10">
+                                <div className="h-32 w-32 bg-white rounded-3xl flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.05)] border-2 border-slate-50 relative z-10">
                                     <Bell className="h-12 w-12 text-slate-100" />
                                 </div>
                                 <div className="absolute -top-4 -right-4 h-12 w-12 bg-emerald-50 rounded-2xl flex items-center justify-center shadow-sm border border-emerald-100 rotate-12">
@@ -333,7 +333,7 @@ const NotificationCenter = ({ children, user }) => {
                 <div className="p-6 bg-white/40 backdrop-blur-xl border-t border-white/20">
                     <Button
                         variant="outline"
-                        className="w-full h-12 rounded-[1.5rem] border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                        className="w-full h-12 rounded-2xl border-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-sm"
                         onClick={() => setIsOpen(false)}
                     >
                         Cerrar Panel

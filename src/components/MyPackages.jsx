@@ -34,14 +34,14 @@ const ListItem = ({ item, navigate, currentUser, index }) => {
 
     return (
         <Card
-            className="group relative overflow-hidden rounded-[3rem] border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-all duration-700 cursor-pointer animate-in fade-in slide-in-from-bottom-8 bg-white/60 backdrop-blur-3xl mb-8"
+            className="group relative overflow-hidden rounded-3xl border-none shadow-[0_30px_60px_rgba(0,0,0,0.06)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-all duration-700 cursor-pointer animate-in fade-in slide-in-from-bottom-8 bg-white/60 backdrop-blur-3xl mb-8"
             style={{ animationDelay: `${index * 100}ms` }}
             onClick={() => navigate(`/package/${item.id}`)}
         >
             <div className="p-10">
                 <div className="flex justify-between items-start mb-10">
                     <div className="flex items-center gap-6">
-                        <div className="flex flex-col items-center justify-center h-20 w-20 rounded-[2rem] bg-navy text-white shadow-2xl relative overflow-hidden group-hover:bg-primary transition-colors duration-500">
+                        <div className="flex flex-col items-center justify-center h-20 w-20 rounded-3xl bg-navy text-white shadow-2xl relative overflow-hidden group-hover:bg-primary transition-colors duration-500">
                             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-none mb-1 opacity-50 relative z-10">{month}</span>
                             <span className="text-3xl font-black leading-none relative z-10 tracking-tighter">{day}</span>
@@ -149,14 +149,14 @@ const MyPackages = () => {
         <div className="bg-slate-50 min-h-screen pb-40">
             <SubPageHeader title="Mis Envíos" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-10">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-5">
 
                 {/* SELECTOR DE PESTAÑAS PREMIUM */}
-                <div className="flex p-2 bg-white/60 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl border border-white/60">
+                <div className="flex p-2 bg-white/60 backdrop-blur-3xl rounded-3xl shadow-2xl border border-white/60">
                     <button
                         onClick={() => setActiveTab('active')}
                         className={cn(
-                            "flex-1 h-16 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-700 flex items-center justify-center gap-3",
+                            "flex-1 h-12 rounded-3xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-700 flex items-center justify-center gap-3",
                             activeTab === 'active' ? "bg-navy text-white shadow-2xl scale-100" : "text-slate-400 hover:bg-slate-50 scale-95"
                         )}
                     >
@@ -166,7 +166,7 @@ const MyPackages = () => {
                     <button
                         onClick={() => setActiveTab('history')}
                         className={cn(
-                            "flex-1 h-16 rounded-[2rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-700 flex items-center justify-center gap-3",
+                            "flex-1 h-12 rounded-3xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-700 flex items-center justify-center gap-3",
                             activeTab === 'history' ? "bg-navy text-white shadow-2xl scale-100" : "text-slate-400 hover:bg-slate-50 scale-95"
                         )}
                     >
@@ -178,7 +178,7 @@ const MyPackages = () => {
                 <div className="space-y-4">
                     {loading ? (
                         <div className="flex flex-col items-center justify-center py-40 space-y-8 animate-pulse">
-                            <div className="h-24 w-24 rounded-[2.5rem] bg-slate-200 flex items-center justify-center">
+                            <div className="h-24 w-24 rounded-3xl bg-slate-200 flex items-center justify-center">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
                             </div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Sincronizando envíos...</p>
@@ -191,7 +191,7 @@ const MyPackages = () => {
                         <div className="flex flex-col items-center justify-center py-40 text-center animate-in fade-in duration-1000 space-y-10">
                             <div className="relative group">
                                 <div className="absolute inset-0 bg-primary/20 blur-3xl opacity-20 rounded-full" />
-                                <div className="size-32 bg-white rounded-[3.5rem] shadow-2xl flex items-center justify-center border border-slate-50 relative z-10 scale-110 group-hover:rotate-12 transition-transform duration-700">
+                                <div className="size-32 bg-white rounded-3xl shadow-2xl flex items-center justify-center border border-slate-50 relative z-10 scale-110 group-hover:rotate-12 transition-transform duration-700">
                                     <Package className="size-14 text-slate-100" />
                                 </div>
                                 <div className="absolute -top-4 -right-4 size-12 bg-primary rounded-2xl flex items-center justify-center shadow-2xl border-4 border-white z-20 animate-bounce">
@@ -208,7 +208,7 @@ const MyPackages = () => {
                             </div>
                             <Button
                                 onClick={() => navigate('/create-package')}
-                                className="h-16 px-12 rounded-[2rem] bg-navy text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-navy/40 hover:scale-[1.05] active:scale-95 transition-all"
+                                className="h-12 px-12 rounded-3xl bg-navy text-white font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-navy/40 hover:scale-[1.05] active:scale-95 transition-all"
                             >
                                 NUEVO ENVÍO
                             </Button>

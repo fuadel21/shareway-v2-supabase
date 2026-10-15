@@ -46,10 +46,10 @@ const ForgotPassword = () => {
         <div className="absolute bottom-[-10%] right-[10%] w-[30%] h-[30%] bg-pink-500/10 rounded-full blur-[100px] animate-pulse delay-700" />
       </div>
 
-      <Card className="w-full max-w-md bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
+      <Card className="w-full max-w-md bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-3xl p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700">
         <CardHeader className="space-y-6 text-center pb-10">
           <div className="flex justify-center">
-            <div className="bg-navy h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-2xl relative group overflow-hidden">
+            <div className="bg-navy h-24 w-24 rounded-3xl flex items-center justify-center shadow-2xl relative group overflow-hidden">
               <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               <Mail className="h-10 w-10 text-primary relative z-10" />
             </div>
@@ -73,7 +73,7 @@ const ForgotPassword = () => {
                 <Input
                   type="email"
                   placeholder="ejemplo@shareway.com"
-                  className="h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-200"
+                  className="h-12 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all outline-none text-base placeholder:text-slate-200"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   disabled={isLoading}
@@ -85,7 +85,7 @@ const ForgotPassword = () => {
           <CardFooter className="flex flex-col space-y-6 pt-10 pb-10">
             <Button
               type="submit"
-              className="w-full h-16 rounded-2xl bg-navy hover:bg-navy-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all group"
+              className="w-full h-12 rounded-2xl bg-navy hover:bg-navy-600 text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:scale-[1.02] active:scale-95 transition-all group"
               disabled={isLoading || !email}
             >
               {isLoading ? <Loader2 className="animate-spin h-6 w-6" /> : (

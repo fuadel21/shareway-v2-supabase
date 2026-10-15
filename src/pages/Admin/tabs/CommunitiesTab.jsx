@@ -137,7 +137,7 @@ const CommunitiesTab = () => {
                 setIsCreateModalOpen(open);
                 if (!open) setNewCommunity(emptyCommunity);
             }}>
-                <DialogContent className="rounded-[2.5rem] border-none max-w-md">
+                <DialogContent className="rounded-3xl border-none max-w-md">
                     <DialogHeader>
                         <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Nueva Comunidad</DialogTitle>
                         <DialogDescription className="font-bold text-slate-400 text-[10px] uppercase tracking-widest">Configura un nuevo espacio exclusivo</DialogDescription>
@@ -204,7 +204,7 @@ const CommunitiesTab = () => {
             </Dialog>
 
             {filtered.length === 0 ? (
-                <div className="p-16 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+                <div className="p-16 text-center bg-white rounded-3xl border border-dashed border-slate-200">
                     <AlertCircle className="h-10 w-10 text-slate-200 mx-auto mb-4" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                         {searchTerm.trim() ? 'No hay comunidades que coincidan con la búsqueda' : 'Aún no hay comunidades creadas'}
@@ -216,7 +216,7 @@ const CommunitiesTab = () => {
                         const membersCount = getMetricValue(comm, ['members_count', 'member_count', 'members']);
                         const monthlyRides = getMetricValue(comm, ['monthly_rides', 'rides_month', 'rides_count']);
                         return (
-                            <Card key={comm.id} className="border-none shadow-sm rounded-[2rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-500">
+                            <Card key={comm.id} className="border-none shadow-sm rounded-3xl bg-white overflow-hidden group hover:shadow-xl transition-all duration-500">
                                 <div className="h-24 bg-slate-50 relative overflow-hidden">
                                     {comm.banner_url ? (
                                         <img src={comm.banner_url} alt={getCommunityName(comm)} className="w-full h-full object-cover opacity-50" />
@@ -227,7 +227,7 @@ const CommunitiesTab = () => {
                                         {comm.is_private ? 'Privada' : 'Abierta'}
                                     </Badge>
                                 </div>
-                                <CardContent className="p-6 -mt-10 relative">
+                                <CardContent className="p-4 -mt-10 relative">
                                     <div className="size-16 rounded-2xl bg-white shadow-lg border border-slate-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                                         <Building2 className="h-8 w-8 text-primary" />
                                     </div>

@@ -246,7 +246,7 @@ const SimpleBookingModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLoc
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => { if (!open && phase !== 'confirming') onClose(); }}>
-            <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto rounded-[2.5rem] p-0 bg-slate-50">
+            <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl p-0 bg-slate-50">
                 <DialogHeader className="px-6 pt-6 pb-2">
                     <DialogTitle className="font-black uppercase italic tracking-tighter text-slate-900">
                         {copy.title}
@@ -379,7 +379,7 @@ const SimpleBookingModal = ({ isOpen, onClose, ride, onSuccess, initialPickupLoc
                             <Button
                                 onClick={handleBook}
                                 disabled={phase === 'confirming' || !canBook}
-                                className="w-full h-16 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest text-base shadow-xl shadow-emerald-200 disabled:opacity-50"
+                                className="w-full h-12 rounded-3xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest text-base shadow-xl shadow-emerald-200 disabled:opacity-50"
                             >
                                 {phase === 'confirming' ? (
                                     <><Loader2 className="size-5 animate-spin mr-2" />{copy.booking}</>

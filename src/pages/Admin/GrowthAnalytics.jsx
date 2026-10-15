@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card.jsx';
 import { supabase } from '@/lib/supabase.js';
 
 const StatCard = ({ icon: Icon, label, value, hint }) => (
-  <Card className="rounded-[2rem] border-none bg-white p-5 shadow-sm">
+  <Card className="rounded-3xl border-none bg-white p-5 shadow-sm">
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
@@ -80,7 +80,7 @@ const GrowthAnalytics = () => {
 
   return (
     <div className="space-y-8 p-4 md:p-8">
-      <header className="rounded-[2.5rem] bg-slate-950 p-7 text-white shadow-2xl">
+      <header className="rounded-3xl bg-slate-950 p-7 text-white shadow-2xl">
         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-300">Centro de Mando</p>
         <h1 className="mt-2 text-3xl font-black tracking-tighter md:text-5xl">Growth Analytics</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-white/60">Métricas de adquisición, referidos, conversión y actividad para tomar decisiones de crecimiento.</p>
@@ -100,7 +100,7 @@ const GrowthAnalytics = () => {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <Card className="rounded-[2rem] border-none bg-white p-6 shadow-sm">
+        <Card className="rounded-3xl border-none bg-white p-4 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-orange-500" />
             <h2 className="text-xl font-black tracking-tight">Resumen diario</h2>
@@ -132,7 +132,7 @@ const GrowthAnalytics = () => {
           </div>
         </Card>
 
-        <Card className="rounded-[2rem] border-none bg-white p-6 shadow-sm">
+        <Card className="rounded-3xl border-none bg-white p-4 shadow-sm">
           <div className="mb-5 flex items-center gap-3">
             <TrendingUp className="h-5 w-5 text-emerald-500" />
             <h2 className="text-xl font-black tracking-tight">Ranking de referidos</h2>

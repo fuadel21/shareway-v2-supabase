@@ -48,7 +48,7 @@ const SimpleGamificationWidget = ({ userId }) => {
         loadBasicStats();
     }, [userId]);
 
-    if (loading) return <div className="h-20 bg-slate-50 rounded-2xl animate-pulse" />;
+    if (loading) return <div className="h-14 bg-slate-50 rounded-2xl animate-pulse" />;
 
     const getLevelIcon = (level) => {
         const icons = { 1: '🌱', 2: '🍃', 3: '🌿', 4: '🌳', 5: '🌲', 6: '🏆', 7: '💎', 8: '👑', 9: '🌍', 10: '✨' };

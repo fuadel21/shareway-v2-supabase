@@ -11,19 +11,19 @@ const Actions = () => {
         <div className="min-h-screen bg-slate-50 pb-40">
             <SubPageHeader title="¿Qué quieres hacer?" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
 
                 {/* OPCIÓN PRINCIPAL: PUBLICAR VIAJE (DRIVER) */}
                 <section className="space-y-6">
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-6">Como Conductor</p>
                     <Link to="/create-ride" className="block group">
-                        <Card className="rounded-[3rem] border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] bg-navy text-white overflow-hidden transition-all duration-500 hover:scale-[1.02] active:scale-95 group-hover:shadow-[0_40px_120px_rgba(0,0,0,0.15)]">
+                        <Card className="rounded-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] bg-navy text-white overflow-hidden transition-all duration-500 hover:scale-[1.02] active:scale-95 group-hover:shadow-[0_40px_120px_rgba(0,0,0,0.15)]">
                             <CardContent className="p-10 flex items-center justify-between relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
                                     <Car className="size-32 rotate-12" />
                                 </div>
                                 <div className="space-y-4 relative z-10">
-                                    <div className="bg-primary/20 h-16 w-16 rounded-[1.5rem] flex items-center justify-center border border-white/10 backdrop-blur-xl">
+                                    <div className="bg-primary/20 h-16 w-16 rounded-2xl flex items-center justify-center border border-white/10 backdrop-blur-xl">
                                         <Plus className="h-8 w-8 text-primary" />
                                     </div>
                                     <div>
@@ -44,9 +44,9 @@ const Actions = () => {
                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 ml-6">Como Pasajero</p>
                     <div className="grid grid-cols-1 gap-6">
                         <Link to="/create-request" className="block group">
-                            <Card className="rounded-[2.5rem] border-none shadow-[0_20px_60px_rgba(0,0,0,0.05)] bg-white/70 backdrop-blur-3xl overflow-hidden hover:bg-white transition-all duration-500 active:scale-95">
-                                <CardContent className="p-8 flex items-center gap-6">
-                                    <div className="h-16 w-16 bg-indigo-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-primary transition-colors">
+                            <Card className="rounded-3xl border-none shadow-[0_20px_60px_rgba(0,0,0,0.05)] bg-white/70 backdrop-blur-3xl overflow-hidden hover:bg-white transition-all duration-500 active:scale-95">
+                                <CardContent className="p-5 flex items-center gap-6">
+                                    <div className="h-16 w-16 bg-indigo-50 rounded-2xl flex items-center justify-center group-hover:bg-primary transition-colors">
                                         <Search className="h-7 w-7 text-primary group-hover:text-white transition-colors" />
                                     </div>
                                     <div className="flex-1">
@@ -59,9 +59,9 @@ const Actions = () => {
                         </Link>
 
                         <Link to="/create-package" className="block group">
-                            <Card className="rounded-[2.5rem] border-none shadow-[0_20px_60px_rgba(0,0,0,0.05)] bg-white/70 backdrop-blur-3xl overflow-hidden hover:bg-white transition-all duration-500 active:scale-95">
-                                <CardContent className="p-8 flex items-center gap-6">
-                                    <div className="h-16 w-16 bg-amber-50 rounded-[1.5rem] flex items-center justify-center group-hover:bg-amber-500 transition-colors">
+                            <Card className="rounded-3xl border-none shadow-[0_20px_60px_rgba(0,0,0,0.05)] bg-white/70 backdrop-blur-3xl overflow-hidden hover:bg-white transition-all duration-500 active:scale-95">
+                                <CardContent className="p-5 flex items-center gap-6">
+                                    <div className="h-16 w-16 bg-amber-50 rounded-2xl flex items-center justify-center group-hover:bg-amber-500 transition-colors">
                                         <Package className="h-7 w-7 text-amber-500 group-hover:text-white transition-colors" />
                                     </div>
                                     <div className="flex-1">
@@ -76,7 +76,7 @@ const Actions = () => {
                 </section>
 
                 {/* INFO EXTRA / PROMOCIÓN */}
-                <div className="p-10 bg-gradient-to-br from-primary to-indigo-600 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                <div className="p-10 bg-gradient-to-br from-primary to-indigo-600 rounded-3xl shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
                         <Zap className="size-20 text-white animate-pulse" />
                     </div>

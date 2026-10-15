@@ -377,7 +377,7 @@ const GamificationDashboard = ({ userId }) => {
             {/* Header Elite con puntos y nivel */}
             <Card className="border-none shadow-diamond overflow-hidden relative group">
                 <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity duration-500" />
-                <CardContent className="p-8 relative z-10">
+                <CardContent className="p-5 relative z-10">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                         <div className="flex items-center gap-6">
                             <div className={cn(

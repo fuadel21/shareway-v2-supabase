@@ -222,10 +222,10 @@ const AdminCommunityDetail = () => {
                 </div>
             </div>
 
-            <div className="relative p-10 bg-slate-900 rounded-[3rem] overflow-hidden group">
+            <div className="relative p-10 bg-slate-900 rounded-3xl overflow-hidden group">
                 <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000"><Building2 className="size-48 text-white" /></div>
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                    <div className="size-24 rounded-[2rem] bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl"><Building2 className="size-12 text-primary" /></div>
+                    <div className="size-24 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center shadow-2xl"><Building2 className="size-12 text-primary" /></div>
                     <div className="space-y-2 text-center md:text-left">
                         <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">{communityName}</h1>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 text-white/50 text-[10px] font-black uppercase tracking-widest">
@@ -295,12 +295,12 @@ const AdminCommunityDetail = () => {
 
                 <TabsContent value="settings">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <Card className="lg:col-span-2 border-none shadow-sm rounded-[2.5rem] overflow-hidden">
-                            <CardHeader className="p-8 border-b border-slate-50">
+                        <Card className="lg:col-span-2 border-none shadow-sm rounded-3xl overflow-hidden">
+                            <CardHeader className="p-5 border-b border-slate-50">
                                 <CardTitle className="text-xl font-black uppercase italic tracking-tighter">Información General</CardTitle>
                                 <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Edita los detalles de la organización</CardDescription>
                             </CardHeader>
-                            <CardContent className="p-8 space-y-6">
+                            <CardContent className="p-5 space-y-6">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-widest ml-1">Nombre de Comunidad</Label>
@@ -327,7 +327,7 @@ const AdminCommunityDetail = () => {
                                     <textarea value={community.description || ''} onChange={e => setCommunity({ ...community, description: e.target.value })} rows={4} className="w-full rounded-xl border-slate-100 border p-4 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-primary/5 transition-all resize-none" placeholder="Describe la comunidad..." />
                                 </div>
                             </CardContent>
-                            <CardFooter className="p-8 bg-slate-50/50 flex justify-end">
+                            <CardFooter className="p-5 bg-slate-50/50 flex justify-end">
                                 <Button onClick={handleUpdateCommunity} disabled={isSaving} className="h-14 px-10 rounded-2xl bg-primary font-black uppercase italic text-xs tracking-widest shadow-xl shadow-primary/20">
                                     {isSaving ? <Loader2 className="size-5 animate-spin" /> : 'Guardar Cambios'}
                                 </Button>
@@ -335,17 +335,17 @@ const AdminCommunityDetail = () => {
                         </Card>
 
                         <div className="space-y-6">
-                            <Card className="border-none shadow-sm rounded-[2.5rem] bg-red-50/30 overflow-hidden">
+                            <Card className="border-none shadow-sm rounded-3xl bg-red-50/30 overflow-hidden">
                                 <CardHeader className="p-8">
                                     <CardTitle className="text-xl font-black uppercase italic tracking-tighter text-red-600">Zona de Peligro</CardTitle>
                                     <CardDescription className="text-[9px] font-bold uppercase tracking-widest text-red-400 leading-relaxed">Eliminar una comunidad es una acción irreversible. Los usuarios perderán su vinculación.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-8 pt-0">
+                                <CardContent className="p-5 pt-0">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
                                             <Button variant="destructive" className="w-full h-14 rounded-2xl font-black uppercase italic tracking-widest text-xs shadow-xl shadow-red-500/10"><Trash2 className="size-5 mr-3" /> Eliminar Comunidad</Button>
                                         </AlertDialogTrigger>
-                                        <AlertDialogContent className="rounded-[2.5rem] border-none">
+                                        <AlertDialogContent className="rounded-3xl border-none">
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-2xl font-black uppercase italic tracking-tighter">¿Estás absolutamente seguro?</AlertDialogTitle>
                                                 <AlertDialogDescription className="text-slate-500 font-bold text-xs uppercase tracking-widest leading-relaxed pt-2">Esta acción no se puede deshacer. Se eliminarán permanentemente todos los datos de la comunidad &quot;{communityName}&quot; y se desvinculará a sus {members.length} miembros.</AlertDialogDescription>
@@ -359,8 +359,8 @@ const AdminCommunityDetail = () => {
                                 </CardContent>
                             </Card>
 
-                            <Card className="border-none shadow-sm rounded-[2.5rem] bg-indigo-600 text-white overflow-hidden">
-                                <CardContent className="p-8 space-y-6">
+                            <Card className="border-none shadow-sm rounded-3xl bg-indigo-600 text-white overflow-hidden">
+                                <CardContent className="p-5 space-y-6">
                                     <div className="size-14 bg-white/10 rounded-2xl flex items-center justify-center"><ShieldAlert className="size-7" /></div>
                                     <div className="space-y-2">
                                         <h4 className="text-lg font-black uppercase italic tracking-tighter">Administrador Certificado</h4>

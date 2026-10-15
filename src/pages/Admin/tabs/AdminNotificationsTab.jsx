@@ -109,8 +109,8 @@ export default function AdminNotificationsTab() {
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <Card className="rounded-[2rem] border-none bg-white shadow-xl text-left">
-        <CardHeader className="p-6 sm:p-8 border-b border-slate-100">
+      <Card className="rounded-3xl border-none bg-white shadow-xl text-left">
+        <CardHeader className="p-4 sm:p-5 border-b border-slate-100">
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle className="text-2xl font-black uppercase italic tracking-tighter text-slate-900">Enviar aviso</CardTitle>
@@ -124,7 +124,7 @@ export default function AdminNotificationsTab() {
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 sm:p-8 space-y-6">
+        <CardContent className="p-4 sm:p-5 space-y-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Destinatario</label>
 
@@ -247,8 +247,8 @@ export default function AdminNotificationsTab() {
       </Card>
 
       <div className="space-y-6">
-        <Card className="rounded-[2rem] border-none bg-slate-900 text-white shadow-xl overflow-hidden text-left">
-          <CardHeader className="p-6 sm:p-8">
+        <Card className="rounded-3xl border-none bg-slate-900 text-white shadow-xl overflow-hidden text-left">
+          <CardHeader className="p-4 sm:p-8">
             <Badge className="mb-4 w-fit border-none bg-primary/20 text-primary font-black uppercase tracking-widest">Canal admin</Badge>
             <CardTitle className="text-2xl font-black uppercase italic tracking-tighter">{selectedSegment.label}</CardTitle>
             <CardDescription className="text-slate-400 font-bold">{selectedSegment.description}</CardDescription>
@@ -267,8 +267,8 @@ export default function AdminNotificationsTab() {
         </Card>
 
         {lastResult && (
-          <Card className="rounded-[2rem] border-none bg-emerald-50 text-emerald-800 shadow-sm text-left">
-            <CardContent className="p-6 flex items-center gap-4">
+          <Card className="rounded-3xl border-none bg-emerald-50 text-emerald-800 shadow-sm text-left">
+            <CardContent className="p-4 flex items-center gap-4">
               <div className="size-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center">
                 <BellRing className="size-6" />
               </div>

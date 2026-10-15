@@ -66,7 +66,7 @@ const PostRideReviewGuard = () => {
 
   return (
     <div className="fixed inset-0 z-[300] bg-slate-50 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-[2.5rem] bg-white p-8 text-center shadow-2xl border border-slate-100">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-2xl border border-slate-100">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-red-50 text-red-500">
           <AlertCircle className="h-7 w-7" />
         </div>

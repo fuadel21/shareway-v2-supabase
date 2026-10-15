@@ -58,7 +58,7 @@ const PhoneVerificationDialog = ({ open, onOpenChange, phoneNumber }) => {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md rounded-[2.5rem] border-none shadow-2xl overflow-hidden glass p-0">
+            <DialogContent className="sm:max-w-md rounded-3xl border-none shadow-2xl overflow-hidden glass p-0">
                 <div className="bg-primary/5 p-8 border-b border-primary/10 text-center">
                     <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Smartphone className="h-8 w-8 text-primary" />
@@ -78,7 +78,7 @@ const PhoneVerificationDialog = ({ open, onOpenChange, phoneNumber }) => {
                             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                             maxLength={6}
                             placeholder="000000"
-                            className="h-20 text-center text-4xl tracking-[0.5em] font-black rounded-2xl border-2 border-slate-100 focus:border-primary transition-all w-full max-w-[280px]"
+                            className="h-14 text-center text-4xl tracking-[0.5em] font-black rounded-2xl border-2 border-slate-100 focus:border-primary transition-all w-full max-w-[280px]"
                         />
                     </div>
 
@@ -86,7 +86,7 @@ const PhoneVerificationDialog = ({ open, onOpenChange, phoneNumber }) => {
                         <Button
                             onClick={handleConfirm}
                             disabled={isVerifying || code.length !== 6}
-                            className="w-full h-16 rounded-2xl text-xl font-black tracking-tight shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                            className="w-full h-12 rounded-2xl text-xl font-black tracking-tight shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
                         >
                             {isVerifying ? (
                                 <><Loader2 className="h-6 w-6 animate-spin mr-3" /> Verificando...</>

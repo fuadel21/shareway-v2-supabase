@@ -158,10 +158,10 @@ function Register() {
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-accent/20 rounded-full blur-[120px] animate-pulse delay-700" />
       </div>
 
-      <Card className="w-full max-w-lg bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-[3rem] p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700 text-left">
+      <Card className="w-full max-w-lg bg-white/70 backdrop-blur-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.12)] rounded-3xl p-4 relative z-10 animate-in fade-in zoom-in-95 duration-700 text-left">
         <CardHeader className="space-y-6 text-center pb-10">
           <div className="flex justify-center">
-            <div className="bg-primary h-24 w-24 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-primary/30 relative group overflow-hidden">
+            <div className="bg-primary h-24 w-24 rounded-3xl flex items-center justify-center shadow-2xl shadow-primary/30 relative group overflow-hidden">
               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
               <Sparkles className="h-10 w-10 text-white relative z-10" />
             </div>
@@ -227,7 +227,7 @@ function Register() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.name_label')}</Label>
                 <div className="relative group">
                   <User className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                  <Input name="name" value={formData.name} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="Juan Pérez" />
+                  <Input name="name" value={formData.name} onChange={handleChange} required className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="Juan Pérez" />
                 </div>
               </div>
 
@@ -235,7 +235,7 @@ function Register() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.email_label')}</Label>
                 <div className="relative group">
                   <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                  <Input name="email" type="email" value={formData.email} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="hola@ejemplo.com" />
+                  <Input name="email" type="email" value={formData.email} onChange={handleChange} required className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="hola@ejemplo.com" />
                 </div>
               </div>
 
@@ -243,7 +243,7 @@ function Register() {
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.phone_label')}</Label>
                 <div className="relative group">
                   <Phone className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                  <Input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="+34 600 000 000" />
+                  <Input name="phone" type="tel" value={formData.phone} onChange={handleChange} className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base placeholder:text-slate-300" placeholder="+34 600 000 000" />
                 </div>
               </div>
 
@@ -252,14 +252,14 @@ function Register() {
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.password_label')}</Label>
                   <div className="relative group">
                     <Lock className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                    <Input name="password" type="password" value={formData.password} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
+                    <Input name="password" type="password" value={formData.password} onChange={handleChange} required className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-5">{t('register.confirm_password_label')}</Label>
                   <div className="relative group">
                     <ShieldCheck className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors" />
-                    <Input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="h-16 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
+                    <Input name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} required className="h-12 pl-14 pr-6 rounded-2xl bg-white border-2 border-orange-50 font-bold text-slate-900 focus:ring-4 focus:ring-primary/10 transition-all text-base" />
                   </div>
                 </div>
               </div>
@@ -270,7 +270,7 @@ function Register() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
+              className="w-full h-12 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black text-sm uppercase tracking-wider shadow-2xl shadow-primary/20 active:scale-95 transition-all border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin h-6 w-6" /> : (
                 <>{t('register.register_button')} <ArrowRight className="ml-3 h-4 w-4" /></>

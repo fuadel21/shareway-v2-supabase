@@ -219,7 +219,7 @@ const GrowthSEOLandingPage = ({ type }) => {
               <Button asChild variant="outline" className="h-14 rounded-2xl border-white/20 bg-white/10 text-white hover:bg-white/20 font-black uppercase tracking-widest"><Link to="/login">Entrar</Link></Button>
             </div>
           </div>
-          <div className="rounded-[2rem] border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur-xl">
             <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
               {page.metrics.map(([value, label]) => <Metric key={label} value={value} label={label} />)}
             </div>
@@ -233,7 +233,7 @@ const GrowthSEOLandingPage = ({ type }) => {
             [Car, 'Publica o busca trayectos', 'Crea una ruta en segundos y encuentra personas con horarios compatibles.'],
             [Wallet, 'Divide gastos', 'Comparte combustible, peajes o desplazamientos frecuentes de forma transparente.'],
             [ShieldCheck, 'Confianza y control', 'Perfiles, chat privado y herramientas de seguridad para coordinar mejor.']
-          ].map(([CardIcon, title, text]) => <article key={title} className="rounded-[2rem] border border-slate-100 bg-slate-50 p-7"><CardIcon className="mb-4 h-7 w-7 text-orange-500" /><h2 className="text-xl font-black tracking-tight">{title}</h2><p className="mt-3 leading-7 text-slate-600">{text}</p></article>)}
+          ].map(([CardIcon, title, text]) => <article key={title} className="rounded-3xl border border-slate-100 bg-slate-50 p-7"><CardIcon className="mb-4 h-7 w-7 text-orange-500" /><h2 className="text-xl font-black tracking-tight">{title}</h2><p className="mt-3 leading-7 text-slate-600">{text}</p></article>)}
         </div>
       </section>
 
@@ -241,7 +241,7 @@ const GrowthSEOLandingPage = ({ type }) => {
       <FAQBlock faqs={page.faqs} />
 
       <section className="px-6 py-16">
-        <div className="mx-auto max-w-5xl rounded-[2rem] bg-slate-950 p-8 text-white sm:p-10">
+        <div className="mx-auto max-w-5xl rounded-3xl bg-slate-950 p-8 text-white sm:p-10">
           <p className="text-sm font-black uppercase tracking-widest text-orange-400">Empieza ahora</p>
           <h2 className="mt-3 text-3xl font-black tracking-tight">Convierte tu próximo trayecto en una ruta compartida</h2>
           <p className="mt-4 max-w-2xl leading-8 text-white/70">Publica una ruta, busca una plaza o crea una solicitud para que otros usuarios compatibles puedan encontrarte.</p>

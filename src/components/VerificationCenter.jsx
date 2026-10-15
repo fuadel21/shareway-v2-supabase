@@ -54,14 +54,14 @@ const VerificationStatus = ({ profile }) => {
 
     return (
         <Card className={cn(
-            "rounded-[2.5rem] border-none shadow-diamond overflow-hidden relative group transition-all duration-700",
+            "rounded-3xl border-none shadow-diamond overflow-hidden relative group transition-all duration-700",
             current.color
         )}>
             <div className="absolute inset-0 bg-gradient-premium opacity-10 group-hover:opacity-20 transition-opacity" />
             <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:opacity-10 transition-all group-hover:scale-110">
                 <Icon size={200} />
             </div>
-            <CardContent className="p-8 lg:p-12 relative z-10 space-y-4 text-left">
+            <CardContent className="p-5 lg:p-12 relative z-10 space-y-4 text-left">
                 <div className="flex items-center gap-5">
                     <div className={cn(
                         "size-16 rounded-2xl flex items-center justify-center shadow-2xl backdrop-blur-md border border-white/20 animate-pulse-elite",
@@ -93,12 +93,12 @@ const DocumentUploader = ({ type, title, description, status, onFileSelect, isUp
 
     return (
         <div className={cn(
-            "p-8 bg-white border border-slate-100 rounded-[2.5rem] transition-all duration-500 group relative overflow-hidden",
+            "p-8 bg-white border border-slate-100 rounded-3xl transition-all duration-500 group relative overflow-hidden",
             isDisabled && "opacity-40 grayscale pointer-events-none"
         )}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
                 <div className="flex items-center gap-6">
-                    <div className={cn("size-16 rounded-[1.5rem] flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-500", status === 'verified' ? "bg-emerald-50 text-emerald-500" : "bg-slate-50 text-slate-400")}>
+                    <div className={cn("size-16 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-500", status === 'verified' ? "bg-emerald-50 text-emerald-500" : "bg-slate-50 text-slate-400")}>
                         {type === 'idCard' ? <Fingerprint className="size-8" /> : (type === 'driverLicense' ? <Camera className="size-8" /> : <FileCheck2 className="size-8" />)}
                     </div>
                     <div className="space-y-1 text-left">
@@ -217,7 +217,7 @@ function VerificationCenter() {
             <SubPageHeader title="Trust Center" />
             <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/png, image/jpeg" hidden />
 
-            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-12">
+            <main className="max-w-xl mx-auto px-4 -mt-10 relative z-10 space-y-6">
                 <VerificationStatus profile={profile} />
 
                 <div className="space-y-6">
@@ -249,7 +249,7 @@ function VerificationCenter() {
                     </div>
 
                     {!isIdentityVerified && (
-                        <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-[2.5rem] flex items-start gap-5 animate-in fade-in duration-700 text-left">
+                        <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-3xl flex items-start gap-5 animate-in fade-in duration-700 text-left">
                             <AlertCircle className="h-5 w-5 text-indigo-500 shrink-0" />
                             <p className="text-[10px] font-black text-indigo-900/60 leading-relaxed uppercase tracking-widest">
                                 Debes completar el Paso 1 antes de poder subir credenciales de conductor.
@@ -279,7 +279,7 @@ function VerificationCenter() {
                     </div>
                 </div>
 
-                <div className="bg-slate-900 p-10 rounded-[3rem] relative overflow-hidden group shadow-2xl text-left">
+                <div className="bg-slate-900 p-10 rounded-3xl relative overflow-hidden group shadow-2xl text-left">
                     <div className="absolute top-0 right-0 p-10 opacity-5"><ShieldCheck className="size-24 text-white" /></div>
                     <div className="relative z-10 space-y-4">
                         <div className="flex items-center gap-3">

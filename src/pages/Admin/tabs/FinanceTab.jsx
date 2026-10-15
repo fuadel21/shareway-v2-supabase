@@ -172,8 +172,8 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
-                <CardHeader className="p-8 pb-4">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+                <CardHeader className="p-5 pb-4">
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
@@ -263,8 +263,8 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white">
-                <CardHeader className="p-8 pb-4">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+                <CardHeader className="p-5 pb-4">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                         <div>
                             <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
@@ -339,8 +339,8 @@ const FinanceTab = ({ stats, loading: statsLoading }) => {
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-slate-900 text-white">
-                <CardHeader className="p-8 pb-4">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-slate-900 text-white">
+                <CardHeader className="p-5 pb-4">
                     <CardTitle className="text-xl font-black italic uppercase tracking-tighter flex items-center gap-3">
                         <History className="h-6 w-6 text-primary" /> Historial de Comisiones
                     </CardTitle>

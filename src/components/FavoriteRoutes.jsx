@@ -155,7 +155,7 @@ const FavoriteRoutes = () => {
                 {routes.length > 0 ? (
                     <div className="grid gap-6">
                         {routes.map(route => (
-                            <Card key={route.id} className="rounded-[2rem] border-none shadow-xl shadow-blue-500/5 hover:shadow-blue-500/10 transition-all group overflow-hidden bg-white/80 backdrop-blur-sm text-left">
+                            <Card key={route.id} className="rounded-3xl border-none shadow-xl shadow-blue-500/5 hover:shadow-blue-500/10 transition-all group overflow-hidden bg-white/80 backdrop-blur-sm text-left">
                                 <CardHeader className="pb-4">
                                     <div className="flex justify-between items-start">
                                         <div className="flex gap-4">
@@ -223,8 +223,8 @@ const FavoriteRoutes = () => {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-gray-200">
-                        <div className="bg-gray-100 h-20 w-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6">
+                    <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-gray-200">
+                        <div className="bg-gray-100 h-20 w-20 rounded-3xl flex items-center justify-center mx-auto mb-6">
                             <Route className="h-10 w-10 text-gray-400" />
                         </div>
                         <h3 className="text-xl font-black text-gray-800 tracking-tight">{t('favorite_routes.no_routes_title')}</h3>

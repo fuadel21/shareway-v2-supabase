@@ -91,7 +91,7 @@ const DisputeHistory = () => {
             <SubPageHeader title="Mis Disputas" />
 
             <main className="max-w-xl mx-auto px-4 py-6 space-y-6">
-                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-4">
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4">
                     <div className="size-12 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100">
                         <AlertCircle className="text-amber-500 size-6" />
                     </div>
@@ -108,7 +108,7 @@ const DisputeHistory = () => {
                             const StatusIcon = theme.icon;
 
                             return (
-                                <Card key={dispute.id} className="rounded-[2.5rem] border-none shadow-xl bg-white overflow-hidden group">
+                                <Card key={dispute.id} className="rounded-3xl border-none shadow-xl bg-white overflow-hidden group">
                                     {dispute.safety_evidence_id && (
                                         <div className="bg-amber-500 py-1.5 px-6 flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ const DisputeHistory = () => {
                                             </div>
                                         </div>
                                     )}
-                                    <CardContent className="p-6 space-y-4">
+                                    <CardContent className="p-4 space-y-4">
                                         <div className="flex justify-between items-start">
                                             <div className={cn("px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest flex items-center gap-1.5 border", theme.bg, theme.color)}>
                                                 <StatusIcon size={10} />
@@ -180,7 +180,7 @@ const DisputeHistory = () => {
                             );
                         })
                     ) : (
-                        <div className="text-center py-20 bg-white rounded-[3rem] border border-dashed border-slate-200">
+                        <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
                             <LucideHistory className="size-12 text-slate-100 mx-auto mb-4" />
                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] italic">No tienes reclamaciones activas</p>
                         </div>

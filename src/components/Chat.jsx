@@ -239,7 +239,7 @@ const Chat = () => {
 
             <main className="flex-1 overflow-y-auto p-6 space-y-6">
                 <div className="flex flex-col items-center py-8 space-y-3">
-                    <div className="size-14 bg-white rounded-[1.5rem] shadow-lg flex items-center justify-center border border-slate-100">
+                    <div className="size-14 bg-white rounded-2xl shadow-lg flex items-center justify-center border border-slate-100">
                         <ShieldCheck className="text-indigo-500 size-6" />
                     </div>
                     <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-300 text-center">Protocolo de Mensajería Blindada</p>
@@ -259,8 +259,8 @@ const Chat = () => {
                                 <div className={cn(
                                     "px-6 py-4 shadow-xl relative group transition-all",
                                     isMe
-                                        ? "bg-slate-900 text-white rounded-[2rem] rounded-tr-[0.5rem]"
-                                        : "bg-white text-slate-700 rounded-[2rem] rounded-tl-[0.5rem] border border-slate-100"
+                                        ? "bg-slate-900 text-white rounded-3xl rounded-tr-[0.5rem]"
+                                        : "bg-white text-slate-700 rounded-3xl rounded-tl-[0.5rem] border border-slate-100"
                                 )}>
                                     <p className="text-sm font-bold tracking-tight leading-relaxed">{msg.content}</p>
                                 </div>
@@ -302,7 +302,7 @@ const Chat = () => {
 
                     <footer className="p-6 pb-10 bg-white border-t border-slate-100">
                         <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="max-w-2xl mx-auto flex items-end gap-3">
-                            <div className="flex-1 bg-slate-50 rounded-[2rem] px-6 py-4 shadow-inner">
+                            <div className="flex-1 bg-slate-50 rounded-3xl px-6 py-4 shadow-inner">
                                 <textarea
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
@@ -320,7 +320,7 @@ const Chat = () => {
                             <Button
                                 type="submit"
                                 disabled={isSending || !newMessage.trim()}
-                                className="size-14 rounded-[1.5rem] bg-slate-900 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
+                                className="size-14 rounded-2xl bg-slate-900 text-white shadow-2xl hover:scale-105 active:scale-95 transition-all flex-shrink-0"
                             >
                                 {isSending ? <Loader2 className="animate-spin size-5" /> : <Send size={20} />}
                             </Button>
@@ -329,7 +329,7 @@ const Chat = () => {
                 </>
             ) : (
                 <div className="p-10 mb-10 text-center animate-in fade-in slide-in-from-bottom-5">
-                    <div className="max-w-xs mx-auto bg-slate-100/80 backdrop-blur-md p-6 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                    <div className="max-w-xs mx-auto bg-slate-100/80 backdrop-blur-md p-6 rounded-3xl border border-slate-200 shadow-sm">
                         <div className="size-12 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-slate-100">
                             <Lock className="text-slate-400 size-6" />
                         </div>

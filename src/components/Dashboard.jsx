@@ -406,7 +406,7 @@ const RideCard = ({ item, isSelected, onClick, copy, language }) => {
 };
 
 const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, resultCount, onOrigin, onDestination, onDate, onSeats, onSearch, onClear, onSwap, onCreateRequest, compact = false }) => (
-    <div className={cn('bg-white/95 backdrop-blur-2xl border border-white/60 shadow-2xl ring-1 ring-black/5', compact ? 'rounded-[1.5rem] p-3' : 'rounded-[2rem] p-5 space-y-4')}>
+    <div className={cn('bg-white/95 backdrop-blur-2xl border border-white/60 shadow-2xl ring-1 ring-black/5', compact ? 'rounded-2xl p-3' : 'rounded-3xl p-5 space-y-4')}>
         {!compact && (
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
@@ -500,7 +500,7 @@ const ActivitySummaryPanel = ({ copy, summary, loading, onRefresh, navigate }) =
     ];
 
     return (
-        <div className="rounded-[2rem] bg-slate-900 text-white p-5 shadow-2xl overflow-hidden relative">
+        <div className="rounded-3xl bg-slate-900 text-white p-5 shadow-2xl overflow-hidden relative">
             <div className="absolute -right-12 -top-12 size-40 rounded-full bg-primary/20 blur-2xl" />
             <div className="relative space-y-4">
                 <div className="flex items-start justify-between gap-4">
@@ -1005,7 +1005,7 @@ function Dashboard() {
                                             </div>
                                         </div>
 
-                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all">
+                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest shadow-2xl active:scale-95 transition-all">
                                             {selectedItem.type === 'request' ? copy.viewRequest : copy.viewDetails} <ChevronRight size={20} className="ml-2 text-primary" />
                                         </Button>
                                     </div>

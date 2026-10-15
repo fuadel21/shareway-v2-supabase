@@ -61,7 +61,7 @@ function Account() {
         `Miembro desde ${format(creationDate, "MMMM yyyy", { locale: es })}` : '';
 
     const ActionButton = ({ to, icon: Icon, children, color = "text-primary" }) => (
-        <Button variant="outline" size="lg" asChild className="justify-start text-base py-6 md:py-8 rounded-[2rem] md:rounded-3xl border-none shadow-sm bg-white dark:bg-navy hover:shadow-md transition-all group">
+        <Button variant="outline" size="lg" asChild className="justify-start text-base py-6 md:py-8 rounded-3xl md:rounded-3xl border-none shadow-sm bg-white dark:bg-navy hover:shadow-md transition-all group">
             <Link to={to} className="flex items-center gap-4">
                 <div className={cn("p-2.5 md:p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 transition-colors group-hover:bg-primary/10", color)}>
                     <Icon className="h-5 w-5 md:h-6 md:w-6" />
@@ -76,8 +76,8 @@ function Account() {
         <div className="min-h-screen bg-slate-50 dark:bg-navy pb-24">
             <main className="container mx-auto p-4 max-w-2xl pt-8">
                 {/* --- Tarjeta de Perfil Principal --- */}
-                <Card className="rounded-[3rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-white dark:bg-navy">
-                    <CardContent className="p-8 flex flex-col items-center text-center">
+                <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-white dark:bg-navy">
+                    <CardContent className="p-5 flex flex-col items-center text-center">
                         <div className="relative mb-6">
                             <Avatar className="h-32 w-32 border-4 border-white dark:border-slate-800 shadow-2xl">
                                 <AvatarImage src={profile.photo_url} alt={profile.display_name} />
@@ -106,14 +106,14 @@ function Account() {
 
                         {/* STATS BOARD PREMIUM */}
                         <div className="grid grid-cols-2 gap-3 md:gap-4 w-full mt-8">
-                            <div className="bg-slate-50 dark:bg-slate-800 p-4 md:p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center group hover:bg-white transition-all">
+                            <div className="bg-slate-50 dark:bg-slate-800 p-4 md:p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center group hover:bg-white transition-all">
                                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <Route className="h-4 w-4 md:h-5 md:w-5" />
                                 </div>
                                 <p className="text-xl md:text-2xl font-black text-slate-900 dark:text-white italic leading-none">{profile.rides_count || 0}</p>
                                 <p className="text-[7px] md:text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Viajes Realizados</p>
                             </div>
-                            <div className="bg-slate-50 dark:bg-slate-800 p-4 md:p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center group hover:bg-white transition-all">
+                            <div className="bg-slate-50 dark:bg-slate-800 p-4 md:p-5 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center group hover:bg-white transition-all">
                                 <div className="h-8 w-8 md:h-10 md:w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                                     <Leaf className="h-4 w-4 md:h-5 md:w-5" />
                                 </div>
@@ -140,7 +140,7 @@ function Account() {
 
                 {/* --- Tarjeta de Vehículo (si existe) --- */}
                 {profile.vehicle && (profile.vehicle.make || profile.vehicle.photoURL) && (
-                    <Card className="rounded-[3rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-slate-900 group">
+                    <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8 bg-slate-900 group">
                         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
                             <Car size={140} className="text-white" />
                         </div>
@@ -176,7 +176,7 @@ function Account() {
 
                 {/* --- Tarjeta de Preferencias --- */}
                 {profile.preferences && (
-                    <Card className="rounded-[2.5rem] border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8">
+                    <Card className="rounded-3xl border-none shadow-xl shadow-blue-500/5 overflow-hidden mb-8">
                         <CardHeader><CardTitle className="text-xl font-black">Preferencias de Viaje</CardTitle></CardHeader>
                         <CardContent className="flex justify-around items-center pt-2 pb-6">
                             <PreferenceIcon icon={Cigarette} label="Fumar" status={profile.preferences.smoking} />
@@ -189,7 +189,7 @@ function Account() {
 
                 {/* --- Cerrar Sesión --- */}
                 <div className="space-y-6 pt-4 pb-12">
-                    <Button variant="ghost" size="lg" className="w-full h-16 rounded-2xl text-destructive hover:text-destructive hover:bg-destructive/5 font-black text-lg transition-all" onClick={handleSignOut}>
+                    <Button variant="ghost" size="lg" className="w-full h-12 rounded-2xl text-destructive hover:text-destructive hover:bg-destructive/5 font-black text-lg transition-all" onClick={handleSignOut}>
                         <LogOut className="mr-3 h-6 w-6" />
                         {t('nav.logout')}
                     </Button>

@@ -156,7 +156,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && resetAndClose()}>
-            <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8 max-w-md bg-white outline-none max-h-[90vh]">
+            <DialogContent className="rounded-3xl border-none shadow-2xl p-8 max-w-md bg-white outline-none max-h-[90vh]">
                 <DialogHeader>
                     <div className="flex items-center gap-3">
                         <div className="size-12 bg-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
@@ -176,16 +176,16 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                                 type="number"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
-                                className="pl-12 h-24 rounded-[2rem] bg-slate-50 border-none font-black text-4xl italic text-slate-900"
+                                className="pl-12 h-24 rounded-3xl bg-slate-50 border-none font-black text-4xl italic text-slate-900"
                             />
                             <Euro className="absolute left-5 top-1/2 -translate-y-1/2 text-primary size-6" />
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                             {[10, 20, 50].map(val => (
-                                <button key={val} type="button" onClick={() => setAmount(val)} className={cn('rounded-2xl h-16 font-black text-sm transition-all border-2', Number(amount) === val ? 'bg-primary border-primary text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400')}>{val}€</button>
+                                <button key={val} type="button" onClick={() => setAmount(val)} className={cn('rounded-2xl h-12 font-black text-sm transition-all border-2', Number(amount) === val ? 'bg-primary border-primary text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400')}>{val}€</button>
                             ))}
                         </div>
-                        <Button onClick={handleContinue} disabled={isPreparing || !amount} className="w-full h-20 rounded-[2rem] bg-slate-900 text-white font-black text-lg uppercase shadow-2xl active:scale-95 transition-all">
+                        <Button onClick={handleContinue} disabled={isPreparing || !amount} className="w-full h-14 rounded-3xl bg-slate-900 text-white font-black text-lg uppercase shadow-2xl active:scale-95 transition-all">
                             {isPreparing ? <Loader2 className="size-6 animate-spin" /> : copy.continue}
                         </Button>
                     </div>

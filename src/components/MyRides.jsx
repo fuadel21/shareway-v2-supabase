@@ -368,7 +368,7 @@ const RideCard = ({ ride, navigate, currentUserId, copy, onQuickAction, actionLo
 
     return (
         <div
-            className="group relative overflow-hidden rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white flex flex-col mb-4"
+            className="group relative overflow-hidden rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer bg-white flex flex-col mb-4"
             onClick={() => navigate(detailsPath)}
         >
             <div className="absolute top-4 right-4 flex gap-2 z-20">
@@ -730,7 +730,7 @@ const MyRides = () => {
                 </Button>
             </header>
 
-            <main className="max-w-xl mx-auto px-4 py-6 space-y-8">
+            <main className="max-w-xl mx-auto px-4 py-6 space-y-5">
                 <div className="flex overflow-x-auto pb-4 gap-2 no-scrollbar">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
@@ -777,7 +777,7 @@ const MyRides = () => {
                             />
                         ))
                     ) : (
-                        <div className="text-center py-24 bg-white rounded-[2.5rem] border-2 border-dashed border-slate-100 shadow-inner">
+                        <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-100 shadow-inner">
                             <Car className="h-12 w-12 text-slate-100 mx-auto mb-6" />
                             <h3 className="text-sm font-black text-slate-900 uppercase italic mb-1">{copy.noResults}</h3>
                             <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest px-8">{copy.noResultsDesc}</p>
@@ -790,7 +790,7 @@ const MyRides = () => {
                 open={Boolean(secureAction)}
                 onOpenChange={(open) => !open && !actionLoadingId && setSecureAction(null)}
             >
-                <AlertDialogContent className="rounded-[2rem] border-none shadow-2xl max-w-sm">
+                <AlertDialogContent className="rounded-3xl border-none shadow-2xl max-w-sm">
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-xl font-black tracking-tighter italic uppercase text-slate-900">
                             {secureAction?.title}

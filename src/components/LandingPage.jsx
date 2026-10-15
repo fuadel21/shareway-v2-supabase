@@ -23,7 +23,7 @@ function PublicCommunityMap() {
     : t('landing.registered_users');
 
   return (
-    <div className="relative h-[390px] overflow-hidden rounded-[2rem] border border-slate-200 bg-slate-200 shadow-xl sm:h-[470px]">
+    <div className="relative h-[390px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-200 shadow-xl sm:h-[470px]">
       {createElement(MapComponent, { center: LANDING_MAP_CENTER, zoom: 6, itemsToDisplay: [] })}
       <div className="pointer-events-none absolute inset-x-4 top-4 z-10 flex justify-end sm:inset-x-6 sm:top-6">
         <div className="max-w-xs rounded-3xl border border-white/70 bg-white/95 px-5 py-4 text-right shadow-xl backdrop-blur-md sm:max-w-sm sm:px-6 sm:py-5">
@@ -270,14 +270,14 @@ function LandingPage() {
 
       <section className="bg-slate-50 px-6 py-16">
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
-          <div className="rounded-[2rem] bg-white p-6 shadow-sm">
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
             <h2 className="text-2xl font-black">Ciudades para compartir coche</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">Páginas locales para captar búsquedas de carpooling y viajes compartidos por ciudad.</p>
             <div className="mt-5 flex flex-wrap gap-2">
               {localCityLinks.map(([href, label]) => <a key={href} href={href} className="rounded-full border px-4 py-2 text-sm font-black hover:bg-slate-50">{label}</a>)}
             </div>
           </div>
-          <div className="rounded-[2rem] bg-orange-500 p-6 text-white">
+          <div className="rounded-3xl bg-orange-500 p-6 text-white">
             <h2 className="text-2xl font-black">Aeropuertos y trayectos frecuentes</h2>
             <p className="mt-2 text-sm leading-6 text-white/80">Enlaces a páginas de aeropuertos para captar usuarios con horarios compatibles y viajes puntuales.</p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -319,7 +319,7 @@ function LandingPage() {
       </section>
 
       <section className="px-6 py-20">
-        <div className="mx-auto max-w-5xl rounded-[2rem] bg-orange-500 p-10 text-white md:p-14">
+        <div className="mx-auto max-w-5xl rounded-3xl bg-orange-500 p-10 text-white md:p-14">
           <h2 className="text-4xl font-black tracking-tight">Empieza a compartir trayectos hoy</h2>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-white/90">Crea tu cuenta, publica una ruta o encuentra personas con trayectos compatibles. ShareWay te ayuda a moverte de forma más eficiente.</p>
           <div className="mt-8 flex flex-wrap gap-4"><a href="/register" className="rounded-full bg-white px-6 py-4 font-black text-orange-600">Crear cuenta gratis</a><a href="/login" className="rounded-full border border-white/60 px-6 py-4 font-black text-white">Ya tengo cuenta</a></div>

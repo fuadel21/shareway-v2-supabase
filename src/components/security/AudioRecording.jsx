@@ -15,7 +15,7 @@ function AudioRecording() {
                 </div>
             </header>
 
-            <main className="container mx-auto p-4 max-w-2xl space-y-8">
+            <main className="container mx-auto p-4 max-w-2xl space-y-5">
                 <Card className="bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-3"><Mic className="text-orange-600" /><span>Tu seguridad, tu voz</span></CardTitle>

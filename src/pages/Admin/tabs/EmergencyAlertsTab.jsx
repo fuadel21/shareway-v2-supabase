@@ -267,8 +267,8 @@ const EmergencyAlertsTab = () => {
   return (
     <div className="space-y-6 text-left">
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Card className="rounded-[2rem] border-none bg-slate-900 text-white shadow-xl overflow-hidden">
-          <CardHeader className="p-6 sm:p-8">
+        <Card className="rounded-3xl border-none bg-slate-900 text-white shadow-xl overflow-hidden">
+          <CardHeader className="p-4 sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <Badge className="mb-4 w-fit border-none bg-red-500/20 text-red-200 font-black uppercase tracking-widest">SOS Center</Badge>
@@ -278,7 +278,7 @@ const EmergencyAlertsTab = () => {
                 </CardDescription>
               </div>
 
-              <div className="rounded-[2rem] border border-red-400/20 bg-red-500/10 p-5 min-w-[180px]">
+              <div className="rounded-3xl border border-red-400/20 bg-red-500/10 p-5 min-w-[180px]">
                 <p className="text-[10px] font-black uppercase tracking-widest text-red-200">Activas</p>
                 <div className="mt-2 flex items-end gap-2">
                   <span className="text-5xl font-black italic leading-none">{statusStats.active}</span>
@@ -289,11 +289,11 @@ const EmergencyAlertsTab = () => {
           </CardHeader>
         </Card>
 
-        <Card className="rounded-[2rem] border-none bg-white shadow-xl">
-          <CardHeader className="p-6 pb-3">
+        <Card className="rounded-3xl border-none bg-white shadow-xl">
+          <CardHeader className="p-4 pb-3">
             <CardTitle className="text-sm font-black uppercase italic tracking-tighter">Filtros rápidos</CardTitle>
           </CardHeader>
-          <CardContent className="p-6 pt-0 space-y-3">
+          <CardContent className="p-4 pt-0 space-y-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -346,7 +346,7 @@ const EmergencyAlertsTab = () => {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {statCards.map((item) => (
-          <div key={item.label} className={cn('rounded-[1.5rem] p-4 shadow-sm', item.className)}>
+          <div key={item.label} className={cn('rounded-2xl p-4 shadow-sm', item.className)}>
             <p className="text-[9px] font-black uppercase tracking-widest opacity-70">{item.label}</p>
             <p className="mt-1 text-3xl font-black italic leading-none">{item.value}</p>
           </div>
@@ -354,12 +354,12 @@ const EmergencyAlertsTab = () => {
       </div>
 
       {loading ? (
-        <div className="rounded-[2rem] border border-slate-100 bg-white p-16 text-center shadow-sm">
+        <div className="rounded-3xl border border-slate-100 bg-white p-16 text-center shadow-sm">
           <Loader2 className="mx-auto size-10 animate-spin text-red-500" />
           <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Cargando alertas SOS...</p>
         </div>
       ) : filteredAlerts.length === 0 ? (
-        <div className="rounded-[2rem] border border-dashed border-slate-200 bg-white p-16 text-center">
+        <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-16 text-center">
           <ShieldCheck className="mx-auto mb-4 size-12 text-emerald-400" />
           <h3 className="text-lg font-black uppercase italic tracking-tighter text-slate-900">Sin alertas en este filtro</h3>
           <p className="mt-2 text-xs font-bold text-slate-400">
@@ -378,7 +378,7 @@ const EmergencyAlertsTab = () => {
             const isUpdating = updatingId === alert.id;
 
             return (
-              <Card key={alert.id} className="rounded-[2rem] border border-slate-100 bg-white shadow-sm hover:shadow-xl transition-all overflow-hidden">
+              <Card key={alert.id} className="rounded-3xl border border-slate-100 bg-white shadow-sm hover:shadow-xl transition-all overflow-hidden">
                 <CardContent className="p-5 sm:p-6">
                   <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1 space-y-4">

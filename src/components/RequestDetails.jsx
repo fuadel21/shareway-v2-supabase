@@ -461,7 +461,7 @@ const RequestDetails = () => {
             <SubPageHeader title={copy.pageTitle} backPath="/my-requests" />
 
             <div className="max-w-xl mx-auto px-4 mt-6 space-y-6">
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-slate-900 text-white p-6 space-y-5 overflow-hidden relative">
+                <Card className="rounded-3xl border-none shadow-xl bg-slate-900 text-white p-4 space-y-5 overflow-hidden relative">
                     <div className="absolute -right-10 -top-10 size-36 rounded-full bg-primary/20 blur-2xl" />
                     <div className="relative flex items-start justify-between gap-4">
                         <div className="flex items-start gap-4 min-w-0">
@@ -487,7 +487,7 @@ const RequestDetails = () => {
                     </div>
                 </Card>
 
-                <div className="h-64 w-full rounded-[2.5rem] overflow-hidden shadow-xl relative border-4 border-white">
+                <div className="h-64 w-full rounded-3xl overflow-hidden shadow-xl relative border-4 border-white">
                     <MapComponent center={request.origin} itemsToDisplay={[{ ...request, type: 'request' }]} zoom={13} />
                     <div className={cn('absolute top-4 left-4 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg border', computed.statusConfig.className)}>
                         <span className={cn('inline-block size-1.5 rounded-full mr-2', computed.statusConfig.dot)} />
@@ -495,8 +495,8 @@ const RequestDetails = () => {
                     </div>
                 </div>
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl bg-white p-6 space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-[2rem]">
+                <Card className="rounded-3xl border-none shadow-xl bg-white p-4 space-y-6">
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-3xl">
                         <div className="flex items-center gap-3 min-w-0">
                             <Avatar className="size-14 rounded-2xl border-2 border-white shadow-md shrink-0">
                                 <AvatarImage src={request.requester.photoURL} />
@@ -515,7 +515,7 @@ const RequestDetails = () => {
                         <Link to={`/profile/${request.requester_id}`} className="text-primary text-[10px] font-black uppercase tracking-widest shrink-0">{copy.viewProfile}</Link>
                     </div>
 
-                    <div className="rounded-[2rem] bg-slate-50 border border-slate-100 p-5 space-y-4 text-left">
+                    <div className="rounded-3xl bg-slate-50 border border-slate-100 p-5 space-y-4 text-left">
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{copy.tripData}</p>
                         <div className="flex gap-4">
                             <div className="flex flex-col items-center pt-1">
@@ -583,7 +583,7 @@ const RequestDetails = () => {
                         {computed.canAccept && (
                             <Button
                                 onClick={() => setShowAcceptDialog(true)}
-                                className="w-full h-16 rounded-[2rem] bg-slate-900 text-white font-black text-base italic shadow-2xl uppercase active:scale-95 transition-all border-none"
+                                className="w-full h-12 rounded-3xl bg-slate-900 text-white font-black text-base italic shadow-2xl uppercase active:scale-95 transition-all border-none"
                             >
                                 {copy.acceptAndCreate} <ChevronRight size={20} className="ml-2 text-primary" />
                             </Button>
@@ -605,7 +605,7 @@ const RequestDetails = () => {
             </div>
 
             <Dialog open={showAcceptDialog} onOpenChange={setShowAcceptDialog}>
-                <DialogContent className="max-w-[90vw] sm:max-w-[400px] rounded-[2.5rem] border-none p-8 space-y-6 outline-none">
+                <DialogContent className="max-w-[90vw] sm:max-w-[400px] rounded-3xl border-none p-8 space-y-6 outline-none">
                     <div className="text-center space-y-2">
                         <div className="size-16 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <CheckCircle size={32} />
@@ -627,7 +627,7 @@ const RequestDetails = () => {
                                 step="0.01"
                                 value={price}
                                 onChange={(e) => setPrice(e.target.value)}
-                                className="h-16 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
+                                className="h-12 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
                             />
                         </div>
                         <div className="text-center space-y-1">
@@ -648,7 +648,7 @@ const RequestDetails = () => {
                                 max="8"
                                 value={totalSeats}
                                 onChange={(e) => setTotalSeats(e.target.value)}
-                                className="h-16 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
+                                className="h-12 pl-14 text-2xl font-black rounded-2xl bg-slate-50 border-none text-center shadow-inner"
                             />
                         </div>
                         <p className="text-[9px] text-center text-slate-400 font-bold uppercase tracking-tight">
@@ -667,7 +667,7 @@ const RequestDetails = () => {
             </Dialog>
 
             <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-                <DialogContent className="max-w-[90vw] sm:max-w-[400px] rounded-[2.5rem] border-none p-8 space-y-6 outline-none">
+                <DialogContent className="max-w-[90vw] sm:max-w-[400px] rounded-3xl border-none p-8 space-y-6 outline-none">
                     <div className="text-center space-y-2">
                         <div className="size-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <XCircle size={32} />

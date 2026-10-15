@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 const StatCard = ({ title, value, icon: Icon, color, subtitle }) => (
-    <Card className="p-6 rounded-[2.5rem] border-none shadow-xl bg-white space-y-4">
+    <Card className="p-4 rounded-3xl border-none shadow-xl bg-white space-y-4">
         <div className="flex justify-between items-start">
             <div className={cn('p-4 rounded-2xl', color)}>
                 <Icon className="size-6 text-white" />
@@ -118,7 +118,7 @@ const AdminStats = () => {
                     <StatCard title="Usuarios activos" value={stats?.active_users ?? 0} icon={Users} color="bg-orange-500" subtitle="Actividad de los últimos 30 días" />
                 </div>
 
-                <Card className="p-8 rounded-[3rem] bg-slate-900 text-white shadow-2xl">
+                <Card className="p-5 rounded-3xl bg-slate-900 text-white shadow-2xl">
                     <div className="flex items-center gap-3">
                         <ShieldCheck className="text-primary size-6" />
                         <div>

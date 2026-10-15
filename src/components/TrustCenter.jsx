@@ -86,9 +86,9 @@ export default function TrustCenter() {
             {activeTab === 'verification' ? (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                     {/* Score de Confianza */}
-                    <Card className="border-none shadow-diamond overflow-hidden relative group bg-slate-900 text-white rounded-[2rem]">
+                    <Card className="border-none shadow-diamond overflow-hidden relative group bg-slate-900 text-white rounded-3xl">
                         <div className="absolute inset-0 bg-gradient-premium opacity-20" />
-                        <CardContent className="p-8 relative z-10 flex items-center justify-between">
+                        <CardContent className="p-5 relative z-10 flex items-center justify-between">
                             <div className="space-y-1">
                                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">Nivel de Confianza</p>
                                 <h3 className="text-3xl font-black italic tracking-tighter">
@@ -104,7 +104,7 @@ export default function TrustCenter() {
                     {/* Pasos de Verificación */}
                     <div className="grid gap-4">
                         {/* DNI / ID */}
-                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow overflow-hidden group rounded-[2rem]">
+                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow overflow-hidden group rounded-3xl">
                             <CardContent className="p-0">
                                 <div className="flex items-center justify-between p-6">
                                     <div className="flex items-center gap-4">
@@ -134,7 +134,7 @@ export default function TrustCenter() {
                         </Card>
 
                         {/* Trabajo / Empresa */}
-                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow overflow-hidden group rounded-[2rem]">
+                        <Card className="border-none shadow-sm hover:shadow-md transition-shadow overflow-hidden group rounded-3xl">
                             <CardContent className="p-0">
                                 <div className="flex items-center justify-between p-6">
                                     <div className="flex items-center gap-4">
@@ -166,8 +166,8 @@ export default function TrustCenter() {
 
                     {/* Contactos de Emergencia (Acceso rápido) */}
                     <div className="pt-4">
-                        <Card onClick={() => toast.info("Configuración de Contactos")} className="border-none shadow-diamond bg-red-50 hover:bg-red-100 transition-colors cursor-pointer group rounded-[2rem]">
-                            <CardContent className="p-6 flex items-center justify-between">
+                        <Card onClick={() => toast.info("Configuración de Contactos")} className="border-none shadow-diamond bg-red-50 hover:bg-red-100 transition-colors cursor-pointer group rounded-3xl">
+                            <CardContent className="p-4 flex items-center justify-between">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-red-100 rounded-2xl">
                                         <ShieldAlert size={20} className="text-red-600" />

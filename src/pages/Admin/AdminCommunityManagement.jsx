@@ -134,7 +134,7 @@ const AdminCommunityManagement = () => {
     return (
         <div className="space-y-12 pb-40 animate-in fade-in duration-700">
             {/* Cabecera de Administración */}
-            <div className="relative p-12 bg-navy rounded-[3rem] overflow-hidden group">
+            <div className="relative p-12 bg-navy rounded-3xl overflow-hidden group">
                 <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
                     <Fingerprint className="size-48 text-white" />
                 </div>
@@ -153,7 +153,7 @@ const AdminCommunityManagement = () => {
             </div>
 
             {/* Formulario de Creación Premium */}
-            <Card className="rounded-[3rem] border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-3xl">
+            <Card className="rounded-3xl border-none shadow-[0_40px_100px_rgba(0,0,0,0.08)] overflow-hidden bg-white/70 backdrop-blur-3xl">
                 <CardHeader className="p-10 border-b border-slate-50">
                     <CardTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic flex items-center gap-3">
                         <Plus className="h-7 w-7 text-indigo-500" /> Nueva Entidad
@@ -173,7 +173,7 @@ const AdminCommunityManagement = () => {
                                     value={newCommunity.name}
                                     onChange={handleInputChange}
                                     placeholder="Universidad de Madrid"
-                                    className="h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all text-base"
+                                    className="h-12 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all text-base"
                                 />
                             </div>
                         </div>
@@ -186,7 +186,7 @@ const AdminCommunityManagement = () => {
                                     value={newCommunity.domain}
                                     onChange={handleInputChange}
                                     placeholder="ucm.es"
-                                    className="h-16 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all text-base"
+                                    className="h-12 pl-14 pr-6 rounded-2xl bg-slate-50 border-none shadow-inner font-bold text-slate-900 focus:ring-4 focus:ring-primary/5 transition-all text-base"
                                 />
                             </div>
                         </div>
@@ -194,7 +194,7 @@ const AdminCommunityManagement = () => {
                             <Button
                                 type="submit"
                                 disabled={isSubmitting}
-                                className="w-full h-16 rounded-2xl bg-navy hover:bg-primary text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.05] active:scale-95"
+                                className="w-full h-12 rounded-2xl bg-navy hover:bg-primary text-white font-black text-xs uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.05] active:scale-95"
                             >
                                 {isSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : "ACTIVAR ENTIDAD"}
                             </Button>
@@ -218,12 +218,12 @@ const AdminCommunityManagement = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {loading ? (
                         Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="h-40 bg-slate-100 rounded-[2.5rem] animate-pulse" />
+                            <div key={i} className="h-40 bg-slate-100 rounded-3xl animate-pulse" />
                         ))
                     ) : communities.length > 0 ? communities.map((community, index) => (
                         <div
                             key={community.id}
-                            className="group relative bg-white rounded-[2.5rem] p-8 shadow-[0_20px_60px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_100px_rgba(0,0,0,0.1)] transition-all duration-700 animate-in fade-in slide-in-from-bottom-8"
+                            className="group relative bg-white rounded-3xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.04)] hover:shadow-[0_40px_100px_rgba(0,0,0,0.1)] transition-all duration-700 animate-in fade-in slide-in-from-bottom-8"
                             style={{ animationDelay: `${index * 100}ms` }}
                         >
                             <div className="flex items-start justify-between mb-6">
@@ -262,7 +262,7 @@ const AdminCommunityManagement = () => {
                             </div>
                         </div>
                     )) : (
-                        <Card className="col-span-full rounded-[3rem] border-dashed border-2 border-slate-200 bg-transparent p-20 flex flex-col items-center text-center space-y-6">
+                        <Card className="col-span-full rounded-3xl border-dashed border-2 border-slate-200 bg-transparent p-20 flex flex-col items-center text-center space-y-6">
                             <div className="size-24 bg-slate-50 rounded-full flex items-center justify-center">
                                 <Globe className="size-10 text-slate-200" />
                             </div>
@@ -278,10 +278,10 @@ const AdminCommunityManagement = () => {
             </div>
 
             {/* Panel de Auditoría / Footer Info */}
-            <div className="p-10 bg-indigo-600 rounded-[3.5rem] shadow-2xl shadow-indigo-200 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+            <div className="p-10 bg-indigo-600 rounded-3xl shadow-2xl shadow-indigo-200 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 <div className="flex items-center gap-8">
-                    <div className="size-20 bg-white/10 rounded-[2rem] flex items-center justify-center backdrop-blur-xl border border-white/10">
+                    <div className="size-20 bg-white/10 rounded-3xl flex items-center justify-center backdrop-blur-xl border border-white/10">
                         <Sparkles className="size-10 text-white" />
                     </div>
                     <div>
@@ -291,7 +291,7 @@ const AdminCommunityManagement = () => {
                         </p>
                     </div>
                 </div>
-                <Button className="h-16 px-10 rounded-2xl bg-white text-indigo-600 font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
+                <Button className="h-12 px-10 rounded-2xl bg-white text-indigo-600 font-black text-xs uppercase tracking-widest shadow-xl hover:scale-105 transition-all">
                     EXPERT VIEW
                 </Button>
             </div>

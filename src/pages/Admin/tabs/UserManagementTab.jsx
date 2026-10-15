@@ -98,10 +98,10 @@ const UserManagementTab = () => {
         <div className="space-y-6 text-left">
             <div className="relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <Input placeholder="Escribe nombre o correo..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-12 h-14 rounded-[1.5rem] border-slate-100 shadow-sm focus:ring-primary/20 text-sm font-bold bg-white" />
+                <Input placeholder="Escribe nombre o correo..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-12 h-14 rounded-2xl border-slate-100 shadow-sm focus:ring-primary/20 text-sm font-bold bg-white" />
             </div>
 
-            <div className={cn('relative divide-y divide-gray-50 bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden transition-opacity', isSearching && 'opacity-50')}>
+            <div className={cn('relative divide-y divide-gray-50 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden transition-opacity', isSearching && 'opacity-50')}>
                 {isSearching && <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}
                 {users.length === 0 ? (
                     <div className="p-16 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No se encontraron usuarios</div>

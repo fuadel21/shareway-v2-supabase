@@ -199,7 +199,7 @@ const RideBoardingOverlay = () => {
 
   return (
     <>
-      <section className="fixed left-4 right-4 bottom-40 z-[65] mx-auto max-w-xl rounded-[2rem] border-2 border-white bg-white/95 p-4 shadow-2xl backdrop-blur-xl">
+      <section className="fixed left-4 right-4 bottom-40 z-[65] mx-auto max-w-xl rounded-3xl border-2 border-white bg-white/95 p-4 shadow-2xl backdrop-blur-xl">
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
@@ -319,7 +319,7 @@ const RideBoardingOverlay = () => {
               <button
                 type="button"
                 disabled
-                className="flex h-16 w-full items-center justify-center gap-2 rounded-3xl bg-slate-300 px-4 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-2xl"
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-3xl bg-slate-300 px-4 text-center text-[10px] font-black uppercase tracking-wider text-slate-600 shadow-2xl"
               >
                 <Lock className="size-4" />
                 {readiness?.unavailable

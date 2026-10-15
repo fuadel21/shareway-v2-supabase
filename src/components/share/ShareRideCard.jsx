@@ -127,7 +127,7 @@ const ShareRideCard = ({ ride, rideId }) => {
     : null;
 
   return (
-    <Card className="rounded-[2.5rem] border-none bg-slate-950 p-6 text-white shadow-xl">
+    <Card className="rounded-3xl border-none bg-slate-950 p-4 text-white shadow-xl">
       <div className="flex items-start gap-4">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10">
           <ShieldCheck className="h-5 w-5 text-emerald-400" />

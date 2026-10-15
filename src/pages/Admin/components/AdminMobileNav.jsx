@@ -24,7 +24,7 @@ const AdminMobileNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-[1000] bg-slate-900 border-t border-slate-800 lg:hidden shadow-[0_-20px_50px_rgba(0,0,0,0.5)]"
          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <div className="flex items-center gap-1 h-16 px-4 overflow-x-auto no-scrollbar snap-x">
+      <div className="flex items-center gap-1 h-12 px-4 overflow-x-auto no-scrollbar snap-x">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.to);
           return (

@@ -64,9 +64,9 @@ const PastRideDetails = () => {
         <div className="bg-slate-50 min-h-screen pb-40">
             <SubPageHeader title="Memoria de Viaje" />
 
-            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-8">
+            <main className="max-w-xl mx-auto px-4 -mt-12 relative z-10 space-y-5">
 
-                <Card className="rounded-[2.5rem] border-none shadow-xl overflow-hidden bg-white/60 backdrop-blur-xl p-8 text-center relative">
+                <Card className="rounded-3xl border-none shadow-xl overflow-hidden bg-white/60 backdrop-blur-xl p-5 text-center relative">
                     <div className={cn("h-20 w-20 rounded-2xl mx-auto flex items-center justify-center shadow-lg mb-4", ride.status === 'completed' ? "bg-green-500" : "bg-red-500")}>
                         {ride.status === 'completed' ? <BadgeCheck className="h-10 w-10 text-white" /> : <AlertTriangle className="h-10 w-10 text-white" />}
                     </div>
@@ -75,8 +75,8 @@ const PastRideDetails = () => {
                 </Card>
 
                 {ride.status === 'completed' && ride.co2_saved > 0 && (
-                    <Card className="rounded-[2.5rem] border-none bg-gradient-to-br from-teal-500 to-green-600 text-white shadow-2xl shadow-green-200 overflow-hidden animate-in fade-in zoom-in-95 duration-700">
-                        <CardContent className="p-8 flex flex-col items-center justify-center text-center gap-4">
+                    <Card className="rounded-3xl border-none bg-gradient-to-br from-teal-500 to-green-600 text-white shadow-2xl shadow-green-200 overflow-hidden animate-in fade-in zoom-in-95 duration-700">
+                        <CardContent className="p-5 flex flex-col items-center justify-center text-center gap-4">
                             <div className="h-20 w-20 bg-white/20 rounded-2xl flex items-center justify-center border-2 border-white/30 backdrop-blur-lg animate-pulse">
                                 <Leaf className="h-10 w-10 text-white" />
                             </div>
