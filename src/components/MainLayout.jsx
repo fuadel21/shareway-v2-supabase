@@ -201,9 +201,8 @@ const MainLayout = (props) => {
   return (
     <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative font-sans text-left">
       <header className="fixed top-0 left-0 right-0 h-14 lg:h-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 lg:px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 lg:gap-2.5 cursor-pointer group" onClick={() => navigate('/dashboard')}>
-          <img src="/favicon.svg" alt="ShareWay" className="size-8 lg:size-9 rounded-xl shadow-md group-hover:rotate-6 group-hover:scale-105 transition-transform" />
-          <h1 className="text-base lg:text-lg font-black tracking-tighter text-slate-900 italic uppercase">SHARE<span className="text-primary">WAY</span></h1>
+        <div className="flex items-center cursor-pointer group" onClick={() => navigate('/dashboard')}>
+          <img src="/logo.svg" alt="ShareWay · Comparte, conecta, viaja" className="h-8 lg:h-9 w-auto group-hover:scale-105 transition-transform" />
         </div>
 
         <div className="hidden lg:flex items-center gap-2">

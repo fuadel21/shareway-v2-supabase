@@ -148,7 +148,7 @@ function LandingPage() {
     <main className="min-h-screen bg-white text-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-100 bg-white/90 px-6 py-4 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          <a href="/" className="flex items-center gap-2 text-xl font-black tracking-tight"><img src="/favicon.svg" alt="ShareWay" className="size-7 rounded-lg" /> ShareWay</a>
+          <a href="/" className="flex items-center"><img src="/logo.svg" alt="ShareWay" className="h-8 w-auto" /></a>
           <nav className="flex items-center gap-3 text-sm font-black">
             <a href="#como-funciona" className="hidden text-slate-600 hover:text-slate-950 sm:inline">Cómo funciona</a>
             <a href="/carpooling/" className="hidden text-slate-600 hover:text-slate-950 sm:inline">Carpooling</a>

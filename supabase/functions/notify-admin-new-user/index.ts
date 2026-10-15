@@ -31,9 +31,9 @@ const money = (value: unknown) => {
 const shell = (title: string, body: string) => `
   <div style="font-family: system-ui, -apple-system, sans-serif; background:#f8fafc; padding:24px;">
     <div style="max-width:560px; margin:auto; background:#ffffff; border-radius:24px; overflow:hidden; border:1px solid #e2e8f0;">
-      <div style="background:#0f172a; padding:28px 32px;">
-        <p style="margin:0; color:#34d399; font-weight:900; letter-spacing:4px; font-size:12px;">SHAREWAY</p>
-        <h1 style="margin:8px 0 0; color:#ffffff; font-size:22px; font-weight:900;">${esc(title)}</h1>
+      <div style="background:#0f172a; padding:22px 32px;">
+        <img src="https://shareway.es/email-logo.png" width="168" alt="ShareWay" style="display:block; margin-bottom:10px;"/>
+        <h1 style="margin:0; color:#ffffff; font-size:22px; font-weight:900;">${esc(title)}</h1>
       </div>
       <div style="padding:28px 32px; color:#0f172a; font-size:15px; line-height:1.65;">${body}</div>
       <div style="padding:18px 32px; background:#f1f5f9; color:#64748b; font-size:11px; line-height:1.5;">
