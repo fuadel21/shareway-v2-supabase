@@ -523,7 +523,7 @@ const CreateRequest = () => {
                     </Card>
 
                     <div className="pt-4">
-                        <Button type="submit" disabled={!canPublish} className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xl tracking-tighter shadow-2xl active:scale-95 transition-all border-none uppercase italic">
+                        <Button type="submit" disabled={!canPublish} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xl tracking-tighter shadow-2xl active:scale-95 transition-all border-none uppercase italic">
                             {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{copy.publishCta || t('create_request.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                         </Button>
                     </div>

@@ -221,7 +221,7 @@ const QuickActions = ({ copy, navigate, loading, onRefresh }) => (
       </Button>
     </div>
     <div className="grid grid-cols-2 gap-3">
-      <Button onClick={() => navigate('/request')} className="h-12 rounded-2xl bg-slate-900 text-white font-black uppercase text-[10px] sm:text-xs gap-2 px-2 leading-tight">
+      <Button onClick={() => navigate('/request')} className="h-12 rounded-2xl bg-primary text-white font-black uppercase text-[10px] sm:text-xs gap-2 px-2 leading-tight">
         <Plus className="size-4 text-primary shrink-0" /> <span className="truncate">{copy.publishRequest}</span>
       </Button>
       <Button onClick={() => navigate('/dashboard')} variant="outline" className="h-12 rounded-2xl bg-white border-slate-200 text-slate-700 font-black uppercase text-[10px] sm:text-xs gap-2 px-2 leading-tight">
@@ -324,7 +324,7 @@ const RequestCard = ({ request, onOpen, onCancel, cancellingId, index, copy, lan
           </div>
         </div>
         <div className="flex items-center justify-end gap-2">
-          <Button type="button" onClick={() => onOpen(request.id)} className="h-12 px-4 rounded-2xl bg-slate-900 text-white font-black text-[9px] uppercase tracking-normal">
+          <Button type="button" onClick={() => onOpen(request.id)} className="h-12 px-4 rounded-2xl bg-primary text-white font-black text-[9px] uppercase tracking-normal">
             <StatusIcon className="size-3.5 mr-1" /> {copy.viewRequest}
           </Button>
         </div>

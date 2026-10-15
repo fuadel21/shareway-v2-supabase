@@ -428,7 +428,7 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
             <div className="grid gap-2">
                 <AddressAutocomplete label={copy.fromPlaceholder} onSelect={onOrigin} defaultValue={origin?.address || origin?.name} icon={<div className="size-2 rounded-full bg-emerald-500" />} />
                 <div className="flex justify-center -my-1 relative z-10">
-                    <button type="button" onClick={onSwap} className="size-8 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center active:scale-90" aria-label={copy.swap}>
+                    <button type="button" onClick={onSwap} className="size-8 rounded-full bg-primary text-white shadow-xl flex items-center justify-center active:scale-90" aria-label={copy.swap}>
                         <ArrowRightLeft size={14} />
                     </button>
                 </div>
@@ -450,7 +450,7 @@ const SearchPanel = ({ copy, origin, destination, date, seats, activeSearch, res
                 </div>
             </div>
 
-            <Button type="button" onClick={onSearch} className="h-13 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-normal shadow-xl gap-2 active:scale-95">
+            <Button type="button" onClick={onSearch} className="h-13 rounded-2xl bg-primary text-white font-black uppercase italic tracking-normal shadow-xl gap-2 active:scale-95">
                 <Search size={16} className="text-primary" /> {copy.searchButton}
             </Button>
         </div>
@@ -799,7 +799,7 @@ function Dashboard() {
 
                     <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
                         {filters.map((f) => (
-                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-normal transition-all border whitespace-nowrap', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-100')}>{f.label}</button>
+                            <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-normal transition-all border whitespace-nowrap', activeFilter === f.id ? 'bg-primary text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-100')}>{f.label}</button>
                         ))}
                     </div>
 
@@ -878,7 +878,7 @@ function Dashboard() {
                     <div className="flex items-center gap-2 pointer-events-auto">
                         <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
                             {filters.map((f) => (
-                                <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-normal transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
+                                <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-normal transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-primary text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
                                     {f.label}
                                 </button>
                             ))}
@@ -1005,7 +1005,7 @@ function Dashboard() {
                                             </div>
                                         </div>
 
-                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-12 rounded-2xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-normal shadow-2xl active:scale-95 transition-all">
+                                        <Button onClick={() => handleSelection(selectedItem, true)} className="w-full h-12 rounded-2xl bg-primary text-white font-black text-sm uppercase italic tracking-normal shadow-2xl active:scale-95 transition-all">
                                             {selectedItem.type === 'request' ? copy.viewRequest : copy.viewDetails} <ChevronRight size={20} className="ml-2 text-primary" />
                                         </Button>
                                     </div>

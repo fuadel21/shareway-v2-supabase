@@ -124,7 +124,7 @@ const RideRequestItem = ({ item, isSelected, onClick, isRequest }) => {
             
             {isSelected && (
                 <div className="animate-in fade-in zoom-in duration-300">
-                    <Button className={cn("w-full h-10 rounded-2xl text-white font-black text-[10px] tracking-normal uppercase italic shadow-lg", isRequest ? "bg-amber-800" : "bg-slate-900")} onClick={(e) => { e.stopPropagation(); onClick(item, true); }}>VER DETALLES</Button>
+                    <Button className={cn("w-full h-10 rounded-2xl text-white font-black text-[10px] tracking-normal uppercase italic shadow-lg", isRequest ? "bg-amber-800" : "bg-primary")} onClick={(e) => { e.stopPropagation(); onClick(item, true); }}>VER DETALLES</Button>
                 </div>
             )}
         </div>

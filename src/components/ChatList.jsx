@@ -339,7 +339,7 @@ const ChatList = () => {
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed mt-3">{copy.emptyDesc}</p>
                         <p className="text-[10px] font-black text-primary uppercase tracking-widest mt-2">{copy.emptyHint}</p>
                         <div className="grid grid-cols-2 gap-2 mt-7">
-                            <Button type="button" onClick={() => navigate('/dashboard')} className="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-normal gap-2">
+                            <Button type="button" onClick={() => navigate('/dashboard')} className="h-12 rounded-2xl bg-primary text-white text-[9px] font-black uppercase tracking-normal gap-2">
                                 <Search className="size-4 text-primary" /> {copy.findRide}
                             </Button>
                             <Button type="button" onClick={() => navigate('/my-rides?tab=active')} variant="outline" className="h-12 rounded-2xl bg-white border-slate-100 text-slate-800 text-[9px] font-black uppercase tracking-normal gap-2">

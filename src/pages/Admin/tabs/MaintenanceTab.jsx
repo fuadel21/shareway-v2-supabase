@@ -160,7 +160,7 @@ export default function MaintenanceTab() {
                     <Button
                         variant="outline"
                         size="icon"
-                        className={cn('rounded-2xl h-14 w-14 transition-all', showAudit ? 'bg-slate-900 text-white' : 'bg-white text-slate-400')}
+                        className={cn('rounded-2xl h-14 w-14 transition-all', showAudit ? 'bg-primary text-white' : 'bg-white text-slate-400')}
                         onClick={() => setShowAudit(!showAudit)}
                         title="Ver auditoría"
                     >

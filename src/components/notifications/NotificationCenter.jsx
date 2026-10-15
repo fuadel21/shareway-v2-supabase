@@ -91,7 +91,7 @@ const NotificationCenter = () => {
           {visibleNotifications.map((notification) => (
             <Card key={notification.id} className={cn('rounded-3xl border-none p-5 shadow-sm transition-all', notification.is_read ? 'bg-white' : 'bg-orange-50')}>
               <div className="flex items-start gap-4">
-                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', notification.is_read ? 'bg-slate-100 text-slate-400' : 'bg-orange-500 text-white')}>
+                <div className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl', notification.is_read ? 'bg-slate-100 text-slate-400' : 'bg-primary text-white')}>
                   <Bell className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">

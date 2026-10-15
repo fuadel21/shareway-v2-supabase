@@ -201,18 +201,16 @@ const MainLayout = (props) => {
   return (
     <div className="h-screen w-screen bg-slate-50 flex flex-col overflow-hidden relative font-sans text-left">
       <header className="fixed top-0 left-0 right-0 h-14 lg:h-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 z-[100] px-4 lg:px-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 lg:gap-3 cursor-pointer group" onClick={() => navigate('/dashboard')}>
-          <div className="size-8 lg:size-9 bg-slate-900 rounded-lg flex items-center justify-center shadow-lg group-hover:rotate-6 transition-transform">
-            <Sparkles className="text-primary h-3.5 w-3.5 lg:h-4 lg:w-4" />
-          </div>
-          <h1 className="text-base lg:text-lg font-black tracking-tighter text-slate-900 italic uppercase">SHAREWAY</h1>
+        <div className="flex items-center gap-2 lg:gap-2.5 cursor-pointer group" onClick={() => navigate('/dashboard')}>
+          <img src="/favicon.svg" alt="ShareWay" className="size-8 lg:size-9 rounded-xl shadow-md group-hover:rotate-6 group-hover:scale-105 transition-transform" />
+          <h1 className="text-base lg:text-lg font-black tracking-tighter text-slate-900 italic uppercase">SHARE<span className="text-primary">WAY</span></h1>
         </div>
 
         <div className="hidden lg:flex items-center gap-2">
           {isAdmin && <Button onClick={() => navigate('/admin/verifications')} className="h-10 rounded-2xl bg-indigo-600 px-4 text-[10px] font-black uppercase tracking-normal text-white gap-2"><ShieldCheck size={14} />Admin</Button>}
           <Button onClick={() => navigate('/calendar')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-normal gap-2"><CalendarDays size={14} />Agenda</Button>
-          <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-normal text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
-          <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-orange-500 px-4 text-[10px] font-black uppercase tracking-normal text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
+          <Button onClick={() => navigate('/publish')} className="h-10 rounded-2xl bg-primary px-4 text-[10px] font-black uppercase tracking-normal text-white gap-2"><Plus size={14} className="text-primary" />{t('create_ride.title')}</Button>
+          <Button onClick={() => navigate('/request')} className="h-10 rounded-2xl bg-primary px-4 text-[10px] font-black uppercase tracking-normal text-white gap-2"><Megaphone size={14} />{t('create_request.title')}</Button>
           <Button onClick={() => navigate('/my-rides?tab=active')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-normal gap-2"><Car size={14} />{t('nav.my_rides')}</Button>
           <Button onClick={() => navigate('/my-requests?tab=active')} variant="outline" className="h-10 rounded-2xl px-4 text-[10px] font-black uppercase tracking-normal gap-2"><CheckCircle2 size={14} />{t('dashboard.filter_requests')}</Button>
         </div>

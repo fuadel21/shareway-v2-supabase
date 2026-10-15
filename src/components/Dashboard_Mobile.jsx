@@ -317,7 +317,7 @@ function Dashboard() {
                                 <Popup>
                                     <div className="p-2 text-center min-w-[100px]">
                                         <p className="font-black text-[9px] text-slate-900 mb-1.5 uppercase truncate">{item.destination?.name || 'Destino'}</p>
-                                        <Button size="sm" className="h-6 rounded-lg bg-slate-900 text-[7px] font-black w-full" onClick={() => handleCardClick(item, true)}>VER</Button>
+                                        <Button size="sm" className="h-6 rounded-lg bg-primary text-[7px] font-black w-full" onClick={() => handleCardClick(item, true)}>VER</Button>
                                     </div>
                                 </Popup>
                             </Marker>

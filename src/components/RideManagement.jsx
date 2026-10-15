@@ -96,7 +96,7 @@ const PassengerItem = ({ passenger, onVerify, onAccept, onReject, rideId }) => {
                     )}
 
                     {isConfirmed && !isVerified && (
-                        <Button onClick={() => onVerify(passenger)} className="h-10 px-4 rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase shadow-lg active:scale-95">
+                        <Button onClick={() => onVerify(passenger)} className="h-10 px-4 rounded-xl bg-primary text-white font-black text-[10px] uppercase shadow-lg active:scale-95">
                             VALIDAR PIN
                         </Button>
                     )}

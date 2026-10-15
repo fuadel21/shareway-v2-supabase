@@ -215,7 +215,7 @@ const GrowthSEOLandingPage = ({ type }) => {
             <h1 className="text-4xl font-black tracking-tighter sm:text-6xl leading-[0.95]">{page.h1}</h1>
             <p className="max-w-2xl text-lg leading-8 text-slate-300">{page.intro}</p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild className="h-14 rounded-2xl bg-orange-500 hover:bg-orange-600 font-black uppercase tracking-normal text-white"><Link to="/register">Crear cuenta gratis <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
+              <Button asChild className="h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase tracking-normal text-white"><Link to="/register">Crear cuenta gratis <ArrowRight className="ml-2 h-5 w-5" /></Link></Button>
               <Button asChild variant="outline" className="h-14 rounded-2xl border-white/20 bg-white/10 text-white hover:bg-white/20 font-black uppercase tracking-normal"><Link to="/login">Entrar</Link></Button>
             </div>
           </div>

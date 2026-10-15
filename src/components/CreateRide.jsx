@@ -537,7 +537,7 @@ const CreateRide = () => {
                         <Textarea placeholder={t('create_ride.note_placeholder')} className="min-h-[100px] rounded-2xl bg-slate-50 border-none shadow-inner p-5 font-medium italic text-slate-600" value={details} onChange={(e) => setDetails(e.target.value)} />
                     </Card>
 
-                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
+                    <Button type="submit" disabled={isSubmitting || isCalculatingRoute} className="w-full h-14 rounded-2xl bg-primary text-white font-black text-xl shadow-2xl active:scale-95 border-none uppercase italic">
                         {isSubmitting ? <Loader2 className="animate-spin h-8 w-8" /> : <>{t('create_ride.publish_button')} <ChevronRight size={24} className="ml-2 text-primary" /></>}
                     </Button>
                 </form>

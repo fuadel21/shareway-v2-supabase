@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0B2A86"/>
+      <stop offset="55%" stop-color="#1267FF"/>
+      <stop offset="100%" stop-color="#0FC6A6"/>
+    </linearGradient>
+    <linearGradient id="pin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1267FF"/>
+      <stop offset="100%" stop-color="#0FC6A6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle base -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+
+  <!-- Detalles tecnológicos (nodos) -->
+  <circle cx="434" cy="72" r="9" fill="#ffffff" opacity="0.35"/>
+  <circle cx="462" cy="104" r="5" fill="#ffffff" opacity="0.22"/>
+  <circle cx="64" cy="440" r="6" fill="#ffffff" opacity="0.18"/>
+
+  <!-- Ruta compartida (carretera A → B) -->
+  <path d="M 136 388 C 220 320 204 250 272 224 C 340 198 342 158 378 142"
+        fill="none" stroke="#ffffff" stroke-width="44" stroke-linecap="round"/>
+
+  <!-- Línea discontinua central de la carretera -->
+  <path d="M 136 388 C 220 320 204 250 272 224 C 340 198 342 158 378 142"
+        fill="none" stroke="#0FC6A6" stroke-width="7" stroke-linecap="round"
+        stroke-dasharray="1 24" opacity="0.85"/>
+
+  <!-- Origen (punto A) -->
+  <circle cx="136" cy="388" r="30" fill="#ffffff"/>
+  <circle cx="136" cy="388" r="13" fill="url(#pin)"/>
+
+  <!-- Destino (pin B) -->
+  <path d="M 378 142 C 356 112 346 98 346 80 a 32 32 0 1 1 64 0 c 0 18 -10 32 -32 62 z"
+        fill="#ffffff"/>
+  <circle cx="378" cy="80" r="16" fill="url(#pin)"/>
+</svg>

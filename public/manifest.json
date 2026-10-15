@@ -4,51 +4,102 @@
   "description": "Comparte coche y trayectos con personas con rutas compatibles. Ahorra en tus desplazamientos, reduce emisiones y viaja con más confianza.",
   "icons": [
     {
-      "src": "/favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon",
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
-  "theme_color": "#0f172a",
+  "display_override": [
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "theme_color": "#10B981",
   "background_color": "#f8fafc",
   "orientation": "portrait",
   "lang": "es-ES",
   "dir": "ltr",
-  "categories": ["travel", "navigation", "transportation", "social"],
+  "categories": [
+    "travel",
+    "navigation",
+    "transportation",
+    "social"
+  ],
   "shortcuts": [
     {
       "name": "Dashboard",
       "short_name": "Inicio",
       "description": "Abre tu panel principal de ShareWay.",
       "url": "/dashboard",
-      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Publicar viaje",
       "short_name": "Publicar",
       "description": "Ofrece plazas para compartir coche.",
       "url": "/publish",
-      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Pedir plaza",
       "short_name": "Pedir",
       "description": "Crea una solicitud de trayecto compartido.",
       "url": "/request",
-      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Mis viajes",
       "short_name": "Viajes",
       "description": "Consulta tu actividad de viajes.",
       "url": "/my-rides?tab=active",
-      "icons": [{ "src": "/favicon.ico", "sizes": "64x64", "type": "image/x-icon" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }

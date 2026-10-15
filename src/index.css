@@ -55,8 +55,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 224 71% 4%;
 
-    /* Primario: Naranja Sunset (Vibrante pero Premium) */
-    --primary: 18 100% 50%;
+    /* Primario: Teal ShareWay (fresco, tecnologico y alegre) */
+    --primary: 162 84% 34%;
     --primary-foreground: 0 0% 100%;
 
     /* Secundario: Slate Muted semi-indigotic */
@@ -91,9 +91,9 @@
     --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
 
-    /* Primario: Naranja Neón Ultra */
-    --primary: 22 100% 60%;
-    --primary-foreground: 224 71% 2%;
+    /* Primario: Teal ShareWay (modo oscuro, mas luminoso) */
+    --primary: 162 84% 45%;
+    --primary-foreground: 0 0% 100%;
 
     --secondary: 215 25% 10%;
     --secondary-foreground: 210 20% 98%;

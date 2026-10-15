@@ -268,7 +268,7 @@ function EditProfile() {
                         </AccordionItem>
                     </Accordion>
 
-                    <Button type="submit" disabled={isSaving} className="w-full h-12 md:h-14 rounded-3xl md:rounded-3xl bg-slate-900 text-white font-black text-lg md:text-xl tracking-tighter shadow-2xl active:scale-95 border-none group">
+                    <Button type="submit" disabled={isSaving} className="w-full h-12 md:h-14 rounded-3xl md:rounded-3xl bg-primary text-white font-black text-lg md:text-xl tracking-tighter shadow-2xl active:scale-95 border-none group">
                         {isSaving ? <Loader2 className="animate-spin h-6 w-6 md:h-8 md:w-8" /> : <>{t('edit_profile.save_button')} <Sparkles className="ml-3 h-5 w-5 md:h-6 md:w-6 text-primary group-hover:rotate-12 transition-transform" /></>}
                     </Button>
                 </form>

@@ -108,7 +108,7 @@ const CheckoutForm = ({ amount, onSuccessfulPayment, onClose, copy }) => {
             )}
             <div className="flex gap-3">
                 <Button type="button" onClick={onClose} variant="ghost" disabled={isLoading} className="rounded-xl font-bold text-slate-400">{copy.cancel}</Button>
-                <Button type="submit" disabled={!stripe || isLoading} className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase italic tracking-normal shadow-xl">
+                <Button type="submit" disabled={!stripe || isLoading} className="flex-1 h-14 rounded-2xl bg-primary text-white font-black uppercase italic tracking-normal shadow-xl">
                     {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : `${copy.pay} ${amount.toFixed(2)}€`}
                 </Button>
             </div>
@@ -185,7 +185,7 @@ const AddFundsModal = ({ isOpen, onClose, onSuccess }) => {
                                 <button key={val} type="button" onClick={() => setAmount(val)} className={cn('rounded-2xl h-12 font-black text-sm transition-all border-2', Number(amount) === val ? 'bg-primary border-primary text-white shadow-lg' : 'bg-white border-slate-100 text-slate-400')}>{val}€</button>
                             ))}
                         </div>
-                        <Button onClick={handleContinue} disabled={isPreparing || !amount} className="w-full h-14 rounded-3xl bg-slate-900 text-white font-black text-lg uppercase shadow-2xl active:scale-95 transition-all">
+                        <Button onClick={handleContinue} disabled={isPreparing || !amount} className="w-full h-14 rounded-3xl bg-primary text-white font-black text-lg uppercase shadow-2xl active:scale-95 transition-all">
                             {isPreparing ? <Loader2 className="size-6 animate-spin" /> : copy.continue}
                         </Button>
                     </div>

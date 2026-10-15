@@ -132,7 +132,7 @@ const UserManagementTab = () => {
                                 <div className="flex items-center justify-between lg:justify-end gap-4">
                                     {getVerificationBadge(verificationStatus)}
                                     <div className="flex gap-2">
-                                        <Button variant="outline" size="sm" className="rounded-xl h-11 border-slate-100 text-slate-600 font-black text-[10px] uppercase hover:bg-slate-900 hover:text-white transition-all shadow-sm active:scale-90" onClick={() => navigate(`/admin/review/${user.id}`)} disabled={!user.id}>Expediente</Button>
+                                        <Button variant="outline" size="sm" className="rounded-xl h-11 border-slate-100 text-slate-600 font-black text-[10px] uppercase hover:bg-primary hover:text-white transition-all shadow-sm active:scale-90" onClick={() => navigate(`/admin/review/${user.id}`)} disabled={!user.id}>Expediente</Button>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
                                                 <Button size="icon" variant="ghost" className="h-11 w-11 rounded-xl bg-slate-50 hover:bg-slate-100 shadow-sm active:scale-95 transition-all" disabled={processingId === user.id || !user.id}>{processingId === user.id ? <Loader2 className="size-4 animate-spin" /> : <MoreHorizontal className="size-5" />}</Button>

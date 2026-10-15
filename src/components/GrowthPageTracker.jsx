@@ -169,7 +169,7 @@ const injectActivityEmptyStateCtas = () => {
       <p class="mt-2 text-[11px] font-bold text-slate-300 leading-relaxed">${copy.desc}</p>
     </div>
     <div class="grid grid-cols-2 gap-2">
-      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-slate-900 text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.publish}</button>
+      <button type="button" data-shareway-nav="/publish" class="h-12 rounded-2xl bg-primary text-white text-[9px] font-black uppercase tracking-normal shadow-lg active:scale-95 transition-all">${copy.publish}</button>
       <button type="button" data-shareway-nav="/request" class="h-12 rounded-2xl bg-white text-slate-900 border border-slate-100 text-[9px] font-black uppercase tracking-normal shadow active:scale-95 transition-all">${copy.request}</button>
     </div>
   `;
