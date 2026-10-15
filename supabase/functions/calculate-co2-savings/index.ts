@@ -7,11 +7,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
  */
 
 import { requireUser, unauthorized } from '../_shared/auth.ts'
-
+import { getCorsHeaders } from '../_shared/cors.ts'
 serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } })
+  const corsHeaders = getCorsHeaders(req)
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   const user = await requireUser(req)
-  if (!user) return unauthorized()
+  if (!user) return unauthorized(corsHeaders)
 
   try {
     const { distance, passengerCount, vehicleMeta } = await req.json()
@@ -49,7 +50,7 @@ serve(async (req) => {
         methodology: 'EEA-Compliant-V2',
         impact_certification: true
       }),
-      { headers: { 'Content-Type': 'application/json' } }
+      { }headers: { ...corsHeaders, 'Content-Type': 'application/json' }}
     )
 
   } catch (error) {
