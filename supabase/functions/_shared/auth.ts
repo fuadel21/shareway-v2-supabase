@@ -25,8 +25,24 @@ export const requireUser = async (req: Request): Promise<{ id: string; email?: s
 }
 
 // Para llamadas internas disparadas por triggers de la BD (pg_net).
-export const isInternalWebhook = (req: Request): boolean =>
-    req.headers.get('x-sw-webhook') === 'shareway-bookings-2026'
+// El secreto vive SOLO en los secrets de la Edge Function
+// (SW_INTERNAL_WEBHOOK_SECRET) y, en la BD, en private.app_secrets
+// (ver supabase/SECURITY_ROTATE_INTERNAL_WEBHOOK_SECRET.sql).
+// Nunca debe volver a escribirse en el codigo: el valor anterior quedo
+// publicado en el historial git y debe considerarse comprometido.
+// Si el secret no esta configurado, se rechaza siempre (fail-closed).
+const timingSafeEqual = (a: string, b: string): boolean => {
+    if (a.length !== b.length) return false
+    let diff = 0
+    for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+    return diff === 0
+}
+
+export const isInternalWebhook = (req: Request): boolean => {
+    const secret = Deno.env.get('SW_INTERNAL_WEBHOOK_SECRET') || ''
+    const incoming = req.headers.get('x-sw-webhook') || ''
+    return secret.length > 0 && timingSafeEqual(incoming, secret)
+}
 
 export const unauthorized = (extraHeaders: Record<string, string> = {}) =>
     new Response(JSON.stringify({ error: 'unauthorized' }), {
