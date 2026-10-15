@@ -15,7 +15,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 // pagos de reserva siguen la ruta del webhook.
 // ============================================================================
 
-const WEBHOOK_SECRET = 'shareway-bookings-2026' // igual que los triggers de la BD
+const WEBHOOK_SECRET = Deno.env.get('SW_INTERNAL_WEBHOOK_SECRET') || ''
 const WINDOW_SECONDS = 2 * 60 * 60 // 2 horas (8 oportunidades por pago con cron de 15 min)
 
 const jsonResponse = (payload: unknown, status = 200) =>
@@ -28,7 +28,7 @@ serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok')
 
   // Solo el cron de la BD (o el admin con el secreto compartido) puede llamarla
-  if (req.headers.get('x-sw-webhook') !== WEBHOOK_SECRET) {
+  if (!WEBHOOK_SECRET || req.headers.get('x-sw-webhook') !== WEBHOOK_SECRET) {
     return jsonResponse({ error: 'unauthorized' }, 401)
   }
 
