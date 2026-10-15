@@ -488,7 +488,7 @@ const MyRequests = () => {
         <RequestStats stats={stats} copy={copy} />
         <QuickActions copy={copy} navigate={navigate} loading={loading} onRefresh={fetchRequests} />
 
-        <div className="flex p-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-x-auto no-scrollbar">
+        <div className="grid grid-cols-5 gap-1 p-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
@@ -496,13 +496,15 @@ const MyRequests = () => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'flex-1 min-w-[112px] h-14 rounded-3xl text-[10px] font-black uppercase tracking-widest transition-all duration-500 relative overflow-hidden group flex items-center justify-center gap-2',
-                  activeTab === tab.id ? 'bg-slate-950 text-white shadow-2xl scale-[1.02]' : 'text-slate-400 hover:text-slate-600'
+                  'flex flex-col items-center justify-center gap-1 px-1 py-2.5 rounded-2xl transition-all duration-300 min-w-0',
+                  activeTab === tab.id ? 'bg-slate-950 text-white shadow-xl' : 'text-slate-400 hover:text-slate-600'
                 )}
               >
-                <Icon className={cn('size-3.5', activeTab === tab.id ? 'text-primary' : 'text-slate-300')} />
-                <span className="relative z-10">{tab.label}</span>
-                <span className={cn('text-[8px] px-1.5 py-0.5 rounded-full', activeTab === tab.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-400')}>{tab.value}</span>
+                <span className="flex items-center gap-1 min-w-0">
+                  <Icon className={cn('size-3.5 shrink-0', activeTab === tab.id ? 'text-primary' : 'text-slate-300')} />
+                  <span className={cn('text-[8px] px-1.5 py-0.5 rounded-full shrink-0', activeTab === tab.id ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-400')}>{tab.value}</span>
+                </span>
+                <span className="text-[9px] font-black uppercase leading-tight text-center w-full truncate">{tab.label}</span>
               </button>
             );
           })}
