@@ -51,7 +51,7 @@ const NotificationCenter = () => {
             </div>
           </div>
           {unreadCount > 0 && (
-            <Button onClick={readAll} className="rounded-2xl bg-slate-950 font-black uppercase tracking-normal text-white">
+            <Button onClick={readAll} className="rounded-2xl bg-primary font-black uppercase tracking-normal text-white hover:bg-primary/90">
               <CheckCheck className="mr-2 h-4 w-4" /> Leer todas
             </Button>
           )}
@@ -103,7 +103,7 @@ const NotificationCenter = () => {
                   {notification.message && <p className="mt-2 text-sm font-bold leading-6 text-slate-500">{notification.message}</p>}
                   <div className="mt-4 flex flex-wrap gap-2">
                     {notification.action_url && (
-                      <Button onClick={() => handleOpen(notification)} className="h-10 rounded-xl bg-slate-950 text-xs font-black uppercase tracking-normal text-white">Abrir</Button>
+                      <Button onClick={() => handleOpen(notification)} className="h-10 rounded-xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] text-xs font-black uppercase tracking-normal text-white">Abrir</Button>
                     )}
                     <Button variant="outline" onClick={() => notification.is_read ? unreadOne(notification.id) : readOne(notification.id)} className="h-10 rounded-xl text-xs font-black uppercase tracking-normal">
                       {notification.is_read ? 'Marcar no leída' : 'Marcar leída'}

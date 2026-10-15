@@ -47,18 +47,17 @@ const ReferralCard = ({ profile, user }) => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-2xl">
-      <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-orange-500/20 blur-2xl" />
-      <div className="absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-emerald-500/20 blur-2xl" />
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-5 text-white shadow-xl">
+      <div className="absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/15 blur-2xl" />
 
       <div className="relative flex items-start gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500 shadow-lg shadow-orange-500/20">
-          <Gift className="h-6 w-6" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 border border-white/20">
+          <Gift className="h-5 w-5 text-white" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-orange-300">Growth</p>
-          <h3 className="mt-1 text-2xl font-black tracking-tighter">Invita y haz crecer ShareWay</h3>
-          <p className="mt-2 text-sm leading-6 text-white/65">Comparte tu enlace con amigos, compañeros de trabajo o grupos locales.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/80">Comunidad</p>
+          <h3 className="mt-1 text-xl font-black tracking-tighter">Invita y haz crecer ShareWay</h3>
+          <p className="mt-1.5 text-xs leading-5 text-white/75">Comparte tu enlace con amigos, compañeros de trabajo o grupos locales.</p>
         </div>
       </div>
 
