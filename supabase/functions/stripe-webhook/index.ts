@@ -7,7 +7,7 @@ import Stripe from "https://esm.sh/stripe@14?target=deno"
 
 const jsonResponse = (payload: unknown, status = 200) => new Response(
   JSON.stringify(payload),
-  { status, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } },
+  { status, headers: { 'Content-Type': 'application/json' } },,
 )
 
 const roundMoney = (value: unknown) => Number(Number(value || 0).toFixed(2))
