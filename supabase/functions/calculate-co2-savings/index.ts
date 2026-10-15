@@ -8,6 +8,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 import { requireUser, unauthorized } from '../_shared/auth.ts'
 import { getCorsHeaders } from '../_shared/cors.ts'
+
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -25,7 +26,7 @@ serve(async (req) => {
     // A savings only occurs if there are passengers besides the driver
     if (passengerCount <= 1) {
       return new Response(JSON.stringify({ co2Saved: "0.00", status: 'no_additionality' }), {
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
@@ -50,13 +51,13 @@ serve(async (req) => {
         methodology: 'EEA-Compliant-V2',
         impact_certification: true
       }),
-      { }headers: { ...corsHeaders, 'Content-Type': 'application/json' }}
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })
