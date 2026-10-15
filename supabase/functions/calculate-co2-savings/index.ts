@@ -25,7 +25,7 @@ serve(async (req) => {
     // A savings only occurs if there are passengers besides the driver
     if (passengerCount <= 1) {
       return new Response(JSON.stringify({ co2Saved: "0.00", status: 'no_additionality' }), {
-        headers: { 'Content-Type': 'application/json' }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       })
     }
 
