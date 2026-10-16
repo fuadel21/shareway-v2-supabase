@@ -6,6 +6,21 @@ import { triggerEmergencyAlertV2 } from '@/lib/emergencyRPC';
 import { toast } from 'sonner';
 
 /**
+ * Construye el enlace de WhatsApp para avisar a un guardián.
+ */
+export const buildGuardianWhatsAppLink = (phone, { name, rideId, location } = {}) => {
+    const digits = String(phone || '').replace(/[^0-9]/g, '');
+    if (!digits) return null;
+    const lines = [
+        `🚨 ALERTA ShareWay de ${name || 'un usuario'}`,
+        location ? `📍 Ubicación en vivo: https://maps.google.com/?q=${location.lat},${location.lng}` : null,
+        rideId ? `🔗 Seguimiento del viaje: https://shareway.es/emergency/${rideId}` : null,
+        'Estoy en un viaje compartido y he activado el botón de SOS. Por favor, contáctame.',
+    ].filter(Boolean);
+    return `https://wa.me/${digits}?text=${encodeURIComponent(lines.join('\n'))}`;
+};
+
+/**
  * Activa la alerta SOS de emergencia
  */
 export const triggerSOS = async (rideId) => {

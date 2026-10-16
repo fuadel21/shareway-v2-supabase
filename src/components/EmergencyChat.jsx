@@ -12,7 +12,9 @@ import {
     Users,
     Mic,
     RefreshCw,
+    MessageCircle,
 } from 'lucide-react';
+import { getEmergencyContacts, buildGuardianWhatsAppLink } from '../services/safetyService.js';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -52,9 +54,19 @@ const EmergencyChat = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
     const [showBlackbox, setShowBlackbox] = useState(false);
+    const [guardians, setGuardians] = useState([]);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
     const messagesEndRef = useRef(null);
     const channelRef = useRef(null);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        let cancelled = false;
+        getEmergencyContacts(user.id).then((contacts) => {
+            if (!cancelled) setGuardians((contacts || []).slice(0, 5));
+        });
+        return () => { cancelled = true; };
+    }, [user?.id]);
 
     const cleanupRealtimeChannel = useCallback(() => {
         if (channelRef.current) {
@@ -335,6 +347,20 @@ const EmergencyChat = () => {
                         {isSending ? <Loader2 className="animate-spin" /> : <Send className="size-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}
                     </Button>
                 </form>
+                {guardians.length > 0 && (
+                    <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        {guardians.map((g) => {
+                            const link = buildGuardianWhatsAppLink(g.phone, { name: user?.user_metadata?.full_name || 'ShareWay', rideId });
+                            if (!link) return null;
+                            return (
+                                <a key={g.id} href={link} target="_blank" rel="noopener noreferrer"
+                                   className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-black text-[9px] uppercase tracking-normal active:scale-95 transition-transform">
+                                    <MessageCircle size={12} /> Avisar a {g.name}
+                                </a>
+                            );
+                        })}
+                    </div>
+                )}
                 <div className="flex justify-center mt-4 gap-6">
                     <a href="tel:112" className="flex items-center gap-2 text-red-600 font-black text-[10px] uppercase tracking-widest hover:underline">
                         <Phone size={14} /> Llamar al 112
