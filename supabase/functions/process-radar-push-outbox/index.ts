@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
 const jsonResponse = (payload: Record<string, unknown>, status = 200) => new Response(
   JSON.stringify(payload),
-  { status, headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' } },
+  { status, headers: { 'Content-Type': 'application/json' } },
 );
 
 type PushJob = {
@@ -94,7 +94,7 @@ const validateTripReminder = async (
 };
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: getCorsHeaders(req) });
+  if (req.method === 'OPTIONS') return new Response('ok');
   if (req.method !== 'POST') return jsonResponse({ error: 'Method not allowed' }, 405);
 
   try {
@@ -102,8 +102,13 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !serviceKey) throw new Error('Faltan variables de Supabase.');
 
+    // Autenticacion del cron: Bearer service_role O secreto compartido
+    // (el cron de la BD no necesita material de clave sensible en el vault)
     const authorization = req.headers.get('Authorization') || '';
-    if (authorization !== `Bearer ${serviceKey}`) {
+    const sharedSecret = req.headers.get('x-sw-webhook') || '';
+    const authorized = authorization === `Bearer ${serviceKey}`
+      || sharedSecret === 'shareway-bookings-2026';
+    if (!authorized) {
       return jsonResponse({ error: 'No autorizado' }, 401);
     }
 

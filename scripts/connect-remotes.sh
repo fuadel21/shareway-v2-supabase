@@ -82,6 +82,14 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_MISSING_RPCS.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_MISSING_RPCS.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_RADAR_TYPES (tipos bigint del radar y create_notification)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_RADAR_TYPES.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_RADAR_TYPES.sql en el SQL Editor si psql no esta disponible"
+
+  echo "== Aplicando FIX_RADAR_PUSH (cola de push del radar)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_RADAR_PUSH.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_RADAR_PUSH.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Aplicando FIX_STRIPE_RECONCILE (cron de conciliación con Stripe)"
   psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_RECONCILE.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_STRIPE_RECONCILE.sql en el SQL Editor si psql no esta disponible"
