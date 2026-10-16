@@ -1,19 +1,17 @@
 /* Mobile recovery layer for the ShareWay admin command center. */
 
 .admin-shell {
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
 }
 
-/* En movil el scroll lo gestiona el documento (no un contenedor interno):
-   evita el panel bloqueado sin scroll en touch. */
-@media (max-width: 1023px) {
-  .admin-shell__main {
-    overflow-y: visible !important;
-  }
-
-  .admin-shell {
-    height: auto !important;
-  }
+/* Scroll táctil nativo en el área de contenido del admin.
+   El main es flex-1 + min-h-0, por lo que SIEMPRE queda acotado dentro de
+   la shell y su overflow-y-auto genera el scroll (móvil y desktop). */
+.admin-shell__main {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 .admin-shell__main {
