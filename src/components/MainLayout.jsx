@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { useTranslation } from 'react-i18next';
 import NotificationCenterPanel from './notifications/NotificationCenterPanel.jsx';
+import { useIsMobile } from '@/hooks/use-mobile.js';
 import LanguageSwitcher from './LanguageSwitcher';
 
 const AUDIO_ASSETS = {
@@ -85,6 +86,7 @@ const MainLayout = (props) => {
   }
 
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const location = useLocation();
   const [unreadCount, setUnreadCount] = useState(0);
   const [unreadChats, setUnreadChats] = useState(0);
@@ -216,11 +218,22 @@ const MainLayout = (props) => {
 
         <div className="flex items-center gap-2 lg:gap-3">
           {isAdmin && <Button onClick={() => navigate('/admin/verifications')} size="icon" className="size-9 lg:size-11 rounded-xl lg:rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm" title="Panel admin"><ShieldCheck className="h-4 w-4 lg:h-5 lg:w-5" /></Button>}
-          <NotificationCenterPanel user={context.user}>
-            <div className="size-9 lg:size-11 bg-white border border-slate-100 rounded-xl lg:rounded-2xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all group relative">
-              <Bell className="h-4 w-4 lg:h-5 lg:w-5 text-slate-600 group-hover:text-primary transition-colors" />
-            </div>
-          </NotificationCenterPanel>
+          {isMobile ? (
+            <button
+              type="button"
+              onClick={() => navigate('/notifications')}
+              className="size-9 bg-white border border-slate-100 rounded-xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 active:scale-95 transition-all group relative"
+              aria-label="Notificaciones"
+            >
+              <Bell className="h-4 w-4 text-slate-600" />
+            </button>
+          ) : (
+            <NotificationCenterPanel user={context.user}>
+              <div className="size-11 bg-white border border-slate-100 rounded-2xl shadow-sm flex items-center justify-center cursor-pointer hover:bg-slate-50 hover:scale-105 active:scale-95 transition-all group relative">
+                <Bell className="h-5 w-5 text-slate-600 group-hover:text-primary transition-colors" />
+              </div>
+            </NotificationCenterPanel>
+          )}
 
           <LanguageSwitcher />
 
