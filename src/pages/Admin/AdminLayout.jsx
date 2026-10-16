@@ -68,7 +68,7 @@ const AdminLayout = ({ handleSignOut, profile }) => {
                 </div>
             </header>
 
-            <main className="admin-shell__main flex-1 w-full flex justify-center overflow-y-auto overflow-x-hidden">
+            <main className="admin-shell__main flex-1 w-full flex justify-center overflow-x-hidden lg:overflow-y-auto">
                 <div className="admin-shell__content w-full max-w-[1600px] p-6 lg:p-12 animate-in fade-in duration-1000">
                     <Outlet />
                 </div>

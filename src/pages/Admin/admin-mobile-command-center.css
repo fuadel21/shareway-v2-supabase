@@ -4,6 +4,18 @@
   min-height: 100vh;
 }
 
+/* En movil el scroll lo gestiona el documento (no un contenedor interno):
+   evita el panel bloqueado sin scroll en touch. */
+@media (max-width: 1023px) {
+  .admin-shell__main {
+    overflow-y: visible !important;
+  }
+
+  .admin-shell {
+    height: auto !important;
+  }
+}
+
 .admin-shell__main {
   min-width: 0;
 }
