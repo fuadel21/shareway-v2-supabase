@@ -69,9 +69,9 @@ function NotificationRow({ notification, onOpen, onRead, onPin }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
+          <div>
             <h4 className="line-clamp-1 text-sm font-black text-slate-900">{notification.title}</h4>
-            <span className="shrink-0 text-[10px] font-bold text-slate-400">{formatDate(notification.created_at)}</span>
+            <span className="text-[9px] font-bold text-slate-400">{formatDate(notification.created_at)}</span>
           </div>
 
           {(notification.message || notification.content || notification.body) && (
@@ -80,8 +80,8 @@ function NotificationRow({ notification, onOpen, onRead, onPin }) {
             </p>
           )}
 
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <span className="rounded-full bg-white px-2 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500 shadow-sm">
+          <div className="mt-2 flex items-center justify-between gap-2 min-w-0">
+            <span className="min-w-0 truncate rounded-full bg-white px-2 py-1 text-[9px] font-black uppercase tracking-normal text-slate-500 shadow-sm">
               {TYPE_LABELS[notification.type] || notification.type || 'Sistema'}
             </span>
 
@@ -211,15 +211,18 @@ export default function NotificationCenterPanel({ user, children, fullPage = fal
           />
         </div>
 
-        <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+        <div
+          className="mt-3 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${FILTERS.length}, minmax(0, 1fr))` }}
+        >
           {FILTERS.map((filter) => (
             <button
               key={filter.value}
               type="button"
               onClick={() => setActiveFilter(filter.value)}
               className={cn(
-                'shrink-0 rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest transition-colors',
-                activeFilter === filter.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-500 hover:bg-slate-100',
+                'min-w-0 truncate rounded-xl px-1.5 py-2 text-[9px] font-black uppercase tracking-normal transition-colors',
+                activeFilter === filter.value ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-500 hover:bg-slate-100',
               )}
             >
               {filter.label}
