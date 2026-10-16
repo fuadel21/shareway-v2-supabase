@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
+import { trackGrowthEvent } from '@/lib/growthAnalytics.js';
 import { ArrowRight, BookOpen, CheckCircle2, HelpCircle, MapPin, Route } from 'lucide-react';
 import { findSeoGuide, guideToPath, seoGuides } from '@/data/seoGuidesData';
 
@@ -40,6 +41,20 @@ const upsertJsonLd = (id, payload) => {
 function GuideSEOPage() {
   const { slug } = useParams();
   const guide = useMemo(() => findSeoGuide(slug), [slug]);
+
+  const trackRouteClick = (placement) => {
+    if (!guide) return;
+    trackGrowthEvent('seo_route_click', {
+      path: window.location.pathname,
+      metadata: { pageType: 'guide', sourcePath: window.location.pathname, targetPath: guide.routeHref, placement },
+    });
+  };
+  const trackCtaClick = (placement) => {
+    trackGrowthEvent('seo_cta_click', {
+      path: window.location.pathname,
+      metadata: { pageType: 'guide', sourcePath: window.location.pathname, targetPath: '/register', placement },
+    });
+  };
 
   if (!guide) return <Navigate to="/" replace />;
 
@@ -106,23 +121,23 @@ function GuideSEOPage() {
             <Link to="/rutas/" className="hidden text-slate-600 hover:text-slate-950 sm:inline">Rutas</Link>
             <Link to="/ciudades/barcelona/" className="hidden text-slate-600 hover:text-slate-950 sm:inline">Barcelona</Link>
             <Link to="/login" className="rounded-full border px-4 py-2">Entrar</Link>
-            <Link to="/register" className="rounded-full bg-orange-500 px-4 py-2 text-white">Crear cuenta</Link>
+            <Link to="/register" className="rounded-full bg-primary px-4 py-2 text-white">Crear cuenta</Link>
           </nav>
         </div>
       </header>
 
-      <section className="bg-slate-950 px-5 py-16 text-white sm:py-24">
+      <section className="bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] px-5 py-16 text-white sm:py-24">
         <div className="mx-auto max-w-5xl">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-orange-300">
+          <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.25em] text-emerald-200">
             <BookOpen className="h-4 w-4" /> Guía ShareWay
           </p>
           <h1 className="mt-6 max-w-4xl text-4xl font-black leading-[0.95] tracking-tighter sm:text-6xl">{guide.h1}</h1>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{guide.description}</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link to={guide.routeHref} className="inline-flex h-14 items-center justify-center rounded-2xl bg-orange-500 px-6 font-black uppercase tracking-widest text-white hover:bg-orange-600">
+            <Link to={guide.routeHref} onClick={() => trackRouteClick('hero')} className="inline-flex h-14 items-center justify-center rounded-2xl bg-primary px-6 font-black uppercase tracking-normal text-white hover:bg-primary/90 active:scale-95 transition-all">
               Ver ruta <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
-            <Link to="/register" className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 font-black uppercase tracking-widest text-white hover:bg-white/20">
+            <Link to="/register" onClick={() => trackCtaClick('hero')} className="inline-flex h-14 items-center justify-center rounded-2xl border border-white/20 bg-white/10 px-6 font-black uppercase tracking-normal text-white hover:bg-white/20 active:scale-95 transition-all">
               Crear cuenta gratis
             </Link>
           </div>
@@ -133,7 +148,7 @@ function GuideSEOPage() {
         <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[1fr_320px]">
           <article className="space-y-8">
             <div className="rounded-3xl border border-slate-100 p-7 shadow-sm">
-              <p className="text-sm font-black uppercase tracking-widest text-orange-500">{guide.area}</p>
+              <p className="text-sm font-black uppercase tracking-widest text-primary">{guide.area}</p>
               <h2 className="mt-3 text-3xl font-black tracking-tight">Por qué esta ruta puede funcionar compartiendo coche</h2>
               <p className="mt-5 text-lg leading-8 text-slate-600">{guide.intro}</p>
             </div>
@@ -143,10 +158,24 @@ function GuideSEOPage() {
               <div className="mt-6 space-y-4">
                 {guide.points.map((point) => (
                   <div key={point} className="flex gap-3 rounded-3xl bg-white p-5 shadow-sm">
-                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-orange-500" />
+                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-primary" />
                     <p className="leading-7 text-slate-700">{point}</p>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0B2A86] via-[#1267FF] to-[#0FC6A6] p-7 text-white shadow-xl">
+              <p className="text-xs font-black uppercase tracking-[0.25em] text-white/70">¿Haces esta ruta?</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight">Ver {guide.routeLabel} con ShareWay</h2>
+              <p className="mt-2 text-sm font-semibold leading-6 text-white/75">Publica tu plaza o busca asiento de gente que ya hace este trayecto. Precio por kilómetro y pago con garantía.</p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <Link to={guide.routeHref} onClick={() => trackRouteClick('mid-article')} className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl bg-white px-5 font-black uppercase tracking-normal text-slate-900 hover:bg-white/90 active:scale-95 transition-all">
+                  <Route className="mr-2 h-5 w-5 text-primary" /> Ver ruta
+                </Link>
+                <Link to="/register" onClick={() => trackCtaClick('mid-article')} className="inline-flex h-12 flex-1 items-center justify-center rounded-2xl border border-white/30 bg-white/10 px-5 font-black uppercase tracking-normal text-white hover:bg-white/20 active:scale-95 transition-all">
+                  Crear cuenta gratis
+                </Link>
               </div>
             </div>
 
@@ -155,7 +184,7 @@ function GuideSEOPage() {
               <div className="mt-6 space-y-4">
                 {guide.faqs.map(([question, answer]) => (
                   <article key={question} className="rounded-3xl bg-slate-50 p-6">
-                    <h3 className="flex items-start gap-2 text-xl font-black"><HelpCircle className="mt-1 h-5 w-5 text-orange-500" /> {question}</h3>
+                    <h3 className="flex items-start gap-2 text-xl font-black"><HelpCircle className="mt-1 h-5 w-5 text-primary" /> {question}</h3>
                     <p className="mt-3 leading-7 text-slate-600">{answer}</p>
                   </article>
                 ))}
@@ -164,16 +193,16 @@ function GuideSEOPage() {
           </article>
 
           <aside className="space-y-5">
-            <div className="rounded-3xl bg-orange-500 p-6 text-white">
+            <div className="rounded-3xl bg-gradient-to-br from-[#1267FF] to-[#0FC6A6] p-6 text-white">
               <h2 className="text-2xl font-black">Ruta relacionada</h2>
               <p className="mt-2 text-white/80">{guide.intent}</p>
-              <Link to={guide.routeHref} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-4 font-black text-orange-600">
-                <Route className="mr-2 h-5 w-5" /> {guide.routeLabel}
+              <Link to={guide.routeHref} onClick={() => trackRouteClick('sidebar')} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-white px-5 py-4 font-black text-slate-900 hover:bg-white/90 active:scale-95 transition-all">
+                <Route className="mr-2 h-5 w-5 text-primary" /> {guide.routeLabel}
               </Link>
             </div>
             <div className="rounded-3xl border border-slate-100 p-6 shadow-sm">
               <h2 className="text-2xl font-black">Ciudad relacionada</h2>
-              <Link to={guide.cityHref} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-4 font-black text-white">
+              <Link to={guide.cityHref} className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-primary px-5 py-4 font-black text-white hover:bg-primary/90">
                 <MapPin className="mr-2 h-5 w-5" /> {guide.cityLabel}
               </Link>
             </div>
