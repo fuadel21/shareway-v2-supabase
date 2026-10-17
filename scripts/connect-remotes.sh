@@ -98,6 +98,10 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_COMPLETE_RIDE_DOUBLE_PAY.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_COMPLETE_RIDE_DOUBLE_PAY.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_CREATE_RIDE_VALIDATED (create_ride con banda de precio)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_CREATE_RIDE_VALIDATED.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_CREATE_RIDE_VALIDATED.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Aplicando FIX_STRIPE_RECONCILE (cron de conciliación con Stripe)"
   psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_RECONCILE.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_STRIPE_RECONCILE.sql en el SQL Editor si psql no esta disponible"

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button.jsx';
 import { Plus, Route, Trash2, Edit, Loader2, Calendar, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
-import { createSingleRide } from '@/services/rideService';
+import { createSingleRide, calculateRecommendedPrice } from '@/services/rideService';
+import { calculateDistance } from '@/lib/utils';
 import { addMinutes } from 'date-fns';
 
 const weekDaysMap = { 1: 'L', 2: 'M', 3: 'X', 4: 'J', 5: 'V', 6: 'S', 0: 'D' };
@@ -77,16 +78,31 @@ const FavoriteRoutes = () => {
                 }
             }
 
+            // Precio inteligente: el servidor valida precio <= sugerido+0.05
+            // para la distancia recta; usamos el guardado solo si esta en banda
+            // y el sugerido como alternativa segura.
+            const oLat = Number(route.origin?.coordinates?.lat ?? route.origin?.lat);
+            const oLng = Number(route.origin?.coordinates?.lng ?? route.origin?.lng);
+            const dLat = Number(route.destination?.coordinates?.lat ?? route.destination?.lat);
+            const dLng = Number(route.destination?.coordinates?.lng ?? route.destination?.lng);
+            const distanceKm = Number.isFinite(oLat) && Number.isFinite(dLat)
+                ? calculateDistance(oLat, oLng, dLat, dLng)
+                : 0;
+            const suggested = distanceKm > 0
+                ? Number(calculateRecommendedPrice(distanceKm * 1000))
+                : 0;
+            const storedPrice = Number(route.price) || 0;
+            const finalPrice = suggested > 0 && storedPrice > 0 && storedPrice <= suggested + 0.05
+                ? storedPrice
+                : (suggested > 0 ? suggested : storedPrice);
+
             const rideData = {
-                driver_id: profile.id,
                 origin: route.origin,
                 destination: route.destination,
                 departure_time: departureDate.toISOString(),
                 seats: route.seats || 4,
-                price: route.price || 5.00,
-                status: 'scheduled',
-                vehicle_model: profile.vehicle_model || 'Coche compartido',
-                vehicle_plate: profile.vehicle_plate || 'TEST-123'
+                price: finalPrice,
+                distance: distanceKm
             };
 
             const rideId = await createSingleRide(rideData);
@@ -212,7 +228,7 @@ const FavoriteRoutes = () => {
                                         <Button
                                             onClick={() => handlePublishNow(route)}
                                             disabled={isPublishing === route.id}
-                                            className="rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-black uppercase italic tracking-tighter text-[10px] h-10 px-4 shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
+                                            className="rounded-xl bg-primary hover:bg-primary/90 text-white font-black uppercase italic tracking-tighter text-[10px] h-10 px-4 shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
                                         >
                                             {isPublishing === route.id ? <Loader2 className="size-3 animate-spin mr-2" /> : <Zap className="size-3 mr-2 fill-current" />}
                                             Publicar para hoy
