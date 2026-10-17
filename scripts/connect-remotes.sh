@@ -90,6 +90,14 @@ migrations() {
   psql "$SUPABASE_DB_URL" -f supabase/FIX_RADAR_PUSH.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_RADAR_PUSH.sql en el SQL Editor si psql no esta disponible"
 
+  echo "== Aplicando FIX_DROPOFF_SEATS (dropoff multi-plaza)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_DROPOFF_SEATS.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_DROPOFF_SEATS.sql en el SQL Editor si psql no esta disponible"
+
+  echo "== Aplicando FIX_COMPLETE_RIDE_DOUBLE_PAY (sin doble cobro dropoff+finalize)"
+  psql "$SUPABASE_DB_URL" -f supabase/FIX_COMPLETE_RIDE_DOUBLE_PAY.sql 2>/dev/null \
+    || echo "  NOTA: ejecuta supabase/FIX_COMPLETE_RIDE_DOUBLE_PAY.sql en el SQL Editor si psql no esta disponible"
+
   echo "== Aplicando FIX_STRIPE_RECONCILE (cron de conciliación con Stripe)"
   psql "$SUPABASE_DB_URL" -f supabase/FIX_STRIPE_RECONCILE.sql 2>/dev/null \
     || echo "  NOTA: ejecuta supabase/FIX_STRIPE_RECONCILE.sql en el SQL Editor si psql no esta disponible"
