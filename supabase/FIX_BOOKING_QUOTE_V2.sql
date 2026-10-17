@@ -287,7 +287,10 @@ BEGIN
   -- RECÁLCULO POR KILÓMETRO: tarifa progresiva sobre los km facturados
   v_tariff_per_seat := public.sw_progressive_price(v_billed_km);
 
-  IF v_billed_km <= v_ride_distance * 1.10 THEN
+  -- Comparacion geodesico vs geodesico (independiente de si el distance
+  -- guardado del viaje es carretera o recto): el pasajero "cabe" en el
+  -- viaje si su linea recta no supera la del viaje +15%.
+  IF v_passenger_distance <= v_geodesic_distance * 1.15 THEN
     -- El trayecto del pasajero cabe dentro del trayecto del conductor:
     -- nunca se cobra más que el precio publicado del viaje.
     v_base_per_seat := LEAST(v_tariff_per_seat, round(v_ride.price, 2));

@@ -115,7 +115,8 @@ BEGIN
         RAISE EXCEPTION 'NEGATIVE_PASSENGER_SETTLEMENT';
       END IF;
 
-      IF v_status IN ('verified', 'confirmed', 'accepted', 'pending_boarding') THEN
+      IF v_status = 'verified' THEN
+        -- Solo el pasajero VERIFICADO con PIN genera pago al conductor.
         v_net_payout := round(v_subtotal * 0.90, 2);
         v_fee := v_subtotal - v_net_payout;
 
@@ -160,6 +161,31 @@ BEGIN
           PERFORM public.create_notification(
             v_passenger_id_uuid, 'payment_complete', 'Pago realizado',
             'Llegada a destino confirmada. El conductor ha recibido su importe.',
+            jsonb_build_object('ride_id', p_ride_id)
+          );
+        EXCEPTION WHEN OTHERS THEN
+          RAISE WARNING '[complete_ride] notif omitida: %', SQLERRM;
+        END;
+      ELSIF v_status IN ('confirmed', 'accepted', 'pending_boarding') THEN
+        -- Pasajero que NO verifico su PIN al abordar: reembolso integro,
+        -- el conductor no cobra por el (politica de verificacion).
+        UPDATE public.wallets
+        SET balance = round(COALESCE(balance, 0) + v_subtotal, 2),
+            held_balance = round(GREATEST(COALESCE(held_balance, 0) - v_subtotal, 0), 2),
+            updated_at = NOW()
+        WHERE user_id = v_passenger_id_uuid;
+
+        BEGIN
+          INSERT INTO public.transactions (user_id, amount, type, related_ride_id, description)
+          VALUES (v_passenger_id_uuid, v_subtotal, 'refund', 'Reembolso: pasajero sin verificar al finalizar', p_ride_id);
+        EXCEPTION WHEN OTHERS THEN
+          RAISE WARNING '[complete_ride] tx reembolso omitida: %', SQLERRM;
+        END;
+
+        BEGIN
+          PERFORM public.create_notification(
+            v_passenger_id_uuid, 'booking_refund', 'Reserva reembolsada',
+            'No se verificó tu PIN durante el viaje. Se ha devuelto tu importe completo.',
             jsonb_build_object('ride_id', p_ride_id)
           );
         EXCEPTION WHEN OTHERS THEN

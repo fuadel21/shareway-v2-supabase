@@ -340,6 +340,13 @@ BEGIN
       'message', 'El precio por plaza debe estar entre 0,50 y 300 EUR.');
   END IF;
 
+  -- Banda de tarifa: mismo limite que aplicara create_ride (evita llegar
+  -- al create y fallar con un error menos claro).
+  IF v_price_per_seat > public.sw_progressive_price(COALESCE(v_request.distance, 0)) + 0.05 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'INVALID_PRICE',
+      'message', 'El precio por plaza supera la tarifa recomendada para esta distancia.');
+  END IF;
+
   v_total := round(v_price_per_seat * v_seats_needed, 2);
 
   -- 4. Verificar saldo del pasajero (con bloqueo de cartera)
