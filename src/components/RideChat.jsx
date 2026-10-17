@@ -362,7 +362,7 @@ function RideChat() {
 
             <footer className="bg-white border-t border-slate-100 shrink-0 relative z-[60]">
                 {/* ⚡ Quick Messages - Más compactos */}
-                <div className="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth bg-slate-50/50">
+                <div className="px-4 py-2 flex flex-wrap gap-1.5 max-h-24 overflow-y-auto bg-slate-50/50">
                     {QUICK_MESSAGES.map((msg, i) => (
                         <button
                             key={i}

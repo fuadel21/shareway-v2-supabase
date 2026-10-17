@@ -358,7 +358,7 @@ const ActivityCenter = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-2 px-2 overflow-x-auto pb-2 custom-scrollbar">
+                <div className="flex flex-wrap gap-1.5 px-2 pb-2">
                     {[
                         { id: 'all', label: copy.all, icon: Bell },
                         { id: 'unread', label: copy.unread, icon: Info },

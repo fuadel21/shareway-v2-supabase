@@ -64,12 +64,12 @@ const NotificationCenter = () => {
             <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar notificaciones" className="h-14 rounded-2xl border-none bg-slate-50 pl-11 font-bold" />
           </div>
-          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-1.5">
             {filters.map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={cn('shrink-0 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all', filter === key ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-400')}
+                className={cn('min-w-0 rounded-xl px-1.5 py-2 text-[10px] font-black leading-tight transition-all text-center', filter === key ? 'bg-primary text-white shadow-md' : 'bg-slate-50 text-slate-400 hover:bg-slate-100')}
               >
                 {label}
               </button>

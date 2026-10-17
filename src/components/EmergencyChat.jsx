@@ -348,7 +348,7 @@ const EmergencyChat = () => {
                     </Button>
                 </form>
                 {guardians.length > 0 && (
-                    <div className="mt-4 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <div className="mt-4 flex flex-wrap gap-1.5 pb-1">
                         {guardians.map((g) => {
                             const link = buildGuardianWhatsAppLink(g.phone, { name: user?.user_metadata?.full_name || 'ShareWay', rideId });
                             if (!link) return null;

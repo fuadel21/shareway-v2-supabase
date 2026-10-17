@@ -797,7 +797,7 @@ function Dashboard() {
                     <ActivitySummaryPanel copy={copy} summary={activitySummary} loading={isActivityLoading} onRefresh={fetchActivitySummary} navigate={navigate} />
                     <SearchPanel {...searchPanelProps} />
 
-                    <div className="sticky top-0 bg-white z-20 pb-2 flex gap-1.5 overflow-x-auto no-scrollbar border-b border-slate-50">
+                    <div className="sticky top-0 bg-white z-20 pb-2 flex flex-wrap gap-1.5 border-b border-slate-50">
                         {filters.map((f) => (
                             <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-normal transition-all border whitespace-nowrap', activeFilter === f.id ? 'bg-primary text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-100')}>{f.label}</button>
                         ))}
@@ -876,7 +876,7 @@ function Dashboard() {
                         )}
                     </div>
                     <div className="flex items-center gap-2 pointer-events-auto">
-                        <div className="flex flex-1 gap-2 overflow-x-auto no-scrollbar">
+                        <div className="flex flex-1 flex-wrap gap-1.5">
                             {filters.map((f) => (
                                 <button key={f.id} onClick={() => setActiveFilter(f.id)} className={cn('px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-normal transition-all shadow-lg backdrop-blur-md border', activeFilter === f.id ? 'bg-primary text-white border-slate-900' : 'bg-white/90 text-slate-600 border-white/50')}>
                                     {f.label}

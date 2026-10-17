@@ -211,17 +211,14 @@ export default function NotificationCenterPanel({ user, children, fullPage = fal
           />
         </div>
 
-        <div
-          className="mt-3 grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${FILTERS.length}, minmax(0, 1fr))` }}
-        >
+        <div className="mt-3 grid grid-cols-3 sm:grid-cols-5 gap-1.5">
           {FILTERS.map((filter) => (
             <button
               key={filter.value}
               type="button"
               onClick={() => setActiveFilter(filter.value)}
               className={cn(
-                'min-w-0 truncate rounded-xl px-1.5 py-2 text-[9px] font-black uppercase tracking-normal transition-colors',
+                'min-w-0 rounded-xl px-1.5 py-2 text-[10px] font-black leading-tight transition-colors text-center',
                 activeFilter === filter.value ? 'bg-primary text-white shadow-md' : 'bg-white text-slate-500 hover:bg-slate-100',
               )}
             >

@@ -278,10 +278,10 @@ const Chat = () => {
             {isChatActive ? (
                 <>
                     <div className="bg-white/80 backdrop-blur-xl px-4 py-4 border-t border-slate-100 flex flex-col gap-3 overflow-hidden">
-                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        <div className="flex flex-wrap gap-1.5 pb-1 max-h-28 overflow-y-auto">
                             {QUICK_MESSAGES_CATEGORIES.map((cat, idx) => (
                                 <div key={idx} className="flex gap-2 items-center">
-                                    <span className="text-[7px] font-black uppercase tracking-[0.2em] text-slate-400 bg-slate-100 px-2 py-1 rounded-md mb-0.5 whitespace-nowrap">
+                                    <span className="text-[7px] font-black uppercase tracking-normal text-slate-400 bg-slate-100 px-2 py-1 rounded-md">
                                         {cat.label}
                                     </span>
                                     {cat.items.map((msg, i) => (

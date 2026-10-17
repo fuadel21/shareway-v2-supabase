@@ -731,7 +731,7 @@ const MyRides = () => {
             </header>
 
             <main className="max-w-xl mx-auto px-4 py-6 space-y-5">
-                <div className="grid grid-cols-5 gap-1.5 pb-1">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 pb-1">
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActiveTab = activeTab === tab.id;

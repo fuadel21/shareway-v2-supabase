@@ -179,12 +179,12 @@ const ExplorePage = () => {
             </Card>
 
             <Tabs defaultValue={defaultTab} className="w-full space-y-8">
-                <div className="overflow-x-auto no-scrollbar pb-2">
-                    <TabsList className="bg-white p-1.5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 inline-flex min-w-full sm:min-w-0">
-                        <TabsTrigger value="upcoming" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Próximos</TabsTrigger>
-                        <TabsTrigger value="ongoing" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">En Curso</TabsTrigger>
-                        <TabsTrigger value="requests" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Solicitudes</TabsTrigger>
-                        <TabsTrigger value="packages" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Envíos</TabsTrigger>
+                <div className="pb-2">
+                    <TabsList className="bg-white p-1.5 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 grid grid-cols-2 sm:inline-flex sm:min-w-0 w-full sm:w-auto">
+                        <TabsTrigger value="upcoming" className="rounded-full px-3 sm:px-6 font-black text-[10px] uppercase tracking-normal data-[state=active]:bg-primary data-[state=active]:text-white">Próximos</TabsTrigger>
+                        <TabsTrigger value="ongoing" className="rounded-full px-3 sm:px-6 font-black text-[10px] uppercase tracking-normal data-[state=active]:bg-primary data-[state=active]:text-white">En Curso</TabsTrigger>
+                        <TabsTrigger value="requests" className="rounded-full px-3 sm:px-6 font-black text-[10px] uppercase tracking-normal data-[state=active]:bg-primary data-[state=active]:text-white">Solicitudes</TabsTrigger>
+                        <TabsTrigger value="packages" className="rounded-full px-3 sm:px-6 font-black text-[10px] uppercase tracking-normal data-[state=active]:bg-primary data-[state=active]:text-white">Envíos</TabsTrigger>
                         <TabsTrigger value="all" className="rounded-full px-6 font-black text-[10px] uppercase tracking-widest">Todos</TabsTrigger>
                     </TabsList>
                 </div>

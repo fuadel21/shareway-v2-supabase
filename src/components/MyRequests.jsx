@@ -488,7 +488,7 @@ const MyRequests = () => {
         <RequestStats stats={stats} copy={copy} />
         <QuickActions copy={copy} navigate={navigate} loading={loading} onRefresh={fetchRequests} />
 
-        <div className="grid grid-cols-5 gap-1 p-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 p-2 bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100">
           {tabs.map(tab => {
             const Icon = tab.icon;
             return (
